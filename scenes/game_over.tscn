@@ -59,6 +59,12 @@ layout_mode = 2
 mouse_filter = 2
 text = "Total Trades: 0"
 
+[node name="FlightsLabel" type="Label" parent="CenterContainer/VBoxContainer/StatsContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+text = "Total Flights: 0"
+
 [node name="EncountersLabel" type="Label" parent="CenterContainer/VBoxContainer/StatsContainer"]
 unique_name_in_owner = true
 layout_mode = 2

@@ -147,8 +147,13 @@ func _show_trade_offer() -> void:
 func _on_battle_won_no_reward() -> void:
 	battle_active = false
 	GameManager.total_encounters_won += 1
-	GameManager.battle_result = "won"
-	get_tree().change_scene_to_file("res://scenes/battle_result.tscn")
+	var destination: String = GameManager.travel_destination
+	GameManager.current_planet = destination
+	if destination not in GameManager.visited_planets:
+		GameManager.visited_planets.append(destination)
+	GameManager.current_encounter = null
+	GameManager.battle_result = ""
+	get_tree().change_scene_to_file("res://scenes/planet_screen.tscn")
 
 
 func _start_player_turn() -> void:

@@ -19,6 +19,7 @@ func save_game() -> void:
 		"visited_planets": GameManager.visited_planets.duplicate(),
 		"total_trades": GameManager.total_trades,
 		"total_encounters_won": GameManager.total_encounters_won,
+		"total_flights": GameManager.total_flights,
 		"installed_upgrades": GameManager.installed_upgrades.duplicate(),
 		"crew": GameManager.crew.duplicate(),
 		"deck_cards": _serialize_deck(),
@@ -61,6 +62,7 @@ func load_game() -> bool:
 	GameManager.visited_planets = data.get("visited_planets", [])
 	GameManager.total_trades = int(data.get("total_trades", 0))
 	GameManager.total_encounters_won = int(data.get("total_encounters_won", 0))
+	GameManager.total_flights = int(data.get("total_flights", 0))
 	GameManager.installed_upgrades = data.get("installed_upgrades", [])
 	GameManager.crew = data.get("crew", [])
 	_deserialize_deck(data.get("deck_cards", []))

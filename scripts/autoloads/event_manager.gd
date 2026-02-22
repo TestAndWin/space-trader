@@ -11,11 +11,11 @@ const MAX_DURATION: int = 5
 var _planets: Array = []
 
 var _event_pool: Array[Dictionary] = [
-	{"id": "blockade", "title": "Blockade on %s!", "description": "Prices +40%%, encounter chance +20%%", "price_modifier": 1.4, "encounter_modifier": 0.2, "target": "specific_planet"},
-	{"id": "harvest_surplus", "title": "Harvest surplus on %s!", "description": "Food Rations -50%% there", "price_modifier": 0.5, "good": "Food Rations", "target": "agricultural_planet"},
-	{"id": "tech_boom", "title": "Tech Boom!", "description": "Electronics +30%% everywhere", "price_modifier": 1.3, "good": "Electronics", "target": "all"},
-	{"id": "pirate_activity", "title": "Pirate Activity!", "description": "Encounters +15%%, rewards +50%%", "encounter_modifier": 0.15, "reward_modifier": 1.5, "target": "all"},
-	{"id": "trade_agreement", "title": "Trade Agreement!", "description": "Sell ratio 85%% instead of 75%%", "sell_ratio_override": 0.85, "target": "all"},
+	{"id": "blockade", "title": "Blockade on %s!", "description": "Prices +40%, encounter chance +20%", "price_modifier": 1.4, "encounter_modifier": 0.2, "target": "specific_planet"},
+	{"id": "harvest_surplus", "title": "Harvest surplus on %s!", "description": "Food Rations -50% there", "price_modifier": 0.5, "good": "Food Rations", "target": "agricultural_planet"},
+	{"id": "tech_boom", "title": "Tech Boom!", "description": "Electronics +30% everywhere", "price_modifier": 1.3, "good": "Electronics", "target": "all"},
+	{"id": "pirate_activity", "title": "Pirate Activity!", "description": "Encounters +15%, rewards +50%", "encounter_modifier": 0.15, "reward_modifier": 1.5, "target": "all"},
+	{"id": "trade_agreement", "title": "Trade Agreement!", "description": "Sell ratio 85% instead of 75%", "sell_ratio_override": 0.85, "target": "all"},
 ]
 
 

@@ -44,6 +44,7 @@ var last_cargo_lost_text: String = ""
 # Statistics
 var total_trades: int = 0
 var total_encounters_won: int = 0
+var total_flights: int = 0
 
 
 func _ready() -> void:
@@ -70,6 +71,7 @@ func reset() -> void:
 	visited_planets.append("Starport Alpha")
 	total_trades = 0
 	total_encounters_won = 0
+	total_flights = 0
 	current_encounter = null
 	battle_result = ""
 	last_cargo_lost_text = ""

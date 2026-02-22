@@ -12,6 +12,7 @@ var star_rects: Array = []
 
 func _ready() -> void:
 	destination_planet = GameManager.travel_destination if GameManager.travel_destination != "" else "Unknown"
+	GameManager.total_flights += 1
 	if EncounterManager.is_carrying_contraband():
 		warning_label.text = "CONTRABAND ABOARD - Increased encounter risk!"
 	travel_label.text = "Traveling to " + destination_planet + "..."
