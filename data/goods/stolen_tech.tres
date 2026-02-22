@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="GoodData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/good_data.gd" id="1_st8"]
+
+[resource]
+script = ExtResource("1_st8")
+good_name = "Stolen Tech"
+base_price = 500
+is_contraband = true

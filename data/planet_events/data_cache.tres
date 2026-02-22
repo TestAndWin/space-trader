@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PlanetEventData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/planet_event_data.gd" id="1_pe1"]
+
+[resource]
+script = ExtResource("1_pe1")
+event_name = "Encrypted Data Cache"
+description = "Found encrypted data worth deciphering."
+planet_type = 3
+choice_a_text = "Decrypt (-100 cr)"
+choice_b_text = "Sell raw data"
+choice_a_description = "You pay for decryption tools and uncover valuable information worth 250 credits."
+choice_b_description = "You sell the encrypted data as-is for a quick profit."
+choice_a_credits = 150
+choice_a_hull = 0
+choice_a_cargo_good = ""
+choice_a_cargo_qty = 0
+choice_a_requires_good = ""
+choice_a_requires_qty = 0
+choice_b_credits = 80
+choice_b_hull = 0
+choice_b_cargo_good = ""
+choice_b_cargo_qty = 0

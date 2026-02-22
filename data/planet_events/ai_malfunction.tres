@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PlanetEventData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/planet_event_data.gd" id="1_pe1"]
+
+[resource]
+script = ExtResource("1_pe1")
+event_name = "AI Glitch"
+description = "Your ship's AI is acting strange after docking."
+planet_type = 3
+choice_a_text = "Full diagnostic (-50 cr)"
+choice_b_text = "Ignore it"
+choice_a_description = "The diagnostic finds and fixes a critical issue. Your hull is reinforced."
+choice_b_description = "You ignore the warnings. The glitch causes minor hull damage."
+choice_a_credits = -50
+choice_a_hull = 3
+choice_a_cargo_good = ""
+choice_a_cargo_qty = 0
+choice_a_requires_good = ""
+choice_a_requires_qty = 0
+choice_b_credits = 0
+choice_b_hull = -2
+choice_b_cargo_good = ""
+choice_b_cargo_qty = 0

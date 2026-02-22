@@ -1,0 +1,176 @@
+[gd_scene format=3 uid="uid://dtut0r1alhelp"]
+
+[ext_resource type="Script" path="res://scripts/scenes/tutorial.gd" id="1_tut"]
+
+[node name="Tutorial" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_tut")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.04, 0.12, 1)
+mouse_filter = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 30.0
+offset_right = -40.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "How to Play"
+horizontal_alignment = 1
+mouse_filter = 2
+
+[node name="TopSeparator" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ContentVBox" type="VBoxContainer" parent="VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="TradingSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TradingSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.3, 0.8, 0.3, 1)
+text = "Trading"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TradingSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Buy goods cheaply at one planet and sell them at another for profit. Different planet types affect prices - Agricultural planets sell food cheaply, while Industrial planets pay more for it. Watch the price colors: green means profitable, red means you'll lose money."
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="NavigationSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/NavigationSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.3, 0.5, 0.9, 1)
+text = "Navigation"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/NavigationSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Click on connected planets in the Galaxy Map to travel. Each journey may trigger a random encounter based on the route's danger level. Higher danger means more encounters but also better trading opportunities."
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="CombatSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CombatSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.9, 0.3, 0.3, 1)
+text = "Card Combat"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CombatSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "When you encounter enemies, you fight using cards. Each turn you draw cards and spend energy to play them. Attack cards deal damage, Defense cards raise your shield, Utility cards heal or draw more cards, and Trade cards earn credits. Your shield absorbs damage before your hull takes hits."
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="UpgradesSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/UpgradesSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.9, 0.8, 0.2, 1)
+text = "Ship Upgrades"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/UpgradesSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Visit the Upgrades shop on planets to improve your ship. Upgrades can increase hull, shields, cargo capacity, or add new cards to your deck. Different planet types offer different upgrades - Tech planets have the widest selection."
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="ContrabandSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/ContrabandSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.7, 0.2, 0.7, 1)
+text = "Contraband"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/ContrabandSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Spice and Stolen Tech are contraband goods only available at Outlaw planets. They sell at premium prices but carrying them increases your risk of patrol encounters."
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="TipsSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TipsSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.9, 0.6, 0.1, 1)
+text = "Tips"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TipsSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Start by trading between nearby safe planets to build credits. Buy upgrades early to make combat easier. Keep some credits in reserve for repairs. Build your deck strategically - too many cards dilute your best ones."
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="BottomSeparator" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BackButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 40)
+size_flags_horizontal = 4
+text = "Back"

@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/components/quest_display.gd" id="1_qd1"]
+
+[node name="QuestDisplay" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+mouse_filter = 0
+script = ExtResource("1_qd1")

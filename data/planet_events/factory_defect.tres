@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PlanetEventData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/planet_event_data.gd" id="1_pe1"]
+
+[resource]
+script = ExtResource("1_pe1")
+event_name = "Factory Malfunction"
+description = "A factory needs emergency repairs. Your engineering skills could help."
+planet_type = 0
+choice_a_text = "Help repair (-50 cr)"
+choice_b_text = "Walk away"
+choice_a_description = "You spend time and credits fixing the machinery. The grateful foreman patches up your hull."
+choice_b_description = "You walk past the commotion without stopping."
+choice_a_credits = -50
+choice_a_hull = 5
+choice_a_cargo_good = ""
+choice_a_cargo_qty = 0
+choice_a_requires_good = ""
+choice_a_requires_qty = 0
+choice_b_credits = 0
+choice_b_hull = 0
+choice_b_cargo_good = ""
+choice_b_cargo_qty = 0

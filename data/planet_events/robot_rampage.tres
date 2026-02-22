@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PlanetEventData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/planet_event_data.gd" id="1_pe1"]
+
+[resource]
+script = ExtResource("1_pe1")
+event_name = "Rogue Robot"
+description = "A malfunctioning robot is causing havoc! Help subdue it?"
+planet_type = 0
+choice_a_text = "Fight it"
+choice_b_text = "Avoid it"
+choice_a_description = "You take some damage subduing the robot, but collect the bounty."
+choice_b_description = "You detour around the chaos, losing some time and fuel credits."
+choice_a_credits = 180
+choice_a_hull = -8
+choice_a_cargo_good = ""
+choice_a_cargo_qty = 0
+choice_a_requires_good = ""
+choice_a_requires_qty = 0
+choice_b_credits = -30
+choice_b_hull = 0
+choice_b_cargo_good = ""
+choice_b_cargo_qty = 0

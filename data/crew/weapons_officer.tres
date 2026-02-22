@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CrewData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/crew_data.gd" id="1_crew"]
+
+[resource]
+script = ExtResource("1_crew")
+crew_name = "Weapons Officer"
+title = "Weapons Officer"
+description = "All attack cards deal +2 damage"
+bonus_type = 1
+bonus_value = 2.0
+recruit_cost = 400
+available_planet_types = [4, 0]

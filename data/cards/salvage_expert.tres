@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_se1"]
+
+[resource]
+script = ExtResource("1_se1")
+card_name = "Salvage Expert"
+card_type = 2
+rarity = 1
+energy_cost = 1
+attack_value = 0
+defense_value = 0
+heal_value = 0
+draw_cards = 2
+credits_gain = 0
+description = "Draw 2. Extra draw on deck reshuffle."
+special_effect = ""
+keywords = [3]

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=2 format=3 uid="uid://upgrade_extended_cargo"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Extended Cargo"
+description = "Adds 5 cargo capacity"
+slot = 3
+cost = 350
+cargo_bonus = 5

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=2 format=3 uid="uid://upgrade_reinforced_hull"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Reinforced Hull"
+description = "Adds 10 max hull points"
+slot = 1
+cost = 400
+hull_bonus = 10

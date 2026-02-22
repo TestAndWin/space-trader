@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PlanetEventData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/planet_event_data.gd" id="1_pe1"]
+
+[resource]
+script = ExtResource("1_pe1")
+event_name = "Crop Pestilence"
+description = "Farmers need medicine to save their crops."
+planet_type = 1
+choice_a_text = "Provide medicine"
+choice_b_text = "Move on"
+choice_a_description = "You hand over medicine. The grateful farmers pay handsomely."
+choice_b_description = "You leave the farmers to deal with their problems."
+choice_a_credits = 200
+choice_a_hull = 0
+choice_a_cargo_good = "Medicine"
+choice_a_cargo_qty = -1
+choice_a_requires_good = "Medicine"
+choice_a_requires_qty = 1
+choice_b_credits = 0
+choice_b_hull = 0
+choice_b_cargo_good = ""
+choice_b_cargo_qty = 0

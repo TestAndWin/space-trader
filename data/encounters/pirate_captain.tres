@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/encounter_data.gd" id="1_pc2"]
+
+[resource]
+script = ExtResource("1_pc2")
+encounter_name = "Pirate Captain"
+description = "A notorious pirate captain with a fearsome reputation."
+enemy_health = 48
+enemy_attack_range = Vector2i(8, 13)
+reward_credits = 300
+can_flee = true
+difficulty = 3
+special_ability = 7
+ability_description = "Offers to end fight for credits"

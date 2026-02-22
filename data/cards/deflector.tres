@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_df10"]
+
+[resource]
+script = ExtResource("1_df10")
+card_name = "Deflector"
+card_type = 1
+rarity = 1
+energy_cost = 2
+attack_value = 0
+defense_value = 10
+heal_value = 0
+draw_cards = 0
+credits_gain = 0
+description = "Advanced deflector shield."
+special_effect = ""

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="GoodData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/good_data.gd" id="1_lg4"]
+
+[resource]
+script = ExtResource("1_lg4")
+good_name = "Luxury Goods"
+base_price = 300
+is_contraband = false

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_sv15"]
+
+[resource]
+script = ExtResource("1_sv15")
+card_name = "Salvage"
+card_type = 3
+rarity = 1
+energy_cost = 1
+attack_value = 0
+defense_value = 0
+heal_value = 0
+draw_cards = 0
+credits_gain = 75
+description = "Salvage valuable materials."
+special_effect = ""

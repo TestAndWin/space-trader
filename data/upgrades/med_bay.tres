@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=3 format=3 uid="uid://upgrade_med_bay"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+[ext_resource type="Resource" path="res://data/cards/emergency_repair.tres" id="2_card"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Med Bay"
+description = "Adds 5 hull and Emergency Repair card"
+slot = 5
+cost = 450
+hull_bonus = 5
+cards_to_add = [ExtResource("2_card")]

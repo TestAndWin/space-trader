@@ -1,0 +1,28 @@
+[gd_scene load_steps=3 format=3 uid="uid://b3nqw8ktp2h6f"]
+
+[ext_resource type="Script" path="res://scripts/components/planet_node.gd" id="1_planet"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_pn1"]
+radius = 30.0
+
+[node name="PlanetNode" type="Area2D"]
+input_pickable = true
+script = ExtResource("1_planet")
+
+[node name="NameLabel" type="Label" parent="."]
+offset_left = -60.0
+offset_top = 24.0
+offset_right = 60.0
+offset_bottom = 42.0
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 0.9)
+text = "Planet"
+horizontal_alignment = 1
+mouse_filter = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_pn1")
+
+[connection signal="input_event" from="." to="." method="_on_input_event"]
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

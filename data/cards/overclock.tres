@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_oc12"]
+
+[resource]
+script = ExtResource("1_oc12")
+card_name = "Overclock"
+card_type = 2
+rarity = 2
+energy_cost = 0
+attack_value = 0
+defense_value = 0
+heal_value = 0
+draw_cards = 1
+credits_gain = 0
+description = "Overclock systems for extra energy."
+special_effect = "bonus_energy_2"

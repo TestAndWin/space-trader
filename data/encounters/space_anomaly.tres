@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/encounter_data.gd" id="1_an4"]
+
+[resource]
+script = ExtResource("1_an4")
+encounter_name = "Space Anomaly"
+description = "A mysterious energy field. Navigate through carefully."
+enemy_health = 35
+enemy_attack_range = Vector2i(5, 9)
+reward_credits = 200
+can_flee = false
+difficulty = 2
+special_ability = 4
+ability_description = "You start with 1 less energy"

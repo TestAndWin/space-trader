@@ -1,0 +1,13 @@
+SpaceTrader.exe
+.godot
+TODO.md
+PLAN.md
+
+# OS
+.DS_Store
+
+# Export
+build/
+export/
+*.tmp
+*.log

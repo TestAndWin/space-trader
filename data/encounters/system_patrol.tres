@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/encounter_data.gd" id="1_sp5"]
+
+[resource]
+script = ExtResource("1_sp5")
+encounter_name = "System Patrol"
+description = "Security forces scanning for contraband."
+enemy_health = 40
+enemy_attack_range = Vector2i(5, 9)
+reward_credits = 50
+can_flee = true
+difficulty = 2
+special_ability = 2
+ability_description = "Gains +3 shield every 2nd turn"

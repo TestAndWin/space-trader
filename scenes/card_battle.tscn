@@ -1,0 +1,238 @@
+[gd_scene load_steps=5 format=3 uid="uid://cb1card_battle"]
+
+[ext_resource type="Script" path="res://scripts/scenes/card_battle.gd" id="1_cb1"]
+[ext_resource type="PackedScene" uid="uid://ship_display" path="res://scenes/components/ship_display.tscn" id="2_sd1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_enemy"]
+bg_color = Color(0.08, 0.04, 0.04, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.5, 0.15, 0.15, 0.5)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_player"]
+bg_color = Color(0.04, 0.05, 0.1, 0.85)
+border_width_top = 1
+border_color = Color(0.15, 0.25, 0.45, 0.5)
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+
+[node name="CardBattle" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_cb1")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.02, 0.015, 0.06, 1)
+
+[node name="MainLayout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="EnemyPanel" type="PanelContainer" parent="MainLayout"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_enemy")
+
+[node name="EnemyVBox" type="VBoxContainer" parent="MainLayout/EnemyPanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="EnemyNameLabel" type="Label" parent="MainLayout/EnemyPanel/EnemyVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(1, 0.35, 0.35, 1)
+text = "Enemy Name"
+
+[node name="EnemyHealthRow" type="HBoxContainer" parent="MainLayout/EnemyPanel/EnemyVBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="EnemyHealthBar" type="ProgressBar" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(250, 22)
+layout_mode = 2
+mouse_filter = 2
+max_value = 20.0
+value = 20.0
+show_percentage = false
+
+[node name="EnemyHealthLabel" type="Label" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.9, 0.5, 0.5, 1)
+text = "20 / 20"
+
+[node name="IntentLabel" type="Label" parent="MainLayout/EnemyPanel/EnemyVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 0.7, 0.3, 1)
+text = "Enemy will deal X damage"
+
+[node name="AbilityLabel" type="Label" parent="MainLayout/EnemyPanel/EnemyVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.5, 0.9, 1)
+text = ""
+
+[node name="PlayerPanel" type="PanelContainer" parent="MainLayout"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_player")
+
+[node name="PlayerVBox" type="VBoxContainer" parent="MainLayout/PlayerPanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="StatsRow" type="HBoxContainer" parent="MainLayout/PlayerPanel/PlayerVBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="ShipDisplay" parent="MainLayout/PlayerPanel/PlayerVBox/StatsRow" instance=ExtResource("2_sd1")]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 90)
+layout_mode = 2
+
+[node name="HullColumn" type="HBoxContainer" parent="MainLayout/PlayerPanel/PlayerVBox/StatsRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="HullLabel" type="Label" parent="MainLayout/PlayerPanel/PlayerVBox/StatsRow/HullColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.9, 0.35, 0.35, 1)
+text = "Hull: 30 / 30"
+
+[node name="HullBar" type="ProgressBar" parent="MainLayout/PlayerPanel/PlayerVBox/StatsRow/HullColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+mouse_filter = 2
+max_value = 30.0
+value = 30.0
+show_percentage = false
+
+[node name="ShieldColumn" type="HBoxContainer" parent="MainLayout/PlayerPanel/PlayerVBox/StatsRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="ShieldLabel" type="Label" parent="MainLayout/PlayerPanel/PlayerVBox/StatsRow/ShieldColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.4, 0.65, 1, 1)
+text = "Shield: 10 / 10"
+
+[node name="ShieldBar" type="ProgressBar" parent="MainLayout/PlayerPanel/PlayerVBox/StatsRow/ShieldColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+mouse_filter = 2
+max_value = 10.0
+value = 10.0
+show_percentage = false
+
+[node name="EnergyLabel" type="Label" parent="MainLayout/PlayerPanel/PlayerVBox/StatsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+text = "Energy: 3 / 3"
+
+[node name="HandScroll" type="ScrollContainer" parent="MainLayout/PlayerPanel/PlayerVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 220)
+vertical_scroll_mode = 0
+
+[node name="HandContainer" type="HBoxContainer" parent="MainLayout/PlayerPanel/PlayerVBox/HandScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ButtonsBar" type="HBoxContainer" parent="MainLayout/PlayerPanel/PlayerVBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="DeckCountLabel" type="Label" parent="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 1)
+text = "Deck: 10"
+
+[node name="DiscardCountLabel" type="Label" parent="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 1)
+text = "Discard: 0"
+
+[node name="Spacer" type="Control" parent="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+
+[node name="EndTurnButton" type="Button" parent="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar"]
+layout_mode = 2
+text = "End Turn"
+
+[node name="FleeButton" type="Button" parent="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Flee"
+
+[connection signal="pressed" from="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/EndTurnButton" to="." method="_on_end_turn_pressed"]
+[connection signal="pressed" from="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/FleeButton" to="." method="_on_flee_pressed"]

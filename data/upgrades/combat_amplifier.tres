@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+[ext_resource type="Resource" path="res://data/cards/charged_strike.tres" id="2_card1"]
+[ext_resource type="Resource" path="res://data/cards/shield_bash.tres" id="3_card2"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Combat Amplifier"
+description = "Adds Charge and Shield Echo cards"
+slot = 4
+cost = 500
+cards_to_add = [ExtResource("2_card1"), ExtResource("3_card2")]

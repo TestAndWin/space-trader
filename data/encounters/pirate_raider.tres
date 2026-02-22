@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/encounter_data.gd" id="1_pr1"]
+
+[resource]
+script = ExtResource("1_pr1")
+encounter_name = "Pirate Raider"
+description = "A small pirate vessel looking for easy prey."
+enemy_health = 28
+enemy_attack_range = Vector2i(3, 6)
+reward_credits = 100
+can_flee = true
+difficulty = 1
+special_ability = 1
+ability_description = "Steals 20 credits on hit"

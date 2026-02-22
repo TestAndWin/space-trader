@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CrewData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/crew_data.gd" id="1_crew"]
+
+[resource]
+script = ExtResource("1_crew")
+crew_name = "Smuggler"
+title = "Smuggler"
+description = "Smuggling fines reduced by 50%"
+bonus_type = 4
+bonus_value = 0.5
+recruit_cost = 250
+available_planet_types = [4]

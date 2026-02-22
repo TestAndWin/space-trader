@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PlanetEventData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/planet_event_data.gd" id="1_pe1"]
+
+[resource]
+script = ExtResource("1_pe1")
+event_name = "Hungry Settlers"
+description = "Desperate settlers beg for food supplies."
+planet_type = 1
+choice_a_text = "Donate food"
+choice_b_text = "Decline"
+choice_a_description = "You hand over food rations. The settlers reward you generously."
+choice_b_description = "You politely decline and move on."
+choice_a_credits = 100
+choice_a_hull = 0
+choice_a_cargo_good = "Food Rations"
+choice_a_cargo_qty = -2
+choice_a_requires_good = "Food Rations"
+choice_a_requires_qty = 2
+choice_b_credits = 0
+choice_b_hull = 0
+choice_b_cargo_good = ""
+choice_b_cargo_qty = 0

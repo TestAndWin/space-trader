@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/components/shipyard_panel.gd" id="1_sp1"]
+
+[node name="ShipyardPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+mouse_filter = 0
+script = ExtResource("1_sp1")

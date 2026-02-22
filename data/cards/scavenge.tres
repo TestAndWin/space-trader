@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_sc7"]
+
+[resource]
+script = ExtResource("1_sc7")
+card_name = "Scavenge"
+card_type = 3
+rarity = 0
+energy_cost = 1
+attack_value = 0
+defense_value = 0
+heal_value = 0
+draw_cards = 0
+credits_gain = 0
+description = "Search the area for valuables. Random reward."
+special_effect = "scavenge"

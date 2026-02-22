@@ -1,0 +1,136 @@
+[gd_scene load_steps=2 format=3 uid="uid://su1ship_upgrade"]
+
+[ext_resource type="Script" path="res://scripts/scenes/ship_upgrade.gd" id="1_su1"]
+
+[node name="ShipUpgrade" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_su1")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.05, 0.05, 0.12, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+offset_left = 20.0
+offset_top = 15.0
+offset_right = -20.0
+offset_bottom = -15.0
+theme_override_constants/separation = 10
+
+[node name="HeaderBar" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer/HeaderBar"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 24
+text = "Ship Upgrades"
+
+[node name="Spacer" type="Control" parent="VBoxContainer/HeaderBar"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+
+[node name="CreditsLabel" type="Label" parent="VBoxContainer/HeaderBar"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 18
+text = "Credits: 1000"
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="MainContent" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="AvailablePanel" type="VBoxContainer" parent="VBoxContainer/MainContent"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+theme_override_constants/separation = 6
+
+[node name="AvailableLabel" type="Label" parent="VBoxContainer/MainContent/AvailablePanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 20
+text = "AVAILABLE UPGRADES"
+
+[node name="UpgradeScroll" type="ScrollContainer" parent="VBoxContainer/MainContent/AvailablePanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="UpgradeList" type="VBoxContainer" parent="VBoxContainer/MainContent/AvailablePanel/UpgradeScroll"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer/MainContent"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="StatsPanel" type="VBoxContainer" parent="VBoxContainer/MainContent"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="StatsLabel" type="Label" parent="VBoxContainer/MainContent/StatsPanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 20
+text = "SHIP STATS"
+
+[node name="StatsScroll" type="ScrollContainer" parent="VBoxContainer/MainContent/StatsPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StatsList" type="VBoxContainer" parent="VBoxContainer/MainContent/StatsPanel/StatsScroll"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="HSeparator2" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BottomBar" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 15
+
+[node name="Spacer" type="Control" parent="VBoxContainer/BottomBar"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+
+[node name="BackButton" type="Button" parent="VBoxContainer/BottomBar"]
+layout_mode = 2
+text = "Back"

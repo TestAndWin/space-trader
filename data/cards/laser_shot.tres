@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_ls1"]
+
+[resource]
+script = ExtResource("1_ls1")
+card_name = "Laser Shot"
+card_type = 0
+rarity = 0
+energy_cost = 1
+attack_value = 5
+defense_value = 0
+heal_value = 0
+draw_cards = 0
+credits_gain = 0
+description = "Fire a focused laser beam at the enemy."
+special_effect = ""

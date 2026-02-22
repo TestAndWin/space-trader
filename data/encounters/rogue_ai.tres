@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/encounter_data.gd" id="1_ra2"]
+
+[resource]
+script = ExtResource("1_ra2")
+encounter_name = "Rogue AI"
+description = "A rogue AI ship with no crew - cannot be reasoned with"
+enemy_health = 40
+enemy_attack_range = Vector2i(5, 9)
+reward_credits = 280
+can_flee = false
+difficulty = 3
+special_ability = 5
+ability_description = "Takes less damage each turn (min 50%)"

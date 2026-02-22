@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=2 format=3 uid="uid://upgrade_reactor_core"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Reactor Core"
+description = "Gain 1 extra energy per turn"
+slot = 5
+cost = 700
+energy_bonus = 1

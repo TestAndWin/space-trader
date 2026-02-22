@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=2 format=3 uid="uid://upgrade_auto_loader"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Auto Loader"
+description = "Adds 3 cargo and draws 1 extra card"
+slot = 3
+cost = 450
+cargo_bonus = 3
+hand_size_bonus = 1

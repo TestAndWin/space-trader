@@ -1,0 +1,142 @@
+[gd_scene load_steps=3 format=3 uid="uid://dpv4r1jm8qn5k"]
+
+[ext_resource type="Script" path="res://scripts/scenes/galaxy_map.gd" id="1_galaxy"]
+[ext_resource type="Script" path="res://scripts/components/player_ship_icon.gd" id="2_ship"]
+
+[node name="GalaxyMap" type="Node2D"]
+script = ExtResource("1_galaxy")
+
+[node name="Background" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.01, 0.01, 0.04, 1)
+mouse_filter = 2
+
+[node name="Starfield" type="Node2D" parent="."]
+
+[node name="RoutesContainer" type="Node2D" parent="."]
+
+[node name="PlanetsContainer" type="Node2D" parent="."]
+
+[node name="PlayerIcon" type="Node2D" parent="."]
+script = ExtResource("2_ship")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="TopBar" type="HBoxContainer" parent="CanvasLayer"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 10.0
+offset_top = 6.0
+offset_right = -10.0
+offset_bottom = 30.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="CurrentPlanetLabel" type="Label" parent="CanvasLayer/TopBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(1, 0.95, 0.4, 1)
+text = "@ Starport Alpha"
+mouse_filter = 2
+
+[node name="CreditsLabel" type="Label" parent="CanvasLayer/TopBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.8, 0.9, 1)
+text = "Credits: 1000"
+mouse_filter = 2
+
+[node name="CargoLabel" type="Label" parent="CanvasLayer/TopBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.8, 0.9, 1)
+text = "Cargo: 0/10"
+mouse_filter = 2
+
+[node name="HullLabel" type="Label" parent="CanvasLayer/TopBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.9, 0.4, 0.4, 1)
+text = "Hull: 30/30"
+mouse_filter = 2
+
+[node name="ShieldLabel" type="Label" parent="CanvasLayer/TopBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.4, 0.65, 1, 1)
+text = "Shield: 10/10"
+mouse_filter = 2
+
+[node name="InfoPanel" type="PanelContainer" parent="CanvasLayer"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 40.0
+offset_right = -10.0
+offset_bottom = 180.0
+grow_horizontal = 0
+visible = false
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/InfoPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="PlanetNameLabel" type="Label" parent="CanvasLayer/InfoPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Planet Name"
+
+[node name="PlanetTypeLabel" type="Label" parent="CanvasLayer/InfoPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
+text = "Type"
+
+[node name="DangerLabel" type="Label" parent="CanvasLayer/InfoPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Danger: 1"
+
+[node name="TradesLabel" type="Label" parent="CanvasLayer/InfoPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.55, 0.6, 0.7, 0.9)
+text = ""
+autowrap_mode = 2
+
+[node name="TravelButton" type="Button" parent="CanvasLayer"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -110.0
+offset_top = -52.0
+offset_right = 110.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+visible = false
+theme_override_font_sizes/font_size = 16
+text = "Travel"
+
+[node name="LandButton" type="Button" parent="CanvasLayer"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -110.0
+offset_top = -52.0
+offset_right = 110.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 16
+text = "Land on Planet"

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=3 format=3 uid="uid://upgrade_deflector_dish"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+[ext_resource type="Resource" path="res://data/cards/deflector.tres" id="2_card"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Deflector Dish"
+description = "Adds 3 shield and Deflector card"
+slot = 2
+cost = 500
+shield_bonus = 3
+cards_to_add = [ExtResource("2_card")]

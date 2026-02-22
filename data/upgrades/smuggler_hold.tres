@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=2 format=3 uid="uid://upgrade_smuggler_hold"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Smuggler's Hold"
+description = "Hidden cargo bay, +8 capacity"
+slot = 3
+cost = 800
+cargo_bonus = 8

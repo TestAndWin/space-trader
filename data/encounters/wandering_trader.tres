@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/encounter_data.gd" id="1_wt3"]
+
+[resource]
+script = ExtResource("1_wt3")
+encounter_name = "Wandering Trader"
+description = "A fellow trader. Negotiate or fight for their goods."
+enemy_health = 20
+enemy_attack_range = Vector2i(3, 5)
+reward_credits = 80
+can_flee = true
+difficulty = 1
+special_ability = 8
+ability_description = "Steals 1 cargo on hit"

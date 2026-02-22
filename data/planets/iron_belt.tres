@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="PlanetData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/planet_data.gd" id="1_ib5"]
+
+[resource]
+script = ExtResource("1_ib5")
+planet_name = "Iron Belt"
+planet_type = 2
+description = "Asteroid mining operations."
+map_position = Vector2(850, 300)
+danger_level = 2
+connected_planets = Array[String](["Green Reach", "Dust Haven"])

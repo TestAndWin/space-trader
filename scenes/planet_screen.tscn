@@ -1,0 +1,325 @@
+[gd_scene load_steps=9 format=3 uid="uid://ps1planet_screen"]
+
+[ext_resource type="Script" path="res://scripts/scenes/planet_screen.gd" id="1_ps1"]
+[ext_resource type="PackedScene" path="res://scenes/components/shipyard_panel.tscn" id="3_sy1"]
+[ext_resource type="PackedScene" path="res://scenes/components/planet_background.tscn" id="4_pb1"]
+[ext_resource type="PackedScene" path="res://scenes/components/quest_display.tscn" id="5_qd1"]
+[ext_resource type="PackedScene" path="res://scenes/components/space_background.tscn" id="6_sb1"]
+[ext_resource type="PackedScene" path="res://scenes/components/crew_panel.tscn" id="7_cp1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_market"]
+bg_color = Color(0.08, 0.1, 0.14, 0.75)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.35, 0.38, 0.42, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bottom"]
+bg_color = Color(0.06, 0.07, 0.1, 0.75)
+border_width_top = 0
+border_color = Color(0.35, 0.38, 0.42, 0.0)
+content_margin_left = 12.0
+content_margin_top = 4.0
+content_margin_right = 12.0
+content_margin_bottom = 4.0
+
+[node name="PlanetScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_ps1")
+
+[node name="Background" parent="." instance=ExtResource("6_sb1")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="NewsBanner" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+visible = false
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+text = ""
+
+[node name="PlanetHeader" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+custom_minimum_size = Vector2(0, 32)
+theme_override_constants/separation = 16
+
+[node name="PlanetNameLabel" type="Label" parent="VBoxContainer/PlanetHeader"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(0.9, 0.9, 0.85, 1)
+text = "Planet Name"
+
+[node name="PlanetTypeLabel" type="Label" parent="VBoxContainer/PlanetHeader"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.5, 0.6, 0.8, 1)
+text = "Type"
+
+[node name="DangerLabel" type="Label" parent="VBoxContainer/PlanetHeader"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+text = "Danger: 1"
+
+[node name="HeaderSpacer" type="Control" parent="VBoxContainer/PlanetHeader"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+
+[node name="GoalLabel" type="Label" parent="VBoxContainer/PlanetHeader"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.9, 0.8, 0.2, 0.8)
+text = "Goal: 5000cr + 7 planets"
+
+[node name="TopInfoBar" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="CreditsBox" type="PanelContainer" parent="VBoxContainer/TopInfoBar"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CreditsLabel" type="Label" parent="VBoxContainer/TopInfoBar/CreditsBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 0.95, 0.4, 1)
+text = "CREDITS: 1000"
+
+[node name="CargoBox" type="PanelContainer" parent="VBoxContainer/TopInfoBar"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+
+[node name="CargoCapacity" type="HBoxContainer" parent="VBoxContainer/TopInfoBar/CargoBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="CargoLabel" type="Label" parent="VBoxContainer/TopInfoBar/CargoBox/CargoCapacity"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.8, 0.85, 0.9, 1)
+text = "CARGO:"
+
+[node name="CapacityLabel" type="Label" parent="VBoxContainer/TopInfoBar/CargoBox/CargoCapacity"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.8, 0.85, 0.9, 1)
+text = "0/10"
+
+[node name="CargoBar" type="ProgressBar" parent="VBoxContainer/TopInfoBar/CargoBox/CargoCapacity"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 0.0
+max_value = 10.0
+show_percentage = false
+
+[node name="MainContent" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="LeftColumn" type="VBoxContainer" parent="VBoxContainer/MainContent"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+theme_override_constants/separation = 8
+
+[node name="MarketPanel" type="PanelContainer" parent="VBoxContainer/MainContent/LeftColumn"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_market")
+
+[node name="MarketVBox" type="VBoxContainer" parent="VBoxContainer/MainContent/LeftColumn/MarketPanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="MarketLabel" type="Label" parent="VBoxContainer/MainContent/LeftColumn/MarketPanel/MarketVBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.75, 0.8, 0.6, 1)
+text = "MARKET"
+
+[node name="MarketFlavorLabel" type="Label" parent="VBoxContainer/MainContent/LeftColumn/MarketPanel/MarketVBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.45, 0.5, 0.55, 0.8)
+text = ""
+
+[node name="MarketScroll" type="ScrollContainer" parent="VBoxContainer/MainContent/LeftColumn/MarketPanel/MarketVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="MarketList" type="VBoxContainer" parent="VBoxContainer/MainContent/LeftColumn/MarketPanel/MarketVBox/MarketScroll"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="ShipyardPanel" parent="VBoxContainer/MainContent/LeftColumn" instance=ExtResource("3_sy1")]
+layout_mode = 2
+
+[node name="MiddleColumn" type="VBoxContainer" parent="VBoxContainer/MainContent"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+theme_override_constants/separation = 8
+
+[node name="CargoPanel" type="PanelContainer" parent="VBoxContainer/MainContent/MiddleColumn"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_market")
+
+[node name="CargoVBox" type="VBoxContainer" parent="VBoxContainer/MainContent/MiddleColumn/CargoPanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="CargoLabel" type="Label" parent="VBoxContainer/MainContent/MiddleColumn/CargoPanel/CargoVBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.85, 0.75, 0.5, 1)
+text = "YOUR CARGO"
+
+[node name="CargoScroll" type="ScrollContainer" parent="VBoxContainer/MainContent/MiddleColumn/CargoPanel/CargoVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="CargoList" type="VBoxContainer" parent="VBoxContainer/MainContent/MiddleColumn/CargoPanel/CargoVBox/CargoScroll"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="CrewPanel" parent="VBoxContainer/MainContent/MiddleColumn" instance=ExtResource("7_cp1")]
+layout_mode = 2
+
+[node name="RightColumn" type="VBoxContainer" parent="VBoxContainer/MainContent"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+theme_override_constants/separation = 8
+
+[node name="PlanetBackground" parent="VBoxContainer/MainContent/RightColumn" instance=ExtResource("4_pb1")]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 120)
+size_flags_horizontal = 4
+
+[node name="QuestDisplay" parent="VBoxContainer/MainContent/RightColumn" instance=ExtResource("5_qd1")]
+layout_mode = 2
+
+[node name="LogPanel" type="PanelContainer" parent="VBoxContainer/MainContent/RightColumn"]
+layout_mode = 2
+mouse_filter = 2
+custom_minimum_size = Vector2(0, 40)
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.6
+theme_override_styles/panel = SubResource("StyleBoxFlat_market")
+
+[node name="LogVBox" type="VBoxContainer" parent="VBoxContainer/MainContent/RightColumn/LogPanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="LogHeader" type="HBoxContainer" parent="VBoxContainer/MainContent/RightColumn/LogPanel/LogVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="LogLabel" type="Label" parent="VBoxContainer/MainContent/RightColumn/LogPanel/LogVBox/LogHeader"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.55, 0.55, 0.5, 1)
+text = "EVENT LOG"
+
+[node name="LogScroll" type="ScrollContainer" parent="VBoxContainer/MainContent/RightColumn/LogPanel/LogVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LogList" type="VBoxContainer" parent="VBoxContainer/MainContent/RightColumn/LogPanel/LogVBox/LogScroll"]
+layout_mode = 2
+mouse_filter = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="BottomBar" type="PanelContainer" parent="VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bottom")
+
+[node name="BottomHBox" type="HBoxContainer" parent="VBoxContainer/BottomBar"]
+layout_mode = 2
+mouse_filter = 2
+alignment = 2
+theme_override_constants/separation = 12
+
+[node name="SaveButton" type="Button" parent="VBoxContainer/BottomBar/BottomHBox"]
+layout_mode = 2
+text = "Save"
+
+[node name="ViewDeckButton" type="Button" parent="VBoxContainer/BottomBar/BottomHBox"]
+layout_mode = 2
+text = "View Deck"
+
+[node name="DepartButton" type="Button" parent="VBoxContainer/BottomBar/BottomHBox"]
+layout_mode = 2
+text = "DEPART"

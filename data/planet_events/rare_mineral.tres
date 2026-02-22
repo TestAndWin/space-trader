@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PlanetEventData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/planet_event_data.gd" id="1_pe1"]
+
+[resource]
+script = ExtResource("1_pe1")
+event_name = "Rare Mineral Vein"
+description = "A rare mineral deposit discovered. Sell the coordinates?"
+planet_type = 2
+choice_a_text = "Mine it yourself"
+choice_b_text = "Sell coordinates"
+choice_a_description = "You extract the minerals yourself. Profitable but hard on your ship."
+choice_b_description = "You sell the location data for a modest profit."
+choice_a_credits = 200
+choice_a_hull = -3
+choice_a_cargo_good = ""
+choice_a_cargo_qty = 0
+choice_a_requires_good = ""
+choice_a_requires_qty = 0
+choice_b_credits = 80
+choice_b_hull = 0
+choice_b_cargo_good = ""
+choice_b_cargo_qty = 0

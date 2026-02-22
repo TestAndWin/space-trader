@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=3 format=3 uid="uid://upgrade_laser_array"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+[ext_resource type="Resource" path="res://data/cards/torpedo.tres" id="2_card"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Laser Array"
+description = "Adds Torpedo card to your deck"
+slot = 4
+cost = 550
+cards_to_add = [ExtResource("2_card")]

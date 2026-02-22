@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="PlanetData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/planet_data.gd" id="1_dh4"]
+
+[resource]
+script = ExtResource("1_dh4")
+planet_name = "Dust Haven"
+planet_type = 2
+description = "A dusty mining outpost."
+map_position = Vector2(700, 250)
+danger_level = 3
+connected_planets = Array[String](["Nova Station", "Iron Belt"])
