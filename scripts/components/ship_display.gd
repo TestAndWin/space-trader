@@ -4,15 +4,18 @@ var hull_pct: float = 1.0
 var shield_pct: float = 0.0
 var cargo_used: int = 0
 var cargo_max: int = 10
+var ship_shape: int = 0
 var crack_positions: Array = []
 var crack_seed_generated: bool = false
 
 
-func update_ship(p_hull_pct: float, p_shield_pct: float, p_cargo_used: int, p_cargo_max: int) -> void:
+func update_ship(p_hull_pct: float, p_shield_pct: float, p_cargo_used: int, p_cargo_max: int, p_ship_shape: int = -1) -> void:
 	hull_pct = clampf(p_hull_pct, 0.0, 1.0)
 	shield_pct = clampf(p_shield_pct, 0.0, 1.0)
 	cargo_used = p_cargo_used
 	cargo_max = p_cargo_max
+	if p_ship_shape >= 0:
+		ship_shape = p_ship_shape
 	if hull_pct < 0.6 and not crack_seed_generated:
 		_generate_cracks()
 	elif hull_pct >= 0.6:
@@ -29,6 +32,74 @@ func _generate_cracks() -> void:
 		var end := start + Vector2(randf_range(-0.15, 0.15), randf_range(-0.15, 0.15))
 		crack_positions.append([start, end])
 	crack_seed_generated = true
+
+
+func _get_hull_polygon(cx: float, cy: float, w: float, h: float) -> PackedVector2Array:
+	match ship_shape:
+		1:  # Freighter — wide, boxy
+			return PackedVector2Array([
+				Vector2(cx, cy - h * 0.32),
+				Vector2(cx + w * 0.2, cy - h * 0.25),
+				Vector2(cx + w * 0.28, cy - h * 0.05),
+				Vector2(cx + w * 0.28, cy + h * 0.2),
+				Vector2(cx + w * 0.15, cy + h * 0.35),
+				Vector2(cx - w * 0.15, cy + h * 0.35),
+				Vector2(cx - w * 0.28, cy + h * 0.2),
+				Vector2(cx - w * 0.28, cy - h * 0.05),
+				Vector2(cx - w * 0.2, cy - h * 0.25),
+			])
+		2:  # Warship — angular, aggressive
+			return PackedVector2Array([
+				Vector2(cx, cy - h * 0.44),
+				Vector2(cx + w * 0.08, cy - h * 0.3),
+				Vector2(cx + w * 0.35, cy + h * 0.0),
+				Vector2(cx + w * 0.3, cy + h * 0.15),
+				Vector2(cx + w * 0.15, cy + h * 0.2),
+				Vector2(cx + w * 0.12, cy + h * 0.38),
+				Vector2(cx - w * 0.12, cy + h * 0.38),
+				Vector2(cx - w * 0.15, cy + h * 0.2),
+				Vector2(cx - w * 0.3, cy + h * 0.15),
+				Vector2(cx - w * 0.35, cy + h * 0.0),
+				Vector2(cx - w * 0.08, cy - h * 0.3),
+			])
+		3:  # Smuggler — slim, fast
+			return PackedVector2Array([
+				Vector2(cx, cy - h * 0.45),
+				Vector2(cx + w * 0.08, cy - h * 0.3),
+				Vector2(cx + w * 0.18, cy + h * 0.0),
+				Vector2(cx + w * 0.22, cy + h * 0.15),
+				Vector2(cx + w * 0.12, cy + h * 0.35),
+				Vector2(cx - w * 0.12, cy + h * 0.35),
+				Vector2(cx - w * 0.22, cy + h * 0.15),
+				Vector2(cx - w * 0.18, cy + h * 0.0),
+				Vector2(cx - w * 0.08, cy - h * 0.3),
+			])
+		4:  # Explorer — rounded
+			return PackedVector2Array([
+				Vector2(cx, cy - h * 0.38),
+				Vector2(cx + w * 0.15, cy - h * 0.28),
+				Vector2(cx + w * 0.25, cy - h * 0.1),
+				Vector2(cx + w * 0.25, cy + h * 0.1),
+				Vector2(cx + w * 0.18, cy + h * 0.25),
+				Vector2(cx + w * 0.1, cy + h * 0.35),
+				Vector2(cx - w * 0.1, cy + h * 0.35),
+				Vector2(cx - w * 0.18, cy + h * 0.25),
+				Vector2(cx - w * 0.25, cy + h * 0.1),
+				Vector2(cx - w * 0.25, cy - h * 0.1),
+				Vector2(cx - w * 0.15, cy - h * 0.28),
+			])
+		_:  # Scout (default) — original shape
+			return PackedVector2Array([
+				Vector2(cx, cy - h * 0.42),
+				Vector2(cx + w * 0.12, cy - h * 0.25),
+				Vector2(cx + w * 0.32, cy + h * 0.1),
+				Vector2(cx + w * 0.18, cy + h * 0.15),
+				Vector2(cx + w * 0.1, cy + h * 0.35),
+				Vector2(cx - w * 0.1, cy + h * 0.35),
+				Vector2(cx - w * 0.18, cy + h * 0.15),
+				Vector2(cx - w * 0.32, cy + h * 0.1),
+				Vector2(cx - w * 0.12, cy - h * 0.25),
+			])
 
 
 func _draw() -> void:
@@ -57,17 +128,7 @@ func _draw() -> void:
 		var t: float = hull_pct / 0.3
 		hull_color = Color(0.9, 0.2, 0.2).lerp(Color(0.9, 0.85, 0.2), t)
 
-	var body := PackedVector2Array([
-		Vector2(cx, cy - h * 0.42),          # nose
-		Vector2(cx + w * 0.12, cy - h * 0.25),
-		Vector2(cx + w * 0.32, cy + h * 0.1), # right wing tip
-		Vector2(cx + w * 0.18, cy + h * 0.15),
-		Vector2(cx + w * 0.1, cy + h * 0.35), # right engine
-		Vector2(cx - w * 0.1, cy + h * 0.35), # left engine
-		Vector2(cx - w * 0.18, cy + h * 0.15),
-		Vector2(cx - w * 0.32, cy + h * 0.1), # left wing tip
-		Vector2(cx - w * 0.12, cy - h * 0.25),
-	])
+	var body := _get_hull_polygon(cx, cy, w, h)
 	draw_colored_polygon(body, hull_color)
 
 	# 3. Cockpit

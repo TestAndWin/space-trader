@@ -264,6 +264,12 @@ layout_mode = 2
 custom_minimum_size = Vector2(120, 120)
 size_flags_horizontal = 4
 
+[node name="ActionIconRow" type="HBoxContainer" parent="VBoxContainer/MainContent/RightColumn"]
+layout_mode = 2
+mouse_filter = 2
+alignment = 1
+theme_override_constants/separation = 6
+
 [node name="QuestDisplay" parent="VBoxContainer/MainContent/RightColumn" instance=ExtResource("5_qd1")]
 layout_mode = 2
 
@@ -272,7 +278,7 @@ layout_mode = 2
 mouse_filter = 2
 custom_minimum_size = Vector2(0, 40)
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.6
+size_flags_stretch_ratio = 0.35
 theme_override_styles/panel = SubResource("StyleBoxFlat_market")
 
 [node name="LogVBox" type="VBoxContainer" parent="VBoxContainer/MainContent/RightColumn/LogPanel"]

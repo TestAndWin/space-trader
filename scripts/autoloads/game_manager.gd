@@ -41,6 +41,15 @@ var current_encounter: Resource = null
 var battle_result: String = ""
 var last_cargo_lost_text: String = ""
 
+# Ship
+var current_ship: String = "res://data/ships/scout.tres"
+
+# Mission
+var mission_return_planet: String = ""
+
+# Planet arrival flag — prevents duplicate events when returning from sub-screens
+var arrival_events_done: bool = false
+
 # Statistics
 var total_trades: int = 0
 var total_encounters_won: int = 0
@@ -69,6 +78,9 @@ func reset() -> void:
 	travel_origin = ""
 	visited_planets.clear()
 	visited_planets.append("Starport Alpha")
+	current_ship = "res://data/ships/scout.tres"
+	mission_return_planet = ""
+	arrival_events_done = false
 	total_trades = 0
 	total_encounters_won = 0
 	total_flights = 0
@@ -230,3 +242,59 @@ func get_crew_resources() -> Array:
 		if res:
 			result.append(res)
 	return result
+
+
+# ── Ship ────────────────────────────────────────────────────────────────────
+
+func get_ship_data() -> Resource:
+	return load(current_ship)
+
+
+func get_encounter_reduction() -> float:
+	var ship: Resource = get_ship_data()
+	if ship:
+		return ship.encounter_reduction
+	return 0.0
+
+
+func get_contraband_bonus() -> float:
+	var ship: Resource = get_ship_data()
+	if ship:
+		return ship.contraband_bonus
+	return 0.0
+
+
+func get_quest_reward_bonus() -> float:
+	var ship: Resource = get_ship_data()
+	if ship:
+		return ship.quest_reward_bonus
+	return 0.0
+
+
+func switch_ship(new_ship_path: String) -> void:
+	var old_ship: Resource = get_ship_data()
+	var new_ship: Resource = load(new_ship_path)
+	if not old_ship or not new_ship:
+		return
+	# Calculate stat deltas (new base - old base) and apply to current upgraded stats
+	max_hull += new_ship.base_max_hull - old_ship.base_max_hull
+	current_hull = mini(current_hull, max_hull)
+	max_shield += new_ship.base_max_shield - old_ship.base_max_shield
+	current_shield = mini(current_shield, max_shield)
+	cargo_capacity += new_ship.base_cargo_capacity - old_ship.base_cargo_capacity
+	energy_per_turn += new_ship.base_energy_per_turn - old_ship.base_energy_per_turn
+	hand_size += new_ship.base_hand_size - old_ship.base_hand_size
+	# Drop excess cargo
+	while get_cargo_used() > cargo_capacity and cargo.size() > 0:
+		var last_item: Dictionary = cargo[cargo.size() - 1]
+		var excess: int = get_cargo_used() - cargo_capacity
+		var drop: int = mini(last_item["quantity"], excess)
+		last_item["quantity"] -= drop
+		if last_item["quantity"] <= 0:
+			cargo.remove_at(cargo.size() - 1)
+		cargo_changed.emit()
+	# Trade-in: 50% of old ship price
+	var trade_in: int = int(old_ship.cost * 0.5)
+	add_credits(trade_in)
+	current_ship = new_ship_path
+	credits_changed.emit(credits)

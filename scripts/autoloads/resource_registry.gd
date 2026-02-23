@@ -93,6 +93,14 @@ const CREW: Array[String] = [
 	"res://data/crew/engineer.tres",
 ]
 
+const SHIPS: Array[String] = [
+	"res://data/ships/scout.tres",
+	"res://data/ships/freighter.tres",
+	"res://data/ships/warship.tres",
+	"res://data/ships/smuggler.tres",
+	"res://data/ships/explorer.tres",
+]
+
 const PLANET_EVENTS: Array[String] = [
 	"res://data/planet_events/factory_defect.tres",
 	"res://data/planet_events/surplus_parts.tres",

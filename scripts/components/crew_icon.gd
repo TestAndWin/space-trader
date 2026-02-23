@@ -112,7 +112,7 @@ func _draw_gear(cx: float, cy: float, r: float, col: Color) -> void:
 	for i in teeth:
 		var a1 := i * TAU / teeth - PI / 2
 		var a2 := a1 + TAU / teeth * 0.3
-		var a3 := a2 + TAU / teeth * 0.2
+		var _a3 := a2 + TAU / teeth * 0.2
 		pts.append(Vector2(cx + cos(a1) * inner, cy + sin(a1) * inner))
 		pts.append(Vector2(cx + cos(a1) * outer, cy + sin(a1) * outer))
 		pts.append(Vector2(cx + cos(a2) * outer, cy + sin(a2) * outer))

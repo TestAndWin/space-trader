@@ -4,6 +4,9 @@ const CargoSlotScene = preload("res://scenes/components/cargo_slot.tscn")
 const DeckViewerScene = preload("res://scenes/deck_viewer.tscn")
 const SmugglerEventScene = preload("res://scenes/components/smuggler_event.tscn")
 const PlanetEventScene = preload("res://scenes/components/planet_event.tscn")
+var CardTraderScene: PackedScene = load("res://scenes/components/card_trader.tscn")
+var CasinoPopupScene: PackedScene = load("res://scenes/components/casino_popup.tscn")
+var ShipDealerScene: PackedScene = load("res://scenes/components/ship_dealer.tscn")
 
 const TYPE_COLORS = {
 	0: Color(0.4, 0.6, 1.0),
@@ -52,6 +55,7 @@ var _smuggler_bought: Dictionary = {}  # good_name -> qty bought from smuggler t
 @onready var crew_panel := $VBoxContainer/MainContent/MiddleColumn/CrewPanel
 @onready var quest_display := $VBoxContainer/MainContent/RightColumn/QuestDisplay
 @onready var log_list := $VBoxContainer/MainContent/RightColumn/LogPanel/LogVBox/LogScroll/LogList
+@onready var action_icon_row := $VBoxContainer/MainContent/RightColumn/ActionIconRow
 @onready var space_background := $Background
 
 
@@ -91,6 +95,7 @@ func _ready() -> void:
 	var pt: int = current_planet_data.planet_type if current_planet_data else 0
 	shipyard_panel.setup()
 	shipyard_panel.shipyard_action.connect(_on_shipyard_action)
+	shipyard_panel.ships_requested.connect(_on_ship_dealer_pressed)
 	# Crew
 	crew_panel.setup(pt)
 	crew_panel.crew_action.connect(_on_shipyard_action)
@@ -99,36 +104,41 @@ func _ready() -> void:
 	# Quest
 	quest_display.setup(GameManager.current_planet)
 	quest_display.quest_changed.connect(func(): _populate_cargo(); _update_ui(); _update_log())
-	# Smuggler event
-	var smuggler := SmugglerEventScene.instantiate()
-	add_child(smuggler)
-	var smuggler_active: bool = smuggler.try_spawn()
-	if not smuggler_active:
-		smuggler.queue_free()
-	else:
-		# Snapshot cargo before the deal to detect smuggler purchases
-		var cargo_before: Dictionary = {}
-		for item in GameManager.cargo:
-			cargo_before[item["good_name"]] = item["quantity"]
-		smuggler.deal_closed.connect(func():
-			# Track goods added by smuggler deal
-			for item in GameManager.cargo:
-				var gname: String = item["good_name"]
-				var old_qty: int = cargo_before.get(gname, 0)
-				if item["quantity"] > old_qty:
-					_smuggler_bought[gname] = _smuggler_bought.get(gname, 0) + (item["quantity"] - old_qty)
-			_populate_cargo(); _update_ui(); _update_log()
-		)
-	# Planet arrival event (only if no smuggler event)
-	if not smuggler_active and current_planet_data:
-		var planet_event := PlanetEventScene.instantiate()
-		add_child(planet_event)
-		if not planet_event.try_trigger(current_planet_data.planet_type):
-			planet_event.queue_free()
+	# Action icons
+	_build_action_icons()
+	# Arrival events only on first visit (not when returning from sub-screens)
+	if not GameManager.arrival_events_done:
+		GameManager.arrival_events_done = true
+		# Smuggler event
+		var smuggler := SmugglerEventScene.instantiate()
+		add_child(smuggler)
+		var smuggler_active: bool = smuggler.try_spawn()
+		if not smuggler_active:
+			smuggler.queue_free()
 		else:
-			planet_event.event_resolved.connect(func():
-				_populate_market(); _populate_cargo(); _update_ui(); _update_log()
+			# Snapshot cargo before the deal to detect smuggler purchases
+			var cargo_before: Dictionary = {}
+			for item in GameManager.cargo:
+				cargo_before[item["good_name"]] = item["quantity"]
+			smuggler.deal_closed.connect(func():
+				# Track goods added by smuggler deal
+				for item in GameManager.cargo:
+					var gname: String = item["good_name"]
+					var old_qty: int = cargo_before.get(gname, 0)
+					if item["quantity"] > old_qty:
+						_smuggler_bought[gname] = _smuggler_bought.get(gname, 0) + (item["quantity"] - old_qty)
+				_populate_cargo(); _update_ui(); _update_log()
 			)
+		# Planet arrival event (only if no smuggler event)
+		if not smuggler_active and current_planet_data:
+			var planet_event := PlanetEventScene.instantiate()
+			add_child(planet_event)
+			if not planet_event.try_trigger(current_planet_data.planet_type):
+				planet_event.queue_free()
+			else:
+				planet_event.event_resolved.connect(func():
+					_populate_market(); _populate_cargo(); _update_ui(); _update_log()
+				)
 
 
 func _find_planet_data() -> void:
@@ -293,6 +303,7 @@ func _on_shipyard_action() -> void:
 
 
 func _on_depart_pressed() -> void:
+	GameManager.arrival_events_done = false
 	QuestManager.tick()
 	EventManager.tick()
 	EconomyManager.tick_economy()
@@ -464,3 +475,77 @@ func _style_secondary_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("pressed", pressed)
 	btn.add_theme_color_override("font_color", Color(0.7, 0.72, 0.75))
 	btn.add_theme_color_override("font_hover_color", Color(0.85, 0.87, 0.9))
+
+
+func _build_action_icons() -> void:
+	var pt: int = current_planet_data.planet_type if current_planet_data else 0
+	# Casino: all except Mining (2)
+	if pt != 2:
+		var btn := Button.new()
+		btn.text = "Casino"
+		btn.custom_minimum_size = Vector2(56, 36)
+		_style_secondary_button(btn)
+		btn.add_theme_font_size_override("font_size", 11)
+		btn.pressed.connect(_on_casino_pressed)
+		action_icon_row.add_child(btn)
+	# Mission: only Tech (3) and Outlaw (4)
+	if pt == 3 or pt == 4:
+		var btn := Button.new()
+		btn.text = "Mission"
+		btn.custom_minimum_size = Vector2(56, 36)
+		_style_secondary_button(btn)
+		btn.add_theme_font_size_override("font_size", 11)
+		btn.pressed.connect(_on_mission_pressed)
+		action_icon_row.add_child(btn)
+	# Cards: everywhere
+	var cards_btn := Button.new()
+	cards_btn.text = "Cards"
+	cards_btn.custom_minimum_size = Vector2(56, 36)
+	_style_secondary_button(cards_btn)
+	cards_btn.add_theme_font_size_override("font_size", 11)
+	cards_btn.pressed.connect(_on_card_trader_pressed)
+	action_icon_row.add_child(cards_btn)
+
+
+func _on_casino_pressed() -> void:
+	if has_node("CasinoPopup"):
+		return
+	var pt: int = current_planet_data.planet_type if current_planet_data else 0
+	var popup := CasinoPopupScene.instantiate()
+	popup.name = "CasinoPopup"
+	add_child(popup)
+	popup.setup(pt)
+	popup.casino_closed.connect(func(): _update_ui(); _update_log())
+
+
+func _on_mission_pressed() -> void:
+	if GameManager.credits < 100:
+		EventLog.add_entry("Not enough credits for mission (100cr required).")
+		_update_log()
+		return
+	GameManager.remove_credits(100)
+	GameManager.mission_return_planet = GameManager.current_planet
+	EventLog.add_entry("Entered Space Invaders mission (-100cr).")
+	GameManager.change_scene("res://scenes/space_invaders.tscn")
+
+
+func _on_card_trader_pressed() -> void:
+	if has_node("CardTrader"):
+		return
+	var pt: int = current_planet_data.planet_type if current_planet_data else 0
+	var trader := CardTraderScene.instantiate()
+	trader.name = "CardTrader"
+	add_child(trader)
+	trader.setup(pt)
+	trader.trader_closed.connect(func(): _populate_cargo(); _update_ui(); _update_log())
+
+
+func _on_ship_dealer_pressed() -> void:
+	if has_node("ShipDealer"):
+		return
+	var pt: int = current_planet_data.planet_type if current_planet_data else 0
+	var dealer := ShipDealerScene.instantiate()
+	dealer.name = "ShipDealer"
+	add_child(dealer)
+	dealer.setup(pt)
+	dealer.dealer_closed.connect(func(): _update_ui(); _update_log())

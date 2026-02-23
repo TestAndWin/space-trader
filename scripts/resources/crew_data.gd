@@ -1,7 +1,7 @@
 class_name CrewData
 extends Resource
 
-enum CrewBonus { ENCOUNTER_REDUCTION, ATTACK_BONUS, HULL_REGEN, SELL_BONUS, SMUGGLE_PROTECTION, MAX_HULL_BONUS }
+enum CrewBonus { ENCOUNTER_REDUCTION, ATTACK_BONUS, HULL_REGEN, SELL_BONUS, SMUGGLE_PROTECTION, MAX_HULL_BONUS, GAMBLING_EDGE }
 
 @export var crew_name: String = ""
 @export var title: String = ""

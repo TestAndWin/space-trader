@@ -526,7 +526,9 @@ func _update_ui() -> void:
 
 	# Ship display
 	var shield_pct: float = float(GameManager.current_shield) / float(GameManager.max_shield) if GameManager.max_shield > 0 else 0.0
-	ship_display.update_ship(hull_pct, shield_pct, GameManager.get_cargo_used(), GameManager.cargo_capacity)
+	var ship_data: Resource = GameManager.get_ship_data()
+	var shape: int = ship_data.hull_shape if ship_data else 0
+	ship_display.update_ship(hull_pct, shield_pct, GameManager.get_cargo_used(), GameManager.cargo_capacity, shape)
 
 	# Flee button
 	%FleeButton.disabled = not encounter.can_flee

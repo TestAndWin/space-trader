@@ -103,6 +103,10 @@ func try_complete_quest(planet_name: String) -> int:
 		return 0
 	GameManager.remove_cargo(current_quest["deliver_good"], current_quest["deliver_qty"])
 	var reward: int = current_quest["reward_credits"]
+	# Ship quest reward bonus
+	var quest_bonus: float = GameManager.get_quest_reward_bonus()
+	if quest_bonus > 0.0:
+		reward = int(round(reward * (1.0 + quest_bonus)))
 	GameManager.add_credits(reward)
 	EventLog.add_entry("Quest complete! Delivered %d %s. +%d cr" % [
 		current_quest["deliver_qty"], current_quest["deliver_good"], reward])

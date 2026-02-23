@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ShipData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_data.gd" id="1_sd1"]
+
+[resource]
+script = ExtResource("1_sd1")
+ship_name = "Smuggler"
+description = "Fast and discreet. Fewer encounters, better contraband prices."
+cost = 1000
+base_max_hull = 28
+base_max_shield = 8
+base_cargo_capacity = 12
+base_energy_per_turn = 3
+base_hand_size = 5
+encounter_reduction = 0.2
+contraband_bonus = 0.3
+quest_reward_bonus = 0.0
+hull_color_primary = Color(0.25, 0.25, 0.35, 1.0)
+hull_shape = 3
+available_planet_types = [4, 0]

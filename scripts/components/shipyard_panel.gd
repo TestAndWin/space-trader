@@ -1,6 +1,7 @@
 extends PanelContainer
 
 signal shipyard_action
+signal ships_requested
 
 const HULL_UPGRADE_COST := 200
 const HULL_UPGRADE_AMOUNT := 5
@@ -111,12 +112,23 @@ func _ready() -> void:
 	_style_upgrade_button(cargo_upgrade_button)
 	vbox.add_child(cargo_upgrade_button)
 
+	var bottom_row := HBoxContainer.new()
+	bottom_row.add_theme_constant_override("separation", 4)
+	vbox.add_child(bottom_row)
+
 	var ship_upgrades_button := Button.new()
-	ship_upgrades_button.text = "Ship Upgrades"
+	ship_upgrades_button.text = "Upgrades"
 	ship_upgrades_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ship_upgrades_button.pressed.connect(_on_ship_upgrades_pressed)
 	_style_upgrade_button(ship_upgrades_button)
-	vbox.add_child(ship_upgrades_button)
+	bottom_row.add_child(ship_upgrades_button)
+
+	var ships_button := Button.new()
+	ships_button.text = "Ships"
+	ships_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ships_button.pressed.connect(_on_ships_pressed)
+	_style_upgrade_button(ships_button)
+	bottom_row.add_child(ships_button)
 
 	status_label = Label.new()
 	status_label.text = ""
@@ -233,7 +245,9 @@ func _refresh_display() -> void:
 	var hull_pct := float(GameManager.current_hull) / float(GameManager.max_hull) if GameManager.max_hull > 0 else 1.0
 	var shield_pct := float(GameManager.current_shield) / float(GameManager.max_shield) if GameManager.max_shield > 0 else 0.0
 	var cargo_used := GameManager.get_cargo_used()
-	ship_display_node.update_ship(hull_pct, shield_pct, cargo_used, GameManager.cargo_capacity)
+	var ship_data: Resource = GameManager.get_ship_data()
+	var shape: int = ship_data.hull_shape if ship_data else 0
+	ship_display_node.update_ship(hull_pct, shield_pct, cargo_used, GameManager.cargo_capacity, shape)
 
 	if hull_bar:
 		hull_bar.max_value = GameManager.max_hull
@@ -321,3 +335,7 @@ func _on_cargo_upgrade_pressed() -> void:
 
 func _on_ship_upgrades_pressed() -> void:
 	GameManager.change_scene("res://scenes/ship_upgrade.tscn")
+
+
+func _on_ships_pressed() -> void:
+	ships_requested.emit()

@@ -18,6 +18,8 @@ func should_encounter_happen(danger_level: int) -> bool:
 	# Carrying contraband increases encounter chance
 	if is_carrying_contraband():
 		chance += 0.15
+	# Ship encounter reduction
+	chance -= GameManager.get_encounter_reduction()
 	# Crew navigator bonus
 	if GameManager.has_crew_bonus(0):  # ENCOUNTER_REDUCTION
 		chance -= GameManager.get_crew_bonus_value(0)

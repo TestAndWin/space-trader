@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/scenes/space_invaders.gd" id="1_si1"]
+[ext_resource type="PackedScene" path="res://scenes/components/space_background.tscn" id="2_sb1"]
+
+[node name="SpaceInvaders" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_si1")
+
+[node name="Background" parent="." instance=ExtResource("2_sb1")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2

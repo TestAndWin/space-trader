@@ -125,7 +125,11 @@ func get_sell_price(planet_name: String, good_name: String) -> int:
 	# Crew trader bonus: use best sell ratio
 	if GameManager.has_crew_bonus(3):  # SELL_BONUS
 		ratio = maxf(ratio, GameManager.get_crew_bonus_value(3))
-	return max(1, int(round(local_price * event_mod * ratio)))
+	var base_sell: float = local_price * event_mod * ratio
+	# Ship contraband bonus
+	if good_name in _contraband_goods:
+		base_sell *= (1.0 + GameManager.get_contraband_bonus())
+	return max(1, int(round(base_sell)))
 
 
 func get_average_price(good_name: String) -> int:

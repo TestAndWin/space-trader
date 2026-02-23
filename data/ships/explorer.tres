@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ShipData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_data.gd" id="1_sd1"]
+
+[resource]
+script = ExtResource("1_sd1")
+ship_name = "Explorer"
+description = "Advanced systems: extra energy, larger hand, quest reward bonus."
+cost = 1500
+base_max_hull = 30
+base_max_shield = 12
+base_cargo_capacity = 8
+base_energy_per_turn = 4
+base_hand_size = 6
+encounter_reduction = 0.0
+contraband_bonus = 0.0
+quest_reward_bonus = 0.25
+hull_color_primary = Color(0.2, 0.5, 0.7, 1.0)
+hull_shape = 4
+available_planet_types = [3]

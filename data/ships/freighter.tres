@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ShipData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_data.gd" id="1_sd1"]
+
+[resource]
+script = ExtResource("1_sd1")
+ship_name = "Freighter"
+description = "Massive cargo hold, but weak defenses and a smaller hand."
+cost = 800
+base_max_hull = 25
+base_max_shield = 6
+base_cargo_capacity = 18
+base_energy_per_turn = 3
+base_hand_size = 4
+encounter_reduction = 0.0
+contraband_bonus = 0.0
+quest_reward_bonus = 0.0
+hull_color_primary = Color(0.6, 0.5, 0.3, 1.0)
+hull_shape = 1
+available_planet_types = [0, 1]
