@@ -57,6 +57,7 @@ var _dealer_revealed: bool = false
 # Slots state
 var _reels: Array = ["?", "?", "?"]
 var _reels_revealed: int = 0
+var _result_msg: String = ""
 
 # UI references
 var _main_vbox: VBoxContainer
@@ -629,7 +630,8 @@ func _reveal_next_reel() -> void:
 
 
 func _build_slots_ui() -> void:
-	_status_label.text = "Slot Machine — Bet: %d cr" % _bet
+	if _state != State.RESULT:
+		_status_label.text = "Slot Machine — Bet: %d cr" % _bet
 
 	# Slot machine frame
 	var machine := PanelContainer.new()
@@ -703,7 +705,12 @@ func _build_slots_ui() -> void:
 			reel_vbox.add_child(spin_lbl)
 
 	var status := Label.new()
-	status.text = "Spinning..." if _reels_revealed < 3 else "Results!"
+	if _state == State.RESULT:
+		status.text = _result_msg
+	elif _reels_revealed < 3:
+		status.text = "Spinning..."
+	else:
+		status.text = "Results!"
 	status.add_theme_font_size_override("font_size", 16)
 	status.add_theme_color_override("font_color", GOLD_DIM if _reels_revealed < 3 else GOLD)
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -750,6 +757,7 @@ func _resolve_slots() -> void:
 
 func _show_result(msg: String) -> void:
 	_state = State.RESULT
+	_result_msg = msg
 	_status_label.text = msg
 	_refresh_ui()
 
@@ -763,6 +771,9 @@ func _build_result_ui() -> void:
 		# Remove the hit/stand buttons (last child of content_area)
 		var last := _content_area.get_child(_content_area.get_child_count() - 1)
 		last.queue_free()
+	elif _game == Game.SLOTS:
+		_status_label.text = "Slot Machine — Bet: %d cr" % _bet
+		_build_slots_ui()
 
 	var btn_row := HBoxContainer.new()
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
