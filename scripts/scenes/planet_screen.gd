@@ -4,7 +4,6 @@ const CargoSlotScene = preload("res://scenes/components/cargo_slot.tscn")
 const DeckViewerScene = preload("res://scenes/deck_viewer.tscn")
 const SmugglerEventScene = preload("res://scenes/components/smuggler_event.tscn")
 const PlanetEventScene = preload("res://scenes/components/planet_event.tscn")
-var CardTraderScene: PackedScene = load("res://scenes/components/card_trader.tscn")
 var CasinoPopupScene: PackedScene = load("res://scenes/components/casino_popup.tscn")
 var ShipDealerScene: PackedScene = load("res://scenes/components/ship_dealer.tscn")
 
@@ -316,7 +315,10 @@ func _on_view_deck_pressed() -> void:
 		return
 	var viewer := DeckViewerScene.instantiate()
 	viewer.name = "DeckViewer"
+	var pt: int = current_planet_data.planet_type if current_planet_data else -1
+	viewer.setup(pt)
 	add_child(viewer)
+	viewer.tree_exited.connect(func(): _update_ui(); _update_log())
 
 
 func _update_ui() -> void:
@@ -497,14 +499,6 @@ func _build_action_icons() -> void:
 		btn.add_theme_font_size_override("font_size", 11)
 		btn.pressed.connect(_on_mission_pressed)
 		action_icon_row.add_child(btn)
-	# Cards: everywhere
-	var cards_btn := Button.new()
-	cards_btn.text = "Cards"
-	cards_btn.custom_minimum_size = Vector2(56, 36)
-	_style_secondary_button(cards_btn)
-	cards_btn.add_theme_font_size_override("font_size", 11)
-	cards_btn.pressed.connect(_on_card_trader_pressed)
-	action_icon_row.add_child(cards_btn)
 
 
 func _on_casino_pressed() -> void:
@@ -528,16 +522,6 @@ func _on_mission_pressed() -> void:
 	EventLog.add_entry("Entered Space Invaders mission (-100cr).")
 	GameManager.change_scene("res://scenes/space_invaders.tscn")
 
-
-func _on_card_trader_pressed() -> void:
-	if has_node("CardTrader"):
-		return
-	var pt: int = current_planet_data.planet_type if current_planet_data else 0
-	var trader := CardTraderScene.instantiate()
-	trader.name = "CardTrader"
-	add_child(trader)
-	trader.setup(pt)
-	trader.trader_closed.connect(func(): _populate_cargo(); _update_ui(); _update_log())
 
 
 func _on_ship_dealer_pressed() -> void:
