@@ -23,6 +23,7 @@ var cargo: Array = []
 # Card / combat
 var deck: Array = []
 var installed_upgrades: Array = []
+var removed_cards: Array = []  # Permanently removed card paths
 var hand_size: int = 5
 var energy_per_turn: int = 3
 
@@ -43,6 +44,12 @@ var last_cargo_lost_text: String = ""
 
 # Ship
 var current_ship: String = "res://data/ships/scout.tres"
+
+# Shipyard upgrade counters (max 3 each)
+const MAX_STAT_UPGRADES: int = 3
+var hull_upgrades_bought: int = 0
+var shield_upgrades_bought: int = 0
+var cargo_upgrades_bought: int = 0
 
 # Mission
 var mission_return_planet: String = ""
@@ -87,6 +94,10 @@ func reset() -> void:
 	current_encounter = null
 	battle_result = ""
 	last_cargo_lost_text = ""
+	removed_cards.clear()
+	hull_upgrades_bought = 0
+	shield_upgrades_bought = 0
+	cargo_upgrades_bought = 0
 	build_starter_deck()
 	EventLog.clear()
 	EventLog.add_entry("Welcome to Starport Alpha. Your journey begins.")
@@ -162,6 +173,19 @@ func remove_cargo(good_name: String, quantity: int) -> void:
 				cargo.remove_at(i)
 			cargo_changed.emit()
 			return
+
+
+# ── Card removal ─────────────────────────────────────────────────────────────
+
+func remove_card_permanently(card_path: String) -> void:
+	# Remove all copies from the deck
+	var i := deck.size() - 1
+	while i >= 0:
+		if deck[i] and deck[i].resource_path == card_path:
+			deck.remove_at(i)
+		i -= 1
+	if card_path not in removed_cards:
+		removed_cards.append(card_path)
 
 
 # ── Upgrades ─────────────────────────────────────────────────────────────────

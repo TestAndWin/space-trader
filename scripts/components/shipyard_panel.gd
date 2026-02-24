@@ -278,9 +278,31 @@ func _refresh_display() -> void:
 		repair_button.text = "Repair Hull (%dcr)" % repair_cost
 		repair_button.disabled = GameManager.credits < repair_cost
 
-	hull_upgrade_button.disabled = GameManager.credits < HULL_UPGRADE_COST
-	shield_upgrade_button.disabled = GameManager.credits < SHIELD_UPGRADE_COST
-	cargo_upgrade_button.disabled = GameManager.credits < CARGO_UPGRADE_COST
+	# Update upgrade buttons with remaining count
+	var hull_remaining: int = GameManager.MAX_STAT_UPGRADES - GameManager.hull_upgrades_bought
+	var shield_remaining: int = GameManager.MAX_STAT_UPGRADES - GameManager.shield_upgrades_bought
+	var cargo_remaining: int = GameManager.MAX_STAT_UPGRADES - GameManager.cargo_upgrades_bought
+
+	if hull_remaining <= 0:
+		hull_upgrade_button.text = "+%d Max Hull (MAX)" % HULL_UPGRADE_AMOUNT
+		hull_upgrade_button.disabled = true
+	else:
+		hull_upgrade_button.text = "+%d Max Hull (%dcr) [%d/%d]" % [HULL_UPGRADE_AMOUNT, HULL_UPGRADE_COST, GameManager.hull_upgrades_bought, GameManager.MAX_STAT_UPGRADES]
+		hull_upgrade_button.disabled = GameManager.credits < HULL_UPGRADE_COST
+
+	if shield_remaining <= 0:
+		shield_upgrade_button.text = "+%d Max Shield (MAX)" % SHIELD_UPGRADE_AMOUNT
+		shield_upgrade_button.disabled = true
+	else:
+		shield_upgrade_button.text = "+%d Max Shield (%dcr) [%d/%d]" % [SHIELD_UPGRADE_AMOUNT, SHIELD_UPGRADE_COST, GameManager.shield_upgrades_bought, GameManager.MAX_STAT_UPGRADES]
+		shield_upgrade_button.disabled = GameManager.credits < SHIELD_UPGRADE_COST
+
+	if cargo_remaining <= 0:
+		cargo_upgrade_button.text = "+%d Cargo Space (MAX)" % CARGO_UPGRADE_AMOUNT
+		cargo_upgrade_button.disabled = true
+	else:
+		cargo_upgrade_button.text = "+%d Cargo Space (%dcr) [%d/%d]" % [CARGO_UPGRADE_AMOUNT, CARGO_UPGRADE_COST, GameManager.cargo_upgrades_bought, GameManager.MAX_STAT_UPGRADES]
+		cargo_upgrade_button.disabled = GameManager.credits < CARGO_UPGRADE_COST
 
 
 func _on_repair_pressed() -> void:
@@ -299,11 +321,15 @@ func _on_repair_pressed() -> void:
 
 
 func _on_hull_upgrade_pressed() -> void:
+	if GameManager.hull_upgrades_bought >= GameManager.MAX_STAT_UPGRADES:
+		status_label.text = "Max hull upgrades reached!"
+		return
 	if not GameManager.remove_credits(HULL_UPGRADE_COST):
 		status_label.text = "Not enough credits!"
 		return
 	GameManager.max_hull += HULL_UPGRADE_AMOUNT
 	GameManager.current_hull += HULL_UPGRADE_AMOUNT
+	GameManager.hull_upgrades_bought += 1
 	EventLog.add_entry("Upgraded max hull by %d for %dcr." % [HULL_UPGRADE_AMOUNT, HULL_UPGRADE_COST])
 	status_label.text = "Max hull +%d" % HULL_UPGRADE_AMOUNT
 	_refresh_display()
@@ -311,11 +337,15 @@ func _on_hull_upgrade_pressed() -> void:
 
 
 func _on_shield_upgrade_pressed() -> void:
+	if GameManager.shield_upgrades_bought >= GameManager.MAX_STAT_UPGRADES:
+		status_label.text = "Max shield upgrades reached!"
+		return
 	if not GameManager.remove_credits(SHIELD_UPGRADE_COST):
 		status_label.text = "Not enough credits!"
 		return
 	GameManager.max_shield += SHIELD_UPGRADE_AMOUNT
 	GameManager.current_shield += SHIELD_UPGRADE_AMOUNT
+	GameManager.shield_upgrades_bought += 1
 	EventLog.add_entry("Upgraded max shield by %d for %dcr." % [SHIELD_UPGRADE_AMOUNT, SHIELD_UPGRADE_COST])
 	status_label.text = "Max shield +%d" % SHIELD_UPGRADE_AMOUNT
 	_refresh_display()
@@ -323,10 +353,14 @@ func _on_shield_upgrade_pressed() -> void:
 
 
 func _on_cargo_upgrade_pressed() -> void:
+	if GameManager.cargo_upgrades_bought >= GameManager.MAX_STAT_UPGRADES:
+		status_label.text = "Max cargo upgrades reached!"
+		return
 	if not GameManager.remove_credits(CARGO_UPGRADE_COST):
 		status_label.text = "Not enough credits!"
 		return
 	GameManager.cargo_capacity += CARGO_UPGRADE_AMOUNT
+	GameManager.cargo_upgrades_bought += 1
 	EventLog.add_entry("Upgraded cargo capacity by %d for %dcr." % [CARGO_UPGRADE_AMOUNT, CARGO_UPGRADE_COST])
 	status_label.text = "Cargo +%d" % CARGO_UPGRADE_AMOUNT
 	_refresh_display()

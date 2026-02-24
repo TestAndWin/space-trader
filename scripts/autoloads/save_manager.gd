@@ -22,6 +22,10 @@ func save_game() -> void:
 		"total_flights": GameManager.total_flights,
 		"current_ship": GameManager.current_ship,
 		"installed_upgrades": GameManager.installed_upgrades.duplicate(),
+		"removed_cards": GameManager.removed_cards.duplicate(),
+		"hull_upgrades_bought": GameManager.hull_upgrades_bought,
+		"shield_upgrades_bought": GameManager.shield_upgrades_bought,
+		"cargo_upgrades_bought": GameManager.cargo_upgrades_bought,
 		"crew": GameManager.crew.duplicate(),
 		"deck_cards": _serialize_deck(),
 		"event_log": EventLog.get_entries() if has_node("/root/EventLog") else [],
@@ -66,6 +70,10 @@ func load_game() -> bool:
 	GameManager.total_flights = int(data.get("total_flights", 0))
 	GameManager.current_ship = data.get("current_ship", "res://data/ships/scout.tres")
 	GameManager.installed_upgrades = data.get("installed_upgrades", [])
+	GameManager.removed_cards = data.get("removed_cards", [])
+	GameManager.hull_upgrades_bought = int(data.get("hull_upgrades_bought", 0))
+	GameManager.shield_upgrades_bought = int(data.get("shield_upgrades_bought", 0))
+	GameManager.cargo_upgrades_bought = int(data.get("cargo_upgrades_bought", 0))
 	GameManager.crew = data.get("crew", [])
 	_deserialize_deck(data.get("deck_cards", []))
 	# Restore event log

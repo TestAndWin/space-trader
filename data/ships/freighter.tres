@@ -6,7 +6,7 @@
 script = ExtResource("1_sd1")
 ship_name = "Freighter"
 description = "Massive cargo hold, but weak defenses and a smaller hand."
-cost = 800
+cost = 1000
 base_max_hull = 25
 base_max_shield = 6
 base_cargo_capacity = 18

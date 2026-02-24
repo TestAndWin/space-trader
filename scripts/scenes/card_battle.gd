@@ -292,7 +292,9 @@ func _on_card_played(card_data: Resource) -> void:
 	elif card_data.special_effect == "skip_enemy_turn":
 		skip_enemy_turn = true
 	elif card_data.special_effect == "end_encounter":
-		_on_battle_won()
+		# Peaceful resolution: no win/loss, remove card permanently from deck
+		GameManager.remove_card_permanently(card_data.resource_path)
+		_on_battle_won_no_reward()
 		return
 	elif card_data.special_effect == "scavenge":
 		_resolve_scavenge()
