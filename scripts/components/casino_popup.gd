@@ -59,6 +59,10 @@ var _reels: Array = ["?", "?", "?"]
 var _reels_revealed: int = 0
 var _result_msg: String = ""
 
+# Round limit
+var rounds_played: int = 0
+var _max_rounds: int = 5
+
 # UI references
 var _main_vbox: VBoxContainer
 var _content_area: VBoxContainer
@@ -66,8 +70,9 @@ var _credits_label: Label
 var _status_label: Label
 
 
-func setup(planet_type: int) -> void:
+func setup(planet_type: int, max_rounds: int = 5) -> void:
 	_planet_type = planet_type
+	_max_rounds = max_rounds
 	_state = State.SELECT
 	_refresh_ui()
 
@@ -555,7 +560,7 @@ func _on_bj_hit() -> void:
 func _on_bj_stand() -> void:
 	_dealer_revealed = true
 	var dealer_stands_at: int = 17
-	if GameManager.has_crew_bonus(6):
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.GAMBLING_EDGE):
 		dealer_stands_at = 18
 	while _bj_hand_value(_dealer_hand) < dealer_stands_at:
 		_dealer_hand.append(_draw_bj_card())
@@ -606,7 +611,7 @@ func _start_slots() -> void:
 
 func _get_slot_symbol() -> String:
 	var pool: Array = ["Credits", "Credits", "Credits", "Cargo", "Cargo", "Cargo", "Card", "Card", "Skull", "Star"]
-	if GameManager.has_crew_bonus(6):
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.GAMBLING_EDGE):
 		pool.erase("Skull")
 	return pool[randi() % pool.size()]
 
@@ -757,6 +762,7 @@ func _resolve_slots() -> void:
 
 func _show_result(msg: String) -> void:
 	_state = State.RESULT
+	rounds_played += 1
 	_result_msg = msg
 	_status_label.text = msg
 	_refresh_ui()
@@ -781,14 +787,21 @@ func _build_result_ui() -> void:
 	_content_area.add_child(btn_row)
 
 	var again_btn := Button.new()
-	again_btn.text = "Play Again"
-	again_btn.custom_minimum_size = Vector2(140, 50)
-	_style_casino_button(again_btn, Color(0.15, 0.4, 0.2))
-	again_btn.pressed.connect(func():
-		_state = State.SELECT
-		_bet = 0
-		_refresh_ui()
-	)
+	var remaining: int = _max_rounds - rounds_played
+	if remaining > 0:
+		again_btn.text = "Play Again (%d left)" % remaining
+		again_btn.custom_minimum_size = Vector2(160, 50)
+		_style_casino_button(again_btn, Color(0.15, 0.4, 0.2))
+		again_btn.pressed.connect(func():
+			_state = State.SELECT
+			_bet = 0
+			_refresh_ui()
+		)
+	else:
+		again_btn.text = "No rounds left"
+		again_btn.custom_minimum_size = Vector2(160, 50)
+		_style_casino_button(again_btn, Color(0.2, 0.2, 0.2))
+		again_btn.disabled = true
 	btn_row.add_child(again_btn)
 
 	var close_btn := Button.new()

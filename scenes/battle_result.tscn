@@ -83,6 +83,74 @@ layout_mode = 2
 size_flags_horizontal = 4
 text = "Skip Reward"
 
+[node name="RewardPanel" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="RewardTitle" type="Label" parent="CenterContainer/VBoxContainer/RewardPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+text = "Reward!"
+horizontal_alignment = 1
+
+[node name="RewardIcon" type="Label" parent="CenterContainer/VBoxContainer/RewardPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 48
+text = ""
+horizontal_alignment = 1
+
+[node name="RewardName" type="Label" parent="CenterContainer/VBoxContainer/RewardPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.9, 0.95, 1.0, 1)
+text = ""
+horizontal_alignment = 1
+
+[node name="RewardDescription" type="Label" parent="CenterContainer/VBoxContainer/RewardPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="BlockedLabel" type="Label" parent="CenterContainer/VBoxContainer/RewardPanel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+text = ""
+horizontal_alignment = 1
+
+[node name="ButtonRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer/RewardPanel"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="AcceptButton" type="Button" parent="CenterContainer/VBoxContainer/RewardPanel/ButtonRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Accept"
+
+[node name="RewardSkipButton" type="Button" parent="CenterContainer/VBoxContainer/RewardPanel/ButtonRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Skip"
+
 [node name="ContinueButton" type="Button" parent="CenterContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2

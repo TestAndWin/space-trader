@@ -82,6 +82,15 @@ const UPGRADES: Array[String] = [
 	"res://data/upgrades/smuggler_hold.tres",
 	"res://data/upgrades/synergy_module.tres",
 	"res://data/upgrades/combat_amplifier.tres",
+	"res://data/upgrades/armor_plating.tres",
+	"res://data/upgrades/combat_scanner.tres",
+	"res://data/upgrades/shield_capacitor.tres",
+]
+
+const COMBAT_UPGRADES: Array[String] = [
+	"res://data/upgrades/armor_plating.tres",
+	"res://data/upgrades/combat_scanner.tres",
+	"res://data/upgrades/shield_capacitor.tres",
 ]
 
 const CREW: Array[String] = [

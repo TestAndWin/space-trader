@@ -53,6 +53,7 @@ var cargo_upgrades_bought: int = 0
 
 # Mission
 var mission_return_planet: String = ""
+var mission_done_this_landing: bool = false
 
 # Planet arrival flag — prevents duplicate events when returning from sub-screens
 var arrival_events_done: bool = false
@@ -87,6 +88,7 @@ func reset() -> void:
 	visited_planets.append("Starport Alpha")
 	current_ship = "res://data/ships/scout.tres"
 	mission_return_planet = ""
+	mission_done_this_landing = false
 	arrival_events_done = false
 	total_trades = 0
 	total_encounters_won = 0

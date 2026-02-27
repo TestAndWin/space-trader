@@ -6,6 +6,7 @@ const ENTRY_COST: int = 100
 const WIN_REWARD: int = 300
 const LOSE_HULL_MIN: int = 3
 const LOSE_HULL_MAX: int = 8
+const ABORT_PENALTY: int = 50
 
 const GRID_COLS: int = 5
 const GRID_ROWS: int = 3
@@ -54,7 +55,7 @@ func _ready() -> void:
 	bg.setup(3, 2)  # Tech type, medium danger
 
 	# Crew attack bonus: faster shooting
-	if GameManager.has_crew_bonus(1):  # ATTACK_BONUS
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.ATTACK_BONUS):
 		_shoot_cooldown_time = 0.25
 
 	_build_ui()
@@ -90,6 +91,26 @@ func _build_ui() -> void:
 	_info_label.add_theme_font_size_override("font_size", 16)
 	_info_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.4))
 	hud.add_child(_info_label)
+
+	var abort_btn := Button.new()
+	abort_btn.text = "Abort (%dcr)" % ABORT_PENALTY
+	abort_btn.add_theme_font_size_override("font_size", 14)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.5, 0.15, 0.1)
+	style.border_color = Color(0.7, 0.3, 0.2)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(4)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	abort_btn.add_theme_stylebox_override("normal", style)
+	var hover_style := style.duplicate()
+	hover_style.bg_color = Color(0.6, 0.2, 0.15)
+	abort_btn.add_theme_stylebox_override("hover", hover_style)
+	abort_btn.add_theme_color_override("font_color", Color(0.95, 0.85, 0.8))
+	abort_btn.pressed.connect(_on_abort_pressed)
+	hud.add_child(abort_btn)
 
 	# Game canvas for _draw
 	_canvas = Control.new()
@@ -251,6 +272,7 @@ func _check_collisions() -> void:
 func _on_game_won() -> void:
 	_game_active = false
 	_game_won = true
+	GameManager.mission_done_this_landing = true
 	GameManager.add_credits(WIN_REWARD)
 	EventLog.add_entry("Mission complete! Earned %d cr." % WIN_REWARD)
 	_info_label.text = "VICTORY! +%d cr" % WIN_REWARD
@@ -262,6 +284,7 @@ func _on_game_won() -> void:
 func _on_game_lost() -> void:
 	_game_active = false
 	_game_won = false
+	GameManager.mission_done_this_landing = true
 	var hull_damage: int = randi_range(LOSE_HULL_MIN, LOSE_HULL_MAX)
 	GameManager.current_hull = maxi(1, GameManager.current_hull - hull_damage)
 	EventLog.add_entry("Mission failed! Ship took %d hull damage." % hull_damage)
@@ -269,6 +292,19 @@ func _on_game_lost() -> void:
 	_info_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	_result_shown = true
 	_result_timer = 2.0
+
+
+func _on_abort_pressed() -> void:
+	if not _game_active:
+		return
+	_game_active = false
+	GameManager.mission_done_this_landing = true
+	GameManager.remove_credits(mini(ABORT_PENALTY, GameManager.credits))
+	EventLog.add_entry("Mission aborted! Penalty: %d cr." % ABORT_PENALTY)
+	_info_label.text = "ABORTED! -%d cr" % ABORT_PENALTY
+	_info_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.2))
+	_result_shown = true
+	_result_timer = 1.5
 
 
 func _return_to_planet() -> void:

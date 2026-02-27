@@ -4,8 +4,8 @@ const CargoSlotScene = preload("res://scenes/components/cargo_slot.tscn")
 const DeckViewerScene = preload("res://scenes/deck_viewer.tscn")
 const SmugglerEventScene = preload("res://scenes/components/smuggler_event.tscn")
 const PlanetEventScene = preload("res://scenes/components/planet_event.tscn")
-var CasinoPopupScene: PackedScene = load("res://scenes/components/casino_popup.tscn")
-var ShipDealerScene: PackedScene = load("res://scenes/components/ship_dealer.tscn")
+const CasinoPopupScene: PackedScene = preload("res://scenes/components/casino_popup.tscn")
+const ShipDealerScene: PackedScene = preload("res://scenes/components/ship_dealer.tscn")
 
 const TYPE_COLORS = {
 	0: Color(0.4, 0.6, 1.0),
@@ -31,6 +31,9 @@ const SECONDARY_BORDER := Color(0.35, 0.38, 0.42, 0.7)
 
 var current_planet_data: Resource = null
 var _smuggler_bought: Dictionary = {}  # good_name -> qty bought from smuggler this visit
+var _mission_done: bool = false
+var _casino_done: bool = false
+var _casino_rounds: int = 0
 
 @onready var news_banner := $VBoxContainer/NewsBanner
 @onready var planet_name_label := $VBoxContainer/PlanetHeader/PlanetNameLabel
@@ -68,8 +71,8 @@ func _ready() -> void:
 		get_tree().change_scene_to_file("res://scenes/game_over.tscn")
 		return
 	# Crew engineer bonus: hull regen on planet visit
-	if GameManager.has_crew_bonus(2):  # HULL_REGEN
-		var regen: int = int(GameManager.get_crew_bonus_value(2))
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.HULL_REGEN):
+		var regen: int = int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.HULL_REGEN))
 		GameManager.current_hull = min(GameManager.current_hull + regen, GameManager.max_hull)
 	_update_header()
 	_update_news_banner()
@@ -103,6 +106,9 @@ func _ready() -> void:
 	# Quest
 	quest_display.setup(GameManager.current_planet)
 	quest_display.quest_changed.connect(func(): _populate_cargo(); _update_ui(); _update_log())
+	# Mark mission as done if already played this landing
+	if GameManager.mission_done_this_landing:
+		_mission_done = true
 	# Action icons
 	_build_action_icons()
 	# Arrival events only on first visit (not when returning from sub-screens)
@@ -152,14 +158,8 @@ func _style_info_boxes() -> void:
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color(0.06, 0.07, 0.1, 0.75)
 		style.border_color = PANEL_BORDER
-		style.border_width_left = 2
-		style.border_width_right = 2
-		style.border_width_top = 2
-		style.border_width_bottom = 2
-		style.corner_radius_top_left = 4
-		style.corner_radius_top_right = 4
-		style.corner_radius_bottom_left = 4
-		style.corner_radius_bottom_right = 4
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(4)
 		style.content_margin_left = 8
 		style.content_margin_right = 8
 		style.content_margin_top = 4
@@ -170,23 +170,14 @@ func _style_info_boxes() -> void:
 func _style_cargo_bar() -> void:
 	var bar_bg := StyleBoxFlat.new()
 	bar_bg.bg_color = Color(0.12, 0.14, 0.18)
-	bar_bg.corner_radius_top_left = 3
-	bar_bg.corner_radius_top_right = 3
-	bar_bg.corner_radius_bottom_left = 3
-	bar_bg.corner_radius_bottom_right = 3
+	bar_bg.set_corner_radius_all(3)
 	bar_bg.border_color = Color(0.25, 0.28, 0.32)
-	bar_bg.border_width_left = 1
-	bar_bg.border_width_right = 1
-	bar_bg.border_width_top = 1
-	bar_bg.border_width_bottom = 1
+	bar_bg.set_border_width_all(1)
 	cargo_bar.add_theme_stylebox_override("background", bar_bg)
 
 	var bar_fill := StyleBoxFlat.new()
 	bar_fill.bg_color = Color(0.2, 0.5, 0.8)
-	bar_fill.corner_radius_top_left = 3
-	bar_fill.corner_radius_top_right = 3
-	bar_fill.corner_radius_bottom_left = 3
-	bar_fill.corner_radius_bottom_right = 3
+	bar_fill.set_corner_radius_all(3)
 	cargo_bar.add_theme_stylebox_override("fill", bar_fill)
 
 
@@ -303,6 +294,7 @@ func _on_shipyard_action() -> void:
 
 func _on_depart_pressed() -> void:
 	GameManager.arrival_events_done = false
+	GameManager.mission_done_this_landing = false
 	QuestManager.tick()
 	EventManager.tick()
 	EconomyManager.tick_economy()
@@ -379,14 +371,8 @@ func _add_menu_button() -> void:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.06, 0.07, 0.1, 0.5)
 	style.border_color = Color(0.2, 0.22, 0.26, 0.4)
-	style.border_width_left = 1
-	style.border_width_right = 1
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.corner_radius_top_left = 3
-	style.corner_radius_top_right = 3
-	style.corner_radius_bottom_left = 3
-	style.corner_radius_bottom_right = 3
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
 	style.content_margin_left = 8
 	style.content_margin_right = 8
 	style.content_margin_top = 2
@@ -407,7 +393,7 @@ func _add_menu_button() -> void:
 
 
 func _on_menu_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	GameManager.change_scene("res://scenes/main_menu.tscn")
 
 
 func _style_bottom_buttons() -> void:
@@ -421,14 +407,8 @@ func _style_primary_button(btn: Button, accent: Color) -> void:
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = accent
 	normal.border_color = accent.lightened(0.25)
-	normal.border_width_left = 2
-	normal.border_width_right = 2
-	normal.border_width_top = 2
-	normal.border_width_bottom = 2
-	normal.corner_radius_top_left = 4
-	normal.corner_radius_top_right = 4
-	normal.corner_radius_bottom_left = 4
-	normal.corner_radius_bottom_right = 4
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(4)
 	normal.content_margin_left = 16
 	normal.content_margin_right = 16
 	normal.content_margin_top = 6
@@ -452,14 +432,8 @@ func _style_secondary_button(btn: Button) -> void:
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = SECONDARY_BG
 	normal.border_color = SECONDARY_BORDER
-	normal.border_width_left = 2
-	normal.border_width_right = 2
-	normal.border_width_top = 2
-	normal.border_width_bottom = 2
-	normal.corner_radius_top_left = 4
-	normal.corner_radius_top_right = 4
-	normal.corner_radius_bottom_left = 4
-	normal.corner_radius_bottom_right = 4
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(4)
 	normal.content_margin_left = 12
 	normal.content_margin_right = 12
 	normal.content_margin_top = 4
@@ -479,26 +453,67 @@ func _style_secondary_button(btn: Button) -> void:
 	btn.add_theme_color_override("font_hover_color", Color(0.85, 0.87, 0.9))
 
 
+func _rebuild_action_icons() -> void:
+	for child in action_icon_row.get_children():
+		child.queue_free()
+	_build_action_icons()
+
+
 func _build_action_icons() -> void:
 	var pt: int = current_planet_data.planet_type if current_planet_data else 0
 	# Casino: all except Mining (2)
 	if pt != 2:
-		var btn := Button.new()
-		btn.text = "Casino"
-		btn.custom_minimum_size = Vector2(56, 36)
-		_style_secondary_button(btn)
-		btn.add_theme_font_size_override("font_size", 11)
-		btn.pressed.connect(_on_casino_pressed)
+		var btn := _create_action_icon_button(
+			"\u2666", "Casino", Color(0.85, 0.65, 0.1), Color(0.35, 0.25, 0.05))
+		if _casino_done:
+			btn.disabled = true
+			btn.tooltip_text = "Already visited this landing"
+			btn.modulate = Color(0.5, 0.5, 0.5)
+		else:
+			btn.pressed.connect(_on_casino_pressed)
 		action_icon_row.add_child(btn)
 	# Mission: only Tech (3) and Outlaw (4)
 	if pt == 3 or pt == 4:
-		var btn := Button.new()
-		btn.text = "Mission"
-		btn.custom_minimum_size = Vector2(56, 36)
-		_style_secondary_button(btn)
-		btn.add_theme_font_size_override("font_size", 11)
-		btn.pressed.connect(_on_mission_pressed)
+		var btn := _create_action_icon_button(
+			"\u2694", "Mission", Color(0.4, 0.75, 1.0), Color(0.08, 0.18, 0.32))
+		if _mission_done:
+			btn.disabled = true
+			btn.tooltip_text = "Already completed this visit"
+			btn.modulate = Color(0.5, 0.5, 0.5)
+		else:
+			btn.pressed.connect(_on_mission_pressed)
 		action_icon_row.add_child(btn)
+
+
+func _create_action_icon_button(icon: String, label_text: String, accent: Color, bg: Color) -> Button:
+	var btn := Button.new()
+	btn.text = "%s\n%s" % [icon, label_text]
+	btn.custom_minimum_size = Vector2(64, 52)
+	btn.add_theme_font_size_override("font_size", 11)
+	btn.add_theme_color_override("font_color", accent)
+	btn.add_theme_color_override("font_hover_color", accent.lightened(0.3))
+
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = bg
+	normal.border_color = accent.darkened(0.2)
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(8)
+	normal.content_margin_left = 8
+	normal.content_margin_right = 8
+	normal.content_margin_top = 4
+	normal.content_margin_bottom = 4
+	btn.add_theme_stylebox_override("normal", normal)
+
+	var hover := normal.duplicate()
+	hover.bg_color = bg.lightened(0.15)
+	hover.border_color = accent
+	btn.add_theme_stylebox_override("hover", hover)
+
+	var pressed := normal.duplicate()
+	pressed.bg_color = bg.darkened(0.15)
+	btn.add_theme_stylebox_override("pressed", pressed)
+
+	return btn
 
 
 func _on_casino_pressed() -> void:
@@ -508,8 +523,15 @@ func _on_casino_pressed() -> void:
 	var popup := CasinoPopupScene.instantiate()
 	popup.name = "CasinoPopup"
 	add_child(popup)
-	popup.setup(pt)
-	popup.casino_closed.connect(func(): _update_ui(); _update_log())
+	var rounds_left: int = 5 - _casino_rounds
+	popup.setup(pt, rounds_left)
+	popup.casino_closed.connect(func():
+		_casino_rounds += popup.rounds_played
+		if _casino_rounds >= 5:
+			_casino_done = true
+			_rebuild_action_icons()
+		_update_ui(); _update_log()
+	)
 
 
 func _on_mission_pressed() -> void:
