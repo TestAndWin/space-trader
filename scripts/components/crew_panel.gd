@@ -2,10 +2,7 @@ extends PanelContainer
 
 signal crew_action
 
-const BTN_BG := Color(0.02, 0.08, 0.18)
-const BTN_BORDER := Color(0.0, 0.45, 0.75)
-const BTN_DISABLED_BG := Color(0.02, 0.05, 0.10, 0.6)
-const BTN_DISABLED_BORDER := Color(0.0, 0.2, 0.35, 0.4)
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 var _crew_container: VBoxContainer
 var _icon_container: HBoxContainer
@@ -17,16 +14,7 @@ const CrewIcon := preload("res://scripts/components/crew_icon.gd")
 
 
 func _ready() -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
-	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(6)
-	style.content_margin_left = 6
-	style.content_margin_right = 6
-	style.content_margin_top = 4
-	style.content_margin_bottom = 8
-	add_theme_stylebox_override("panel", style)
+	UIStyles.style_panel(self)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 2)
@@ -104,7 +92,7 @@ func _refresh_crew_ui() -> void:
 		var dismiss_btn := Button.new()
 		dismiss_btn.text = "Dismiss"
 		dismiss_btn.add_theme_font_size_override("font_size", 10)
-		_style_upgrade_button(dismiss_btn)
+		UIStyles.style_small_secondary_button(dismiss_btn)
 		var idx := i
 		var crew_name: String = crew_res.crew_name
 		dismiss_btn.pressed.connect(func():
@@ -137,7 +125,7 @@ func _refresh_crew_ui() -> void:
 		hire_btn.text = "Hire %s (%dcr)" % [crew_res.crew_name, crew_res.recruit_cost]
 		hire_btn.tooltip_text = crew_res.description
 		hire_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_style_upgrade_button(hire_btn)
+		UIStyles.style_small_secondary_button(hire_btn)
 		hire_btn.disabled = GameManager.credits < crew_res.recruit_cost or GameManager.crew.size() >= GameManager.MAX_CREW
 		var res_ref: Resource = crew_res
 		hire_btn.pressed.connect(func():
@@ -148,40 +136,3 @@ func _refresh_crew_ui() -> void:
 				crew_action.emit()
 		)
 		_crew_container.add_child(hire_btn)
-
-
-func _style_upgrade_button(btn: Button) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = BTN_BG
-	normal.border_color = BTN_BORDER
-	normal.set_border_width_all(1)
-	normal.set_corner_radius_all(3)
-	normal.content_margin_left = 4
-	normal.content_margin_right = 4
-	normal.content_margin_top = 1
-	normal.content_margin_bottom = 1
-
-	var hover := normal.duplicate()
-	hover.bg_color = BTN_BG.lightened(0.12)
-	hover.border_color = BTN_BORDER.lightened(0.15)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = BTN_BG.darkened(0.15)
-
-	var disabled := StyleBoxFlat.new()
-	disabled.bg_color = BTN_DISABLED_BG
-	disabled.border_color = BTN_DISABLED_BORDER
-	disabled.set_border_width_all(1)
-	disabled.set_corner_radius_all(3)
-	disabled.content_margin_left = 4
-	disabled.content_margin_right = 4
-	disabled.content_margin_top = 1
-	disabled.content_margin_bottom = 1
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
-	btn.add_theme_color_override("font_hover_color", Color(0.85, 0.98, 1.0))
-	btn.add_theme_color_override("font_disabled_color", Color(0.2, 0.35, 0.45))

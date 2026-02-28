@@ -300,53 +300,19 @@ func _on_card_played(card_data: Resource) -> void:
 	combo_active = false
 
 	match card_data.card_type:
-		0: # ATTACK
-			var damage: int = card_data.attack_value
-			# Crew weapons officer bonus
-			if GameManager.has_crew_bonus(CrewData.CrewBonus.ATTACK_BONUS):
-				damage += int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.ATTACK_BONUS))
-			# CHARGE: 1.5x damage if 2+ attacks played this turn
-			if card_data.keywords.has(CardData.CardKeyword.CHARGE) and attacks_played_this_turn >= 2:
-				damage = int(damage * 1.5)
-			# SHIELD_ECHO: bonus damage = current_shield / 2
-			if card_data.keywords.has(CardData.CardKeyword.SHIELD_ECHO) and GameManager.current_shield > 0:
-				damage += int(GameManager.current_shield / 2.0)
-			_apply_damage_to_enemy(damage)
-			attacks_played_this_turn += 1
-		1: # DEFENSE
-			GameManager.current_shield = min(GameManager.max_shield, GameManager.current_shield + card_data.defense_value)
-			# SHIELD_ECHO on defense: deal shield/2 as damage
-			if card_data.keywords.has(CardData.CardKeyword.SHIELD_ECHO) and GameManager.current_shield > 0:
-				_apply_damage_to_enemy(int(GameManager.current_shield / 2.0))
-			if card_data.draw_cards > 0:
-				_draw_cards(card_data.draw_cards)
-		2: # UTILITY
-			if card_data.heal_value > 0:
-				GameManager.current_hull = min(GameManager.max_hull, GameManager.current_hull + card_data.heal_value)
-			if card_data.draw_cards > 0:
-				_draw_cards(card_data.draw_cards)
-		3: # TRADE
-			if card_data.credits_gain > 0:
-				GameManager.add_credits(card_data.credits_gain)
+		0: _apply_attack_card(card_data)
+		1: _apply_defense_card(card_data)
+		2: _apply_utility_card(card_data)
+		3: _apply_trade_card(card_data)
 
 	# COMBO: activate for next card
 	if card_data.keywords.has(CardData.CardKeyword.COMBO):
 		combo_active = true
 
 	# Handle special effects
-	if card_data.special_effect == "self_damage_5":
-		GameManager.current_hull -= 5
-	elif card_data.special_effect == "bonus_energy_2":
-		current_energy += 2
-	elif card_data.special_effect == "skip_enemy_turn":
-		skip_enemy_turn = true
-	elif card_data.special_effect == "end_encounter":
-		# Peaceful resolution: no win/loss, remove card permanently from deck
-		GameManager.remove_card_permanently(card_data.resource_path)
-		_on_battle_won_no_reward()
+	var should_return := _apply_special_effect(card_data)
+	if should_return:
 		return
-	elif card_data.special_effect == "scavenge":
-		_resolve_scavenge()
 
 	hand.erase(card_data)
 	discard_pile.append(card_data)
@@ -364,6 +330,60 @@ func _on_card_played(card_data: Resource) -> void:
 		await get_tree().create_timer(0.4).timeout
 		if battle_active:
 			_on_end_turn_pressed()
+
+
+func _apply_attack_card(card_data: Resource) -> void:
+	var damage: int = card_data.attack_value
+	# Crew weapons officer bonus
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.ATTACK_BONUS):
+		damage += int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.ATTACK_BONUS))
+	# CHARGE: 1.5x damage if 2+ attacks played this turn
+	if card_data.keywords.has(CardData.CardKeyword.CHARGE) and attacks_played_this_turn >= 2:
+		damage = int(damage * 1.5)
+	# SHIELD_ECHO: bonus damage = current_shield / 2
+	if card_data.keywords.has(CardData.CardKeyword.SHIELD_ECHO) and GameManager.current_shield > 0:
+		damage += int(GameManager.current_shield / 2.0)
+	_apply_damage_to_enemy(damage)
+	attacks_played_this_turn += 1
+
+
+func _apply_defense_card(card_data: Resource) -> void:
+	GameManager.current_shield = min(GameManager.max_shield, GameManager.current_shield + card_data.defense_value)
+	# SHIELD_ECHO on defense: deal shield/2 as damage
+	if card_data.keywords.has(CardData.CardKeyword.SHIELD_ECHO) and GameManager.current_shield > 0:
+		_apply_damage_to_enemy(int(GameManager.current_shield / 2.0))
+	if card_data.draw_cards > 0:
+		_draw_cards(card_data.draw_cards)
+
+
+func _apply_utility_card(card_data: Resource) -> void:
+	if card_data.heal_value > 0:
+		GameManager.current_hull = min(GameManager.max_hull, GameManager.current_hull + card_data.heal_value)
+	if card_data.draw_cards > 0:
+		_draw_cards(card_data.draw_cards)
+
+
+func _apply_trade_card(card_data: Resource) -> void:
+	if card_data.credits_gain > 0:
+		GameManager.add_credits(card_data.credits_gain)
+
+
+func _apply_special_effect(card_data: Resource) -> bool:
+	## Returns true if the caller should return early (battle ended).
+	if card_data.special_effect == "self_damage_5":
+		GameManager.current_hull -= 5
+	elif card_data.special_effect == "bonus_energy_2":
+		current_energy += 2
+	elif card_data.special_effect == "skip_enemy_turn":
+		skip_enemy_turn = true
+	elif card_data.special_effect == "end_encounter":
+		# Peaceful resolution: no win/loss, remove card permanently from deck
+		GameManager.remove_card_permanently(card_data.resource_path)
+		_on_battle_won_no_reward()
+		return true
+	elif card_data.special_effect == "scavenge":
+		_resolve_scavenge()
+	return false
 
 
 func _resolve_scavenge() -> void:
@@ -389,22 +409,34 @@ func _resolve_scavenge() -> void:
 
 
 func _show_battle_message(text: String) -> void:
+	var container := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.75)
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	container.add_theme_stylebox_override("panel", style)
+	container.anchor_left = 0.15
+	container.anchor_right = 0.85
+	container.anchor_top = 0.4
+	container.position.y = -20
+	add_child(container)
+
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", 18)
 	lbl.add_theme_color_override("font_color", Color(1.0, 0.90, 0.25))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.anchor_left = 0.0
-	lbl.anchor_right = 1.0
-	lbl.anchor_top = 0.4
-	lbl.position.y = -20
-	add_child(lbl)
+	container.add_child(lbl)
+
 	var tween := create_tween()
 	tween.tween_interval(1.0)
 	tween.chain().set_parallel(true)
-	tween.tween_property(lbl, "position:y", lbl.position.y - 40, 1.8).set_ease(Tween.EASE_OUT)
-	tween.tween_property(lbl, "modulate:a", 0.0, 1.8).set_delay(0.4)
-	tween.chain().tween_callback(lbl.queue_free)
+	tween.tween_property(container, "position:y", container.position.y - 40, 1.8).set_ease(Tween.EASE_OUT)
+	tween.tween_property(container, "modulate:a", 0.0, 1.8).set_delay(0.4)
+	tween.chain().tween_callback(container.queue_free)
 
 
 func _has_playable_card() -> bool:
@@ -526,7 +558,13 @@ func _on_battle_lost() -> void:
 
 
 func _update_ui() -> void:
-	# Enemy info
+	_update_enemy_ui()
+	_update_player_ui()
+	_update_deck_info()
+	_update_hand_display()
+
+
+func _update_enemy_ui() -> void:
 	%EnemyNameLabel.text = encounter.encounter_name
 	%EnemyHealthBar.max_value = enemy_max_health
 	%EnemyHealthBar.value = enemy_health
@@ -535,11 +573,9 @@ func _update_ui() -> void:
 	%EnemyHealthBar.add_theme_stylebox_override("fill", enemy_style)
 	%EnemyHealthLabel.text = "%d / %d" % [enemy_health, enemy_max_health]
 
-	# Enemy shield display
 	if enemy_shield > 0:
 		%EnemyHealthLabel.text = "%d / %d [Shield: %d]" % [enemy_health, enemy_max_health, enemy_shield]
 
-	# Enemy ship display
 	var enemy_hull_pct: float = float(enemy_health) / float(enemy_max_health) if enemy_max_health > 0 else 0.0
 	var enemy_shield_pct: float = float(enemy_shield) / 10.0 if enemy_shield > 0 else 0.0
 	%EnemyShipDisplay.update_enemy(enemy_hull_pct, enemy_shield_pct, encounter.encounter_name)
@@ -552,14 +588,14 @@ func _update_ui() -> void:
 	else:
 		%IntentLabel.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 
-	# Ability description below intent
 	if encounter.ability_description != "":
 		%AbilityLabel.text = encounter.ability_description
 		%AbilityLabel.visible = true
 	else:
 		%AbilityLabel.visible = false
 
-	# Player info
+
+func _update_player_ui() -> void:
 	%HullBar.max_value = GameManager.max_hull
 	%HullBar.value = GameManager.current_hull
 	var hull_pct: float = float(GameManager.current_hull) / float(GameManager.max_hull)
@@ -571,10 +607,6 @@ func _update_ui() -> void:
 	%ShieldBar.value = GameManager.current_shield
 	%ShieldLabel.text = "Shield: %d / %d" % [GameManager.current_shield, GameManager.max_shield]
 	%EnergyLabel.text = "Energy: %d / %d" % [current_energy, effective_energy_per_turn]
-
-	# Deck info
-	%DeckCountLabel.text = "Deck: %d" % draw_pile.size()
-	%DiscardCountLabel.text = "Discard: %d" % discard_pile.size()
 
 	# Ship display
 	var shield_pct: float = float(GameManager.current_shield) / float(GameManager.max_shield) if GameManager.max_shield > 0 else 0.0
@@ -591,7 +623,13 @@ func _update_ui() -> void:
 		%FleeButton.tooltip_text = "%d%% chance to escape (-%dcr). Failure ends your turn!" % [int(FLEE_CHANCE * 100), FLEE_COST]
 		%FleeButton.text = "Flee"
 
-	# Rebuild hand display
+
+func _update_deck_info() -> void:
+	%DeckCountLabel.text = "Deck: %d" % draw_pile.size()
+	%DiscardCountLabel.text = "Discard: %d" % discard_pile.size()
+
+
+func _update_hand_display() -> void:
 	for child in %HandContainer.get_children():
 		child.queue_free()
 

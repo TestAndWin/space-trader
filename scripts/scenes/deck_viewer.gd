@@ -5,6 +5,7 @@ extends Control
 
 const CardDisplayScene = preload("res://scenes/components/card_display.tscn")
 var ShowroomBgScene := preload("res://scenes/components/dealer_showroom_bg.tscn")
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.65)
 const BORDER_COLOR := Color(0.0, 0.65, 0.95, 0.55)
@@ -341,28 +342,7 @@ func _refresh_all() -> void:
 
 
 func _style_action_button(btn: Button, accent: Color) -> void:
-	btn.add_theme_font_size_override("font_size", 14)
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = accent
-	normal.border_color = accent.lightened(0.3)
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(6)
-	normal.content_margin_left = 14
-	normal.content_margin_right = 14
-	normal.content_margin_top = 6
-	normal.content_margin_bottom = 6
-
-	var hover := normal.duplicate()
-	hover.bg_color = accent.lightened(0.15)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = accent.darkened(0.2)
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9))
-	btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 0.95))
+	UIStyles.style_accent_button(btn, accent)
 
 
 func _on_close_pressed() -> void:

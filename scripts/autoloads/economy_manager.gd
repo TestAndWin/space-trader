@@ -148,10 +148,17 @@ func get_available_goods(planet_type_name: String) -> Array:
 	return _type_available_goods.get(planet_type_name, [])
 
 
-func _get_planet_type(planet_name: String) -> String:
+func get_planet_data(planet_name: String) -> Resource:
 	for planet in planets:
 		if planet.planet_name == planet_name:
-			return PLANET_TYPE_NAMES.get(planet.planet_type, "Industrial")
+			return planet
+	return null
+
+
+func _get_planet_type(planet_name: String) -> String:
+	var planet := get_planet_data(planet_name)
+	if planet:
+		return PLANET_TYPE_NAMES.get(planet.planet_type, "Industrial")
 	return "Industrial"
 
 

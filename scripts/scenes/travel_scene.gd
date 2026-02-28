@@ -63,9 +63,9 @@ func _ready() -> void:
 
 
 func _get_destination_type() -> int:
-	for planet in EconomyManager.planets:
-		if planet.planet_name == destination_planet:
-			return planet.planet_type
+	var planet := EconomyManager.get_planet_data(destination_planet)
+	if planet:
+		return planet.planet_type
 	return 3  # Default: Tech (cyan)
 
 
@@ -131,10 +131,9 @@ func _start_travel_animation() -> void:
 func _on_travel_complete() -> void:
 	set_process(false)
 	var danger_level: int = 1
-	for planet in EconomyManager.planets:
-		if planet.planet_name == destination_planet:
-			danger_level = planet.danger_level
-			break
+	var planet_data := EconomyManager.get_planet_data(destination_planet)
+	if planet_data:
+		danger_level = planet_data.danger_level
 	if EncounterManager.should_encounter_happen(danger_level):
 		var enc: Resource = EncounterManager.get_encounter(danger_level)
 		if enc:

@@ -2,6 +2,7 @@ extends Control
 
 var card_display_scene: PackedScene = preload("res://scenes/components/card_display.tscn")
 const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 var card_selected: bool = false
 var reward_chosen: bool = false
 
@@ -76,7 +77,7 @@ func _award_battle_credits() -> int:
 
 func _setup_credits_card_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
-	%ResultDescription.text = "+%d credits! (Total: %d cr)\nArriving at %s." % [earned, GameManager.credits, destination]
+	%ResultDescription.text = "+%d credits!\nArriving at %s." % [earned, destination]
 	%RewardPanel.visible = false
 
 	# Only offer card rewards for harder fights or 40% random chance
@@ -129,23 +130,21 @@ func _on_reward_card_selected(card_data: Resource) -> void:
 		return
 	card_selected = true
 	GameManager.deck.append(card_data)
-	%CardRewardPanel.visible = false
-	%ContinueButton.visible = true
+	_on_continue_pressed()
 
 
 func _on_skip_pressed() -> void:
 	if card_selected:
 		return
 	card_selected = true
-	%CardRewardPanel.visible = false
-	%ContinueButton.visible = true
+	_on_continue_pressed()
 
 
 # ── Upgrade reward ───────────────────────────────────────────────────────────
 
 func _setup_upgrade_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
-	%ResultDescription.text = "+%d credits! (Total: %d cr)\nArriving at %s." % [earned, GameManager.credits, destination]
+	%ResultDescription.text = "+%d credits!\nArriving at %s." % [earned, destination]
 	%CardRewardPanel.visible = false
 	%ContinueButton.visible = false
 
@@ -188,8 +187,7 @@ func _setup_upgrade_reward(destination: String) -> void:
 				return
 			reward_chosen = true
 			GameManager.apply_upgrade(chosen)
-			%RewardPanel.visible = false
-			%ContinueButton.visible = true
+			_on_continue_pressed()
 		)
 
 
@@ -209,7 +207,7 @@ func _get_upgrade_icon(upgrade: Resource) -> String:
 
 func _setup_crew_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
-	%ResultDescription.text = "+%d credits! (Total: %d cr)\nArriving at %s." % [earned, GameManager.credits, destination]
+	%ResultDescription.text = "+%d credits!\nArriving at %s." % [earned, destination]
 	%CardRewardPanel.visible = false
 	%ContinueButton.visible = false
 
@@ -258,8 +256,7 @@ func _setup_crew_reward(destination: String) -> void:
 			reward_chosen = true
 			GameManager.crew.append(chosen.resource_path)
 			GameManager.crew_changed.emit()
-			%RewardPanel.visible = false
-			%ContinueButton.visible = true
+			_on_continue_pressed()
 		)
 
 
@@ -291,33 +288,14 @@ func _on_reward_skip_pressed() -> void:
 	if reward_chosen:
 		return
 	reward_chosen = true
-	%RewardPanel.visible = false
-	%ContinueButton.visible = true
+	_on_continue_pressed()
 
 
 # ── Continue ─────────────────────────────────────────────────────────────────
 
 func _style_buttons() -> void:
 	for btn: Button in [%ContinueButton, %SkipButton, %AcceptButton, %RewardSkipButton]:
-		var normal := StyleBoxFlat.new()
-		normal.bg_color = Color(0.02, 0.06, 0.14, 0.85)
-		normal.border_color = Color(0.0, 0.45, 0.75, 0.7)
-		normal.set_border_width_all(2)
-		normal.set_corner_radius_all(6)
-		normal.content_margin_left = 16
-		normal.content_margin_right = 16
-		normal.content_margin_top = 8
-		normal.content_margin_bottom = 8
-		var hover := normal.duplicate()
-		hover.bg_color = Color(0.03, 0.10, 0.22, 0.9)
-		hover.border_color = Color(0.0, 0.65, 0.95, 0.85)
-		var pressed := normal.duplicate()
-		pressed.bg_color = Color(0.01, 0.04, 0.10, 0.9)
-		btn.add_theme_stylebox_override("normal", normal)
-		btn.add_theme_stylebox_override("hover", hover)
-		btn.add_theme_stylebox_override("pressed", pressed)
-		btn.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
-		btn.add_theme_color_override("font_hover_color", Color(0.8, 0.98, 1.0))
+		UIStyles.style_secondary_button(btn)
 
 
 func _on_continue_pressed() -> void:

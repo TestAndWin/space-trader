@@ -5,6 +5,8 @@ extends ColorRect
 
 signal upgrades_closed
 
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+
 # Planet type -> allowed upgrade slots
 const PLANET_UPGRADE_SLOTS := {
 	0: [0, 1, 4],          # Industrial: ENGINE, HULL, WEAPONS
@@ -187,10 +189,7 @@ func _build_ui() -> void:
 
 
 func _find_planet_data() -> Resource:
-	for planet in EconomyManager.planets:
-		if planet.planet_name == GameManager.current_planet:
-			return planet
-	return null
+	return EconomyManager.get_planet_data(GameManager.current_planet)
 
 
 func _build_ship_stats_panel() -> PanelContainer:
@@ -257,63 +256,11 @@ func _build_ship_stats_panel() -> PanelContainer:
 
 
 func _style_action_button(btn: Button, accent: Color) -> void:
-	btn.add_theme_font_size_override("font_size", 14)
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = accent
-	normal.border_color = accent.lightened(0.3)
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(6)
-	normal.content_margin_left = 14
-	normal.content_margin_right = 14
-	normal.content_margin_top = 6
-	normal.content_margin_bottom = 6
-
-	var hover := normal.duplicate()
-	hover.bg_color = accent.lightened(0.15)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = accent.darkened(0.2)
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9))
-	btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 0.95))
+	UIStyles.style_accent_button(btn, accent)
 
 
 func _style_buy_button(btn: Button) -> void:
-	btn.add_theme_font_size_override("font_size", 14)
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.0, 0.18, 0.10)
-	normal.border_color = Color(0.0, 0.6, 0.4, 0.7)
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(6)
-	normal.content_margin_left = 14
-	normal.content_margin_right = 14
-	normal.content_margin_top = 6
-	normal.content_margin_bottom = 6
-	normal.shadow_color = Color(0.0, 0.5, 0.3, 0.15)
-	normal.shadow_size = 4
-
-	var hover := normal.duplicate()
-	hover.bg_color = Color(0.0, 0.25, 0.15)
-	hover.border_color = Color(0.0, 0.8, 0.5, 0.9)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = Color(0.0, 0.12, 0.06)
-
-	var disabled := normal.duplicate()
-	disabled.bg_color = Color(0.04, 0.06, 0.10, 0.5)
-	disabled.border_color = Color(0.1, 0.15, 0.2, 0.4)
-	disabled.shadow_size = 0
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_color", Color(0.6, 0.95, 0.7))
-	btn.add_theme_color_override("font_hover_color", Color(0.8, 1.0, 0.85))
-	btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.3, 0.35))
+	UIStyles.style_buy_button(btn)
 
 
 func _refresh_all() -> void:

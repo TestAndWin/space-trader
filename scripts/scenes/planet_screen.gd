@@ -7,6 +7,7 @@ const PlanetEventScene = preload("res://scenes/components/planet_event.tscn")
 const CasinoPopupScene: PackedScene = preload("res://scenes/components/casino_popup.tscn")
 const ShipDealerScene: PackedScene = preload("res://scenes/components/ship_dealer.tscn")
 const ShipUpgradeScene: PackedScene = preload("res://scenes/ship_upgrade.tscn")
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 const TYPE_COLORS = {
 	0: Color(0.4, 0.6, 1.0),
@@ -64,9 +65,6 @@ var _casino_rounds: int = 0
 
 
 func _ready() -> void:
-	if GameManager.check_win_condition():
-		get_tree().change_scene_to_file("res://scenes/victory.tscn")
-		return
 	_find_planet_data()
 	# Check quest penalty after battle credits have been awarded
 	if QuestManager.check_expired_quest():
@@ -150,10 +148,7 @@ func _ready() -> void:
 
 
 func _find_planet_data() -> void:
-	for planet in EconomyManager.planets:
-		if planet.planet_name == GameManager.current_planet:
-			current_planet_data = planet
-			return
+	current_planet_data = EconomyManager.get_planet_data(GameManager.current_planet)
 
 
 func _style_info_boxes() -> void:
@@ -436,28 +431,7 @@ func _style_primary_button(btn: Button, accent: Color) -> void:
 
 
 func _style_secondary_button(btn: Button) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = SECONDARY_BG
-	normal.border_color = SECONDARY_BORDER
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(4)
-	normal.content_margin_left = 12
-	normal.content_margin_right = 12
-	normal.content_margin_top = 4
-	normal.content_margin_bottom = 4
-
-	var hover := normal.duplicate()
-	hover.bg_color = SECONDARY_BG.lightened(0.12)
-	hover.border_color = SECONDARY_BORDER.lightened(0.15)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = SECONDARY_BG.darkened(0.15)
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
-	btn.add_theme_color_override("font_hover_color", Color(0.8, 0.98, 1.0))
+	UIStyles.style_secondary_button(btn)
 
 
 func _rebuild_action_icons() -> void:

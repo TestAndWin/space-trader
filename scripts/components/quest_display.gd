@@ -2,9 +2,8 @@ extends PanelContainer
 
 signal quest_changed
 
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const ACCENT_GREEN := Color(0.0, 0.75, 0.35)
-const BTN_BG := Color(0.02, 0.08, 0.18)
-const BTN_BORDER := Color(0.0, 0.45, 0.75)
 
 var planet_name: String = ""
 var just_completed: bool = false
@@ -16,58 +15,11 @@ func setup(p_planet_name: String) -> void:
 	_build_ui()
 
 
-func _style_quest_button(btn: Button) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = ACCENT_GREEN
-	normal.border_color = ACCENT_GREEN.lightened(0.25)
-	normal.border_width_left = 1
-	normal.border_width_right = 1
-	normal.border_width_top = 1
-	normal.border_width_bottom = 1
-	normal.corner_radius_top_left = 4
-	normal.corner_radius_top_right = 4
-	normal.corner_radius_bottom_left = 4
-	normal.corner_radius_bottom_right = 4
-	normal.content_margin_left = 8
-	normal.content_margin_right = 8
-	normal.content_margin_top = 3
-	normal.content_margin_bottom = 3
-
-	var hover := normal.duplicate()
-	hover.bg_color = ACCENT_GREEN.lightened(0.15)
-	hover.border_color = ACCENT_GREEN.lightened(0.35)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = ACCENT_GREEN.darkened(0.15)
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9))
-	btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 0.95))
-	btn.add_theme_color_override("font_pressed_color", Color(0.8, 0.8, 0.75))
-
-
 func _build_ui() -> void:
 	for child in get_children():
 		child.queue_free()
 
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_right = 6
-	style.corner_radius_bottom_left = 6
-	style.content_margin_left = 6.0
-	style.content_margin_top = 4.0
-	style.content_margin_right = 6.0
-	style.content_margin_bottom = 10.0
-	add_theme_stylebox_override("panel", style)
+	UIStyles.style_panel(self)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 2)
@@ -89,7 +41,7 @@ func _build_ui() -> void:
 		var next_btn := Button.new()
 		next_btn.text = "New Quest"
 		next_btn.pressed.connect(func(): just_completed = false; _build_ui())
-		_style_quest_button(next_btn)
+		UIStyles.style_accent_button(next_btn, ACCENT_GREEN)
 		vbox.add_child(next_btn)
 		return
 
@@ -120,7 +72,7 @@ func _build_ui() -> void:
 			var deliver_btn := Button.new()
 			deliver_btn.text = "Deliver (%d %s)" % [q["deliver_qty"], q["deliver_good"]]
 			deliver_btn.pressed.connect(_on_deliver)
-			_style_quest_button(deliver_btn)
+			UIStyles.style_accent_button(deliver_btn, ACCENT_GREEN)
 			vbox.add_child(deliver_btn)
 		elif q["destination"] == planet_name:
 			var missing_label := Label.new()
@@ -158,7 +110,7 @@ func _build_ui() -> void:
 	var accept_btn := Button.new()
 	accept_btn.text = "Accept Quest"
 	accept_btn.pressed.connect(_on_accept)
-	_style_quest_button(accept_btn)
+	UIStyles.style_accent_button(accept_btn, ACCENT_GREEN)
 	vbox.add_child(accept_btn)
 
 

@@ -5,6 +5,8 @@ extends ColorRect
 
 signal casino_closed
 
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+
 enum State { SELECT, PLAYING, RESULT }
 enum Game { BLACKJACK, SLOTS }
 
@@ -196,27 +198,7 @@ func _build_ui() -> void:
 
 
 func _style_casino_button(btn: Button, accent: Color) -> void:
-	btn.add_theme_font_size_override("font_size", 14)
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = accent
-	normal.border_color = accent.lightened(0.3)
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(6)
-	normal.content_margin_left = 14
-	normal.content_margin_right = 14
-	normal.content_margin_top = 6
-	normal.content_margin_bottom = 6
-	normal.shadow_color = Color(accent.r, accent.g, accent.b, 0.15)
-	normal.shadow_size = 4
-	btn.add_theme_stylebox_override("normal", normal)
-	var hover := normal.duplicate()
-	hover.bg_color = accent.lightened(0.15)
-	btn.add_theme_stylebox_override("hover", hover)
-	var pressed := normal.duplicate()
-	pressed.bg_color = accent.darkened(0.2)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85))
-	btn.add_theme_color_override("font_hover_color", Color(1, 1, 0.95))
+	UIStyles.style_accent_button(btn, accent)
 
 
 func _refresh_ui() -> void:

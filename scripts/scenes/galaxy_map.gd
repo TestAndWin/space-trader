@@ -2,6 +2,7 @@ extends Node2D
 
 var planet_scene: PackedScene = preload("res://scenes/components/planet_node.tscn")
 const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 var planets: Array = []
 var planet_nodes: Dictionary = {}   # { planet_name: PlanetNode }
 var selected_planet: Resource = null
@@ -385,26 +386,25 @@ func _on_travel_pressed() -> void:
 
 
 func _style_nav_button(btn: Button, accent: Color) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = accent.darkened(0.5)
+	UIStyles.style_accent_button(btn, accent.darkened(0.5))
+	# Nav buttons use dark font on bright accent background
+	var normal: StyleBoxFlat = btn.get_theme_stylebox("normal").duplicate()
 	normal.bg_color.a = 0.85
 	normal.border_color = accent
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(6)
 	normal.content_margin_left = 20
 	normal.content_margin_right = 20
 	normal.content_margin_top = 8
 	normal.content_margin_bottom = 8
 	normal.shadow_color = Color(accent.r, accent.g, accent.b, 0.3)
 	normal.shadow_size = 6
-	var hover := normal.duplicate()
+	btn.add_theme_stylebox_override("normal", normal)
+	var hover: StyleBoxFlat = normal.duplicate()
 	hover.bg_color = accent.darkened(0.35)
 	hover.bg_color.a = 0.9
 	hover.border_color = accent.lightened(0.1)
-	var pressed := normal.duplicate()
-	pressed.bg_color = accent.darkened(0.6)
-	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
+	var pressed: StyleBoxFlat = normal.duplicate()
+	pressed.bg_color = accent.darkened(0.6)
 	btn.add_theme_stylebox_override("pressed", pressed)
 	btn.add_theme_color_override("font_color", Color(0.05, 0.05, 0.05))
 	btn.add_theme_color_override("font_hover_color", Color(0.0, 0.0, 0.0))
@@ -412,5 +412,3 @@ func _style_nav_button(btn: Button, accent: Color) -> void:
 
 func _on_land_pressed() -> void:
 	GameManager.change_scene("res://scenes/planet_screen.tscn")
-
-
