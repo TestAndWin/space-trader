@@ -12,7 +12,7 @@ func _ready() -> void:
 	match result:
 		"won":
 			%ResultTitle.text = "Victory!"
-			%ResultTitle.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+			%ResultTitle.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
 			GameManager.current_planet = destination
 			if destination not in GameManager.visited_planets:
 				GameManager.visited_planets.append(destination)
@@ -55,6 +55,8 @@ func _ready() -> void:
 
 	%ContinueButton.pressed.connect(_on_continue_pressed)
 	%SkipButton.pressed.connect(_on_skip_pressed)
+	_style_buttons()
+	_add_cockpit_frame()
 
 
 # ── Credits + Card reward (original behavior) ───────────────────────────────
@@ -288,7 +290,39 @@ func _build_reward_panel(title_text: String, icon: String, item_name: String,
 
 # ── Continue ─────────────────────────────────────────────────────────────────
 
+func _style_buttons() -> void:
+	for btn: Button in [%ContinueButton, %SkipButton, %AcceptButton, %RewardSkipButton]:
+		var normal := StyleBoxFlat.new()
+		normal.bg_color = Color(0.02, 0.06, 0.14, 0.85)
+		normal.border_color = Color(0.0, 0.45, 0.75, 0.7)
+		normal.set_border_width_all(2)
+		normal.set_corner_radius_all(6)
+		normal.content_margin_left = 16
+		normal.content_margin_right = 16
+		normal.content_margin_top = 8
+		normal.content_margin_bottom = 8
+		var hover := normal.duplicate()
+		hover.bg_color = Color(0.03, 0.10, 0.22, 0.9)
+		hover.border_color = Color(0.0, 0.65, 0.95, 0.85)
+		var pressed := normal.duplicate()
+		pressed.bg_color = Color(0.01, 0.04, 0.10, 0.9)
+		btn.add_theme_stylebox_override("normal", normal)
+		btn.add_theme_stylebox_override("hover", hover)
+		btn.add_theme_stylebox_override("pressed", pressed)
+		btn.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
+		btn.add_theme_color_override("font_hover_color", Color(0.8, 0.98, 1.0))
+
+
 func _on_continue_pressed() -> void:
 	GameManager.current_encounter = null
 	GameManager.battle_result = ""
 	GameManager.change_scene("res://scenes/planet_screen.tscn")
+
+
+func _add_cockpit_frame() -> void:
+	var frame := Control.new()
+	frame.name = "CockpitFrame"
+	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.set_script(load("res://scripts/components/cockpit_frame.gd"))
+	add_child(frame)

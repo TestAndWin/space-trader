@@ -4,12 +4,12 @@ signal action_pressed(good_name: String, quantity: int)
 
 const GoodIconScript = preload("res://scripts/components/good_icon.gd")
 
-const BUY_COLOR := Color(0.2, 0.55, 0.15)
-const SELL_COLOR := Color(0.6, 0.15, 0.12)
-const PM_BG := Color(0.15, 0.3, 0.15)
-const PM_BORDER := Color(0.3, 0.5, 0.3)
-const ROW_BG := Color(0.07, 0.08, 0.12, 0.7)
-const ROW_BORDER := Color(0.2, 0.22, 0.26, 0.5)
+const BUY_COLOR := Color(0.0, 0.75, 0.35)
+const SELL_COLOR := Color(0.85, 0.10, 0.38)
+const PM_BG := Color(0.02, 0.10, 0.22)
+const PM_BORDER := Color(0.0, 0.50, 0.80)
+const ROW_BG := Color(0.02, 0.06, 0.14, 0.75)
+const ROW_BORDER := Color(0.0, 0.40, 0.65, 0.60)
 
 var good_name: String = ""
 var price: int = 0
@@ -143,7 +143,7 @@ func _update_display() -> void:
 		display_name = good_name + " [!]"
 		$GoodNameLabel.add_theme_color_override("font_color", Color(1.0, 0.5, 0.2))
 	else:
-		$GoodNameLabel.add_theme_color_override("font_color", Color(0.85, 0.85, 0.8))
+		$GoodNameLabel.add_theme_color_override("font_color", Color(0.75, 0.88, 1.0))
 	$GoodNameLabel.text = display_name
 	$PriceLabel.text = str(price) + " cr"
 	if mode == "buy":

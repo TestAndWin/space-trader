@@ -2,9 +2,9 @@ extends PanelContainer
 
 signal quest_changed
 
-const ACCENT_GREEN := Color(0.25, 0.55, 0.2)
-const BTN_BG := Color(0.1, 0.12, 0.16)
-const BTN_BORDER := Color(0.35, 0.38, 0.42, 0.7)
+const ACCENT_GREEN := Color(0.0, 0.75, 0.35)
+const BTN_BG := Color(0.02, 0.08, 0.18)
+const BTN_BORDER := Color(0.0, 0.45, 0.75)
 
 var planet_name: String = ""
 var just_completed: bool = false
@@ -53,16 +53,16 @@ func _build_ui() -> void:
 		child.queue_free()
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.1, 0.14, 0.75)
+	style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
 	style.border_width_left = 2
 	style.border_width_top = 2
 	style.border_width_right = 2
 	style.border_width_bottom = 2
-	style.border_color = Color(0.35, 0.38, 0.42, 0.8)
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_right = 4
-	style.corner_radius_bottom_left = 4
+	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_right = 6
+	style.corner_radius_bottom_left = 6
 	style.content_margin_left = 6.0
 	style.content_margin_top = 4.0
 	style.content_margin_right = 6.0
@@ -76,7 +76,7 @@ func _build_ui() -> void:
 	var title := Label.new()
 	title.text = "QUEST"
 	title.add_theme_font_size_override("font_size", 14)
-	title.add_theme_color_override("font_color", Color(0.75, 0.78, 0.7))
+	title.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
 	vbox.add_child(title)
 
 	# Just completed
@@ -100,7 +100,7 @@ func _build_ui() -> void:
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD
 		desc.text = "Deliver %d %s to %s\nReward: %d cr" % [q["deliver_qty"], q["deliver_good"], q["destination"], q["reward_credits"]]
 		desc.add_theme_font_size_override("font_size", 12)
-		desc.add_theme_color_override("font_color", Color(0.5, 0.8, 0.5))
+		desc.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
 		vbox.add_child(desc)
 
 		var turns: int = q.get("turns_left", 0)
@@ -144,7 +144,7 @@ func _build_ui() -> void:
 	offer_desc.autowrap_mode = TextServer.AUTOWRAP_WORD
 	offer_desc.text = "Deliver %d %s to %s\nReward: %d cr" % [offer["deliver_qty"], offer["deliver_good"], offer["destination"], offer["reward_credits"]]
 	offer_desc.add_theme_font_size_override("font_size", 12)
-	offer_desc.add_theme_color_override("font_color", Color(0.6, 0.65, 0.75))
+	offer_desc.add_theme_color_override("font_color", Color(0.55, 0.78, 1.0))
 	vbox.add_child(offer_desc)
 
 	var offer_turns: int = offer.get("turns_left", 0)

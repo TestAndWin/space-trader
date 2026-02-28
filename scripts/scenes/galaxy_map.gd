@@ -33,20 +33,30 @@ func _ready() -> void:
 	_update_ui()
 	# Add padding to info panel
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.12, 0.12, 0.16, 0.92)
+	panel_style.bg_color = Color(0.02, 0.06, 0.14, 0.92)
+	panel_style.border_color = Color(0.0, 0.65, 0.95, 0.85)
+	panel_style.border_width_left = 1
+	panel_style.border_width_top = 1
+	panel_style.border_width_right = 1
+	panel_style.border_width_bottom = 1
 	panel_style.content_margin_left = 12.0
 	panel_style.content_margin_right = 12.0
 	panel_style.content_margin_top = 10.0
 	panel_style.content_margin_bottom = 10.0
-	panel_style.corner_radius_top_left = 4
-	panel_style.corner_radius_top_right = 4
-	panel_style.corner_radius_bottom_left = 4
-	panel_style.corner_radius_bottom_right = 4
+	panel_style.corner_radius_top_left = 6
+	panel_style.corner_radius_top_right = 6
+	panel_style.corner_radius_bottom_left = 6
+	panel_style.corner_radius_bottom_right = 6
+	panel_style.shadow_color = Color(0.0, 0.45, 0.9, 0.25)
+	panel_style.shadow_size = 6
 	info_panel.add_theme_stylebox_override("panel", panel_style)
 	info_panel.visible = false
 	travel_button.visible = false
 	travel_button.pressed.connect(_on_travel_pressed)
 	land_button.pressed.connect(_on_land_pressed)
+	_style_nav_button(travel_button, Color(0.0, 0.85, 0.45))
+	_style_nav_button(land_button, Color(0.0, 0.65, 0.95))
+	_add_cockpit_frame()
 
 
 func _load_planets() -> void:
@@ -255,5 +265,43 @@ func _on_travel_pressed() -> void:
 	GameManager.change_scene("res://scenes/travel_scene.tscn")
 
 
+func _style_nav_button(btn: Button, accent: Color) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = accent.darkened(0.5)
+	normal.bg_color.a = 0.85
+	normal.border_color = accent
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(6)
+	normal.content_margin_left = 20
+	normal.content_margin_right = 20
+	normal.content_margin_top = 8
+	normal.content_margin_bottom = 8
+	normal.shadow_color = Color(accent.r, accent.g, accent.b, 0.3)
+	normal.shadow_size = 6
+	var hover := normal.duplicate()
+	hover.bg_color = accent.darkened(0.35)
+	hover.bg_color.a = 0.9
+	hover.border_color = accent.lightened(0.1)
+	var pressed := normal.duplicate()
+	pressed.bg_color = accent.darkened(0.6)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_color_override("font_color", Color(0.05, 0.05, 0.05))
+	btn.add_theme_color_override("font_hover_color", Color(0.0, 0.0, 0.0))
+
+
 func _on_land_pressed() -> void:
 	GameManager.change_scene("res://scenes/planet_screen.tscn")
+
+
+func _add_cockpit_frame() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 10
+	add_child(layer)
+	var frame := Control.new()
+	frame.name = "CockpitFrame"
+	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.set_script(load("res://scripts/components/cockpit_frame.gd"))
+	layer.add_child(frame)

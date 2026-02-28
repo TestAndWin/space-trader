@@ -60,6 +60,7 @@ func _ready() -> void:
 
 	_build_ui()
 	_init_game()
+	_add_cockpit_frame()
 
 
 func _build_ui() -> void:
@@ -359,3 +360,12 @@ func _on_canvas_draw() -> void:
 	for bullet in _enemy_bullets:
 		var br := Rect2(bullet["x"] - ENEMY_BULLET_SIZE.x * 0.5, bullet["y"] - ENEMY_BULLET_SIZE.y * 0.5, ENEMY_BULLET_SIZE.x, ENEMY_BULLET_SIZE.y)
 		_canvas.draw_rect(br, Color(1.0, 0.3, 0.3))
+
+
+func _add_cockpit_frame() -> void:
+	var frame := Control.new()
+	frame.name = "CockpitFrame"
+	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.set_script(load("res://scripts/components/cockpit_frame.gd"))
+	add_child(frame)

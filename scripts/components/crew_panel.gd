@@ -2,10 +2,10 @@ extends PanelContainer
 
 signal crew_action
 
-const BTN_BG := Color(0.1, 0.12, 0.16)
-const BTN_BORDER := Color(0.3, 0.33, 0.38)
-const BTN_DISABLED_BG := Color(0.07, 0.08, 0.1, 0.6)
-const BTN_DISABLED_BORDER := Color(0.18, 0.2, 0.22, 0.4)
+const BTN_BG := Color(0.02, 0.08, 0.18)
+const BTN_BORDER := Color(0.0, 0.45, 0.75)
+const BTN_DISABLED_BG := Color(0.02, 0.05, 0.10, 0.6)
+const BTN_DISABLED_BORDER := Color(0.0, 0.2, 0.35, 0.4)
 
 var _crew_container: VBoxContainer
 var _icon_container: HBoxContainer
@@ -18,16 +18,16 @@ const CrewIcon := preload("res://scripts/components/crew_icon.gd")
 
 func _ready() -> void:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.1, 0.14, 0.75)
-	style.border_color = Color(0.35, 0.38, 0.42, 0.8)
+	style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
+	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
 	style.border_width_left = 2
 	style.border_width_right = 2
 	style.border_width_top = 2
 	style.border_width_bottom = 2
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
 	style.content_margin_left = 6
 	style.content_margin_right = 6
 	style.content_margin_top = 4
@@ -42,7 +42,7 @@ func _ready() -> void:
 	title.text = "CREW"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 16)
-	title.add_theme_color_override("font_color", Color(0.75, 0.78, 0.7))
+	title.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
 	vbox.add_child(title)
 
 	_icon_container = HBoxContainer.new()
@@ -59,7 +59,7 @@ func _ready() -> void:
 	status_label.text = ""
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.add_theme_font_size_override("font_size", 11)
-	status_label.add_theme_color_override("font_color", Color(0.4, 0.7, 0.4))
+	status_label.add_theme_color_override("font_color", Color(0.0, 1.0, 0.6))
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(status_label)
 
@@ -102,7 +102,7 @@ func _refresh_crew_ui() -> void:
 		info.text = crew_res.description
 		info.tooltip_text = crew_res.crew_name
 		info.add_theme_font_size_override("font_size", 11)
-		info.add_theme_color_override("font_color", Color(0.6, 0.8, 0.6))
+		info.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		info.mouse_filter = Control.MOUSE_FILTER_STOP
 		row.add_child(info)
@@ -200,6 +200,6 @@ func _style_upgrade_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("pressed", pressed)
 	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_color", Color(0.7, 0.72, 0.75))
-	btn.add_theme_color_override("font_hover_color", Color(0.85, 0.87, 0.9))
-	btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.3, 0.32))
+	btn.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
+	btn.add_theme_color_override("font_hover_color", Color(0.85, 0.98, 1.0))
+	btn.add_theme_color_override("font_disabled_color", Color(0.2, 0.35, 0.45))

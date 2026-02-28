@@ -27,6 +27,7 @@ func _ready() -> void:
 	var flash_tween := create_tween()
 	flash_tween.tween_property(flash, "modulate:a", 0.0, 0.5).set_ease(Tween.EASE_OUT)
 	flash_tween.tween_callback(flash.queue_free)
+	_add_cockpit_frame()
 
 
 func _process(delta: float) -> void:
@@ -89,3 +90,12 @@ func _on_travel_complete() -> void:
 	if destination_planet not in GameManager.visited_planets:
 		GameManager.visited_planets.append(destination_planet)
 	GameManager.change_scene("res://scenes/planet_screen.tscn")
+
+
+func _add_cockpit_frame() -> void:
+	var frame := Control.new()
+	frame.name = "CockpitFrame"
+	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.set_script(load("res://scripts/components/cockpit_frame.gd"))
+	add_child(frame)

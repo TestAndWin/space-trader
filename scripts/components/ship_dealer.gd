@@ -1,21 +1,27 @@
 extends ColorRect
 
-## Ship dealer popup — buy and switch ships at planets.
-## Full-screen immersive style matching Casino and Ship Upgrades.
+## Ship dealer popup — immersive showroom experience.
+## Full-screen with procedural background, large ship previews,
+## and premium showroom aesthetic.
 
 signal dealer_closed
 
-const BG_COLOR := Color(0.04, 0.06, 0.14)
-const PANEL_COLOR := Color(0.06, 0.08, 0.16)
-const BORDER_COLOR := Color(0.15, 0.25, 0.5, 0.8)
-const ACCENT := Color(0.3, 0.5, 1.0)
-const ACCENT_DIM := Color(0.2, 0.35, 0.7, 0.6)
-const GOLD := Color(1.0, 0.95, 0.4)
+const BG_COLOR := Color(0.01, 0.02, 0.05)
+const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.65)
+const BORDER_COLOR := Color(0.0, 0.65, 0.95, 0.55)
+const ACCENT := Color(0.0, 0.9, 1.0)
+const ACCENT_DIM := Color(0.0, 0.45, 0.75, 0.6)
+const GOLD := Color(1.0, 0.90, 0.25)
+const POSITIVE := Color(0.2, 0.9, 0.35)
+const NEGATIVE := Color(1.0, 0.35, 0.3)
+const NEUTRAL := Color(0.6, 0.65, 0.75)
 
 var _planet_type: int = 0
 var _ship_list_container: VBoxContainer
 var _credits_label: Label
 var _status_label: Label
+var _current_ship_display: Control
+var ShowroomBgScene := preload("res://scenes/components/dealer_showroom_bg.tscn")
 var ShipDisplayScene := preload("res://scenes/components/ship_display.tscn")
 
 
@@ -26,55 +32,73 @@ func setup(planet_type: int) -> void:
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	color = Color(0, 0, 0, 0.75)
+	color = Color(0, 0, 0, 0.85)
 	_build_ui()
 
 
 func _build_ui() -> void:
-	# Full-screen panel
+	# Showroom background (behind everything)
+	var showroom_bg := ShowroomBgScene.instantiate()
+	showroom_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	showroom_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(showroom_bg)
+
+	# Semi-transparent main panel — showroom shines through
 	var panel := PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var style := StyleBoxFlat.new()
 	style.bg_color = PANEL_COLOR
 	style.border_color = BORDER_COLOR
-	style.set_border_width_all(4)
+	style.set_border_width_all(2)
 	style.set_corner_radius_all(16)
-	style.content_margin_left = 24
-	style.content_margin_right = 24
+	style.content_margin_left = 28
+	style.content_margin_right = 28
 	style.content_margin_top = 16
 	style.content_margin_bottom = 16
-	style.shadow_color = Color(0, 0, 0, 0.4)
-	style.shadow_size = 8
 	panel.add_theme_stylebox_override("panel", style)
 	add_child(panel)
 
 	var main_vbox := VBoxContainer.new()
-	main_vbox.add_theme_constant_override("separation", 12)
+	main_vbox.add_theme_constant_override("separation", 10)
 	panel.add_child(main_vbox)
 
-	# Header bar
+	# ── Header ──
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 16)
+	header.add_theme_constant_override("separation", 12)
 	main_vbox.add_child(header)
 
-	# Decorative symbols
+	# Title section with subtitle
+	var title_vbox := VBoxContainer.new()
+	title_vbox.add_theme_constant_override("separation", 0)
+	header.add_child(title_vbox)
+
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 10)
+	title_vbox.add_child(title_row)
+
 	var left_deco := Label.new()
 	left_deco.text = "\u2726 \u2605 \u2726"
-	left_deco.add_theme_font_size_override("font_size", 18)
+	left_deco.add_theme_font_size_override("font_size", 16)
 	left_deco.add_theme_color_override("font_color", ACCENT_DIM)
-	header.add_child(left_deco)
+	title_row.add_child(left_deco)
 
 	var title := Label.new()
-	title.text = "SHIP DEALER"
-	title.add_theme_font_size_override("font_size", 28)
+	title.text = "STARSHIP SHOWROOM"
+	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", ACCENT)
-	header.add_child(title)
+	title_row.add_child(title)
 
 	var right_deco := Label.new()
 	right_deco.text = "\u2726 \u2605 \u2726"
-	right_deco.add_theme_font_size_override("font_size", 18)
+	right_deco.add_theme_font_size_override("font_size", 16)
 	right_deco.add_theme_color_override("font_color", ACCENT_DIM)
-	header.add_child(right_deco)
+	title_row.add_child(right_deco)
+
+	var subtitle := Label.new()
+	subtitle.text = "Premium Vessels \u2022 Trade-In Available \u2022 Galactic Licensed Dealer"
+	subtitle.add_theme_font_size_override("font_size", 11)
+	subtitle.add_theme_color_override("font_color", Color(0.3, 0.55, 0.75, 0.8))
+	title_vbox.add_child(subtitle)
 
 	var header_spacer := Control.new()
 	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -86,43 +110,149 @@ func _build_ui() -> void:
 	header.add_child(_credits_label)
 
 	var close_btn := Button.new()
-	close_btn.text = "Leave"
-	close_btn.custom_minimum_size = Vector2(80, 36)
+	close_btn.text = "Leave Showroom"
+	close_btn.custom_minimum_size = Vector2(130, 36)
 	_style_action_button(close_btn, Color(0.5, 0.15, 0.1))
 	close_btn.pressed.connect(_close)
 	header.add_child(close_btn)
 
-	# Separator
+	# Separator with glow
 	var sep := HSeparator.new()
-	sep.add_theme_constant_override("separation", 4)
+	sep.add_theme_constant_override("separation", 6)
 	sep.add_theme_color_override("separator", ACCENT_DIM)
 	main_vbox.add_child(sep)
 
 	# Status label
 	_status_label = Label.new()
 	_status_label.add_theme_font_size_override("font_size", 14)
-	_status_label.add_theme_color_override("font_color", Color(0.4, 0.8, 0.4))
+	_status_label.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main_vbox.add_child(_status_label)
 
-	# Current ship info
-	var current_label := Label.new()
-	current_label.text = "Current ship: %s" % _get_current_ship_name()
-	current_label.add_theme_font_size_override("font_size", 16)
-	current_label.add_theme_color_override("font_color", Color(0.6, 0.7, 0.85))
-	current_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	main_vbox.add_child(current_label)
+	# ── Content: Current ship + available ships ──
+	var content := HBoxContainer.new()
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 16)
+	main_vbox.add_child(content)
 
-	# Ship list
+	# Left: Current ship showcase
+	var current_panel := _build_current_ship_panel()
+	content.add_child(current_panel)
+
+	# Vertical divider
+	var vsep := VSeparator.new()
+	vsep.add_theme_color_override("separator", ACCENT_DIM)
+	content.add_child(vsep)
+
+	# Right: Ship list
+	var right_col := VBoxContainer.new()
+	right_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_col.size_flags_stretch_ratio = 2.0
+	right_col.add_theme_constant_override("separation", 6)
+	content.add_child(right_col)
+
+	var avail_header := Label.new()
+	avail_header.text = "\u25C6 AVAILABLE SHIPS \u25C6"
+	avail_header.add_theme_font_size_override("font_size", 16)
+	avail_header.add_theme_color_override("font_color", ACCENT)
+	avail_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	right_col.add_child(avail_header)
+
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	main_vbox.add_child(scroll)
+	right_col.add_child(scroll)
 
 	_ship_list_container = VBoxContainer.new()
 	_ship_list_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_ship_list_container.add_theme_constant_override("separation", 8)
 	scroll.add_child(_ship_list_container)
+
+
+func _build_current_ship_panel() -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.custom_minimum_size = Vector2(280, 0)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.015, 0.04, 0.10, 0.7)
+	style.border_color = ACCENT
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(10)
+	style.set_content_margin_all(14)
+	# Bottom glow (spotlight reflection)
+	style.shadow_color = Color(0.0, 0.4, 0.8, 0.15)
+	style.shadow_size = 12
+	panel.add_theme_stylebox_override("panel", style)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 6)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "YOUR SHIP"
+	header.add_theme_font_size_override("font_size", 14)
+	header.add_theme_color_override("font_color", ACCENT_DIM)
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(header)
+
+	# Large ship display
+	_current_ship_display = ShipDisplayScene.instantiate()
+	_current_ship_display.custom_minimum_size = Vector2(140, 140)
+	vbox.add_child(_current_ship_display)
+
+	var ship: Resource = GameManager.get_ship_data()
+	if ship:
+		var hull_pct: float = float(GameManager.current_hull) / float(GameManager.max_hull)
+		var shield_pct: float = float(GameManager.current_shield) / float(GameManager.max_shield) if GameManager.max_shield > 0 else 0.0
+		_current_ship_display.update_ship(hull_pct, shield_pct, GameManager.get_cargo_used(), GameManager.cargo_capacity, ship.hull_shape)
+
+		var name_lbl := Label.new()
+		name_lbl.text = ship.ship_name
+		name_lbl.add_theme_font_size_override("font_size", 20)
+		name_lbl.add_theme_color_override("font_color", ACCENT)
+		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(name_lbl)
+
+		# Stats grid
+		var stats_grid := GridContainer.new()
+		stats_grid.columns = 2
+		stats_grid.add_theme_constant_override("h_separation", 12)
+		stats_grid.add_theme_constant_override("v_separation", 2)
+		vbox.add_child(stats_grid)
+
+		_add_stat_pair(stats_grid, "Hull", "%d/%d" % [GameManager.current_hull, GameManager.max_hull])
+		_add_stat_pair(stats_grid, "Shield", "%d/%d" % [GameManager.current_shield, GameManager.max_shield])
+		_add_stat_pair(stats_grid, "Cargo", "%d slots" % GameManager.cargo_capacity)
+		_add_stat_pair(stats_grid, "Energy", "%d/turn" % GameManager.energy_per_turn)
+		_add_stat_pair(stats_grid, "Hand", "%d cards" % GameManager.hand_size)
+
+		# Trade-in value
+		if ship.cost > 0:
+			var trade_in: int = int(ship.cost * 0.5)
+			var trade_lbl := Label.new()
+			trade_lbl.text = "Trade-in value: %d cr" % trade_in
+			trade_lbl.add_theme_font_size_override("font_size", 12)
+			trade_lbl.add_theme_color_override("font_color", GOLD)
+			trade_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			vbox.add_child(trade_lbl)
+
+	return panel
+
+
+func _add_stat_pair(grid: GridContainer, stat_name: String, stat_value: String) -> void:
+	var name_lbl := Label.new()
+	name_lbl.text = stat_name
+	name_lbl.add_theme_font_size_override("font_size", 12)
+	name_lbl.add_theme_color_override("font_color", Color(0.45, 0.55, 0.7))
+	grid.add_child(name_lbl)
+
+	var val_lbl := Label.new()
+	val_lbl.text = stat_value
+	val_lbl.add_theme_font_size_override("font_size", 12)
+	val_lbl.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
+	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	grid.add_child(val_lbl)
 
 
 func _get_current_ship_name() -> String:
@@ -157,65 +287,110 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 	var card := PanelContainer.new()
 	var card_style := StyleBoxFlat.new()
 	var is_current: bool = ship.resource_path == GameManager.current_ship
-	card_style.bg_color = Color(0.08, 0.12, 0.22, 0.9) if is_current else Color(0.08, 0.1, 0.18, 0.8)
-	card_style.border_color = ACCENT if is_current else Color(0.2, 0.25, 0.4, 0.6)
-	card_style.set_border_width_all(1 if not is_current else 2)
-	card_style.set_corner_radius_all(6)
-	card_style.set_content_margin_all(10)
+
+	if is_current:
+		card_style.bg_color = Color(0.03, 0.10, 0.22, 0.85)
+		card_style.border_color = ACCENT
+		card_style.set_border_width_all(2)
+		# Spotlight glow effect for current ship
+		card_style.shadow_color = Color(0.0, 0.5, 0.9, 0.2)
+		card_style.shadow_size = 10
+	else:
+		card_style.bg_color = Color(0.02, 0.06, 0.16, 0.75)
+		card_style.border_color = Color(0.0, 0.40, 0.65, 0.5)
+		card_style.set_border_width_all(1)
+		card_style.shadow_color = Color(0.0, 0.2, 0.5, 0.08)
+		card_style.shadow_size = 4
+
+	card_style.set_corner_radius_all(8)
+	card_style.set_content_margin_all(12)
 	card.add_theme_stylebox_override("panel", card_style)
 
 	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 12)
+	hbox.add_theme_constant_override("separation", 14)
 	card.add_child(hbox)
 
-	# Ship preview
+	# Ship preview — larger in showroom
+	var preview_container := PanelContainer.new()
+	var preview_style := StyleBoxFlat.new()
+	preview_style.bg_color = Color(0.01, 0.03, 0.08, 0.6)
+	preview_style.border_color = Color(0.0, 0.35, 0.55, 0.3)
+	preview_style.set_border_width_all(1)
+	preview_style.set_corner_radius_all(6)
+	preview_style.set_content_margin_all(4)
+	# Bottom spotlight reflection
+	preview_style.shadow_color = Color(0.0, 0.3, 0.6, 0.1)
+	preview_style.shadow_size = 6
+	preview_container.add_theme_stylebox_override("panel", preview_style)
+	hbox.add_child(preview_container)
+
 	var ship_preview := ShipDisplayScene.instantiate()
-	ship_preview.custom_minimum_size = Vector2(70, 70)
-	hbox.add_child(ship_preview)
+	ship_preview.custom_minimum_size = Vector2(100, 100)
+	preview_container.add_child(ship_preview)
 	ship_preview.update_ship(1.0, 0.5, 0, ship.base_cargo_capacity, ship.hull_shape)
 
 	# Info column
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info.add_theme_constant_override("separation", 2)
+	info.add_theme_constant_override("separation", 3)
 	hbox.add_child(info)
 
 	var name_lbl := Label.new()
-	name_lbl.text = ship.ship_name + (" (CURRENT)" if is_current else "")
-	name_lbl.add_theme_font_size_override("font_size", 16)
-	name_lbl.add_theme_color_override("font_color", ACCENT if is_current else Color(0.8, 0.85, 0.95))
+	name_lbl.text = ship.ship_name + ("  \u2605 EQUIPPED" if is_current else "")
+	name_lbl.add_theme_font_size_override("font_size", 17)
+	name_lbl.add_theme_color_override("font_color", ACCENT if is_current else Color(0.75, 0.88, 1.0))
 	info.add_child(name_lbl)
 
 	var desc_lbl := Label.new()
 	desc_lbl.text = ship.description
 	desc_lbl.add_theme_font_size_override("font_size", 11)
-	desc_lbl.add_theme_color_override("font_color", Color(0.45, 0.5, 0.6))
+	desc_lbl.add_theme_color_override("font_color", Color(0.35, 0.55, 0.75))
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_child(desc_lbl)
 
-	# Stat comparison
+	# Color-coded stat comparison
 	var stats := _build_stat_comparison(ship, current_ship)
-	stats.add_theme_font_size_override("font_size", 12)
 	info.add_child(stats)
 
-	# Buy button
+	# Buy button column
 	if not is_current and ship.cost > 0:
+		var btn_col := VBoxContainer.new()
+		btn_col.add_theme_constant_override("separation", 4)
+		btn_col.alignment = BoxContainer.ALIGNMENT_CENTER
+		hbox.add_child(btn_col)
+
 		var trade_in: int = int(current_ship.cost * 0.5)
 		var net_cost: int = ship.cost - trade_in
+
+		var price_lbl := Label.new()
+		price_lbl.text = "%d cr" % net_cost
+		price_lbl.add_theme_font_size_override("font_size", 16)
+		price_lbl.add_theme_color_override("font_color", GOLD if GameManager.credits >= net_cost else Color(0.5, 0.3, 0.3))
+		price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		btn_col.add_child(price_lbl)
+
+		if trade_in > 0:
+			var trade_lbl := Label.new()
+			trade_lbl.text = "(-%d trade-in)" % trade_in
+			trade_lbl.add_theme_font_size_override("font_size", 10)
+			trade_lbl.add_theme_color_override("font_color", Color(0.5, 0.65, 0.45))
+			trade_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			btn_col.add_child(trade_lbl)
+
 		var btn := Button.new()
-		btn.text = "Buy (%dcr)" % net_cost
-		btn.custom_minimum_size = Vector2(120, 36)
+		btn.text = "BUY"
+		btn.custom_minimum_size = Vector2(100, 38)
 		btn.disabled = GameManager.credits < net_cost
 		_style_buy_button(btn)
 		btn.pressed.connect(_on_buy_ship.bind(ship, net_cost))
-		hbox.add_child(btn)
+		btn_col.add_child(btn)
 
 	return card
 
 
-func _build_stat_comparison(ship: Resource, current: Resource) -> Label:
-	var lbl := Label.new()
-	var parts: Array = []
+func _build_stat_comparison(ship: Resource, current: Resource) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
 
 	var dh: int = ship.base_max_hull - current.base_max_hull
 	var ds: int = ship.base_max_shield - current.base_max_shield
@@ -223,27 +398,49 @@ func _build_stat_comparison(ship: Resource, current: Resource) -> Label:
 	var de: int = ship.base_energy_per_turn - current.base_energy_per_turn
 	var dhnd: int = ship.base_hand_size - current.base_hand_size
 
-	parts.append("Hull: %d (%s%d)" % [ship.base_max_hull, "+" if dh >= 0 else "", dh])
-	parts.append("Shield: %d (%s%d)" % [ship.base_max_shield, "+" if ds >= 0 else "", ds])
-	parts.append("Cargo: %d (%s%d)" % [ship.base_cargo_capacity, "+" if dc >= 0 else "", dc])
+	_add_stat_chip(row, "Hull", ship.base_max_hull, dh)
+	_add_stat_chip(row, "Shield", ship.base_max_shield, ds)
+	_add_stat_chip(row, "Cargo", ship.base_cargo_capacity, dc)
 	if de != 0:
-		parts.append("Energy: %s%d" % ["+" if de >= 0 else "", de])
+		_add_stat_chip(row, "Energy", ship.base_energy_per_turn, de)
 	if dhnd != 0:
-		parts.append("Hand Size: %s%d" % ["+" if dhnd >= 0 else "", dhnd])
+		_add_stat_chip(row, "Hand", ship.base_hand_size, dhnd)
 
+	# Special abilities
 	var specials: Array = []
 	if ship.encounter_reduction > 0:
 		specials.append("-%d%% Encounters" % int(ship.encounter_reduction * 100))
 	if ship.contraband_bonus > 0:
 		specials.append("+%d%% Contraband" % int(ship.contraband_bonus * 100))
 	if ship.quest_reward_bonus > 0:
-		specials.append("+%d%% Quest Reward" % int(ship.quest_reward_bonus * 100))
+		specials.append("+%d%% Quest" % int(ship.quest_reward_bonus * 100))
 
-	lbl.text = " | ".join(parts)
 	if specials.size() > 0:
-		lbl.text += "\n" + ", ".join(specials)
-	lbl.add_theme_color_override("font_color", Color(0.5, 0.6, 0.75))
-	return lbl
+		var spec_lbl := Label.new()
+		spec_lbl.text = " | ".join(specials)
+		spec_lbl.add_theme_font_size_override("font_size", 10)
+		spec_lbl.add_theme_color_override("font_color", Color(0.8, 0.7, 0.3))
+		row.add_child(spec_lbl)
+
+	return row
+
+
+func _add_stat_chip(container: HBoxContainer, stat_name: String, value: int, diff: int) -> void:
+	var chip := Label.new()
+	var diff_str: String = ""
+	var col: Color = NEUTRAL
+
+	if diff > 0:
+		diff_str = " +%d" % diff
+		col = POSITIVE
+	elif diff < 0:
+		diff_str = " %d" % diff
+		col = NEGATIVE
+
+	chip.text = "%s:%d%s" % [stat_name, value, diff_str]
+	chip.add_theme_font_size_override("font_size", 11)
+	chip.add_theme_color_override("font_color", col)
+	container.add_child(chip)
 
 
 func _on_buy_ship(ship: Resource, net_cost: int) -> void:
@@ -261,16 +458,16 @@ func _on_buy_ship(ship: Resource, net_cost: int) -> void:
 
 
 func _style_action_button(btn: Button, accent: Color) -> void:
-	btn.add_theme_font_size_override("font_size", 16)
+	btn.add_theme_font_size_override("font_size", 14)
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = accent
 	normal.border_color = accent.lightened(0.3)
 	normal.set_border_width_all(2)
 	normal.set_corner_radius_all(6)
-	normal.content_margin_left = 16
-	normal.content_margin_right = 16
-	normal.content_margin_top = 8
-	normal.content_margin_bottom = 8
+	normal.content_margin_left = 14
+	normal.content_margin_right = 14
+	normal.content_margin_top = 6
+	normal.content_margin_bottom = 6
 
 	var hover := normal.duplicate()
 	hover.bg_color = accent.lightened(0.15)
@@ -288,32 +485,35 @@ func _style_action_button(btn: Button, accent: Color) -> void:
 func _style_buy_button(btn: Button) -> void:
 	btn.add_theme_font_size_override("font_size", 14)
 	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.1, 0.15, 0.3)
-	normal.border_color = ACCENT_DIM
-	normal.set_border_width_all(1)
-	normal.set_corner_radius_all(4)
-	normal.content_margin_left = 12
-	normal.content_margin_right = 12
-	normal.content_margin_top = 4
-	normal.content_margin_bottom = 4
+	normal.bg_color = Color(0.0, 0.18, 0.10)
+	normal.border_color = Color(0.0, 0.6, 0.4, 0.7)
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(6)
+	normal.content_margin_left = 14
+	normal.content_margin_right = 14
+	normal.content_margin_top = 6
+	normal.content_margin_bottom = 6
+	normal.shadow_color = Color(0.0, 0.5, 0.3, 0.15)
+	normal.shadow_size = 4
 
 	var hover := normal.duplicate()
-	hover.bg_color = Color(0.15, 0.2, 0.4)
-	hover.border_color = ACCENT
+	hover.bg_color = Color(0.0, 0.25, 0.15)
+	hover.border_color = Color(0.0, 0.8, 0.5, 0.9)
 
 	var pressed := normal.duplicate()
-	pressed.bg_color = Color(0.08, 0.1, 0.2)
+	pressed.bg_color = Color(0.0, 0.12, 0.06)
 
 	var disabled := normal.duplicate()
-	disabled.bg_color = Color(0.06, 0.07, 0.1, 0.6)
-	disabled.border_color = Color(0.15, 0.15, 0.2, 0.4)
+	disabled.bg_color = Color(0.04, 0.06, 0.10, 0.5)
+	disabled.border_color = Color(0.1, 0.15, 0.2, 0.4)
+	disabled.shadow_size = 0
 
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("pressed", pressed)
 	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_color", Color(0.7, 0.75, 0.9))
-	btn.add_theme_color_override("font_hover_color", Color(0.85, 0.9, 1.0))
+	btn.add_theme_color_override("font_color", Color(0.6, 0.95, 0.7))
+	btn.add_theme_color_override("font_hover_color", Color(0.8, 1.0, 0.85))
 	btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.3, 0.35))
 
 

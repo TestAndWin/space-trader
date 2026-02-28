@@ -45,7 +45,7 @@ func _generate_stars() -> void:
 	var danger_red_shift: float = danger_factor * 0.15
 
 	# --- Nebulae: 4-6 large clouds, layered for depth ---
-	var nebula_count: int = rng.randi_range(4, 6)
+	var nebula_count: int = rng.randi_range(6, 8)
 	for i in nebula_count:
 		var pos := Vector2(rng.randf() * area_size.x, rng.randf() * area_size.y)
 		var radius: float = rng.randf_range(120.0, 320.0)
@@ -107,11 +107,11 @@ func _generate_stars() -> void:
 			)
 		_static_stars.append([pos, radius, star_color])
 
-	# --- Twinkle stars (15-20 animated, clearly visible) ---
-	var twinkle_count: int = rng.randi_range(15, 20)
+	# --- Twinkle stars (20-28 animated, clearly visible) ---
+	var twinkle_count: int = rng.randi_range(20, 28)
 	for i in twinkle_count:
 		var pos := Vector2(rng.randf() * area_size.x, rng.randf() * area_size.y)
-		var radius: float = rng.randf_range(1.5, 3.0)
+		var radius: float = rng.randf_range(1.5, 3.5)
 		var brightness: float = rng.randf_range(0.6, 1.0)
 		var star_color: Color
 		if rng.randf() < 0.4:
@@ -135,7 +135,7 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	# Dark space background
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0.04, 0.05, 0.07, 1.0))
+	draw_rect(Rect2(Vector2.ZERO, size), Color(0.01, 0.02, 0.05, 1.0))
 
 	# Nebulae (drawn first, behind stars)
 	for neb in _nebulae:
@@ -168,3 +168,4 @@ func _draw() -> void:
 		# Core
 		var core_col := Color(base_color.r, base_color.g, base_color.b, alpha)
 		draw_circle(pos, cur_radius, core_col)
+

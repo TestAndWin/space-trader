@@ -1,16 +1,16 @@
 extends Control
 
 ## Deck viewer with integrated card trading when on a planet.
-## Full-screen immersive style matching Casino, Ship Upgrades, Ship Dealer.
+## Full-screen immersive style with showroom background.
 
 const CardDisplayScene = preload("res://scenes/components/card_display.tscn")
+var ShowroomBgScene := preload("res://scenes/components/dealer_showroom_bg.tscn")
 
-const BG_COLOR := Color(0.04, 0.06, 0.14)
-const PANEL_COLOR := Color(0.06, 0.08, 0.16)
-const BORDER_COLOR := Color(0.15, 0.25, 0.5, 0.8)
-const ACCENT := Color(0.3, 0.5, 1.0)
-const ACCENT_DIM := Color(0.2, 0.35, 0.7, 0.6)
-const GOLD := Color(1.0, 0.95, 0.4)
+const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.65)
+const BORDER_COLOR := Color(0.0, 0.65, 0.95, 0.55)
+const ACCENT := Color(0.0, 0.9, 1.0)
+const ACCENT_DIM := Color(0.0, 0.45, 0.75, 0.6)
+const GOLD := Color(1.0, 0.90, 0.25)
 
 const MIN_DECK_SIZE: int = 5
 const SELL_RATIO: float = 0.5
@@ -83,53 +83,74 @@ func _build_ui() -> void:
 	# Dim background
 	var dim := ColorRect.new()
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0, 0, 0, 0.75)
+	dim.color = Color(0, 0, 0, 0.85)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(dim)
 
-	# Full-screen panel
+	# Showroom background
+	var showroom_bg := ShowroomBgScene.instantiate()
+	showroom_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	showroom_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(showroom_bg)
+
+	# Semi-transparent main panel
 	var panel := PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var style := StyleBoxFlat.new()
 	style.bg_color = PANEL_COLOR
 	style.border_color = BORDER_COLOR
-	style.set_border_width_all(4)
+	style.set_border_width_all(2)
 	style.set_corner_radius_all(16)
-	style.content_margin_left = 24
-	style.content_margin_right = 24
-	style.content_margin_top = 16
-	style.content_margin_bottom = 16
-	style.shadow_color = Color(0, 0, 0, 0.4)
-	style.shadow_size = 8
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
 	panel.add_theme_stylebox_override("panel", style)
 	add_child(panel)
 
 	_main_vbox = VBoxContainer.new()
-	_main_vbox.add_theme_constant_override("separation", 10)
+	_main_vbox.add_theme_constant_override("separation", 4)
 	panel.add_child(_main_vbox)
 
-	# Header bar
+	# ── Header ──
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 16)
+	header.add_theme_constant_override("separation", 12)
 	_main_vbox.add_child(header)
 
-	# Decorative symbols
+	# Title section with subtitle
+	var title_vbox := VBoxContainer.new()
+	title_vbox.add_theme_constant_override("separation", 0)
+	header.add_child(title_vbox)
+
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 10)
+	title_vbox.add_child(title_row)
+
 	var left_deco := Label.new()
-	left_deco.text = "\u2726 \u2605 \u2726"
-	left_deco.add_theme_font_size_override("font_size", 18)
+	left_deco.text = "\u2726 \u2660 \u2726"
+	left_deco.add_theme_font_size_override("font_size", 16)
 	left_deco.add_theme_color_override("font_color", ACCENT_DIM)
-	header.add_child(left_deco)
+	title_row.add_child(left_deco)
 
 	_title_label = Label.new()
-	_title_label.add_theme_font_size_override("font_size", 28)
+	_title_label.add_theme_font_size_override("font_size", 26)
 	_title_label.add_theme_color_override("font_color", ACCENT)
-	header.add_child(_title_label)
+	title_row.add_child(_title_label)
 
 	var right_deco := Label.new()
-	right_deco.text = "\u2726 \u2605 \u2726"
-	right_deco.add_theme_font_size_override("font_size", 18)
+	right_deco.text = "\u2726 \u2660 \u2726"
+	right_deco.add_theme_font_size_override("font_size", 16)
 	right_deco.add_theme_color_override("font_color", ACCENT_DIM)
-	header.add_child(right_deco)
+	title_row.add_child(right_deco)
+
+	var subtitle := Label.new()
+	if _trading_enabled:
+		subtitle.text = "View & Trade Cards \u2022 Sell Unwanted \u2022 Buy New Strategies"
+	else:
+		subtitle.text = "Review Your Battle Cards \u2022 Plan Your Strategy"
+	subtitle.add_theme_font_size_override("font_size", 11)
+	subtitle.add_theme_color_override("font_color", Color(0.3, 0.55, 0.75, 0.8))
+	title_vbox.add_child(subtitle)
 
 	var header_spacer := Control.new()
 	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -142,15 +163,15 @@ func _build_ui() -> void:
 		header.add_child(_credits_label)
 
 	var close_btn := Button.new()
-	close_btn.text = "Leave"
-	close_btn.custom_minimum_size = Vector2(80, 36)
+	close_btn.text = "Close"
+	close_btn.custom_minimum_size = Vector2(90, 36)
 	_style_action_button(close_btn, Color(0.5, 0.15, 0.1))
 	close_btn.pressed.connect(_on_close_pressed)
 	header.add_child(close_btn)
 
 	# Separator
 	var sep := HSeparator.new()
-	sep.add_theme_constant_override("separation", 4)
+	sep.add_theme_constant_override("separation", 2)
 	sep.add_theme_color_override("separator", ACCENT_DIM)
 	_main_vbox.add_child(sep)
 
@@ -158,7 +179,7 @@ func _build_ui() -> void:
 	if _trading_enabled:
 		_status_label = Label.new()
 		_status_label.add_theme_font_size_override("font_size", 14)
-		_status_label.add_theme_color_override("font_color", Color(0.4, 0.8, 0.4))
+		_status_label.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
 		_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_main_vbox.add_child(_status_label)
 
@@ -170,15 +191,15 @@ func _build_ui() -> void:
 
 	_card_grid = GridContainer.new()
 	_card_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_card_grid.add_theme_constant_override("h_separation", 12)
-	_card_grid.add_theme_constant_override("v_separation", 12)
+	_card_grid.add_theme_constant_override("h_separation", 8)
+	_card_grid.add_theme_constant_override("v_separation", 8)
 	_card_grid.columns = 6
 	scroll.add_child(_card_grid)
 
 	# Shop section (below deck, trading only)
 	if _trading_enabled and _shop_cards.size() > 0:
 		var shop_sep := HSeparator.new()
-		shop_sep.add_theme_constant_override("separation", 4)
+		shop_sep.add_theme_constant_override("separation", 6)
 		shop_sep.add_theme_color_override("separator", ACCENT_DIM)
 		_main_vbox.add_child(shop_sep)
 
@@ -187,9 +208,10 @@ func _build_ui() -> void:
 		_main_vbox.add_child(_shop_section)
 
 		var shop_label := Label.new()
-		shop_label.text = "FOR SALE"
+		shop_label.text = "\u25C6 FOR SALE \u25C6"
 		shop_label.add_theme_font_size_override("font_size", 16)
 		shop_label.add_theme_color_override("font_color", ACCENT)
+		shop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_shop_section.add_child(shop_label)
 
 		var shop_scroll := ScrollContainer.new()
@@ -319,16 +341,16 @@ func _refresh_all() -> void:
 
 
 func _style_action_button(btn: Button, accent: Color) -> void:
-	btn.add_theme_font_size_override("font_size", 16)
+	btn.add_theme_font_size_override("font_size", 14)
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = accent
 	normal.border_color = accent.lightened(0.3)
 	normal.set_border_width_all(2)
 	normal.set_corner_radius_all(6)
-	normal.content_margin_left = 16
-	normal.content_margin_right = 16
-	normal.content_margin_top = 8
-	normal.content_margin_bottom = 8
+	normal.content_margin_left = 14
+	normal.content_margin_right = 14
+	normal.content_margin_top = 6
+	normal.content_margin_bottom = 6
 
 	var hover := normal.duplicate()
 	hover.bg_color = accent.lightened(0.15)

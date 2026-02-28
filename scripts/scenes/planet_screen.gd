@@ -6,6 +6,7 @@ const SmugglerEventScene = preload("res://scenes/components/smuggler_event.tscn"
 const PlanetEventScene = preload("res://scenes/components/planet_event.tscn")
 const CasinoPopupScene: PackedScene = preload("res://scenes/components/casino_popup.tscn")
 const ShipDealerScene: PackedScene = preload("res://scenes/components/ship_dealer.tscn")
+const ShipUpgradeScene: PackedScene = preload("res://scenes/ship_upgrade.tscn")
 
 const TYPE_COLORS = {
 	0: Color(0.4, 0.6, 1.0),
@@ -23,11 +24,12 @@ const MARKET_FLAVOR = {
 	4: "No questions asked. Contraband welcome.",
 }
 
-# Metallic panel style constants
-const PANEL_BORDER := Color(0.35, 0.38, 0.42, 0.8)
-const ACCENT_GREEN := Color(0.25, 0.55, 0.2)
-const SECONDARY_BG := Color(0.1, 0.12, 0.16)
-const SECONDARY_BORDER := Color(0.35, 0.38, 0.42, 0.7)
+# Hologram panel style constants
+const HOLO_BORDER := Color(0.0, 0.65, 0.95, 0.85)
+const ACCENT_DEPART := Color(0.0, 0.85, 0.45)
+const SECONDARY_BG := Color(0.02, 0.06, 0.14, 0.80)
+const SECONDARY_BORDER := Color(0.0, 0.45, 0.75, 0.70)
+const HOLO_SHADOW := Color(0.0, 0.45, 0.9, 0.25)
 
 var current_planet_data: Resource = null
 var _smuggler_bought: Dictionary = {}  # good_name -> qty bought from smuggler this visit
@@ -98,6 +100,7 @@ func _ready() -> void:
 	shipyard_panel.setup()
 	shipyard_panel.shipyard_action.connect(_on_shipyard_action)
 	shipyard_panel.ships_requested.connect(_on_ship_dealer_pressed)
+	shipyard_panel.upgrades_requested.connect(_on_ship_upgrades_pressed)
 	# Crew
 	crew_panel.setup(pt)
 	crew_panel.crew_action.connect(_on_shipyard_action)
@@ -156,10 +159,12 @@ func _find_planet_data() -> void:
 func _style_info_boxes() -> void:
 	for box in [credits_box, cargo_box]:
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.06, 0.07, 0.1, 0.75)
-		style.border_color = PANEL_BORDER
+		style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
+		style.border_color = HOLO_BORDER
 		style.set_border_width_all(2)
-		style.set_corner_radius_all(4)
+		style.set_corner_radius_all(6)
+		style.shadow_color = HOLO_SHADOW
+		style.shadow_size = 6
 		style.content_margin_left = 8
 		style.content_margin_right = 8
 		style.content_margin_top = 4
@@ -169,14 +174,14 @@ func _style_info_boxes() -> void:
 
 func _style_cargo_bar() -> void:
 	var bar_bg := StyleBoxFlat.new()
-	bar_bg.bg_color = Color(0.12, 0.14, 0.18)
+	bar_bg.bg_color = Color(0.02, 0.06, 0.16)
 	bar_bg.set_corner_radius_all(3)
-	bar_bg.border_color = Color(0.25, 0.28, 0.32)
+	bar_bg.border_color = Color(0.0, 0.30, 0.50)
 	bar_bg.set_border_width_all(1)
 	cargo_bar.add_theme_stylebox_override("background", bar_bg)
 
 	var bar_fill := StyleBoxFlat.new()
-	bar_fill.bg_color = Color(0.2, 0.5, 0.8)
+	bar_fill.bg_color = Color(0.0, 0.80, 1.0)
 	bar_fill.set_corner_radius_all(3)
 	cargo_bar.add_theme_stylebox_override("fill", bar_fill)
 
@@ -357,7 +362,7 @@ func _update_log() -> void:
 		lbl.text = entries[i]
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		lbl.add_theme_font_size_override("font_size", 11)
-		lbl.add_theme_color_override("font_color", Color(0.45, 0.48, 0.5))
+		lbl.add_theme_color_override("font_color", Color(0.35, 0.65, 0.85))
 		log_list.add_child(lbl)
 
 
@@ -366,11 +371,11 @@ func _add_menu_button() -> void:
 	var menu_btn := Button.new()
 	menu_btn.text = "Menu"
 	menu_btn.add_theme_font_size_override("font_size", 11)
-	menu_btn.add_theme_color_override("font_color", Color(0.45, 0.48, 0.52))
-	menu_btn.add_theme_color_override("font_hover_color", Color(0.65, 0.68, 0.72))
+	menu_btn.add_theme_color_override("font_color", Color(0.35, 0.6, 0.8))
+	menu_btn.add_theme_color_override("font_hover_color", Color(0.55, 0.78, 0.98))
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.06, 0.07, 0.1, 0.5)
-	style.border_color = Color(0.2, 0.22, 0.26, 0.4)
+	style.bg_color = Color(0.02, 0.04, 0.08, 0.5)
+	style.border_color = Color(0.0, 0.25, 0.45, 0.4)
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(3)
 	style.content_margin_left = 8
@@ -379,7 +384,7 @@ func _add_menu_button() -> void:
 	style.content_margin_bottom = 2
 	menu_btn.add_theme_stylebox_override("normal", style)
 	var hover_style := style.duplicate()
-	hover_style.bg_color = Color(0.1, 0.12, 0.16, 0.6)
+	hover_style.bg_color = Color(0.04, 0.08, 0.14, 0.6)
 	menu_btn.add_theme_stylebox_override("hover", hover_style)
 	menu_btn.pressed.connect(_on_menu_pressed)
 	bottom_hbox.add_child(menu_btn)
@@ -397,7 +402,7 @@ func _on_menu_pressed() -> void:
 
 
 func _style_bottom_buttons() -> void:
-	_style_primary_button(depart_button, ACCENT_GREEN)
+	_style_primary_button(depart_button, ACCENT_DEPART)
 	_style_secondary_button(save_button)
 	_style_secondary_button(view_deck_button)
 	depart_button.add_theme_font_size_override("font_size", 16)
@@ -409,6 +414,8 @@ func _style_primary_button(btn: Button, accent: Color) -> void:
 	normal.border_color = accent.lightened(0.25)
 	normal.set_border_width_all(2)
 	normal.set_corner_radius_all(4)
+	normal.shadow_color = Color(0.0, 0.85, 0.45, 0.35)
+	normal.shadow_size = 8
 	normal.content_margin_left = 16
 	normal.content_margin_right = 16
 	normal.content_margin_top = 6
@@ -423,9 +430,9 @@ func _style_primary_button(btn: Button, accent: Color) -> void:
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9))
-	btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 0.95))
-	btn.add_theme_color_override("font_pressed_color", Color(0.8, 0.8, 0.75))
+	btn.add_theme_color_override("font_color", Color(0.0, 0.05, 0.05))
+	btn.add_theme_color_override("font_hover_color", Color(0.0, 0.1, 0.05))
+	btn.add_theme_color_override("font_pressed_color", Color(0.0, 0.05, 0.02))
 
 
 func _style_secondary_button(btn: Button) -> void:
@@ -449,8 +456,8 @@ func _style_secondary_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_color_override("font_color", Color(0.7, 0.72, 0.75))
-	btn.add_theme_color_override("font_hover_color", Color(0.85, 0.87, 0.9))
+	btn.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
+	btn.add_theme_color_override("font_hover_color", Color(0.8, 0.98, 1.0))
 
 
 func _rebuild_action_icons() -> void:
@@ -464,7 +471,7 @@ func _build_action_icons() -> void:
 	# Casino: all except Mining (2)
 	if pt != 2:
 		var btn := _create_action_icon_button(
-			"\u2666", "Casino", Color(0.85, 0.65, 0.1), Color(0.35, 0.25, 0.05))
+			"\u2666", "Casino", Color(1.0, 0.75, 0.1), Color(0.18, 0.10, 0.0))
 		if _casino_done:
 			btn.disabled = true
 			btn.tooltip_text = "Already visited this landing"
@@ -475,7 +482,7 @@ func _build_action_icons() -> void:
 	# Mission: only Tech (3) and Outlaw (4)
 	if pt == 3 or pt == 4:
 		var btn := _create_action_icon_button(
-			"\u2694", "Mission", Color(0.4, 0.75, 1.0), Color(0.08, 0.18, 0.32))
+			"\u2694", "Mission", Color(0.3, 0.85, 1.0), Color(0.02, 0.1, 0.22))
 		if _mission_done:
 			btn.disabled = true
 			btn.tooltip_text = "Already completed this visit"
@@ -497,7 +504,9 @@ func _create_action_icon_button(icon: String, label_text: String, accent: Color,
 	normal.bg_color = bg
 	normal.border_color = accent.darkened(0.2)
 	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(8)
+	normal.set_corner_radius_all(6)
+	normal.shadow_color = accent.darkened(0.1)
+	normal.shadow_size = 4
 	normal.content_margin_left = 8
 	normal.content_margin_right = 8
 	normal.content_margin_top = 4
@@ -555,3 +564,14 @@ func _on_ship_dealer_pressed() -> void:
 	add_child(dealer)
 	dealer.setup(pt)
 	dealer.dealer_closed.connect(func(): _update_ui(); _update_log())
+
+
+func _on_ship_upgrades_pressed() -> void:
+	if has_node("ShipUpgrades"):
+		return
+	var pt: int = current_planet_data.planet_type if current_planet_data else 0
+	var upgrades := ShipUpgradeScene.instantiate()
+	upgrades.name = "ShipUpgrades"
+	add_child(upgrades)
+	upgrades.setup(pt)
+	upgrades.upgrades_closed.connect(func(): _update_ui(); _update_log())

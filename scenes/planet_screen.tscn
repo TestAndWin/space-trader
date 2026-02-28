@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://ps1planet_screen"]
+[gd_scene load_steps=10 format=3 uid="uid://ps1planet_screen"]
 
 [ext_resource type="Script" path="res://scripts/scenes/planet_screen.gd" id="1_ps1"]
 [ext_resource type="PackedScene" path="res://scenes/components/shipyard_panel.tscn" id="3_sy1"]
@@ -6,27 +6,30 @@
 [ext_resource type="PackedScene" path="res://scenes/components/quest_display.tscn" id="5_qd1"]
 [ext_resource type="PackedScene" path="res://scenes/components/space_background.tscn" id="6_sb1"]
 [ext_resource type="PackedScene" path="res://scenes/components/crew_panel.tscn" id="7_cp1"]
+[ext_resource type="Script" path="res://scripts/components/cockpit_frame.gd" id="8_cf1"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_market"]
-bg_color = Color(0.08, 0.1, 0.14, 0.75)
+bg_color = Color(0.02, 0.06, 0.14, 0.75)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.35, 0.38, 0.42, 0.8)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+border_color = Color(0.0, 0.65, 0.95, 0.85)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0.0, 0.45, 0.9, 0.2)
+shadow_size = 6
 content_margin_left = 8.0
 content_margin_top = 8.0
 content_margin_right = 8.0
 content_margin_bottom = 8.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bottom"]
-bg_color = Color(0.06, 0.07, 0.1, 0.75)
+bg_color = Color(0.01, 0.03, 0.08, 0.85)
 border_width_top = 0
-border_color = Color(0.35, 0.38, 0.42, 0.0)
+border_color = Color(0.0, 0.45, 0.75, 0.0)
 content_margin_left = 12.0
 content_margin_top = 4.0
 content_margin_right = 12.0
@@ -70,7 +73,7 @@ mouse_filter = 2
 visible = false
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_colors/font_color = Color(0.0, 1.0, 0.9, 1)
 text = ""
 
 [node name="PlanetHeader" type="HBoxContainer" parent="VBoxContainer"]
@@ -83,7 +86,7 @@ theme_override_constants/separation = 16
 layout_mode = 2
 mouse_filter = 2
 theme_override_font_sizes/font_size = 26
-theme_override_colors/font_color = Color(0.9, 0.9, 0.85, 1)
+theme_override_colors/font_color = Color(0.7, 0.95, 1.0, 1)
 text = "Planet Name"
 
 [node name="PlanetTypeLabel" type="Label" parent="VBoxContainer/PlanetHeader"]
@@ -124,7 +127,7 @@ mouse_filter = 2
 layout_mode = 2
 mouse_filter = 2
 theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(1, 0.95, 0.4, 1)
+theme_override_colors/font_color = Color(1.0, 0.90, 0.25, 1)
 text = "CREDITS: 1000"
 
 [node name="CargoBox" type="PanelContainer" parent="VBoxContainer/TopInfoBar"]
@@ -141,14 +144,14 @@ theme_override_constants/separation = 8
 layout_mode = 2
 mouse_filter = 2
 theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.8, 0.85, 0.9, 1)
+theme_override_colors/font_color = Color(0.65, 0.88, 1.0, 1)
 text = "CARGO:"
 
 [node name="CapacityLabel" type="Label" parent="VBoxContainer/TopInfoBar/CargoBox/CargoCapacity"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.8, 0.85, 0.9, 1)
+theme_override_colors/font_color = Color(0.65, 0.88, 1.0, 1)
 text = "0/10"
 
 [node name="CargoBar" type="ProgressBar" parent="VBoxContainer/TopInfoBar/CargoBox/CargoCapacity"]
@@ -189,7 +192,7 @@ theme_override_constants/separation = 6
 layout_mode = 2
 mouse_filter = 2
 theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.75, 0.8, 0.6, 1)
+theme_override_colors/font_color = Color(0.0, 0.9, 1.0, 1)
 text = "MARKET"
 
 [node name="MarketFlavorLabel" type="Label" parent="VBoxContainer/MainContent/LeftColumn/MarketPanel/MarketVBox"]
@@ -235,7 +238,7 @@ theme_override_constants/separation = 6
 layout_mode = 2
 mouse_filter = 2
 theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.85, 0.75, 0.5, 1)
+theme_override_colors/font_color = Color(0.0, 0.9, 1.0, 1)
 text = "YOUR CARGO"
 
 [node name="CargoScroll" type="ScrollContainer" parent="VBoxContainer/MainContent/MiddleColumn/CargoPanel/CargoVBox"]
@@ -294,7 +297,7 @@ mouse_filter = 2
 layout_mode = 2
 mouse_filter = 2
 theme_override_font_sizes/font_size = 13
-theme_override_colors/font_color = Color(0.55, 0.55, 0.5, 1)
+theme_override_colors/font_color = Color(0.0, 0.75, 0.95, 1)
 text = "EVENT LOG"
 
 [node name="LogScroll" type="ScrollContainer" parent="VBoxContainer/MainContent/RightColumn/LogPanel/LogVBox"]
@@ -329,3 +332,13 @@ text = "View Deck"
 [node name="DepartButton" type="Button" parent="VBoxContainer/BottomBar/BottomHBox"]
 layout_mode = 2
 text = "DEPART"
+
+[node name="CockpitFrame" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("8_cf1")

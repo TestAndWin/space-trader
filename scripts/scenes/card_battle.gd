@@ -26,8 +26,47 @@ var effective_energy_per_turn: int = 0
 
 func _ready() -> void:
 	encounter = GameManager.current_encounter
+	_style_battle_buttons()
 	if encounter:
 		start_battle(encounter)
+	_add_cockpit_frame()
+
+
+func _style_battle_buttons() -> void:
+	# End Turn: neon green
+	var end_btn: Button = $MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/EndTurnButton
+	var normal_end := StyleBoxFlat.new()
+	normal_end.bg_color = Color(0.0, 0.20, 0.10, 0.9)
+	normal_end.border_color = Color(0.0, 0.85, 0.45, 0.9)
+	normal_end.set_border_width_all(2)
+	normal_end.set_corner_radius_all(6)
+	normal_end.content_margin_left = 16
+	normal_end.content_margin_right = 16
+	normal_end.content_margin_top = 6
+	normal_end.content_margin_bottom = 6
+	var hover_end := normal_end.duplicate()
+	hover_end.bg_color = Color(0.0, 0.30, 0.15, 0.9)
+	hover_end.border_color = Color(0.0, 1.0, 0.55, 1.0)
+	end_btn.add_theme_stylebox_override("normal", normal_end)
+	end_btn.add_theme_stylebox_override("hover", hover_end)
+	end_btn.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
+	end_btn.add_theme_color_override("font_hover_color", Color(0.0, 1.0, 0.55))
+	# Flee: dim cyan/grey
+	var normal_flee := StyleBoxFlat.new()
+	normal_flee.bg_color = Color(0.02, 0.06, 0.14, 0.85)
+	normal_flee.border_color = Color(0.0, 0.35, 0.55, 0.6)
+	normal_flee.set_border_width_all(1)
+	normal_flee.set_corner_radius_all(6)
+	normal_flee.content_margin_left = 12
+	normal_flee.content_margin_right = 12
+	normal_flee.content_margin_top = 6
+	normal_flee.content_margin_bottom = 6
+	var hover_flee := normal_flee.duplicate()
+	hover_flee.border_color = Color(0.0, 0.55, 0.75, 0.8)
+	%FleeButton.add_theme_stylebox_override("normal", normal_flee)
+	%FleeButton.add_theme_stylebox_override("hover", hover_flee)
+	%FleeButton.add_theme_color_override("font_color", Color(0.35, 0.6, 0.8))
+	%FleeButton.add_theme_color_override("font_hover_color", Color(0.5, 0.8, 1.0))
 
 
 func start_battle(enc: Resource) -> void:
@@ -75,12 +114,12 @@ func _show_trade_offer() -> void:
 	var panel := PanelContainer.new()
 	panel.name = "TradeOfferPanel"
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.12, 0.18, 0.95)
+	style.bg_color = Color(0.02, 0.06, 0.14, 0.95)
 	style.border_width_left = 2
 	style.border_width_top = 2
 	style.border_width_right = 2
 	style.border_width_bottom = 2
-	style.border_color = Color(0.8, 0.65, 0.2, 0.8)
+	style.border_color = Color(1.0, 0.90, 0.25, 0.85)
 	style.corner_radius_top_left = 8
 	style.corner_radius_top_right = 8
 	style.corner_radius_bottom_right = 8
@@ -343,7 +382,7 @@ func _show_battle_message(text: String) -> void:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", 18)
-	lbl.add_theme_color_override("font_color", Color(1.0, 0.95, 0.4))
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.90, 0.25))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.anchor_left = 0.0
 	lbl.anchor_right = 1.0
@@ -553,3 +592,12 @@ func _update_ui() -> void:
 			effective_cost = max(0, effective_cost - 1)
 		card_display.setup(card, effective_cost <= current_energy)
 		card_display.card_played.connect(_on_card_played)
+
+
+func _add_cockpit_frame() -> void:
+	var frame := Control.new()
+	frame.name = "CockpitFrame"
+	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.set_script(load("res://scripts/components/cockpit_frame.gd"))
+	add_child(frame)

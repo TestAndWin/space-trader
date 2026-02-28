@@ -1,7 +1,7 @@
 extends ColorRect
 
 ## Casino popup — Blackjack and Slot Machine mini-games.
-## Full-screen immersive casino experience.
+## Full-screen immersive casino experience with showroom-style background.
 
 signal casino_closed
 
@@ -35,13 +35,15 @@ const SUIT_SYMBOLS: Dictionary = {
 	"Spades": "\u2660",
 }
 
-# Casino colors
-const FELT_GREEN := Color(0.05, 0.18, 0.08, 0.97)
-const FELT_BORDER := Color(0.55, 0.4, 0.15)
-const GOLD := Color(1.0, 0.85, 0.2)
-const GOLD_DIM := Color(0.7, 0.55, 0.15)
+# Casino colors — premium gold + dark blue
+const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.65)
+const BORDER_COLOR := Color(0.65, 0.52, 0.08, 0.55)
+const GOLD := Color(1.0, 0.90, 0.25)
+const GOLD_DIM := Color(0.65, 0.52, 0.08)
+const ACCENT := Color(1.0, 0.85, 0.2)
+const ACCENT_DIM := Color(0.65, 0.52, 0.08, 0.6)
 const CARD_BG := Color(0.95, 0.93, 0.88)
-const CARD_BACK := Color(0.15, 0.2, 0.55)
+const CARD_BACK := Color(0.02, 0.10, 0.28)
 
 var _state: State = State.SELECT
 var _game: Game = Game.BLACKJACK
@@ -69,6 +71,8 @@ var _content_area: VBoxContainer
 var _credits_label: Label
 var _status_label: Label
 
+var ShowroomBgScene := preload("res://scenes/components/dealer_showroom_bg.tscn")
+
 
 func setup(planet_type: int, max_rounds: int = 5) -> void:
 	_planet_type = planet_type
@@ -79,12 +83,18 @@ func setup(planet_type: int, max_rounds: int = 5) -> void:
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	color = Color(0, 0, 0, 0.75)
+	color = Color(0, 0, 0, 0.85)
 	_build_ui()
 
 
 func _build_ui() -> void:
-	# Full-screen casino panel with felt background
+	# Showroom background (behind everything)
+	var showroom_bg := ShowroomBgScene.instantiate()
+	showroom_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	showroom_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(showroom_bg)
+
+	# Semi-transparent casino panel
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 0)
@@ -95,23 +105,14 @@ func _build_ui() -> void:
 
 	var panel := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = FELT_GREEN
-	style.border_color = FELT_BORDER
-	style.border_width_left = 4
-	style.border_width_right = 4
-	style.border_width_top = 4
-	style.border_width_bottom = 4
-	style.corner_radius_top_left = 16
-	style.corner_radius_top_right = 16
-	style.corner_radius_bottom_left = 16
-	style.corner_radius_bottom_right = 16
-	style.content_margin_left = 24
-	style.content_margin_right = 24
+	style.bg_color = PANEL_COLOR
+	style.border_color = BORDER_COLOR
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(16)
+	style.content_margin_left = 28
+	style.content_margin_right = 28
 	style.content_margin_top = 16
 	style.content_margin_bottom = 16
-	# Inner shadow effect
-	style.shadow_color = Color(0, 0, 0, 0.4)
-	style.shadow_size = 8
 	panel.add_theme_stylebox_override("panel", style)
 	margin.add_child(panel)
 
@@ -119,29 +120,43 @@ func _build_ui() -> void:
 	_main_vbox.add_theme_constant_override("separation", 12)
 	panel.add_child(_main_vbox)
 
-	# Header bar
+	# ── Header ──
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 16)
+	header.add_theme_constant_override("separation", 12)
 	_main_vbox.add_child(header)
 
-	# Decorative diamonds
+	# Title section with subtitle
+	var title_vbox := VBoxContainer.new()
+	title_vbox.add_theme_constant_override("separation", 0)
+	header.add_child(title_vbox)
+
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 10)
+	title_vbox.add_child(title_row)
+
 	var left_deco := Label.new()
 	left_deco.text = "\u2666 \u2663 \u2665 \u2660"
-	left_deco.add_theme_font_size_override("font_size", 18)
+	left_deco.add_theme_font_size_override("font_size", 16)
 	left_deco.add_theme_color_override("font_color", GOLD_DIM)
-	header.add_child(left_deco)
+	title_row.add_child(left_deco)
 
 	var title := Label.new()
 	title.text = "SPACE CASINO"
-	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", GOLD)
-	header.add_child(title)
+	title_row.add_child(title)
 
 	var right_deco := Label.new()
 	right_deco.text = "\u2660 \u2665 \u2663 \u2666"
-	right_deco.add_theme_font_size_override("font_size", 18)
+	right_deco.add_theme_font_size_override("font_size", 16)
 	right_deco.add_theme_color_override("font_color", GOLD_DIM)
-	header.add_child(right_deco)
+	title_row.add_child(right_deco)
+
+	var subtitle := Label.new()
+	subtitle.text = "High Stakes \u2022 Fair Games \u2022 Galactic Gaming License #4827"
+	subtitle.add_theme_font_size_override("font_size", 11)
+	subtitle.add_theme_color_override("font_color", Color(0.55, 0.45, 0.25, 0.8))
+	title_vbox.add_child(subtitle)
 
 	var header_spacer := Control.new()
 	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -153,15 +168,15 @@ func _build_ui() -> void:
 	header.add_child(_credits_label)
 
 	var close_btn := Button.new()
-	close_btn.text = "Leave"
-	close_btn.custom_minimum_size = Vector2(80, 36)
+	close_btn.text = "Leave Casino"
+	close_btn.custom_minimum_size = Vector2(130, 36)
 	_style_casino_button(close_btn, Color(0.5, 0.15, 0.1))
 	close_btn.pressed.connect(_close)
 	header.add_child(close_btn)
 
 	# Separator line
 	var sep := HSeparator.new()
-	sep.add_theme_constant_override("separation", 4)
+	sep.add_theme_constant_override("separation", 6)
 	sep.add_theme_color_override("separator", GOLD_DIM)
 	_main_vbox.add_child(sep)
 
@@ -181,16 +196,18 @@ func _build_ui() -> void:
 
 
 func _style_casino_button(btn: Button, accent: Color) -> void:
-	btn.add_theme_font_size_override("font_size", 16)
+	btn.add_theme_font_size_override("font_size", 14)
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = accent
 	normal.border_color = accent.lightened(0.3)
 	normal.set_border_width_all(2)
 	normal.set_corner_radius_all(6)
-	normal.content_margin_left = 16
-	normal.content_margin_right = 16
-	normal.content_margin_top = 8
-	normal.content_margin_bottom = 8
+	normal.content_margin_left = 14
+	normal.content_margin_right = 14
+	normal.content_margin_top = 6
+	normal.content_margin_bottom = 6
+	normal.shadow_color = Color(accent.r, accent.g, accent.b, 0.15)
+	normal.shadow_size = 4
 	btn.add_theme_stylebox_override("normal", normal)
 	var hover := normal.duplicate()
 	hover.bg_color = accent.lightened(0.15)
@@ -279,7 +296,7 @@ func _build_select_ui() -> void:
 		btn.text = "%d cr" % amount
 		btn.custom_minimum_size = Vector2(100, 48)
 		btn.disabled = GameManager.credits < amount
-		var accent := Color(0.15, 0.4, 0.2) if GameManager.credits >= amount else Color(0.2, 0.2, 0.2)
+		var accent := Color(0.25, 0.18, 0.0) if GameManager.credits >= amount else Color(0.05, 0.08, 0.12)
 		_style_casino_button(btn, accent)
 		btn.pressed.connect(_on_bet_and_play.bind(amount))
 		bet_row.add_child(btn)
@@ -291,7 +308,7 @@ func _build_select_ui() -> void:
 	else:
 		info.text = "3 match: 3x  |  2 match: 1.5x  |  3\u2605 Jackpot: 10x  |  3\u2620: -2x"
 	info.add_theme_font_size_override("font_size", 12)
-	info.add_theme_color_override("font_color", Color(0.5, 0.6, 0.5))
+	info.add_theme_color_override("font_color", Color(0.45, 0.55, 0.65))
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_content_area.add_child(info)
 
@@ -301,11 +318,13 @@ func _create_game_table(title_text: String, desc_text: String, selected: bool, o
 	table.custom_minimum_size = Vector2(200, 100)
 	var style := StyleBoxFlat.new()
 	if selected:
-		style.bg_color = Color(0.08, 0.28, 0.12)
+		style.bg_color = Color(0.08, 0.06, 0.02, 0.8)
 		style.border_color = GOLD
+		style.shadow_color = Color(0.8, 0.6, 0.1, 0.12)
+		style.shadow_size = 8
 	else:
-		style.bg_color = Color(0.04, 0.14, 0.06)
-		style.border_color = Color(0.3, 0.3, 0.25)
+		style.bg_color = Color(0.03, 0.04, 0.08, 0.7)
+		style.border_color = Color(0.3, 0.25, 0.1, 0.5)
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(8)
 	style.set_content_margin_all(12)
@@ -316,17 +335,17 @@ func _create_game_table(title_text: String, desc_text: String, selected: bool, o
 	vbox.add_theme_constant_override("separation", 4)
 	table.add_child(vbox)
 
-	var title := Label.new()
-	title.text = title_text
-	title.add_theme_font_size_override("font_size", 18)
-	title.add_theme_color_override("font_color", GOLD if selected else GOLD_DIM)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
+	var title_lbl := Label.new()
+	title_lbl.text = title_text
+	title_lbl.add_theme_font_size_override("font_size", 18)
+	title_lbl.add_theme_color_override("font_color", GOLD if selected else GOLD_DIM)
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title_lbl)
 
 	var desc := Label.new()
 	desc.text = desc_text
 	desc.add_theme_font_size_override("font_size", 12)
-	desc.add_theme_color_override("font_color", Color(0.6, 0.7, 0.6))
+	desc.add_theme_color_override("font_color", Color(0.5, 0.55, 0.65))
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(desc)
 
@@ -420,6 +439,8 @@ func _create_card_display(card: Dictionary, face_up: bool) -> PanelContainer:
 	style.content_margin_right = 4
 	style.content_margin_top = 4
 	style.content_margin_bottom = 4
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.3)
+	style.shadow_size = 3
 	container.add_theme_stylebox_override("panel", style)
 
 	var vbox := VBoxContainer.new()
@@ -461,7 +482,7 @@ func _build_blackjack_ui() -> void:
 	var dealer_header := Label.new()
 	dealer_header.text = "DEALER"
 	dealer_header.add_theme_font_size_override("font_size", 16)
-	dealer_header.add_theme_color_override("font_color", Color(0.8, 0.6, 0.6))
+	dealer_header.add_theme_color_override("font_color", Color(0.85, 0.35, 0.35))
 	dealer_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_content_area.add_child(dealer_header)
 
@@ -478,23 +499,23 @@ func _build_blackjack_ui() -> void:
 	var dealer_val_lbl := Label.new()
 	if _dealer_revealed:
 		dealer_val_lbl.text = "  = %d" % _bj_hand_value(_dealer_hand)
-		dealer_val_lbl.add_theme_color_override("font_color", Color(0.9, 0.7, 0.7))
+		dealer_val_lbl.add_theme_color_override("font_color", Color(0.9, 0.55, 0.55))
 	else:
 		dealer_val_lbl.text = "  = %d + ?" % _bj_card_value(_dealer_hand[0])
-		dealer_val_lbl.add_theme_color_override("font_color", Color(0.6, 0.5, 0.5))
+		dealer_val_lbl.add_theme_color_override("font_color", Color(0.5, 0.4, 0.45))
 	dealer_val_lbl.add_theme_font_size_override("font_size", 20)
 	dealer_row.add_child(dealer_val_lbl)
 
 	# Divider
 	var divider := HSeparator.new()
-	divider.add_theme_color_override("separator", Color(0.3, 0.4, 0.3, 0.5))
+	divider.add_theme_color_override("separator", GOLD_DIM)
 	_content_area.add_child(divider)
 
 	# Player section
 	var player_header := Label.new()
 	player_header.text = "YOUR HAND"
 	player_header.add_theme_font_size_override("font_size", 16)
-	player_header.add_theme_color_override("font_color", Color(0.6, 0.8, 0.6))
+	player_header.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
 	player_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_content_area.add_child(player_header)
 
@@ -516,7 +537,7 @@ func _build_blackjack_ui() -> void:
 	elif player_val > 21:
 		pval_lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	else:
-		pval_lbl.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
+		pval_lbl.add_theme_color_override("font_color", Color(0.5, 0.88, 1.0))
 	player_row.add_child(pval_lbl)
 
 	# Action buttons
@@ -528,14 +549,14 @@ func _build_blackjack_ui() -> void:
 	var hit_btn := Button.new()
 	hit_btn.text = "HIT"
 	hit_btn.custom_minimum_size = Vector2(120, 50)
-	_style_casino_button(hit_btn, Color(0.15, 0.4, 0.2))
+	_style_casino_button(hit_btn, Color(0.0, 0.22, 0.10))
 	hit_btn.pressed.connect(_on_bj_hit)
 	btn_row.add_child(hit_btn)
 
 	var stand_btn := Button.new()
 	stand_btn.text = "STAND"
 	stand_btn.custom_minimum_size = Vector2(120, 50)
-	_style_casino_button(stand_btn, Color(0.4, 0.25, 0.1))
+	_style_casino_button(stand_btn, Color(0.25, 0.18, 0.0))
 	stand_btn.pressed.connect(_on_bj_stand)
 	btn_row.add_child(stand_btn)
 
@@ -642,7 +663,7 @@ func _build_slots_ui() -> void:
 	var machine := PanelContainer.new()
 	machine.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	var machine_style := StyleBoxFlat.new()
-	machine_style.bg_color = Color(0.08, 0.06, 0.04)
+	machine_style.bg_color = Color(0.03, 0.04, 0.08, 0.8)
 	machine_style.border_color = GOLD_DIM
 	machine_style.set_border_width_all(3)
 	machine_style.set_corner_radius_all(12)
@@ -650,6 +671,8 @@ func _build_slots_ui() -> void:
 	machine_style.content_margin_right = 32
 	machine_style.content_margin_top = 24
 	machine_style.content_margin_bottom = 24
+	machine_style.shadow_color = Color(0.6, 0.4, 0.05, 0.12)
+	machine_style.shadow_size = 8
 	machine.add_theme_stylebox_override("panel", machine_style)
 	_content_area.add_child(machine)
 
@@ -675,8 +698,8 @@ func _build_slots_ui() -> void:
 		var reel_panel := PanelContainer.new()
 		reel_panel.custom_minimum_size = Vector2(100, 80)
 		var reel_style := StyleBoxFlat.new()
-		reel_style.bg_color = Color(0.12, 0.1, 0.08)
-		reel_style.border_color = Color(0.35, 0.3, 0.2)
+		reel_style.bg_color = Color(0.02, 0.03, 0.08)
+		reel_style.border_color = Color(0.4, 0.3, 0.1, 0.6)
 		reel_style.set_border_width_all(2)
 		reel_style.set_corner_radius_all(4)
 		reel_style.set_content_margin_all(8)
@@ -698,14 +721,14 @@ func _build_slots_ui() -> void:
 			var name_lbl := Label.new()
 			name_lbl.text = _reels[i]
 			name_lbl.add_theme_font_size_override("font_size", 11)
-			name_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.45))
+			name_lbl.add_theme_color_override("font_color", Color(0.5, 0.55, 0.65))
 			name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			reel_vbox.add_child(name_lbl)
 		else:
 			var spin_lbl := Label.new()
 			spin_lbl.text = "?"
 			spin_lbl.add_theme_font_size_override("font_size", 36)
-			spin_lbl.add_theme_color_override("font_color", Color(0.3, 0.3, 0.25))
+			spin_lbl.add_theme_color_override("font_color", Color(0.3, 0.25, 0.1, 0.7))
 			spin_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			reel_vbox.add_child(spin_lbl)
 
@@ -791,7 +814,7 @@ func _build_result_ui() -> void:
 	if remaining > 0:
 		again_btn.text = "Play Again (%d left)" % remaining
 		again_btn.custom_minimum_size = Vector2(160, 50)
-		_style_casino_button(again_btn, Color(0.15, 0.4, 0.2))
+		_style_casino_button(again_btn, Color(0.25, 0.18, 0.0))
 		again_btn.pressed.connect(func():
 			_state = State.SELECT
 			_bet = 0
@@ -800,7 +823,7 @@ func _build_result_ui() -> void:
 	else:
 		again_btn.text = "No rounds left"
 		again_btn.custom_minimum_size = Vector2(160, 50)
-		_style_casino_button(again_btn, Color(0.2, 0.2, 0.2))
+		_style_casino_button(again_btn, Color(0.04, 0.06, 0.10))
 		again_btn.disabled = true
 	btn_row.add_child(again_btn)
 

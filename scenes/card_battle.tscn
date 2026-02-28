@@ -1,15 +1,16 @@
-[gd_scene load_steps=5 format=3 uid="uid://cb1card_battle"]
+[gd_scene load_steps=6 format=3 uid="uid://cb1card_battle"]
 
 [ext_resource type="Script" path="res://scripts/scenes/card_battle.gd" id="1_cb1"]
 [ext_resource type="PackedScene" uid="uid://ship_display" path="res://scenes/components/ship_display.tscn" id="2_sd1"]
+[ext_resource type="Script" path="res://scripts/components/battle_background.gd" id="3_bb"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_enemy"]
-bg_color = Color(0.08, 0.04, 0.04, 0.85)
+bg_color = Color(0.08, 0.02, 0.02, 0.85)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0.5, 0.15, 0.15, 0.5)
+border_color = Color(0.65, 0.1, 0.1, 0.6)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
@@ -20,9 +21,9 @@ content_margin_right = 14.0
 content_margin_bottom = 10.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_player"]
-bg_color = Color(0.04, 0.05, 0.1, 0.85)
+bg_color = Color(0.02, 0.06, 0.14, 0.85)
 border_width_top = 1
-border_color = Color(0.15, 0.25, 0.45, 0.5)
+border_color = Color(0.0, 0.45, 0.75, 0.6)
 content_margin_left = 14.0
 content_margin_top = 10.0
 content_margin_right = 14.0
@@ -46,7 +47,17 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.02, 0.015, 0.06, 1)
+color = Color(0.01, 0.02, 0.05, 1)
+
+[node name="BattleBackground" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_bb")
 
 [node name="MainLayout" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -210,14 +221,14 @@ theme_override_constants/separation = 10
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 1)
+theme_override_colors/font_color = Color(0.35, 0.6, 0.8, 1)
 text = "Deck: 10"
 
 [node name="DiscardCountLabel" type="Label" parent="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 1)
+theme_override_colors/font_color = Color(0.35, 0.6, 0.8, 1)
 text = "Discard: 0"
 
 [node name="Spacer" type="Control" parent="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar"]
