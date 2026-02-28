@@ -76,14 +76,20 @@ Signal-based: managers emit signals, UI components subscribe. Scene transitions 
 
 **Navigation**: 7 planets in a connection graph. Travel triggers encounter chance based on destination danger level. Galaxy map info panel shows available trade goods per planet on hover (`galaxy_map.gd` → `_on_planet_hovered()`).
 
-### Planet Screen Layout
+### Planet Screen Layout (Hub)
 
-3-column layout:
-- **Left**: MarketPanel + CargoPanel (stacked)
-- **Middle**: CrewPanel
-- **Right**: PlanetBackground + ShipyardPanel + QuestDisplay
-- **Top**: News banner (EventManager world events)
-- **BottomBar**: Credits, cargo capacity, hull, shield, Save, View Deck, Depart
+Planet screen is a visual hub with clickable building buttons that open fullscreen overlays:
+- **Top**: NewsBanner, PlanetHeader (name, type, danger, goal), TopInfoBar (credits, cargo bar + cargo item icons)
+- **Left**: Large PlanetBackground
+- **Right**: BuildingGrid (3-column grid of building buttons), QuestDisplay, EventLog
+- **Bottom**: Menu, Save, View Deck, Depart
+
+Building buttons vary by planet type (different names, icons, colors). Buildings hidden when not available:
+- **Market** → `market_screen.gd` (fullscreen overlay, buy/sell goods)
+- **Shipyard** → `shipyard_screen.gd` (fullscreen overlay wrapping ShipyardPanel, links to Ship Dealer + Ship Upgrades)
+- **Casino** → `casino_popup.gd` (fullscreen overlay, not available on Mining planets)
+- **Crew** → `crew_screen.gd` (fullscreen overlay wrapping CrewPanel)
+- **Mission** → Space Invaders (separate scene, only Tech + Outlaw planets)
 
 ## Adding Game Content
 
