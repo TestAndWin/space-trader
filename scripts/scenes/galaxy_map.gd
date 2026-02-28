@@ -4,6 +4,11 @@ var planet_scene: PackedScene = preload("res://scenes/components/planet_node.tsc
 var planets: Array = []
 var planet_nodes: Dictionary = {}   # { planet_name: PlanetNode }
 var selected_planet: Resource = null
+var _time: float = 0.0
+var _twinkle_stars: Array = []  # { node: ColorRect, base_brightness: float, phase: float, speed: float }
+var _nebula_clouds: Array = []  # { node: ColorRect, base_alpha: float, phase: float }
+var _particles: Array = []      # { pos: Vector2, vel: Vector2, size: float, alpha: float, color: Color }
+var _route_data: Array = []     # { from: Vector2, to: Vector2, is_active: bool }
 
 @onready var planets_container := $PlanetsContainer
 @onready var routes_container := $RoutesContainer
@@ -26,6 +31,7 @@ var selected_planet: Resource = null
 func _ready() -> void:
 	_load_planets()
 	_generate_starfield()
+	_init_particles()
 	_draw_routes()
 	_spawn_planet_nodes()
 	_update_planet_states()
@@ -59,56 +65,191 @@ func _ready() -> void:
 	_add_cockpit_frame()
 
 
+func _process(delta: float) -> void:
+	_time += delta
+	# Animate twinkle stars
+	for ts in _twinkle_stars:
+		var node: ColorRect = ts["node"]
+		var base: float = ts["base_brightness"]
+		var phase: float = ts["phase"]
+		var spd: float = ts["speed"]
+		var brt: float = lerpf(base * 0.2, minf(base * 2.2, 1.0), (sin(_time * spd + phase) + 1.0) * 0.5)
+		node.color = Color(brt, brt, minf(brt * 1.15, 1.0), brt)
+		# Also animate size for bright stars to create glow pulsing
+		if base > 0.5:
+			var sz: float = 2.0 + sin(_time * spd * 0.7 + phase) * 0.8
+			node.size = Vector2(sz, sz)
+	# Animate nebula breathing
+	for nc in _nebula_clouds:
+		var node: ColorRect = nc["node"]
+		var base_a: float = nc["base_alpha"]
+		var phase: float = nc["phase"]
+		var breath: float = sin(_time * 0.3 + phase) * 0.02
+		var col: Color = node.color
+		col.a = base_a + breath
+		node.color = col
+	# Move floating particles
+	for p in _particles:
+		p["pos"] += p["vel"] * delta
+		# Wrap around screen
+		if p["pos"].x < -20.0:
+			p["pos"].x = 1300.0
+		elif p["pos"].x > 1300.0:
+			p["pos"].x = -20.0
+		if p["pos"].y < -20.0:
+			p["pos"].y = 740.0
+		elif p["pos"].y > 740.0:
+			p["pos"].y = -20.0
+	# Request redraw for animated routes + particles
+	queue_redraw()
+
+
+func _draw() -> void:
+	_draw_animated_routes()
+	_draw_particles()
+
+
+func _draw_animated_routes() -> void:
+	for rd in _route_data:
+		var from: Vector2 = rd["from"]
+		var to: Vector2 = rd["to"]
+		var is_active: bool = rd["is_active"]
+
+		if is_active:
+			# Outer glow line
+			draw_line(from, to, Color(0.3, 0.55, 0.9, 0.12), 8.0, true)
+			# Main route line
+			draw_line(from, to, Color(0.4, 0.7, 1.0, 0.55), 2.5, true)
+			# Bright core
+			draw_line(from, to, Color(0.6, 0.85, 1.0, 0.45), 1.0, true)
+
+			# Animated energy pulses traveling along the route
+			var route_len: float = from.distance_to(to)
+			var dir: Vector2 = (to - from).normalized()
+			var num_pulses: int = 3
+			for i in num_pulses:
+				var phase: float = float(i) / float(num_pulses)
+				# t goes 0..1 along the route, wrapping
+				var t: float = fmod(_time * 0.25 + phase, 1.0)
+				var pulse_pos: Vector2 = from.lerp(to, t)
+				# Pulse brightness fades at edges
+				var edge_fade: float = 1.0 - abs(t - 0.5) * 2.0
+				edge_fade = clampf(edge_fade, 0.0, 1.0)
+				var pulse_alpha: float = 0.7 * edge_fade
+				# Bright dot
+				draw_circle(pulse_pos, 4.0, Color(0.5, 0.8, 1.0, pulse_alpha * 0.3))
+				draw_circle(pulse_pos, 2.0, Color(0.7, 0.9, 1.0, pulse_alpha * 0.7))
+				draw_circle(pulse_pos, 0.8, Color(1.0, 1.0, 1.0, pulse_alpha))
+		else:
+			# Inactive route: dim dashed appearance via alternating alpha
+			var route_len: float = from.distance_to(to)
+			var dir: Vector2 = (to - from).normalized()
+			var seg_len: float = 12.0
+			var segments: int = int(route_len / seg_len)
+			for i in segments:
+				if i % 2 == 0:
+					var seg_start: Vector2 = from + dir * (float(i) * seg_len)
+					var seg_end: Vector2 = from + dir * minf(float(i + 1) * seg_len, route_len)
+					draw_line(seg_start, seg_end, Color(0.2, 0.3, 0.5, 0.18), 1.0, true)
+
+
+func _draw_particles() -> void:
+	for p in _particles:
+		var pos: Vector2 = p["pos"]
+		var sz: float = p["size"]
+		var alpha: float = p["alpha"]
+		var col: Color = p["color"]
+		# Subtle pulsing alpha
+		alpha *= 0.7 + sin(_time * 0.8 + pos.x * 0.01) * 0.3
+		draw_circle(pos, sz, Color(col.r, col.g, col.b, alpha))
+		# Tiny glow halo for larger particles
+		if sz > 1.2:
+			draw_circle(pos, sz * 2.5, Color(col.r, col.g, col.b, alpha * 0.15))
+
+
+func _init_particles() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 55
+	var particle_colors: Array = [
+		Color(0.4, 0.6, 1.0),   # blue
+		Color(0.3, 0.8, 0.9),   # cyan
+		Color(0.6, 0.4, 0.9),   # purple
+		Color(0.9, 0.8, 0.5),   # gold
+		Color(0.5, 0.7, 0.6),   # teal
+	]
+	for i in 30:
+		_particles.append({
+			"pos": Vector2(rng.randf_range(0, 1280), rng.randf_range(0, 720)),
+			"vel": Vector2(rng.randf_range(-8.0, 8.0), rng.randf_range(-4.0, 4.0)),
+			"size": rng.randf_range(0.5, 1.8),
+			"alpha": rng.randf_range(0.08, 0.25),
+			"color": particle_colors[i % particle_colors.size()],
+		})
+
+
 func _load_planets() -> void:
 	planets = ResourceRegistry.load_all(ResourceRegistry.PLANETS)
 
 
 func _generate_starfield() -> void:
-	# Nebula clouds
+	# Nebula clouds — larger, more vibrant
 	var nebula_rng := RandomNumberGenerator.new()
 	nebula_rng.seed = 7
 	var nebula_colors: Array = [
-		Color(0.3, 0.1, 0.5, 0.06),  # purple
-		Color(0.1, 0.15, 0.4, 0.05), # blue
-		Color(0.4, 0.1, 0.15, 0.05), # red
-		Color(0.15, 0.1, 0.4, 0.06), # indigo
-		Color(0.1, 0.3, 0.4, 0.04),  # teal
-		Color(0.35, 0.15, 0.3, 0.05), # magenta
+		Color(0.35, 0.12, 0.55, 0.09),  # purple — more visible
+		Color(0.12, 0.18, 0.45, 0.08),  # blue
+		Color(0.45, 0.12, 0.18, 0.08),  # red
+		Color(0.18, 0.12, 0.45, 0.09),  # indigo
+		Color(0.12, 0.35, 0.45, 0.07),  # teal
+		Color(0.4, 0.18, 0.35, 0.08),   # magenta
+		Color(0.15, 0.25, 0.5, 0.06),   # deep blue — extra cloud
+		Color(0.5, 0.2, 0.4, 0.05),     # rose — extra cloud
 	]
-	for i in 6:
+	for i in nebula_colors.size():
 		var cloud := ColorRect.new()
-		cloud.position = Vector2(nebula_rng.randf_range(-100, 900), nebula_rng.randf_range(-50, 500))
-		cloud.size = Vector2(nebula_rng.randf_range(250, 500), nebula_rng.randf_range(200, 400))
+		cloud.position = Vector2(nebula_rng.randf_range(-150, 1000), nebula_rng.randf_range(-80, 550))
+		cloud.size = Vector2(nebula_rng.randf_range(280, 550), nebula_rng.randf_range(220, 450))
 		cloud.color = nebula_colors[i]
 		cloud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		starfield.add_child(cloud)
+		_nebula_clouds.append({ "node": cloud, "base_alpha": nebula_colors[i].a, "phase": nebula_rng.randf_range(0.0, TAU) })
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42  # Fixed seed for consistent starfield
-	for i in 200:
+	# More stars for a richer background
+	for i in 250:
 		var star_x: float = rng.randf_range(0, 1280)
 		var star_y: float = rng.randf_range(0, 720)
-		var star_size: float = rng.randf_range(0.5, 2.0)
-		var brightness: float = rng.randf_range(0.15, 0.7)
+		var star_size: float = rng.randf_range(0.5, 2.2)
+		var brightness: float = rng.randf_range(0.15, 0.75)
 		var star := ColorRect.new()
 		star.position = Vector2(star_x, star_y)
 		star.size = Vector2(star_size, star_size)
-		star.color = Color(brightness, brightness, brightness * 1.1, brightness)
+		# Slight color variation — some stars bluish, some warm
+		var tint: float = rng.randf_range(-0.08, 0.08)
+		star.color = Color(brightness - tint, brightness, brightness + tint, brightness)
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		starfield.add_child(star)
-	# A few brighter stars
-	for i in 15:
+		# Every 5th star twinkles (50 total)
+		if i % 5 == 0:
+			_twinkle_stars.append({ "node": star, "base_brightness": brightness, "phase": rng.randf_range(0.0, TAU), "speed": rng.randf_range(1.2, 3.0) })
+	# Bright accent stars with glow
+	for i in 20:
 		var star_x: float = rng.randf_range(0, 1280)
 		var star_y: float = rng.randf_range(0, 720)
 		var star := ColorRect.new()
 		star.position = Vector2(star_x, star_y)
-		star.size = Vector2(2.0, 2.0)
-		star.color = Color(0.8, 0.85, 1.0, 0.8)
+		star.size = Vector2(2.5, 2.5)
+		# Blue-white bright stars
+		var warmth: float = rng.randf_range(0.0, 0.15)
+		star.color = Color(0.75 + warmth, 0.82, 0.95, 0.85)
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		starfield.add_child(star)
+		_twinkle_stars.append({ "node": star, "base_brightness": 0.85, "phase": rng.randf_range(0.0, TAU), "speed": rng.randf_range(1.5, 2.8) })
 
 
 func _draw_routes() -> void:
+	# Build route data for animated drawing (no static Line2D nodes for routes)
 	var drawn_pairs: Dictionary = {}
 	var current_name: String = GameManager.current_planet
 	var current_planet := _find_planet_by_name(current_name)
@@ -129,32 +270,11 @@ func _draw_routes() -> void:
 			# Check if this route connects to current planet
 			var is_active: bool = (planet.planet_name == current_name and connected_name in active_connections) or (connected_name == current_name and planet.planet_name in active_connections)
 
-			if is_active:
-				# Active route: bright, visible
-				var line := Line2D.new()
-				line.add_point(planet.map_position)
-				line.add_point(target.map_position)
-				line.width = 2.5
-				line.default_color = Color(0.4, 0.7, 1.0, 0.6)
-				line.antialiased = true
-				routes_container.add_child(line)
-				# Bright center glow
-				var center_line := Line2D.new()
-				center_line.add_point(planet.map_position)
-				center_line.add_point(target.map_position)
-				center_line.width = 1.0
-				center_line.default_color = Color(0.6, 0.85, 1.0, 0.5)
-				center_line.antialiased = true
-				routes_container.add_child(center_line)
-			else:
-				# Inactive route: very dim
-				var line := Line2D.new()
-				line.add_point(planet.map_position)
-				line.add_point(target.map_position)
-				line.width = 1.0
-				line.default_color = Color(0.15, 0.2, 0.35, 0.2)
-				line.antialiased = true
-				routes_container.add_child(line)
+			_route_data.append({
+				"from": planet.map_position,
+				"to": target.map_position,
+				"is_active": is_active,
+			})
 
 
 func _route_key(a: String, b: String) -> String:

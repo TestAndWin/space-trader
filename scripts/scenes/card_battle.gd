@@ -275,6 +275,10 @@ func _apply_damage_to_enemy(raw_damage: int) -> void:
 
 	enemy_health -= damage
 
+	# Trigger hit animation on enemy ship display
+	if damage > 0 or raw_damage > 0:
+		%EnemyShipDisplay.play_hit()
+
 
 func _on_card_played(card_data: Resource) -> void:
 	# Calculate effective energy cost (COMBO reduces by 1)
@@ -420,6 +424,12 @@ func _on_end_turn_pressed() -> void:
 		damage -= shield_absorb
 		GameManager.current_hull -= damage
 
+		# Play hit animation on player ship
+		if shield_absorb > 0 and damage == 0:
+			ship_display.play_shield_hit()
+		elif damage > 0:
+			ship_display.play_hull_hit()
+
 		# Apply on-hit special abilities when damage got through shields
 		if damage > 0:
 			_apply_enemy_on_hit_effects()
@@ -532,6 +542,11 @@ func _update_ui() -> void:
 	# Enemy shield display
 	if enemy_shield > 0:
 		%EnemyHealthLabel.text = "%d / %d [Shield: %d]" % [enemy_health, enemy_max_health, enemy_shield]
+
+	# Enemy ship display
+	var enemy_hull_pct: float = float(enemy_health) / float(enemy_max_health) if enemy_max_health > 0 else 0.0
+	var enemy_shield_pct: float = float(enemy_shield) / 10.0 if enemy_shield > 0 else 0.0
+	%EnemyShipDisplay.update_enemy(enemy_hull_pct, enemy_shield_pct, encounter.encounter_name)
 
 	%IntentLabel.text = "Enemy will deal %d damage" % enemy_intent_damage
 	if GameManager.current_shield >= enemy_intent_damage:

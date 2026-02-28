@@ -11,3 +11,4 @@ build/
 export/
 *.tmp
 *.log
+COPYRIGHT_ANALYSIS.md
