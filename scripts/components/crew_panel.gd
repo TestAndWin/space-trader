@@ -77,8 +77,10 @@ func _load_all_crew_data() -> void:
 
 func _refresh_crew_ui() -> void:
 	for child in _icon_container.get_children():
+		_icon_container.remove_child(child)
 		child.queue_free()
 	for child in _crew_container.get_children():
+		_crew_container.remove_child(child)
 		child.queue_free()
 
 	var crew_resources := GameManager.get_crew_resources()

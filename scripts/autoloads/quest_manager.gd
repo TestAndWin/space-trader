@@ -24,9 +24,14 @@ func _make_quest(planet: Resource) -> Dictionary:
 	if EconomyManager.goods.is_empty():
 		return {}
 	var good: Resource = EconomyManager.goods[randi() % EconomyManager.goods.size()]
-	if planet.connected_planets.is_empty():
+	# Pick destination from all planets except the origin for more variety
+	var all_planet_names: Array = []
+	for p in EconomyManager.planets:
+		if p.planet_name != planet.planet_name:
+			all_planet_names.append(p.planet_name)
+	if all_planet_names.is_empty():
 		return {}
-	var dest: String = planet.connected_planets[randi() % planet.connected_planets.size()]
+	var dest: String = all_planet_names[randi() % all_planet_names.size()]
 	var qty: int = randi_range(1, 3)
 	var reward: int = int(good.base_price * qty * 1.8) + randi_range(50, 150)
 	var deadline: int = randi_range(DEADLINE_MIN, DEADLINE_MAX)

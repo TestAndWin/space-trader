@@ -304,14 +304,14 @@ func _on_card_played(card_data: Resource) -> void:
 				damage = int(damage * 1.5)
 			# SHIELD_ECHO: bonus damage = current_shield / 2
 			if card_data.keywords.has(CardData.CardKeyword.SHIELD_ECHO) and GameManager.current_shield > 0:
-				damage += GameManager.current_shield / 2
+				damage += int(GameManager.current_shield / 2.0)
 			_apply_damage_to_enemy(damage)
 			attacks_played_this_turn += 1
 		1: # DEFENSE
 			GameManager.current_shield = min(GameManager.max_shield, GameManager.current_shield + card_data.defense_value)
 			# SHIELD_ECHO on defense: deal shield/2 as damage
 			if card_data.keywords.has(CardData.CardKeyword.SHIELD_ECHO) and GameManager.current_shield > 0:
-				_apply_damage_to_enemy(GameManager.current_shield / 2)
+				_apply_damage_to_enemy(int(GameManager.current_shield / 2.0))
 			if card_data.draw_cards > 0:
 				_draw_cards(card_data.draw_cards)
 		2: # UTILITY
@@ -482,17 +482,9 @@ func _on_flee_pressed() -> void:
 
 func _on_battle_won() -> void:
 	battle_active = false
-	var base_reward: int = encounter.reward_credits
-	var final_reward: int = int(round(base_reward * EventManager.get_reward_modifier()))
-	GameManager.add_credits(final_reward)
 	GameManager.total_encounters_won += 1
-	# Crew medic bonus: +max hull after each combat win
-	if GameManager.has_crew_bonus(5):  # MAX_HULL_BONUS
-		var bonus: int = int(GameManager.get_crew_bonus_value(5))
-		GameManager.max_hull += bonus
-		GameManager.current_hull += bonus
 	GameManager.battle_result = "won"
-	EventLog.add_entry("Won battle vs %s, earned %d cr" % [encounter.encounter_name, final_reward])
+	EventLog.add_entry("Won battle vs %s" % encounter.encounter_name)
 	get_tree().change_scene_to_file("res://scenes/battle_result.tscn")
 
 
@@ -504,7 +496,7 @@ func _on_battle_lost() -> void:
 	while i >= 0:
 		var item: Dictionary = GameManager.cargo[i]
 		var qty: int = item["quantity"]
-		var lost: int = qty / 2
+		var lost: int = int(qty / 2.0)
 		if lost > 0:
 			lost_items.append("%d %s" % [lost, item["good_name"]])
 			item["quantity"] -= lost

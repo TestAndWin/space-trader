@@ -6,8 +6,8 @@
 script = ExtResource("1_crew")
 crew_name = "Medic"
 title = "Medic"
-description = "+2 max hull after each combat"
-bonus_type = 5
-bonus_value = 2.0
+description = "Heal 3 hull after each combat"
+bonus_type = 2
+bonus_value = 3.0
 recruit_cost = 300
 available_planet_types = [3, 1]

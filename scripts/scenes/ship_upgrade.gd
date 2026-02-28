@@ -347,6 +347,8 @@ func _populate_available_upgrades() -> void:
 
 	var any_shown: bool = false
 	for upgrade in all_upgrades:
+		if upgrade.cost <= 0:
+			continue
 		if upgrade.upgrade_name in GameManager.installed_upgrades:
 			continue
 		if upgrade.slot not in allowed_slots:

@@ -92,7 +92,6 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), AMBIENT_BASE)
 	# Subtle vignette — darker at edges
 	var vignette_left := Color(0.0, 0.0, 0.0, 0.3)
-	var vignette_mid := Color(0.0, 0.0, 0.0, 0.0)
 	draw_rect(Rect2(0, 0, w * 0.15, h), vignette_left)
 	draw_rect(Rect2(w * 0.85, 0, w * 0.15, h), vignette_left)
 

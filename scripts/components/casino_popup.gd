@@ -278,8 +278,8 @@ func _build_select_ui() -> void:
 
 	# Bet section
 	var bet_label := Label.new()
-	var gname: String = "Blackjack" if _game == Game.BLACKJACK else "Slot Machine"
-	bet_label.text = "Place your bet on %s:" % gname
+	var game_name: String = "Blackjack" if _game == Game.BLACKJACK else "Slot Machine"
+	bet_label.text = "Place your bet on %s:" % game_name
 	bet_label.add_theme_font_size_override("font_size", 18)
 	bet_label.add_theme_color_override("font_color", GOLD)
 	bet_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -800,6 +800,8 @@ func _build_result_ui() -> void:
 		# Remove the hit/stand buttons (last child of content_area)
 		var last := _content_area.get_child(_content_area.get_child_count() - 1)
 		last.queue_free()
+		# Restore result message (overwritten by _build_blackjack_ui)
+		_status_label.text = _result_msg
 	elif _game == Game.SLOTS:
 		_status_label.text = "Slot Machine — Bet: %d cr" % _bet
 		_build_slots_ui()

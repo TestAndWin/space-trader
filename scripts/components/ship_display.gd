@@ -203,19 +203,6 @@ func _draw() -> void:
 			var p2 := Vector2(cx + end.x * w, cy + end.y * h)
 			draw_line(p1, p2, crack_color, 1.5)
 
-	# 6. Cargo indicators
-	if cargo_max > 0:
-		var max_dots: int = mini(cargo_max, 8)
-		var filled: int = ceili(float(cargo_used) / float(cargo_max) * max_dots)
-		var dot_size := Vector2(w * 0.06, h * 0.04)
-		var start_x: float = cx - (max_dots * dot_size.x + (max_dots - 1) * 2.0) * 0.5
-		var dot_y: float = cy + h * 0.1
-		for i in max_dots:
-			var rect := Rect2(start_x + i * (dot_size.x + 2.0), dot_y, dot_size.x, dot_size.y)
-			if i < filled:
-				draw_rect(rect, Color(1.0, 0.85, 0.3, 0.8))
-			else:
-				draw_rect(rect, Color(0.3, 0.3, 0.4, 0.3))
 
 
 func _draw_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:

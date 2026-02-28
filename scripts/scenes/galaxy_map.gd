@@ -124,8 +124,6 @@ func _draw_animated_routes() -> void:
 			draw_line(from, to, Color(0.6, 0.85, 1.0, 0.45), 1.0, true)
 
 			# Animated energy pulses traveling along the route
-			var route_len: float = from.distance_to(to)
-			var dir: Vector2 = (to - from).normalized()
 			var num_pulses: int = 3
 			for i in num_pulses:
 				var phase: float = float(i) / float(num_pulses)

@@ -61,11 +61,20 @@ func _ready() -> void:
 
 # ── Credits + Card reward (original behavior) ───────────────────────────────
 
-func _setup_credits_card_reward(destination: String) -> void:
+func _award_battle_credits() -> int:
 	var earned: int = 0
 	if GameManager.current_encounter:
 		earned = int(round(GameManager.current_encounter.reward_credits * EventManager.get_reward_modifier()))
 		GameManager.add_credits(earned)
+	# Crew medic bonus: heal hull after combat win
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.HULL_REGEN):
+		var heal: int = int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.HULL_REGEN))
+		GameManager.current_hull = mini(GameManager.current_hull + heal, GameManager.max_hull)
+	return earned
+
+
+func _setup_credits_card_reward(destination: String) -> void:
+	var earned: int = _award_battle_credits()
 	%ResultDescription.text = "+%d credits! (Total: %d cr)\nArriving at %s." % [earned, GameManager.credits, destination]
 	%RewardPanel.visible = false
 
@@ -134,10 +143,7 @@ func _on_skip_pressed() -> void:
 # ── Upgrade reward ───────────────────────────────────────────────────────────
 
 func _setup_upgrade_reward(destination: String) -> void:
-	var earned: int = 0
-	if GameManager.current_encounter:
-		earned = int(round(GameManager.current_encounter.reward_credits * EventManager.get_reward_modifier()))
-		GameManager.add_credits(earned)
+	var earned: int = _award_battle_credits()
 	%ResultDescription.text = "+%d credits! (Total: %d cr)\nArriving at %s." % [earned, GameManager.credits, destination]
 	%CardRewardPanel.visible = false
 	%ContinueButton.visible = false
@@ -201,10 +207,7 @@ func _get_upgrade_icon(upgrade: Resource) -> String:
 # ── Crew reward ──────────────────────────────────────────────────────────────
 
 func _setup_crew_reward(destination: String) -> void:
-	var earned: int = 0
-	if GameManager.current_encounter:
-		earned = int(round(GameManager.current_encounter.reward_credits * EventManager.get_reward_modifier()))
-		GameManager.add_credits(earned)
+	var earned: int = _award_battle_credits()
 	%ResultDescription.text = "+%d credits! (Total: %d cr)\nArriving at %s." % [earned, GameManager.credits, destination]
 	%CardRewardPanel.visible = false
 	%ContinueButton.visible = false
