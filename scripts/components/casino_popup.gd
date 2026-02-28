@@ -241,18 +241,15 @@ func _refresh_ui() -> void:
 
 func _build_select_ui() -> void:
 	var has_blackjack: bool = _planet_type != 1
-	var has_slots: bool = true
-	var only_one_game: bool = not has_blackjack or not has_slots
 
-	if only_one_game:
-		var gname: String = "Blackjack" if has_blackjack else "Slot Machine"
-		_status_label.text = "%s — Place your bet!" % gname
-		_game = Game.BLACKJACK if has_blackjack else Game.SLOTS
+	if not has_blackjack:
+		_status_label.text = "Slot Machine — Place your bet!"
+		_game = Game.SLOTS
 	else:
 		_status_label.text = "Welcome! Choose your table."
 
 	# Game selection (only if both available)
-	if not only_one_game:
+	if has_blackjack:
 		var game_row := HBoxContainer.new()
 		game_row.alignment = BoxContainer.ALIGNMENT_CENTER
 		game_row.add_theme_constant_override("separation", 24)
@@ -542,6 +539,7 @@ func _build_blackjack_ui() -> void:
 
 	# Action buttons
 	var btn_row := HBoxContainer.new()
+	btn_row.name = "BjActionButtons"
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_row.add_theme_constant_override("separation", 20)
 	_content_area.add_child(btn_row)
@@ -797,9 +795,10 @@ func _build_result_ui() -> void:
 	# Show final cards/reels
 	if _game == Game.BLACKJACK:
 		_build_blackjack_ui()
-		# Remove the hit/stand buttons (last child of content_area)
-		var last := _content_area.get_child(_content_area.get_child_count() - 1)
-		last.queue_free()
+		# Remove the hit/stand buttons
+		var action_btns := _content_area.get_node_or_null("BjActionButtons")
+		if action_btns:
+			action_btns.queue_free()
 		# Restore result message (overwritten by _build_blackjack_ui)
 		_status_label.text = _result_msg
 	elif _game == Game.SLOTS:

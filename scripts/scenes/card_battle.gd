@@ -1,6 +1,10 @@
 extends Control
 
 const CardDisplayScene = preload("res://scenes/components/card_display.tscn")
+const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
+
+const FLEE_COST := 150
+const FLEE_CHANCE := 0.5
 
 var encounter: Resource = null
 var draw_pile: Array = []
@@ -16,6 +20,8 @@ var attacks_played_this_turn: int = 0
 var combo_active: bool = false
 var recycled_this_shuffle: bool = false
 
+@onready var ship_display := %ShipDisplay
+
 # Special ability state
 var turn_count: int = 0
 var enemy_shield: int = 0
@@ -29,7 +35,7 @@ func _ready() -> void:
 	_style_battle_buttons()
 	if encounter:
 		start_battle(encounter)
-	_add_cockpit_frame()
+	CockpitFrame.add_to(self)
 
 
 func _style_battle_buttons() -> void:
@@ -192,7 +198,7 @@ func _on_battle_won_no_reward() -> void:
 		GameManager.visited_planets.append(destination)
 	GameManager.current_encounter = null
 	GameManager.battle_result = ""
-	get_tree().change_scene_to_file("res://scenes/planet_screen.tscn")
+	GameManager.change_scene("res://scenes/planet_screen.tscn")
 
 
 func _start_player_turn() -> void:
@@ -216,7 +222,7 @@ func _start_player_turn() -> void:
 	# FLASH_GRENADE: discard 1 random card after drawing
 	if encounter.special_ability == EncounterData.SpecialAbility.FLASH_GRENADE and hand.size() > 0:
 		var idx := randi_range(0, hand.size() - 1)
-		var discarded_card = hand[idx]
+		var discarded_card: Resource = hand[idx]
 		hand.remove_at(idx)
 		discard_pile.append(discarded_card)
 		_show_battle_message("Flash grenade! Discarded %s!" % discarded_card.card_name)
@@ -297,8 +303,8 @@ func _on_card_played(card_data: Resource) -> void:
 		0: # ATTACK
 			var damage: int = card_data.attack_value
 			# Crew weapons officer bonus
-			if GameManager.has_crew_bonus(1):  # ATTACK_BONUS
-				damage += int(GameManager.get_crew_bonus_value(1))
+			if GameManager.has_crew_bonus(CrewData.CrewBonus.ATTACK_BONUS):
+				damage += int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.ATTACK_BONUS))
 			# CHARGE: 1.5x damage if 2+ attacks played this turn
 			if card_data.keywords.has(CardData.CardKeyword.CHARGE) and attacks_played_this_turn >= 2:
 				damage = int(damage * 1.5)
@@ -395,7 +401,7 @@ func _show_battle_message(text: String) -> void:
 	add_child(lbl)
 	var tween := create_tween()
 	tween.tween_interval(1.0)
-	tween.set_parallel(true)
+	tween.chain().set_parallel(true)
 	tween.tween_property(lbl, "position:y", lbl.position.y - 40, 1.8).set_ease(Tween.EASE_OUT)
 	tween.tween_property(lbl, "modulate:a", 0.0, 1.8).set_delay(0.4)
 	tween.chain().tween_callback(lbl.queue_free)
@@ -471,11 +477,11 @@ func _apply_enemy_on_hit_effects() -> void:
 func _on_flee_pressed() -> void:
 	if not encounter.can_flee:
 		return
-	if randf() < 0.5:
-		GameManager.remove_credits(150)
+	if randf() < FLEE_CHANCE:
+		GameManager.remove_credits(FLEE_COST)
 		GameManager.battle_result = "fled"
 		EventLog.add_entry("Fled from %s" % encounter.encounter_name)
-		get_tree().change_scene_to_file("res://scenes/battle_result.tscn")
+		GameManager.change_scene("res://scenes/battle_result.tscn")
 	else:
 		_on_end_turn_pressed()
 
@@ -485,7 +491,7 @@ func _on_battle_won() -> void:
 	GameManager.total_encounters_won += 1
 	GameManager.battle_result = "won"
 	EventLog.add_entry("Won battle vs %s" % encounter.encounter_name)
-	get_tree().change_scene_to_file("res://scenes/battle_result.tscn")
+	GameManager.change_scene("res://scenes/battle_result.tscn")
 
 
 func _on_battle_lost() -> void:
@@ -514,12 +520,10 @@ func _on_battle_lost() -> void:
 	GameManager.battle_result = "lost"
 	EventLog.add_entry("Lost battle vs %s" % encounter.encounter_name)
 	if GameManager.current_hull <= 0:
-		get_tree().change_scene_to_file("res://scenes/game_over.tscn")
+		GameManager.change_scene("res://scenes/game_over.tscn")
 		return
-	get_tree().change_scene_to_file("res://scenes/battle_result.tscn")
+	GameManager.change_scene("res://scenes/battle_result.tscn")
 
-
-@onready var ship_display := %ShipDisplay
 
 func _update_ui() -> void:
 	# Enemy info
@@ -584,7 +588,7 @@ func _update_ui() -> void:
 		%FleeButton.tooltip_text = "Cannot flee from this enemy!"
 		%FleeButton.text = "Flee (blocked)"
 	else:
-		%FleeButton.tooltip_text = "50% chance to escape (-150cr). Failure ends your turn!"
+		%FleeButton.tooltip_text = "%d%% chance to escape (-%dcr). Failure ends your turn!" % [int(FLEE_CHANCE * 100), FLEE_COST]
 		%FleeButton.text = "Flee"
 
 	# Rebuild hand display
@@ -599,12 +603,3 @@ func _update_ui() -> void:
 			effective_cost = max(0, effective_cost - 1)
 		card_display.setup(card, effective_cost <= current_energy)
 		card_display.card_played.connect(_on_card_played)
-
-
-func _add_cockpit_frame() -> void:
-	var frame := Control.new()
-	frame.name = "CockpitFrame"
-	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.set_script(load("res://scripts/components/cockpit_frame.gd"))
-	add_child(frame)

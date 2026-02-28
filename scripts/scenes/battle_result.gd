@@ -1,6 +1,7 @@
 extends Control
 
 var card_display_scene: PackedScene = preload("res://scenes/components/card_display.tscn")
+const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
 var card_selected: bool = false
 var reward_chosen: bool = false
 
@@ -56,7 +57,7 @@ func _ready() -> void:
 	%ContinueButton.pressed.connect(_on_continue_pressed)
 	%SkipButton.pressed.connect(_on_skip_pressed)
 	_style_buttons()
-	_add_cockpit_frame()
+	CockpitFrame.add_to(self)
 
 
 # ── Credits + Card reward (original behavior) ───────────────────────────────
@@ -280,15 +281,18 @@ func _build_reward_panel(title_text: String, icon: String, item_name: String,
 		%AcceptButton.text = accept_label
 		%AcceptButton.visible = true
 
-	%RewardSkipButton.pressed.connect(func() -> void:
-		if reward_chosen:
-			return
-		reward_chosen = true
-		%RewardPanel.visible = false
-		%ContinueButton.visible = true
-	)
+	if not %RewardSkipButton.pressed.is_connected(_on_reward_skip_pressed):
+		%RewardSkipButton.pressed.connect(_on_reward_skip_pressed)
 
 	%RewardPanel.visible = true
+
+
+func _on_reward_skip_pressed() -> void:
+	if reward_chosen:
+		return
+	reward_chosen = true
+	%RewardPanel.visible = false
+	%ContinueButton.visible = true
 
 
 # ── Continue ─────────────────────────────────────────────────────────────────
@@ -320,12 +324,3 @@ func _on_continue_pressed() -> void:
 	GameManager.current_encounter = null
 	GameManager.battle_result = ""
 	GameManager.change_scene("res://scenes/planet_screen.tscn")
-
-
-func _add_cockpit_frame() -> void:
-	var frame := Control.new()
-	frame.name = "CockpitFrame"
-	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.set_script(load("res://scripts/components/cockpit_frame.gd"))
-	add_child(frame)

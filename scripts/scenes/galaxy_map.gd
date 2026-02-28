@@ -1,6 +1,7 @@
 extends Node2D
 
 var planet_scene: PackedScene = preload("res://scenes/components/planet_node.tscn")
+const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
 var planets: Array = []
 var planet_nodes: Dictionary = {}   # { planet_name: PlanetNode }
 var selected_planet: Resource = null
@@ -62,7 +63,7 @@ func _ready() -> void:
 	land_button.pressed.connect(_on_land_pressed)
 	_style_nav_button(travel_button, Color(0.0, 0.85, 0.45))
 	_style_nav_button(land_button, Color(0.0, 0.65, 0.95))
-	_add_cockpit_frame()
+	CockpitFrame.add_to(self, true)
 
 
 func _process(delta: float) -> void:
@@ -413,13 +414,3 @@ func _on_land_pressed() -> void:
 	GameManager.change_scene("res://scenes/planet_screen.tscn")
 
 
-func _add_cockpit_frame() -> void:
-	var layer := CanvasLayer.new()
-	layer.layer = 10
-	add_child(layer)
-	var frame := Control.new()
-	frame.name = "CockpitFrame"
-	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.set_script(load("res://scripts/components/cockpit_frame.gd"))
-	layer.add_child(frame)

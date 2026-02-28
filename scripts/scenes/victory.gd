@@ -1,5 +1,7 @@
 extends Control
 
+const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
+
 
 func _ready() -> void:
 	%TradesLabel.text = "Total Trades: %d" % GameManager.total_trades
@@ -10,7 +12,7 @@ func _ready() -> void:
 	%UpgradesLabel.text = "Upgrades Installed: %d" % GameManager.installed_upgrades.size()
 	%MainMenuButton.pressed.connect(_on_main_menu_pressed)
 	_style_main_menu_button(%MainMenuButton)
-	_add_cockpit_frame()
+	CockpitFrame.add_to(self)
 
 
 func _style_main_menu_button(btn: Button) -> void:
@@ -39,12 +41,3 @@ func _style_main_menu_button(btn: Button) -> void:
 
 func _on_main_menu_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
-
-
-func _add_cockpit_frame() -> void:
-	var frame := Control.new()
-	frame.name = "CockpitFrame"
-	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.set_script(load("res://scripts/components/cockpit_frame.gd"))
-	add_child(frame)

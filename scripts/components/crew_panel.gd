@@ -20,14 +20,8 @@ func _ready() -> void:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
 	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
 	style.content_margin_left = 6
 	style.content_margin_right = 6
 	style.content_margin_top = 4
@@ -77,10 +71,8 @@ func _load_all_crew_data() -> void:
 
 func _refresh_crew_ui() -> void:
 	for child in _icon_container.get_children():
-		_icon_container.remove_child(child)
 		child.queue_free()
 	for child in _crew_container.get_children():
-		_crew_container.remove_child(child)
 		child.queue_free()
 
 	var crew_resources := GameManager.get_crew_resources()
@@ -162,14 +154,8 @@ func _style_upgrade_button(btn: Button) -> void:
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = BTN_BG
 	normal.border_color = BTN_BORDER
-	normal.border_width_left = 1
-	normal.border_width_right = 1
-	normal.border_width_top = 1
-	normal.border_width_bottom = 1
-	normal.corner_radius_top_left = 3
-	normal.corner_radius_top_right = 3
-	normal.corner_radius_bottom_left = 3
-	normal.corner_radius_bottom_right = 3
+	normal.set_border_width_all(1)
+	normal.set_corner_radius_all(3)
 	normal.content_margin_left = 4
 	normal.content_margin_right = 4
 	normal.content_margin_top = 1
@@ -185,14 +171,8 @@ func _style_upgrade_button(btn: Button) -> void:
 	var disabled := StyleBoxFlat.new()
 	disabled.bg_color = BTN_DISABLED_BG
 	disabled.border_color = BTN_DISABLED_BORDER
-	disabled.border_width_left = 1
-	disabled.border_width_right = 1
-	disabled.border_width_top = 1
-	disabled.border_width_bottom = 1
-	disabled.corner_radius_top_left = 3
-	disabled.corner_radius_top_right = 3
-	disabled.corner_radius_bottom_left = 3
-	disabled.corner_radius_bottom_right = 3
+	disabled.set_border_width_all(1)
+	disabled.set_corner_radius_all(3)
 	disabled.content_margin_left = 4
 	disabled.content_margin_right = 4
 	disabled.content_margin_top = 1

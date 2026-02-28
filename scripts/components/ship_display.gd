@@ -204,7 +204,6 @@ func _draw() -> void:
 			draw_line(p1, p2, crack_color, 1.5)
 
 
-
 func _draw_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:
 	var points := PackedVector2Array()
 	var segments: int = 32

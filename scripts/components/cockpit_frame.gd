@@ -7,6 +7,24 @@ extends Control
 var _time: float = 0.0
 
 
+## Create and add a cockpit frame overlay to the given parent node.
+## If use_canvas_layer is true, wraps the frame in a CanvasLayer (layer 10)
+## so it renders above Node2D scenes.
+static func add_to(parent: Node, use_canvas_layer: bool = false) -> void:
+	var frame := Control.new()
+	frame.name = "CockpitFrame"
+	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.set_script(load("res://scripts/components/cockpit_frame.gd"))
+	if use_canvas_layer:
+		var layer := CanvasLayer.new()
+		layer.layer = 10
+		parent.add_child(layer)
+		layer.add_child(frame)
+	else:
+		parent.add_child(frame)
+
+
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 

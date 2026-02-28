@@ -1,9 +1,11 @@
 extends Control
 
+const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
+
 func _ready() -> void:
 	$VBoxContainer/BackButton.pressed.connect(_on_back_pressed)
 	_style_back_button()
-	_add_cockpit_frame()
+	CockpitFrame.add_to(self)
 
 
 func _style_back_button() -> void:
@@ -30,12 +32,3 @@ func _style_back_button() -> void:
 
 func _on_back_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
-
-
-func _add_cockpit_frame() -> void:
-	var frame := Control.new()
-	frame.name = "CockpitFrame"
-	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.set_script(load("res://scripts/components/cockpit_frame.gd"))
-	add_child(frame)
