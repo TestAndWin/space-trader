@@ -10,3 +10,4 @@ description = "Massive factories and shipyards."
 map_position = Vector2(300, 350)
 danger_level = 2
 connected_planets = Array[String](["Starport Alpha", "Nexus Prime"])
+image_hotspots = {"market": Rect2(550, 155, 200, 50), "shipyard": Rect2(760, 250, 200, 50), "casino": Rect2(400, 290, 120, 50), "crew": Rect2(240, 250, 215, 50), "quest": Rect2(240, 470, 180, 100), "deck": Rect2(1070, 270, 140, 60), "depart": Rect2(900, 540, 230, 120)}

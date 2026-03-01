@@ -13,6 +13,7 @@ const ShipyardScreenScene: PackedScene = preload("res://scenes/components/shipya
 const QuestScreenScene: PackedScene = preload("res://scenes/components/quest_screen.tscn")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const GoodIcon = preload("res://scripts/components/good_icon.gd")
+const CrewIcon = preload("res://scripts/components/crew_icon.gd")
 
 const TYPE_COLORS = {
 	0: Color(0.4, 0.6, 1.0),
@@ -33,30 +34,27 @@ var _mission_done: bool = false
 var _casino_done: bool = false
 var _casino_rounds: int = 0
 
-@onready var news_banner := $VBoxContainer/NewsBanner
-@onready var planet_name_label := $VBoxContainer/PlanetHeader/PlanetNameLabel
-@onready var planet_type_label := $VBoxContainer/PlanetHeader/PlanetTypeLabel
-@onready var danger_label := $VBoxContainer/PlanetHeader/DangerLabel
-@onready var quest_label := $VBoxContainer/PlanetHeader/QuestLabel
-@onready var goal_label := $VBoxContainer/PlanetHeader/GoalLabel
-@onready var credits_label := $VBoxContainer/TopInfoBar/CreditsBox/CreditsLabel
-@onready var credits_box := $VBoxContainer/TopInfoBar/CreditsBox
-@onready var cargo_box := $VBoxContainer/TopInfoBar/CargoBox
-@onready var cargo_bar := $VBoxContainer/TopInfoBar/CargoBox/CargoCapacity/CargoBar
-@onready var capacity_label := $VBoxContainer/TopInfoBar/CargoBox/CargoCapacity/CapacityLabel
-@onready var cargo_items_row := $VBoxContainer/TopInfoBar/CargoBox/CargoCapacity/CargoItemsRow
+@onready var planet_name_label := $VBoxContainer/PlanetNameLabel
+@onready var news_banner := $InfoBar/InfoBarBox/NewsBanner
+@onready var quest_label := $InfoBar/InfoBarBox/QuestLabel
+@onready var goal_label := $InfoBar/InfoBarBox/GoalLabel
+
+@onready var cargo_bar := $ShipStatusPanel/ShipStatusBox/ShipStats/CargoBar
+@onready var capacity_label := $ShipStatusPanel/ShipStatusBox/ShipStats/CargoRow/CapacityLabel
+@onready var cargo_items_row := $ShipStatusPanel/ShipStatusBox/ShipStats/CargoItemsRow
+@onready var crew_items_row := $ShipStatusPanel/ShipStatusBox/ShipColumn/CrewItemsRow
 @onready var planet_background := $VBoxContainer/MainContent/LeftColumn/PlanetBackground
-@onready var ship_status_panel := $VBoxContainer/MainContent/LeftColumn/ShipStatusPanel
-@onready var ship_display := $VBoxContainer/MainContent/LeftColumn/ShipStatusPanel/ShipStatusBox/ShipDisplay
-@onready var hull_label := $VBoxContainer/MainContent/LeftColumn/ShipStatusPanel/ShipStatusBox/ShipStats/HullLabel
-@onready var hull_bar := $VBoxContainer/MainContent/LeftColumn/ShipStatusPanel/ShipStatusBox/ShipStats/HullBar
-@onready var shield_label := $VBoxContainer/MainContent/LeftColumn/ShipStatusPanel/ShipStatusBox/ShipStats/ShieldLabel
-@onready var city_map: Control = $VBoxContainer/MainContent/RightColumn/CityMap
+@onready var ship_status_panel := $ShipStatusPanel
+@onready var ship_display := $ShipStatusPanel/ShipStatusBox/ShipColumn/ShipDisplay
+@onready var hull_label := $ShipStatusPanel/ShipStatusBox/ShipStats/HullLabel
+@onready var hull_bar := $ShipStatusPanel/ShipStatusBox/ShipStats/HullBar
+@onready var shield_label := $ShipStatusPanel/ShipStatusBox/ShipStats/ShieldLabel
+@onready var shield_bar := $ShipStatusPanel/ShipStatusBox/ShipStats/ShieldBar
 @onready var space_background := $Background
+@onready var bg_image: TextureRect = $BgImage
 
 
 # ── Building IDs ─────────────────────────────────────────────────────────────
-# Visual data (names, icons, colors) lives in city_map.gd
 
 const BUILDING_MARKET = "market"
 const BUILDING_SHIPYARD = "shipyard"
@@ -80,23 +78,24 @@ func _ready() -> void:
 		GameManager.current_hull = min(GameManager.current_hull + regen, GameManager.max_hull)
 	_update_header()
 	_update_news_banner()
-	_style_info_boxes()
+
 	_style_cargo_bar()
 	_style_ship_panel()
+	_style_info_bar()
 	_update_ui()
 	_add_header_buttons()
 
-	# Space background
+	# Space background — use image if available, else procedural
 	if current_planet_data:
-		space_background.setup(current_planet_data.planet_type, current_planet_data.danger_level)
+		_load_background_image()
+		if not bg_image.visible:
+			space_background.setup(current_planet_data.planet_type, current_planet_data.danger_level)
 	# Planet background
 	if current_planet_data:
 		planet_background.setup(current_planet_data.planet_type)
 	# Mark mission as done if already played this landing
 	if GameManager.mission_done_this_landing:
 		_mission_done = true
-	# Setup city map
-	_setup_city_map()
 	# Arrival events only on first visit (not when returning from sub-screens)
 	if not GameManager.arrival_events_done:
 		GameManager.arrival_events_done = true
@@ -136,12 +135,17 @@ func _find_planet_data() -> void:
 	current_planet_data = EconomyManager.get_planet_data(GameManager.current_planet)
 
 
-# ── City Map Setup ────────────────────────────────────────────────────────────
-
-func _setup_city_map() -> void:
-	var pt: int = current_planet_data.planet_type if current_planet_data else 0
-	city_map.setup(pt, _get_building_states())
-	city_map.building_clicked.connect(_on_building_clicked)
+func _load_background_image() -> void:
+	var planet_name: String = current_planet_data.planet_name.to_lower().replace(" ", "_")
+	for ext: String in ["jpg", "jpeg", "png"]:
+		var tex := load("res://assets/sprites/bg_%s.%s" % [planet_name, ext]) as Texture2D
+		if tex:
+			bg_image.texture = tex
+			bg_image.visible = true
+			space_background.visible = false
+			planet_background.visible = false
+			_create_image_hotspots(_get_building_states())
+			return
 
 
 func _get_building_states() -> Dictionary:
@@ -238,25 +242,70 @@ func _on_mission_pressed() -> void:
 
 
 func _rebuild_hub_buildings() -> void:
-	city_map.update_states(_get_building_states())
+	var states := _get_building_states()
+	var hotspot_node := get_node_or_null("ImageHotspots")
+	if hotspot_node:
+		hotspot_node.free()
+		_create_image_hotspots(states)
+
+
+func _create_image_hotspots(states: Dictionary) -> void:
+	if not current_planet_data:
+		return
+	var hotspot_map: Dictionary = current_planet_data.image_hotspots
+	if hotspot_map.is_empty():
+		return
+
+	var container := Control.new()
+	container.name = "ImageHotspots"
+	container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(container)
+
+	# StyleBoxes shared across all hotspot buttons
+	var empty := StyleBoxEmpty.new()
+	var hover_style := StyleBoxFlat.new()
+	hover_style.bg_color = Color(1.0, 1.0, 1.0, 0.06)
+	hover_style.border_color = HOLO_BORDER
+	hover_style.set_border_width_all(2)
+	hover_style.set_corner_radius_all(4)
+
+	for bid: String in hotspot_map:
+		var rect: Rect2 = hotspot_map[bid]
+
+		var btn := Button.new()
+		# Rect2 values are in pixels (1280x720); convert to normalized anchors at runtime
+		btn.anchor_left   = rect.position.x / 1280.0
+		btn.anchor_top    = rect.position.y / 720.0
+		btn.anchor_right  = (rect.position.x + rect.size.x) / 1280.0
+		btn.anchor_bottom = (rect.position.y + rect.size.y) / 720.0
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		btn.disabled = states.get(bid, false)
+		btn.add_theme_stylebox_override("normal",   empty)
+		btn.add_theme_stylebox_override("pressed",  empty)
+		btn.add_theme_stylebox_override("disabled", empty)
+		btn.add_theme_stylebox_override("focus",    empty)
+		btn.add_theme_stylebox_override("hover",    hover_style)
+
+		var captured_bid: String = bid
+		btn.pressed.connect(func() -> void: _on_building_clicked(captured_bid))
+		container.add_child(btn)
 
 
 # ── Header & Info ────────────────────────────────────────────────────────────
 
-func _style_info_boxes() -> void:
-	for box in [credits_box, cargo_box]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
-		style.border_color = HOLO_BORDER
-		style.set_border_width_all(2)
-		style.set_corner_radius_all(6)
-		style.shadow_color = HOLO_SHADOW
-		style.shadow_size = 6
-		style.content_margin_left = 8
-		style.content_margin_right = 8
-		style.content_margin_top = 4
-		style.content_margin_bottom = 4
-		box.add_theme_stylebox_override("panel", style)
+
+func _style_info_bar() -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
+	style.border_color = HOLO_BORDER
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.shadow_color = HOLO_SHADOW
+	style.shadow_size = 6
+	style.set_content_margin_all(8)
+	$InfoBar.add_theme_stylebox_override("panel", style)
 
 
 func _style_ship_panel() -> void:
@@ -376,19 +425,6 @@ func _on_event_log_pressed() -> void:
 
 func _update_header() -> void:
 	planet_name_label.text = GameManager.current_planet
-	if current_planet_data:
-		var type_name: String = EconomyManager.PLANET_TYPE_NAMES.get(current_planet_data.planet_type, "Unknown")
-		planet_type_label.text = type_name
-		var type_color: Color = TYPE_COLORS.get(current_planet_data.planet_type, Color(0.5, 0.6, 0.8))
-		planet_type_label.add_theme_color_override("font_color", type_color)
-		var danger: int = current_planet_data.danger_level
-		danger_label.text = "Danger: " + str(danger)
-		if danger >= 3:
-			danger_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
-		elif danger >= 2:
-			danger_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2))
-		else:
-			danger_label.add_theme_color_override("font_color", Color(0.5, 0.8, 0.5))
 
 
 func _update_news_banner() -> void:
@@ -401,7 +437,6 @@ func _update_news_banner() -> void:
 
 
 func _update_ui() -> void:
-	credits_label.text = "CREDITS: " + str(GameManager.credits)
 	var used: int = GameManager.get_cargo_used()
 	var cap: int = GameManager.cargo_capacity
 	cargo_bar.value = used
@@ -409,6 +444,8 @@ func _update_ui() -> void:
 	capacity_label.text = str(used) + "/" + str(cap)
 	# Update cargo item icons
 	_update_cargo_items()
+	# Update crew item icons
+	_update_crew_items()
 	# Update ship status
 	_update_ship_status()
 	# Update quest header label
@@ -463,6 +500,8 @@ func _update_ship_status() -> void:
 	hull_bar.value = hull
 
 	shield_label.text = "Shield: %d/%d" % [shield, max_shield]
+	shield_bar.max_value = max(max_shield, 1)
+	shield_bar.value = shield
 
 
 func _update_quest_label() -> void:
@@ -494,6 +533,19 @@ func _update_cargo_items() -> void:
 		icon.setup(good_name)
 		icon.tooltip_text = "%s x%d" % [good_name, qty]
 		cargo_items_row.add_child(icon)
+
+
+func _update_crew_items() -> void:
+	for child in crew_items_row.get_children():
+		child.queue_free()
+	var crew_resources := GameManager.get_crew_resources()
+	for crew_res in crew_resources:
+		var icon := Control.new()
+		icon.set_script(CrewIcon)
+		icon.custom_minimum_size = Vector2(22, 22)
+		icon.tooltip_text = crew_res.crew_name + " - " + crew_res.title
+		crew_items_row.add_child(icon)
+		icon.setup(crew_res.bonus_type)
 
 
 # ── Bottom Bar ───────────────────────────────────────────────────────────────
@@ -577,7 +629,7 @@ func _update_log() -> void:
 
 
 func _add_header_buttons() -> void:
-	var header := $VBoxContainer/PlanetHeader
+	var header := $InfoBar/InfoBarBox
 	# Small button style shared by Menu and Event Log
 	var _make_small_btn := func(text: String, callback: Callable) -> Button:
 		var btn := Button.new()

@@ -9,3 +9,4 @@ enum PlanetType { INDUSTRIAL, AGRICULTURAL, MINING, TECH, OUTLAW }
 @export var map_position: Vector2 = Vector2.ZERO
 @export var danger_level: int = 1
 @export var connected_planets: Array[String] = []
+@export var image_hotspots: Dictionary = {}

@@ -429,6 +429,7 @@ func _draw_all_labels(sorted_buildings: Array) -> void:
 	var font := get_theme_default_font()
 	for b: Dictionary in sorted_buildings:
 		var c: float = b["col"]; var r: float = b["row"]
+		@warning_ignore("unused_variable")
 		var w: float = b["w"];   var d: float = b["d"]; var h: float = b["h"]
 		var accent: Color = b["accent"]
 		var done: bool    = b["done"]
