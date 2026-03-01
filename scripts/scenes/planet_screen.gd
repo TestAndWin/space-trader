@@ -509,13 +509,13 @@ func _update_quest_label() -> void:
 		quest_label.visible = false
 		return
 	var q: Dictionary = QuestManager.current_quest
-	var turns: int = q.get("turns_left", 0)
-	quest_label.text = "%dx %s → %s  |  %d turns  |  +%dcr" % [
-		q["deliver_qty"], q["deliver_good"], q["destination"], turns, q["reward_credits"]
+	var trips_left: int = q.get("turns_left", 0)
+	quest_label.text = "%dx %s → %s  |  %d trips left  |  +%d cr" % [
+		q["deliver_qty"], q["deliver_good"], q["destination"], trips_left, q["reward_credits"]
 	]
-	if turns <= 1:
+	if trips_left <= 1:
 		quest_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
-	elif turns == 2:
+	elif trips_left == 2:
 		quest_label.add_theme_color_override("font_color", Color(1.0, 0.65, 0.1))
 	else:
 		quest_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.25))
@@ -543,7 +543,7 @@ func _update_crew_items() -> void:
 		var icon := Control.new()
 		icon.set_script(CrewIcon)
 		icon.custom_minimum_size = Vector2(22, 22)
-		icon.tooltip_text = crew_res.crew_name + " - " + crew_res.title
+		icon.tooltip_text = crew_res.crew_name + " - " + crew_res.description
 		crew_items_row.add_child(icon)
 		icon.setup(crew_res.bonus_type)
 
@@ -587,7 +587,7 @@ func _on_depart_pressed() -> void:
 	vbox.add_child(title)
 
 	var btn_depart := Button.new()
-	btn_depart.text = "✈ Depart"
+	btn_depart.text = "Depart"
 	btn_depart.add_theme_font_size_override("font_size", 16)
 	_style_primary_button(btn_depart, ACCENT_DEPART)
 	btn_depart.pressed.connect(func(): overlay.queue_free(); _do_depart())

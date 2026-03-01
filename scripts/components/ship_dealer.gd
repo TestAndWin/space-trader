@@ -24,7 +24,7 @@ var _credits_label: Label
 var _status_label: Label
 var _current_ship_display: Control
 var ShowroomBgScene := preload("res://scenes/components/dealer_showroom_bg.tscn")
-var ShipDisplayScene := preload("res://scenes/components/ship_display.tscn")
+var ShipDisplayScene := preload("res://scenes/components/ship_display_3d.tscn")
 
 
 func setup(planet_type: int) -> void:

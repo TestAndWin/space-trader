@@ -1,9 +1,9 @@
 [gd_scene load_steps=7 format=3 uid="uid://cb1card_battle"]
 
 [ext_resource type="Script" path="res://scripts/scenes/card_battle.gd" id="1_cb1"]
-[ext_resource type="PackedScene" uid="uid://ship_display" path="res://scenes/components/ship_display.tscn" id="2_sd1"]
+[ext_resource type="PackedScene" path="res://scenes/components/ship_display_3d.tscn" id="2_sd1"]
 [ext_resource type="Script" path="res://scripts/components/battle_background.gd" id="3_bb"]
-[ext_resource type="Script" path="res://scripts/components/enemy_ship_display.gd" id="4_esd"]
+[ext_resource type="PackedScene" path="res://scenes/components/enemy_ship_display_3d.tscn" id="4_esd"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_enemy"]
 bg_color = Color(0.08, 0.02, 0.02, 0.85)
@@ -97,12 +97,10 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 10
 
-[node name="EnemyShipDisplay" type="Control" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow"]
+[node name="EnemyShipDisplay" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow" instance=ExtResource("4_esd")]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
-mouse_filter = 2
-script = ExtResource("4_esd")
 
 [node name="EnemyHealthBar" type="ProgressBar" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow"]
 unique_name_in_owner = true

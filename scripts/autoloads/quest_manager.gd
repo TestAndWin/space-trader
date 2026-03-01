@@ -78,7 +78,7 @@ func check_expired_quest() -> bool:
 	## Returns true if the player cannot pay and the game is lost.
 	if not has_active_quest():
 		return false
-	if current_quest["turns_left"] > 0:
+	if current_quest["turns_left"] >= 0:
 		return false
 	var penalty: int = current_quest["penalty"]
 	EventLog.add_entry("Quest FAILED! Deliver %d %s to %s — penalty: %d cr" % [

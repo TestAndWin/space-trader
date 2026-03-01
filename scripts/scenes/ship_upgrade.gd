@@ -31,7 +31,7 @@ var _upgrade_list: VBoxContainer
 var _stats_list: VBoxContainer
 var _ship_display: Control
 var ShowroomBgScene := preload("res://scenes/components/dealer_showroom_bg.tscn")
-var ShipDisplayScene := preload("res://scenes/components/ship_display.tscn")
+var ShipDisplayScene := preload("res://scenes/components/ship_display_3d.tscn")
 
 
 func setup(planet_type: int) -> void:

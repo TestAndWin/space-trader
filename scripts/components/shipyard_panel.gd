@@ -13,7 +13,7 @@ const SHIELD_UPGRADE_AMOUNT := 3
 const CARGO_UPGRADE_COST := 300
 const CARGO_UPGRADE_AMOUNT := 2
 
-var ShipDisplayScene := preload("res://scenes/components/ship_display.tscn")
+var ShipDisplayScene := preload("res://scenes/components/ship_display_3d.tscn")
 var ship_display_node: Control
 
 var hull_bar: ProgressBar

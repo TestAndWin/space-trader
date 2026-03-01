@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://e5dwqm2t36ni" path="res://scripts/scenes/planet_screen.gd" id="1_ps1"]
 [ext_resource type="PackedScene" path="res://scenes/components/planet_background.tscn" id="4_pb1"]
 [ext_resource type="PackedScene" path="res://scenes/components/space_background.tscn" id="6_sb1"]
-[ext_resource type="PackedScene" path="res://scenes/components/ship_display.tscn" id="7_sd1"]
+[ext_resource type="PackedScene" path="res://scenes/components/ship_display_3d.tscn" id="7_sd1"]
 [ext_resource type="Script" uid="uid://ccengsm5qkliu" path="res://scripts/components/cockpit_frame.gd" id="8_cf1"]
 
 [node name="PlanetScreen" type="Control" unique_id=189487057]

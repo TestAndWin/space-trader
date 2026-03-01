@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/components/enemy_ship_display_3d.gd" id="1_esd3d"]
+
+[node name="EnemyShipDisplay" type="Control"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("1_esd3d")

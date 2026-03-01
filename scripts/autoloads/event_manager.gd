@@ -67,7 +67,7 @@ func tick() -> void:
 
 		active_event = evt
 		event_turns_remaining = randi_range(MIN_DURATION, MAX_DURATION)
-		EventLog.add_entry("New event: %s (%d turns)" % [active_event["title"], event_turns_remaining])
+		EventLog.add_entry("New event: %s (%d trips)" % [active_event["title"], event_turns_remaining])
 		return
 
 
@@ -134,7 +134,7 @@ func get_event_display_text() -> String:
 		return ""
 	var title: String = active_event.get("title", "Unknown Event")
 	var desc: String = active_event.get("description", "")
-	return "%s - %s (%d turns left)" % [title, desc, event_turns_remaining]
+	return "%s - %s (%d trips left)" % [title, desc, event_turns_remaining]
 
 
 # ── Save / Load ──────────────────────────────────────────────────────────────

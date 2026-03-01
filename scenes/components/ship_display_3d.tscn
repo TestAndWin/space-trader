@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/components/ship_display_3d.gd" id="1_sd3d"]
+
+[node name="ShipDisplay" type="Control"]
+custom_minimum_size = Vector2(100, 120)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("1_sd3d")
