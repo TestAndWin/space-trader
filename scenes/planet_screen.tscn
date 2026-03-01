@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3 uid="uid://ps1planet_screen"]
+[gd_scene load_steps=8 format=3 uid="uid://ps1planet_screen"]
 
 [ext_resource type="Script" path="res://scripts/scenes/planet_screen.gd" id="1_ps1"]
 [ext_resource type="PackedScene" path="res://scenes/components/planet_background.tscn" id="4_pb1"]
 [ext_resource type="PackedScene" path="res://scenes/components/space_background.tscn" id="6_sb1"]
 [ext_resource type="Script" path="res://scripts/components/cockpit_frame.gd" id="8_cf1"]
 [ext_resource type="PackedScene" path="res://scenes/components/ship_display.tscn" id="7_sd1"]
+[ext_resource type="PackedScene" path="res://scenes/components/city_map.tscn" id="9_cm1"]
 
 
 [node name="PlanetScreen" type="Control"]
@@ -225,13 +226,10 @@ size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.0
 theme_override_constants/separation = 8
 
-[node name="BuildingGrid" type="GridContainer" parent="VBoxContainer/MainContent/RightColumn"]
+[node name="CityMap" parent="VBoxContainer/MainContent/RightColumn" instance=ExtResource("9_cm1")]
 layout_mode = 2
-mouse_filter = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
-columns = 3
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 12
 
 
 

@@ -51,13 +51,13 @@ var _casino_rounds: int = 0
 @onready var hull_label := $VBoxContainer/MainContent/LeftColumn/ShipStatusPanel/ShipStatusBox/ShipStats/HullLabel
 @onready var hull_bar := $VBoxContainer/MainContent/LeftColumn/ShipStatusPanel/ShipStatusBox/ShipStats/HullBar
 @onready var shield_label := $VBoxContainer/MainContent/LeftColumn/ShipStatusPanel/ShipStatusBox/ShipStats/ShieldLabel
-@onready var building_grid := $VBoxContainer/MainContent/RightColumn/BuildingGrid
+@onready var city_map: Control = $VBoxContainer/MainContent/RightColumn/CityMap
 @onready var space_background := $Background
 
 
-# ── Building definitions ─────────────────────────────────────────────────────
+# ── Building IDs ─────────────────────────────────────────────────────────────
+# Visual data (names, icons, colors) lives in city_map.gd
 
-# Each building: { icon, labels per planet type, accent color, bg color, availability func }
 const BUILDING_MARKET = "market"
 const BUILDING_SHIPYARD = "shipyard"
 const BUILDING_CASINO = "casino"
@@ -66,75 +66,6 @@ const BUILDING_QUEST = "quest"
 const BUILDING_DECK = "deck"
 const BUILDING_DEPART = "depart"
 const BUILDING_MISSION = "mission"
-
-# Planet-type-specific building names
-const BUILDING_NAMES = {
-	BUILDING_MARKET: {
-		0: "Cyber\nMarket", 1: "Farm\nStand", 2: "Mining\nExchange",
-		3: "Trade\nHub", 4: "Black\nMarket"
-	},
-	BUILDING_SHIPYARD: {
-		0: "Tech\nBay", 1: "Repair\nShed", 2: "Repair\nDepot",
-		3: "Workshop", 4: "Chop\nShop"
-	},
-	BUILDING_CASINO: {
-		0: "Neon\nArcade", 1: "Barn\nGames", 2: "Casino",
-		3: "Casino", 4: "Smuggler's\nDen"
-	},
-	BUILDING_CREW: {
-		0: "Tech\nAcademy", 1: "Farmhands\nGuild", 2: "Miners\nGuild",
-		3: "Engineers\nCorps", 4: "Mercenary\nOutpost"
-	},
-	BUILDING_QUEST: {
-		0: "Intel\nOffice", 1: "Post\nOffice", 2: "Dispatch\nCenter",
-		3: "Logistics\nHQ", 4: "Dead\nDrop"
-	},
-	BUILDING_DECK: {
-		0: "Armory", 1: "Barn\nVault", 2: "Gear\nLocker",
-		3: "Arsenal", 4: "Stash"
-	},
-	BUILDING_DEPART: {
-		0: "Starport", 1: "Landing\nPad", 2: "Launch\nBay",
-		3: "Spaceport", 4: "Smuggler's\nDock"
-	},
-	BUILDING_MISSION: {
-		0: "Bounty\nBoard", 1: "Bounty\nBoard", 2: "Bounty\nBoard",
-		3: "Bounty\nBoard", 4: "Contract\nBoard"
-	},
-}
-
-const BUILDING_ICONS = {
-	BUILDING_MARKET: {0: "\u25C8", 1: "\u2618", 2: "\u26CF", 3: "\u2699", 4: "\u2620"},
-	BUILDING_SHIPYARD: {0: "\u2699", 1: "\u2692", 2: "\u2692", 3: "\u2726", 4: "\u2620"},
-	BUILDING_CASINO: {0: "\u2666", 1: "\u2666", 2: "\u2666", 3: "\u2666", 4: "\u2666"},
-	BUILDING_CREW: {0: "\u2726", 1: "\u2698", 2: "\u2692", 3: "\u2699", 4: "\u2694"},
-	BUILDING_QUEST: {0: "\u2709", 1: "\u2709", 2: "\u2709", 3: "\u2709", 4: "\u2709"},
-	BUILDING_DECK: {0: "\u2660", 1: "\u2660", 2: "\u2660", 3: "\u2660", 4: "\u2660"},
-	BUILDING_DEPART: {0: "\u2708", 1: "\u2708", 2: "\u2708", 3: "\u2708", 4: "\u2708"},
-	BUILDING_MISSION: {0: "\u2694", 1: "\u2694", 2: "\u2694", 3: "\u2694", 4: "\u2694"},
-}
-
-const BUILDING_ACCENTS = {
-	BUILDING_MARKET: Color(0.0, 0.85, 1.0),
-	BUILDING_SHIPYARD: Color(0.4, 0.75, 1.0),
-	BUILDING_CASINO: Color(1.0, 0.75, 0.1),
-	BUILDING_CREW: Color(0.3, 0.9, 0.6),
-	BUILDING_QUEST: Color(0.4, 0.85, 0.65),
-	BUILDING_DECK: Color(0.7, 0.5, 1.0),
-	BUILDING_DEPART: Color(0.0, 0.85, 0.45),
-	BUILDING_MISSION: Color(0.3, 0.85, 1.0),
-}
-
-const BUILDING_BGS = {
-	BUILDING_MARKET: Color(0.0, 0.08, 0.18),
-	BUILDING_SHIPYARD: Color(0.02, 0.06, 0.16),
-	BUILDING_CASINO: Color(0.18, 0.10, 0.0),
-	BUILDING_CREW: Color(0.02, 0.10, 0.06),
-	BUILDING_QUEST: Color(0.04, 0.10, 0.06),
-	BUILDING_DECK: Color(0.08, 0.04, 0.16),
-	BUILDING_DEPART: Color(0.0, 0.12, 0.06),
-	BUILDING_MISSION: Color(0.02, 0.1, 0.22),
-}
 
 
 func _ready() -> void:
@@ -164,8 +95,8 @@ func _ready() -> void:
 	# Mark mission as done if already played this landing
 	if GameManager.mission_done_this_landing:
 		_mission_done = true
-	# Build hub buildings
-	_build_hub_buildings()
+	# Setup city map
+	_setup_city_map()
 	# Arrival events only on first visit (not when returning from sub-screens)
 	if not GameManager.arrival_events_done:
 		GameManager.arrival_events_done = true
@@ -205,87 +136,31 @@ func _find_planet_data() -> void:
 	current_planet_data = EconomyManager.get_planet_data(GameManager.current_planet)
 
 
-# ── Hub Buildings ────────────────────────────────────────────────────────────
+# ── City Map Setup ────────────────────────────────────────────────────────────
 
-func _build_hub_buildings() -> void:
-	for child in building_grid.get_children():
-		child.queue_free()
-
+func _setup_city_map() -> void:
 	var pt: int = current_planet_data.planet_type if current_planet_data else 0
-
-	# Market — available on all planets
-	_add_building(BUILDING_MARKET, pt, _on_market_pressed)
-
-	# Shipyard — available on all planets (keeping current behavior)
-	_add_building(BUILDING_SHIPYARD, pt, _on_shipyard_pressed)
-
-	# Casino — all except Mining (2)
-	if pt != 2:
-		_add_building(BUILDING_CASINO, pt, _on_casino_pressed, _casino_done)
-
-	# Crew — available on all planets
-	_add_building(BUILDING_CREW, pt, _on_crew_pressed)
-
-	# Quest — available on all planets
-	_add_building(BUILDING_QUEST, pt, _on_quest_pressed)
-
-	# View Deck — available on all planets
-	_add_building(BUILDING_DECK, pt, _on_view_deck_pressed)
-
-	# Depart — always available, prominent green
-	_add_building(BUILDING_DEPART, pt, _on_depart_pressed)
-
-	# Mission — only Tech (3) and Outlaw (4)  [used to be just action icons]
-	if pt == 3 or pt == 4:
-		_add_building(BUILDING_MISSION, pt, _on_mission_pressed, _mission_done)
+	city_map.setup(pt, _get_building_states())
+	city_map.building_clicked.connect(_on_building_clicked)
 
 
-func _add_building(building_id: String, pt: int, callback: Callable, is_done: bool = false) -> void:
-	var accent: Color = BUILDING_ACCENTS.get(building_id, Color(0.5, 0.8, 1.0))
-	var bg: Color = BUILDING_BGS.get(building_id, Color(0.02, 0.06, 0.14))
-	var icon: String = BUILDING_ICONS.get(building_id, {}).get(pt, "\u25C6")
-	var label_text: String = BUILDING_NAMES.get(building_id, {}).get(pt, building_id)
+func _get_building_states() -> Dictionary:
+	return {
+		BUILDING_CASINO: _casino_done,
+		BUILDING_MISSION: _mission_done,
+	}
 
-	var btn := Button.new()
-	btn.text = "%s\n%s" % [icon, label_text]
-	btn.custom_minimum_size = Vector2(120, 90)
-	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	btn.add_theme_font_size_override("font_size", 14)
-	btn.add_theme_color_override("font_color", accent)
-	btn.add_theme_color_override("font_hover_color", accent.lightened(0.3))
 
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = bg
-	normal.border_color = accent.darkened(0.2)
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(10)
-	normal.shadow_color = accent.darkened(0.1)
-	normal.shadow_size = 6
-	normal.content_margin_left = 12
-	normal.content_margin_right = 12
-	normal.content_margin_top = 8
-	normal.content_margin_bottom = 8
-	btn.add_theme_stylebox_override("normal", normal)
-
-	var hover := normal.duplicate()
-	hover.bg_color = bg.lightened(0.15)
-	hover.border_color = accent
-	hover.shadow_size = 10
-	btn.add_theme_stylebox_override("hover", hover)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = bg.darkened(0.15)
-	btn.add_theme_stylebox_override("pressed", pressed)
-
-	if is_done:
-		btn.disabled = true
-		btn.tooltip_text = "Already visited this landing"
-		btn.modulate = Color(0.5, 0.5, 0.5)
-	else:
-		btn.pressed.connect(callback)
-
-	building_grid.add_child(btn)
+func _on_building_clicked(building_id: String) -> void:
+	match building_id:
+		BUILDING_MARKET:   _on_market_pressed()
+		BUILDING_SHIPYARD: _on_shipyard_pressed()
+		BUILDING_CASINO:   _on_casino_pressed()
+		BUILDING_CREW:     _on_crew_pressed()
+		BUILDING_QUEST:    _on_quest_pressed()
+		BUILDING_DECK:     _on_view_deck_pressed()
+		BUILDING_DEPART:   _on_depart_pressed()
+		BUILDING_MISSION:  _on_mission_pressed()
 
 
 # ── Building callbacks ───────────────────────────────────────────────────────
@@ -363,7 +238,7 @@ func _on_mission_pressed() -> void:
 
 
 func _rebuild_hub_buildings() -> void:
-	_build_hub_buildings()
+	city_map.update_states(_get_building_states())
 
 
 # ── Header & Info ────────────────────────────────────────────────────────────
