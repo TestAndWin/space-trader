@@ -105,6 +105,8 @@ func _build_ui() -> void:
 	# ── Header ──
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 12)
+	header.z_index = 10
+	header.mouse_filter = Control.MOUSE_FILTER_STOP
 	main_vbox.add_child(header)
 
 	var title_vbox := VBoxContainer.new()
@@ -156,6 +158,7 @@ func _build_ui() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Leave Market"
 	close_btn.custom_minimum_size = Vector2(140, 36)
+	close_btn.mouse_filter = Control.MOUSE_FILTER_STOP
 	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
 	close_btn.pressed.connect(_close)
 	header.add_child(close_btn)
@@ -335,5 +338,6 @@ func _on_sell(good_name: String, quantity: int) -> void:
 
 
 func _close() -> void:
-	market_closed.emit()
+	# Close first so the overlay always disappears, even if listeners error.
 	queue_free()
+	market_closed.emit()

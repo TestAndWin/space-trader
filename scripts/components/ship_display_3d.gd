@@ -118,8 +118,6 @@ func _set_ship_x(val: float) -> void:
 func _ready() -> void:
 	_setup_viewport()
 	_setup_scene()
-	resized.connect(_on_resized)
-	call_deferred("_on_resized")
 
 
 func _setup_viewport() -> void:
@@ -319,9 +317,3 @@ func _update_hull_visual() -> void:
 	else:
 		_base_emissive = 0.0
 	_hull_mat.set_shader_parameter("emissive_strength", _base_emissive)
-
-
-func _on_resized() -> void:
-	if _viewport:
-		var px := Vector2i(maxi(int(size.x), 1), maxi(int(size.y), 1))
-		_viewport.size = px

@@ -7,8 +7,8 @@ const ICON_MAP = {
 	"Luxury Goods": "diamond",
 	"Weapons": "crosshair",
 	"Electronics": "chip",
-	"Food": "circle",
-	"Ore": "hexagon",
+	"Food Rations": "circle",
+	"Raw Ore": "hexagon",
 	"Spice": "star",
 	"Stolen Tech": "triangle",
 }
@@ -18,8 +18,8 @@ const COLOR_MAP = {
 	"Luxury Goods": Color(0.3, 0.5, 1.0),
 	"Weapons": Color(1.0, 0.6, 0.2),
 	"Electronics": Color(0.2, 0.85, 0.9),
-	"Food": Color(0.3, 0.85, 0.3),
-	"Ore": Color(0.65, 0.45, 0.25),
+	"Food Rations": Color(0.3, 0.85, 0.3),
+	"Raw Ore": Color(0.65, 0.45, 0.25),
 	"Spice": Color(0.7, 0.3, 0.9),
 	"Stolen Tech": Color(1.0, 0.2, 0.2),
 }

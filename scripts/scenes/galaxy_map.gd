@@ -1,21 +1,40 @@
-extends Node2D
+extends Node3D
 
-var planet_scene: PackedScene = preload("res://scenes/components/planet_node.tscn")
 const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
-var planets: Array = []
-var planet_nodes: Dictionary = {}   # { planet_name: PlanetNode }
-var selected_planet: Resource = null
-var _time: float = 0.0
-var _twinkle_stars: Array = []  # { node: ColorRect, base_brightness: float, phase: float, speed: float }
-var _nebula_clouds: Array = []  # { node: ColorRect, base_alpha: float, phase: float }
-var _particles: Array = []      # { pos: Vector2, vel: Vector2, size: float, alpha: float, color: Color }
-var _route_data: Array = []     # { from: Vector2, to: Vector2, is_active: bool }
 
-@onready var planets_container := $PlanetsContainer
-@onready var routes_container := $RoutesContainer
-@onready var starfield := $Starfield
-@onready var player_icon := $PlayerIcon
+const PLANET_TYPE_COLORS := {
+	0: Color(0.35, 0.55, 0.95),
+	1: Color(0.30, 0.80, 0.35),
+	2: Color(0.82, 0.58, 0.22),
+	3: Color(0.20, 0.85, 0.95),
+	4: Color(0.95, 0.22, 0.22),
+}
+
+const GALAXY_CENTER_2D := Vector2(640.0, 360.0)
+const GALAXY_WORLD_SCALE: float = 72.0
+const GALAXY_SPREAD: float = 4.20
+const STARFIELD_DEPTH_NEAR: float = -8.0
+const STARFIELD_DEPTH_FAR: float = -42.0
+
+var planets: Array = []
+var selected_planet: Resource = null
+
+var _time: float = 0.0
+var _planet_visuals: Dictionary = {} # { planet_name: { planet, node, body, body_mat, glow, glow_mat, ring, ring_mat, label, base_color, base_position, phase } }
+var _route_data: Array = []          # [{ from_name, to_name, from_pos, to_pos, is_active, line, core, pulses, phases }]
+var _hovered_planet_name: String = ""
+var _player_marker: Node3D
+var _player_marker_base_position: Vector3 = Vector3.ZERO
+
+@onready var map_camera: Camera3D = $GalaxyWorld/MapCamera
+@onready var world_environment: WorldEnvironment = $GalaxyWorld/WorldEnvironment
+@onready var starfield_container: Node3D = $GalaxyWorld/Starfield3D
+@onready var nebula_container: Node3D = $GalaxyWorld/Nebulae3D
+@onready var routes_container: Node3D = $GalaxyWorld/Routes3D
+@onready var planets_container: Node3D = $GalaxyWorld/Planets3D
+@onready var markers_container: Node3D = $GalaxyWorld/Markers3D
+
 @onready var credits_label := $CanvasLayer/TopBar/CreditsLabel
 @onready var cargo_label := $CanvasLayer/TopBar/CargoLabel
 @onready var info_panel := $CanvasLayer/InfoPanel
@@ -32,14 +51,38 @@ var _route_data: Array = []     # { from: Vector2, to: Vector2, is_active: bool 
 
 func _ready() -> void:
 	_load_planets()
+	_setup_environment()
 	_generate_starfield()
-	_init_particles()
-	_draw_routes()
-	_spawn_planet_nodes()
+	_generate_nebulae()
+	_spawn_planets()
+	_build_routes()
+	_create_player_marker()
 	_update_planet_states()
 	_update_player_position()
 	_update_ui()
-	# Add padding to info panel
+	_configure_info_panel()
+
+	travel_button.visible = false
+	land_button.visible = true
+	travel_button.pressed.connect(_on_travel_pressed)
+	land_button.pressed.connect(_on_land_pressed)
+	_style_nav_button(travel_button, Color(0.0, 0.85, 0.45))
+	_style_nav_button(land_button, Color(0.0, 0.65, 0.95))
+
+	map_camera.position = Vector3(0.0, 0.35, 24.0)
+	map_camera.look_at(Vector3(0.0, -0.1, 0.0), Vector3.UP)
+	CockpitFrame.add_to(self, true)
+
+
+func _process(delta: float) -> void:
+	_time += delta
+	_animate_camera()
+	_animate_planets(delta)
+	_animate_routes()
+	_animate_player_marker()
+
+
+func _configure_info_panel() -> void:
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.02, 0.06, 0.14, 0.92)
 	panel_style.border_color = Color(0.0, 0.65, 0.95, 0.85)
@@ -59,197 +102,270 @@ func _ready() -> void:
 	panel_style.shadow_size = 6
 	info_panel.add_theme_stylebox_override("panel", panel_style)
 	info_panel.visible = false
-	travel_button.visible = false
-	travel_button.pressed.connect(_on_travel_pressed)
-	land_button.pressed.connect(_on_land_pressed)
-	_style_nav_button(travel_button, Color(0.0, 0.85, 0.45))
-	_style_nav_button(land_button, Color(0.0, 0.65, 0.95))
-	CockpitFrame.add_to(self, true)
 
 
-func _process(delta: float) -> void:
-	_time += delta
-	# Animate twinkle stars
-	for ts in _twinkle_stars:
-		var node: ColorRect = ts["node"]
-		var base: float = ts["base_brightness"]
-		var phase: float = ts["phase"]
-		var spd: float = ts["speed"]
-		var brt: float = lerpf(base * 0.2, minf(base * 2.2, 1.0), (sin(_time * spd + phase) + 1.0) * 0.5)
-		node.color = Color(brt, brt, minf(brt * 1.15, 1.0), brt)
-		# Also animate size for bright stars to create glow pulsing
-		if base > 0.5:
-			var sz: float = 2.0 + sin(_time * spd * 0.7 + phase) * 0.8
-			node.size = Vector2(sz, sz)
-	# Animate nebula breathing
-	for nc in _nebula_clouds:
-		var node: ColorRect = nc["node"]
-		var base_a: float = nc["base_alpha"]
-		var phase: float = nc["phase"]
-		var breath: float = sin(_time * 0.3 + phase) * 0.02
-		var col: Color = node.color
-		col.a = base_a + breath
-		node.color = col
-	# Move floating particles
-	for p in _particles:
-		p["pos"] += p["vel"] * delta
-		# Wrap around screen
-		if p["pos"].x < -20.0:
-			p["pos"].x = 1300.0
-		elif p["pos"].x > 1300.0:
-			p["pos"].x = -20.0
-		if p["pos"].y < -20.0:
-			p["pos"].y = 740.0
-		elif p["pos"].y > 740.0:
-			p["pos"].y = -20.0
-	# Request redraw for animated routes + particles
-	queue_redraw()
+func _setup_environment() -> void:
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0.005, 0.01, 0.03)
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.12, 0.17, 0.28)
+	env.ambient_light_energy = 0.95
+	env.glow_enabled = true
+	env.glow_intensity = 0.85
+	env.glow_strength = 0.75
+	env.volumetric_fog_enabled = true
+	env.volumetric_fog_density = 0.004
+	world_environment.environment = env
 
 
-func _draw() -> void:
-	_draw_animated_routes()
-	_draw_particles()
-
-
-func _draw_animated_routes() -> void:
-	for rd in _route_data:
-		var from: Vector2 = rd["from"]
-		var to: Vector2 = rd["to"]
-		var is_active: bool = rd["is_active"]
-
-		if is_active:
-			# Outer glow line
-			draw_line(from, to, Color(0.3, 0.55, 0.9, 0.12), 8.0, true)
-			# Main route line
-			draw_line(from, to, Color(0.4, 0.7, 1.0, 0.55), 2.5, true)
-			# Bright core
-			draw_line(from, to, Color(0.6, 0.85, 1.0, 0.45), 1.0, true)
-
-			# Animated energy pulses traveling along the route
-			var num_pulses: int = 3
-			for i in num_pulses:
-				var phase: float = float(i) / float(num_pulses)
-				# t goes 0..1 along the route, wrapping
-				var t: float = fmod(_time * 0.25 + phase, 1.0)
-				var pulse_pos: Vector2 = from.lerp(to, t)
-				# Pulse brightness fades at edges
-				var edge_fade: float = 1.0 - abs(t - 0.5) * 2.0
-				edge_fade = clampf(edge_fade, 0.0, 1.0)
-				var pulse_alpha: float = 0.7 * edge_fade
-				# Bright dot
-				draw_circle(pulse_pos, 4.0, Color(0.5, 0.8, 1.0, pulse_alpha * 0.3))
-				draw_circle(pulse_pos, 2.0, Color(0.7, 0.9, 1.0, pulse_alpha * 0.7))
-				draw_circle(pulse_pos, 0.8, Color(1.0, 1.0, 1.0, pulse_alpha))
-		else:
-			# Inactive route: dim dashed appearance via alternating alpha
-			var route_len: float = from.distance_to(to)
-			var dir: Vector2 = (to - from).normalized()
-			var seg_len: float = 12.0
-			var segments: int = int(route_len / seg_len)
-			for i in segments:
-				if i % 2 == 0:
-					var seg_start: Vector2 = from + dir * (float(i) * seg_len)
-					var seg_end: Vector2 = from + dir * minf(float(i + 1) * seg_len, route_len)
-					draw_line(seg_start, seg_end, Color(0.2, 0.3, 0.5, 0.18), 1.0, true)
-
-
-func _draw_particles() -> void:
-	for p in _particles:
-		var pos: Vector2 = p["pos"]
-		var sz: float = p["size"]
-		var alpha: float = p["alpha"]
-		var col: Color = p["color"]
-		# Subtle pulsing alpha
-		alpha *= 0.7 + sin(_time * 0.8 + pos.x * 0.01) * 0.3
-		draw_circle(pos, sz, Color(col.r, col.g, col.b, alpha))
-		# Tiny glow halo for larger particles
-		if sz > 1.2:
-			draw_circle(pos, sz * 2.5, Color(col.r, col.g, col.b, alpha * 0.15))
-
-
-func _init_particles() -> void:
+func _generate_starfield() -> void:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 55
-	var particle_colors: Array = [
-		Color(0.4, 0.6, 1.0),   # blue
-		Color(0.3, 0.8, 0.9),   # cyan
-		Color(0.6, 0.4, 0.9),   # purple
-		Color(0.9, 0.8, 0.5),   # gold
-		Color(0.5, 0.7, 0.6),   # teal
+	rng.seed = 8842
+
+	# Wide background coverage so stars are visible across the whole screen area.
+	for i in 980:
+		var star := MeshInstance3D.new()
+		var star_mesh := SphereMesh.new()
+		var size: float = rng.randf_range(0.010, 0.050)
+		star_mesh.radius = size
+		star_mesh.height = size * 2.0
+		star_mesh.radial_segments = 8
+		star_mesh.rings = 4
+		star.mesh = star_mesh
+
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		var brightness: float = rng.randf_range(0.12, 0.72)
+		var cool_shift: float = rng.randf_range(-0.07, 0.09)
+		mat.albedo_color = Color(
+			clampf(brightness - cool_shift, 0.0, 1.0),
+			clampf(brightness, 0.0, 1.0),
+			clampf(brightness + cool_shift * 1.25, 0.0, 1.0),
+			rng.randf_range(0.16, 0.65)
+		)
+		mat.emission_enabled = true
+		mat.emission = mat.albedo_color
+		mat.emission_energy_multiplier = rng.randf_range(0.45, 1.15)
+		star.material_override = mat
+
+		star.position = Vector3(
+			rng.randf_range(-95.0, 95.0),
+			rng.randf_range(-56.0, 56.0),
+			rng.randf_range(-72.0, STARFIELD_DEPTH_NEAR)
+		)
+		starfield_container.add_child(star)
+
+	# Brighter accent stars on top of the faint field.
+	for i in 140:
+		var star := MeshInstance3D.new()
+		var star_mesh := SphereMesh.new()
+		var size: float = rng.randf_range(0.050, 0.120)
+		star_mesh.radius = size
+		star_mesh.height = size * 2.0
+		star_mesh.radial_segments = 10
+		star_mesh.rings = 5
+		star.mesh = star_mesh
+
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		var brightness: float = rng.randf_range(0.65, 1.0)
+		var tint: float = rng.randf_range(-0.08, 0.08)
+		mat.albedo_color = Color(
+			clampf(brightness + tint, 0.0, 1.0),
+			clampf(brightness, 0.0, 1.0),
+			clampf(brightness - tint * 0.8, 0.0, 1.0),
+			rng.randf_range(0.60, 0.95)
+		)
+		mat.emission_enabled = true
+		mat.emission = mat.albedo_color
+		mat.emission_energy_multiplier = rng.randf_range(1.2, 2.0)
+		star.material_override = mat
+
+		star.position = Vector3(
+			rng.randf_range(-95.0, 95.0),
+			rng.randf_range(-56.0, 56.0),
+			rng.randf_range(-72.0, STARFIELD_DEPTH_NEAR)
+		)
+		starfield_container.add_child(star)
+
+
+func _generate_nebulae() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 9901
+	var nebula_colors: Array = [
+		Color(0.50, 0.22, 0.66),
+		Color(0.18, 0.35, 0.75),
+		Color(0.62, 0.25, 0.32),
+		Color(0.24, 0.52, 0.62),
+		Color(0.42, 0.28, 0.54),
 	]
-	for i in 30:
-		_particles.append({
-			"pos": Vector2(rng.randf_range(0, 1280), rng.randf_range(0, 720)),
-			"vel": Vector2(rng.randf_range(-8.0, 8.0), rng.randf_range(-4.0, 4.0)),
-			"size": rng.randf_range(0.5, 1.8),
-			"alpha": rng.randf_range(0.08, 0.25),
-			"color": particle_colors[i % particle_colors.size()],
-		})
+
+	# Broad, subtle volumetric nebula pass across the full background area.
+	for i in 16:
+		var cloud_color: Color = nebula_colors[i % nebula_colors.size()]
+		var cluster := Node3D.new()
+		cluster.position = Vector3(
+			rng.randf_range(-86.0, 86.0),
+			rng.randf_range(-50.0, 50.0),
+			rng.randf_range(-66.0, -12.0)
+		)
+		nebula_container.add_child(cluster)
+
+		for j in 2:
+			var fog := FogVolume.new()
+			fog.shape = RenderingServer.FOG_VOLUME_SHAPE_ELLIPSOID
+			fog.size = Vector3(
+				rng.randf_range(8.0, 18.0),
+				rng.randf_range(4.2, 10.0),
+				rng.randf_range(8.0, 17.0)
+			)
+			fog.position = Vector3(
+				rng.randf_range(-3.6, 3.6),
+				rng.randf_range(-2.0, 2.0),
+				rng.randf_range(-3.2, 3.2)
+			)
+
+			var fog_material := FogMaterial.new()
+			fog_material.albedo = Color(cloud_color.r, cloud_color.g, cloud_color.b, 1.0)
+			fog_material.emission = Color(cloud_color.r * 0.18, cloud_color.g * 0.18, cloud_color.b * 0.22, 1.0)
+			fog_material.density = rng.randf_range(0.018, 0.050)
+			fog.material = fog_material
+			cluster.add_child(fog)
 
 
 func _load_planets() -> void:
 	planets = ResourceRegistry.load_all(ResourceRegistry.PLANETS)
 
 
-func _generate_starfield() -> void:
-	# Nebula clouds — larger, more vibrant
-	var nebula_rng := RandomNumberGenerator.new()
-	nebula_rng.seed = 7
-	var nebula_colors: Array = [
-		Color(0.35, 0.12, 0.55, 0.09),  # purple — more visible
-		Color(0.12, 0.18, 0.45, 0.08),  # blue
-		Color(0.45, 0.12, 0.18, 0.08),  # red
-		Color(0.18, 0.12, 0.45, 0.09),  # indigo
-		Color(0.12, 0.35, 0.45, 0.07),  # teal
-		Color(0.4, 0.18, 0.35, 0.08),   # magenta
-		Color(0.15, 0.25, 0.5, 0.06),   # deep blue — extra cloud
-		Color(0.5, 0.2, 0.4, 0.05),     # rose — extra cloud
-	]
-	for i in nebula_colors.size():
-		var cloud := ColorRect.new()
-		cloud.position = Vector2(nebula_rng.randf_range(-150, 1000), nebula_rng.randf_range(-80, 550))
-		cloud.size = Vector2(nebula_rng.randf_range(280, 550), nebula_rng.randf_range(220, 450))
-		cloud.color = nebula_colors[i]
-		cloud.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		starfield.add_child(cloud)
-		_nebula_clouds.append({ "node": cloud, "base_alpha": nebula_colors[i].a, "phase": nebula_rng.randf_range(0.0, TAU) })
-
+func _spawn_planets() -> void:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 42  # Fixed seed for consistent starfield
-	# More stars for a richer background
-	for i in 250:
-		var star_x: float = rng.randf_range(0, 1280)
-		var star_y: float = rng.randf_range(0, 720)
-		var star_size: float = rng.randf_range(0.5, 2.2)
-		var brightness: float = rng.randf_range(0.15, 0.75)
-		var star := ColorRect.new()
-		star.position = Vector2(star_x, star_y)
-		star.size = Vector2(star_size, star_size)
-		# Slight color variation — some stars bluish, some warm
-		var tint: float = rng.randf_range(-0.08, 0.08)
-		star.color = Color(brightness - tint, brightness, brightness + tint, brightness)
-		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		starfield.add_child(star)
-		# Every 5th star twinkles (50 total)
-		if i % 5 == 0:
-			_twinkle_stars.append({ "node": star, "base_brightness": brightness, "phase": rng.randf_range(0.0, TAU), "speed": rng.randf_range(1.2, 3.0) })
-	# Bright accent stars with glow
-	for i in 20:
-		var star_x: float = rng.randf_range(0, 1280)
-		var star_y: float = rng.randf_range(0, 720)
-		var star := ColorRect.new()
-		star.position = Vector2(star_x, star_y)
-		star.size = Vector2(2.5, 2.5)
-		# Blue-white bright stars
-		var warmth: float = rng.randf_range(0.0, 0.15)
-		star.color = Color(0.75 + warmth, 0.82, 0.95, 0.85)
-		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		starfield.add_child(star)
-		_twinkle_stars.append({ "node": star, "base_brightness": 0.85, "phase": rng.randf_range(0.0, TAU), "speed": rng.randf_range(1.5, 2.8) })
+	rng.seed = 321
+
+	for planet: Resource in planets:
+		var node := Node3D.new()
+		node.name = "Planet_%s" % planet.planet_name.replace(" ", "_")
+		var world_pos: Vector3 = _planet_to_world(planet)
+		node.position = world_pos
+		planets_container.add_child(node)
+
+		var base_color: Color = PLANET_TYPE_COLORS.get(planet.planet_type, Color(0.8, 0.8, 0.9))
+		var radius: float = 0.92 + float(planet.danger_level) * 0.14
+
+		var sphere := MeshInstance3D.new()
+		var sphere_mesh := SphereMesh.new()
+		sphere_mesh.radius = radius
+		sphere_mesh.height = radius * 2.0
+		sphere_mesh.radial_segments = 36
+		sphere_mesh.rings = 18
+		sphere.mesh = sphere_mesh
+		var sphere_mat := StandardMaterial3D.new()
+		sphere_mat.albedo_color = base_color
+		sphere_mat.metallic = 0.08
+		sphere_mat.roughness = 0.32
+		sphere_mat.emission_enabled = true
+		sphere_mat.emission = base_color
+		sphere_mat.emission_energy_multiplier = 0.75
+		sphere.material_override = sphere_mat
+		node.add_child(sphere)
+
+		var glow := MeshInstance3D.new()
+		var glow_mesh := SphereMesh.new()
+		glow_mesh.radius = radius * 1.55
+		glow_mesh.height = radius * 3.1
+		glow_mesh.radial_segments = 24
+		glow_mesh.rings = 12
+		glow.mesh = glow_mesh
+		var glow_mat := StandardMaterial3D.new()
+		glow_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		glow_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		glow_mat.albedo_color = Color(base_color.r, base_color.g, base_color.b, 0.13)
+		glow_mat.emission_enabled = true
+		glow_mat.emission = base_color
+		glow_mat.emission_energy_multiplier = 1.1
+		glow_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		glow.material_override = glow_mat
+		node.add_child(glow)
+
+		var ring := MeshInstance3D.new()
+		var ring_mesh := TorusMesh.new()
+		ring_mesh.inner_radius = radius * 1.55
+		ring_mesh.outer_radius = radius * 1.78
+		ring_mesh.rings = 32
+		ring_mesh.ring_segments = 12
+		ring.mesh = ring_mesh
+		ring.rotation.x = PI * 0.5
+		var ring_mat := StandardMaterial3D.new()
+		ring_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		ring_mat.albedo_color = Color(0.65, 0.85, 1.0, 0.0)
+		ring_mat.emission_enabled = true
+		ring_mat.emission = Color(0.65, 0.85, 1.0)
+		ring_mat.emission_energy_multiplier = 1.8
+		ring.material_override = ring_mat
+		node.add_child(ring)
+
+		var area := Area3D.new()
+		area.input_ray_pickable = true
+		var collision := CollisionShape3D.new()
+		var shape := SphereShape3D.new()
+		shape.radius = radius * 2.35
+		collision.shape = shape
+		area.add_child(collision)
+		area.mouse_entered.connect(_on_planet_mouse_entered.bind(planet))
+		area.mouse_exited.connect(_on_planet_mouse_exited.bind(planet))
+		area.input_event.connect(_on_planet_input_event.bind(planet))
+		node.add_child(area)
+
+		var label := Label3D.new()
+		label.text = planet.planet_name
+		label.position = Vector3(0.0, radius * 2.35, 0.0)
+		label.font_size = 54
+		label.pixel_size = 0.0105
+		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		label.modulate = Color(0.92, 0.97, 1.0, 1.0)
+		label.outline_modulate = Color(0.0, 0.03, 0.09, 1.0)
+		label.outline_size = 18
+		node.add_child(label)
+
+		_planet_visuals[planet.planet_name] = {
+			"planet": planet,
+			"node": node,
+			"body": sphere,
+			"body_mat": sphere_mat,
+			"glow": glow,
+			"glow_mat": glow_mat,
+			"ring": ring,
+			"ring_mat": ring_mat,
+			"label": label,
+			"base_color": base_color,
+			"base_position": world_pos,
+			"phase": rng.randf_range(0.0, TAU),
+		}
 
 
-func _draw_routes() -> void:
-	# Build route data for animated drawing (no static Line2D nodes for routes)
+func _planet_to_world(planet: Resource) -> Vector3:
+	var map_pos: Vector2 = planet.map_position
+	var x: float = ((map_pos.x - GALAXY_CENTER_2D.x) / GALAXY_WORLD_SCALE) * GALAXY_SPREAD
+	var y: float = ((GALAXY_CENTER_2D.y - map_pos.y) / GALAXY_WORLD_SCALE) * GALAXY_SPREAD
+	var z: float = _depth_offset(planet.planet_name, map_pos)
+	return Vector3(x, y, z)
+
+
+func _depth_offset(planet_name: String, map_pos: Vector2) -> float:
+	var hash_val: int = abs(planet_name.hash())
+	var base: float = (float(hash_val % 1000) / 999.0) * 4.8 - 2.4
+	var wave: float = sin(map_pos.x * 0.0105 + map_pos.y * 0.016) * 0.7
+	return base + wave
+
+
+func _build_routes() -> void:
+	_route_data.clear()
+	for child in routes_container.get_children():
+		child.queue_free()
+
 	var drawn_pairs: Dictionary = {}
 	var current_name: String = GameManager.current_planet
 	var current_planet := _find_planet_by_name(current_name)
@@ -257,7 +373,7 @@ func _draw_routes() -> void:
 	if current_planet:
 		active_connections = current_planet.connected_planets
 
-	for planet in planets:
+	for planet: Resource in planets:
 		for connected_name: String in planet.connected_planets:
 			var pair_key := _route_key(planet.planet_name, connected_name)
 			if pair_key in drawn_pairs:
@@ -267,14 +383,197 @@ func _draw_routes() -> void:
 			if target == null:
 				continue
 
-			# Check if this route connects to current planet
 			var is_active: bool = (planet.planet_name == current_name and connected_name in active_connections) or (connected_name == current_name and planet.planet_name in active_connections)
+			var from_pos: Vector3 = _planet_to_world(planet)
+			var to_pos: Vector3 = _planet_to_world(target)
+
+			var route_root := Node3D.new()
+			route_root.name = "Route_%s" % pair_key.replace("|", "_")
+			routes_container.add_child(route_root)
+
+			var glow_color := Color(0.34, 0.60, 1.0)
+			var core_color := Color(0.66, 0.88, 1.0)
+			var dim_color := Color(0.20, 0.35, 0.55)
+			var line: MeshInstance3D
+			var core: MeshInstance3D = null
+			var pulses: Array = []
+			var phases: Array = []
+
+			if is_active:
+				line = _create_route_segment(from_pos, to_pos, glow_color, 0.095, 0.18, 1.8)
+				core = _create_route_segment(from_pos, to_pos, core_color, 0.030, 0.95, 2.8)
+				route_root.add_child(line)
+				route_root.add_child(core)
+
+				for i in 4:
+					var pulse := MeshInstance3D.new()
+					var pulse_mesh := SphereMesh.new()
+					pulse_mesh.radius = 0.10
+					pulse_mesh.height = 0.20
+					pulse_mesh.radial_segments = 18
+					pulse_mesh.rings = 10
+					pulse.mesh = pulse_mesh
+					var pulse_mat := StandardMaterial3D.new()
+					pulse_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+					pulse_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+					pulse_mat.albedo_color = Color(0.78, 0.94, 1.0, 0.95)
+					pulse_mat.emission_enabled = true
+					pulse_mat.emission = Color(0.72, 0.90, 1.0)
+					pulse_mat.emission_energy_multiplier = 3.2
+					pulse.material_override = pulse_mat
+					route_root.add_child(pulse)
+					pulses.append(pulse)
+					phases.append(float(i) / 4.0)
+			else:
+				line = _create_route_segment(from_pos, to_pos, dim_color, 0.018, 0.26, 0.4)
+				route_root.add_child(line)
 
 			_route_data.append({
-				"from": planet.map_position,
-				"to": target.map_position,
+				"from_name": planet.planet_name,
+				"to_name": connected_name,
+				"from_pos": from_pos,
+				"to_pos": to_pos,
 				"is_active": is_active,
+				"line": line,
+				"core": core,
+				"pulses": pulses,
+				"phases": phases,
 			})
+
+
+func _create_route_segment(from_pos: Vector3, to_pos: Vector3, color: Color, radius: float, alpha: float, emissive_energy: float) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	var length: float = from_pos.distance_to(to_pos)
+	mesh.top_radius = radius
+	mesh.bottom_radius = radius
+	mesh.height = maxf(length, 0.01)
+	mesh.radial_segments = 16
+	mesh_instance.mesh = mesh
+
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(color.r, color.g, color.b, alpha)
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = emissive_energy
+	mesh_instance.material_override = mat
+
+	_align_between(mesh_instance, from_pos, to_pos)
+	return mesh_instance
+
+
+func _align_between(node: Node3D, from_pos: Vector3, to_pos: Vector3) -> void:
+	var delta: Vector3 = to_pos - from_pos
+	var up: Vector3 = delta.normalized()
+	var right: Vector3 = up.cross(Vector3.FORWARD)
+	if right.length_squared() < 0.0001:
+		right = up.cross(Vector3.RIGHT)
+	right = right.normalized()
+	var forward: Vector3 = right.cross(up).normalized()
+	node.transform = Transform3D(Basis(right, up, forward), (from_pos + to_pos) * 0.5)
+
+
+func _create_player_marker() -> void:
+	_player_marker = Node3D.new()
+	_player_marker.name = "PlayerMarker"
+	markers_container.add_child(_player_marker)
+
+	var ship := MeshInstance3D.new()
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.0
+	cone.bottom_radius = 0.13
+	cone.height = 0.32
+	cone.radial_segments = 12
+	ship.mesh = cone
+	ship.rotation_degrees.x = 180.0
+	var ship_mat := StandardMaterial3D.new()
+	ship_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	ship_mat.albedo_color = Color(0.95, 0.98, 1.0, 0.95)
+	ship_mat.emission_enabled = true
+	ship_mat.emission = Color(0.40, 0.85, 1.0)
+	ship_mat.emission_energy_multiplier = 2.1
+	ship.material_override = ship_mat
+	_player_marker.add_child(ship)
+
+	var halo := MeshInstance3D.new()
+	var halo_mesh := SphereMesh.new()
+	halo_mesh.radius = 0.23
+	halo_mesh.height = 0.46
+	halo_mesh.radial_segments = 16
+	halo_mesh.rings = 8
+	halo.mesh = halo_mesh
+	var halo_mat := StandardMaterial3D.new()
+	halo_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	halo_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	halo_mat.albedo_color = Color(0.30, 0.75, 1.0, 0.22)
+	halo_mat.emission_enabled = true
+	halo_mat.emission = Color(0.32, 0.74, 1.0)
+	halo_mat.emission_energy_multiplier = 2.8
+	halo.material_override = halo_mat
+	_player_marker.add_child(halo)
+
+
+func _animate_camera() -> void:
+	var base_pos := Vector3(0.0, 0.35, 24.0)
+	map_camera.position = base_pos + Vector3(
+		sin(_time * 0.13) * 0.55,
+		cos(_time * 0.19) * 0.24,
+		0.0
+	)
+	map_camera.look_at(Vector3(0.0, -0.1, 0.0), Vector3.UP)
+
+
+func _animate_planets(delta: float) -> void:
+	for planet_name_key in _planet_visuals.keys():
+		var planet_name: String = str(planet_name_key)
+		var visual: Dictionary = _planet_visuals[planet_name]
+		var node: Node3D = visual["node"]
+		var glow: MeshInstance3D = visual["glow"]
+		var ring: MeshInstance3D = visual["ring"]
+		var base_pos: Vector3 = visual["base_position"]
+		var phase: float = visual["phase"]
+		var is_current: bool = planet_name == GameManager.current_planet
+
+		node.rotation.y += delta * (0.55 + phase * 0.03)
+		var bob: float = sin(_time * 1.4 + phase) * 0.045
+		node.position = base_pos + Vector3(0.0, bob + (0.08 if is_current else 0.0), 0.0)
+
+		var glow_pulse: float = 0.95 + sin(_time * 2.1 + phase) * 0.07
+		glow.scale = Vector3.ONE * glow_pulse
+		ring.rotation.z = _time * 0.45 + phase
+
+
+func _animate_routes() -> void:
+	for route: Dictionary in _route_data:
+		if not route["is_active"]:
+			continue
+		var from_pos: Vector3 = route["from_pos"]
+		var to_pos: Vector3 = route["to_pos"]
+		var pulses: Array = route["pulses"]
+		var phases: Array = route["phases"]
+		for i in pulses.size():
+			var pulse: MeshInstance3D = pulses[i]
+			var phase: float = phases[i]
+			var t: float = fmod(_time * 0.24 + phase, 1.0)
+			pulse.position = from_pos.lerp(to_pos, t)
+			var pulse_scale: float = 0.75 + sin(_time * 6.0 + phase * TAU) * 0.2
+			pulse.scale = Vector3.ONE * pulse_scale
+
+
+func _animate_player_marker() -> void:
+	if _player_marker == null:
+		return
+	_player_marker.rotation.y = _time * 1.1
+	_player_marker.position = _player_marker_base_position + Vector3(0.0, sin(_time * 2.6) * 0.08, 0.0)
+
+
+func _find_planet_by_name(pname: String) -> Resource:
+	for p: Resource in planets:
+		if p.planet_name == pname:
+			return p
+	return null
 
 
 func _route_key(a: String, b: String) -> String:
@@ -283,39 +582,69 @@ func _route_key(a: String, b: String) -> String:
 	return b + "|" + a
 
 
-func _find_planet_by_name(pname: String) -> Resource:
-	for p in planets:
-		if p.planet_name == pname:
-			return p
-	return null
-
-
-func _spawn_planet_nodes() -> void:
-	for planet in planets:
-		var node := planet_scene.instantiate()
-		node.setup(planet)
-		node.planet_clicked.connect(_on_planet_clicked)
-		node.planet_hovered.connect(_on_planet_hovered)
-		node.planet_unhovered.connect(_on_planet_unhovered)
-		planets_container.add_child(node)
-		planet_nodes[planet.planet_name] = node
-
-
 func _update_planet_states() -> void:
 	var current := _find_planet_by_name(GameManager.current_planet)
 	var reachable_names: Array = []
 	if current:
 		reachable_names = current.connected_planets
-	for pname in planet_nodes:
-		var node: Node = planet_nodes[pname]
-		node.set_current(pname == GameManager.current_planet)
-		node.set_reachable(pname in reachable_names)
+
+	for planet_name_key in _planet_visuals.keys():
+		var planet_name: String = str(planet_name_key)
+		var visual: Dictionary = _planet_visuals[planet_name]
+		var body_mat: StandardMaterial3D = visual["body_mat"]
+		var glow_mat: StandardMaterial3D = visual["glow_mat"]
+		var ring_mat: StandardMaterial3D = visual["ring_mat"]
+		var label: Label3D = visual["label"]
+		var base_color: Color = visual["base_color"]
+		var is_current: bool = planet_name == GameManager.current_planet
+		var is_reachable: bool = planet_name in reachable_names
+		var is_hovered: bool = planet_name == _hovered_planet_name
+
+		var dim_factor: float = 1.0
+		if not is_current and not is_reachable and not is_hovered:
+			dim_factor = 0.35
+
+		var lit_color := base_color
+		if is_hovered:
+			lit_color = lit_color.lightened(0.18)
+		if is_current:
+			lit_color = lit_color.lightened(0.24)
+
+		body_mat.albedo_color = Color(lit_color.r * dim_factor, lit_color.g * dim_factor, lit_color.b * dim_factor, 1.0)
+		body_mat.emission = lit_color
+		body_mat.emission_energy_multiplier = 0.45 + (1.2 if is_current else 0.55 if is_reachable else 0.0) + (0.35 if is_hovered else 0.0)
+
+		glow_mat.albedo_color = Color(lit_color.r, lit_color.g, lit_color.b, 0.08 + (0.17 if is_current else 0.10 if is_reachable else 0.0) + (0.10 if is_hovered else 0.0))
+		glow_mat.emission = lit_color
+		glow_mat.emission_energy_multiplier = 1.0 + (1.8 if is_current else 1.1 if is_reachable else 0.0)
+
+		if is_current:
+			ring_mat.albedo_color = Color(1.0, 0.92, 0.45, 0.9)
+			ring_mat.emission = Color(1.0, 0.86, 0.35)
+			ring_mat.emission_energy_multiplier = 2.4
+		elif is_reachable:
+			ring_mat.albedo_color = Color(0.52, 0.83, 1.0, 0.75)
+			ring_mat.emission = Color(0.45, 0.75, 1.0)
+			ring_mat.emission_energy_multiplier = 1.8
+		elif is_hovered:
+			ring_mat.albedo_color = Color(0.75, 0.92, 1.0, 0.55)
+			ring_mat.emission = Color(0.62, 0.85, 1.0)
+			ring_mat.emission_energy_multiplier = 1.4
+		else:
+			ring_mat.albedo_color = Color(0.7, 0.9, 1.0, 0.0)
+			ring_mat.emission_energy_multiplier = 0.0
+
+		if is_current or is_reachable or is_hovered:
+			label.modulate = Color(0.85, 0.93, 1.0, 1.0)
+		else:
+			label.modulate = Color(0.75, 0.82, 0.92, 0.38)
 
 
 func _update_player_position() -> void:
 	var current := _find_planet_by_name(GameManager.current_planet)
-	if current:
-		player_icon.position = current.map_position
+	if current and _player_marker:
+		_player_marker_base_position = _planet_to_world(current) + Vector3(0.0, 2.25, 0.0)
+		_player_marker.position = _player_marker_base_position
 
 
 func _update_ui() -> void:
@@ -326,12 +655,32 @@ func _update_ui() -> void:
 	shield_label.text = "Shield: %d/%d" % [GameManager.current_shield, GameManager.max_shield]
 
 
+func _on_planet_input_event(_camera: Camera3D, event: InputEvent, _event_position: Vector3, _normal: Vector3, _shape_idx: int, planet_data: Resource) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_on_planet_clicked(planet_data)
+
+
+func _on_planet_mouse_entered(planet_data: Resource) -> void:
+	_hovered_planet_name = planet_data.planet_name
+	_on_planet_hovered(planet_data)
+	_update_planet_states()
+
+
+func _on_planet_mouse_exited(planet_data: Resource) -> void:
+	if _hovered_planet_name == planet_data.planet_name:
+		_hovered_planet_name = ""
+		_on_planet_unhovered()
+	_update_planet_states()
+
+
 func _on_planet_clicked(planet_data: Resource) -> void:
 	if planet_data.planet_name == GameManager.current_planet:
 		selected_planet = null
 		travel_button.visible = false
 		land_button.visible = true
+		_update_planet_states()
 		return
+
 	land_button.visible = false
 	var current := _find_planet_by_name(GameManager.current_planet)
 	if current and planet_data.planet_name in current.connected_planets:
@@ -341,6 +690,7 @@ func _on_planet_clicked(planet_data: Resource) -> void:
 	else:
 		selected_planet = null
 		travel_button.visible = false
+	_update_planet_states()
 
 
 func _on_planet_hovered(planet_data: Resource) -> void:
@@ -349,14 +699,14 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 	var type_text: String = EconomyManager.PLANET_TYPE_NAMES.get(planet_data.planet_type, "Unknown")
 	planet_type_label.text = type_text
 	danger_label.text = "Danger: %d" % planet_data.danger_level
-	# Color danger
+
 	if planet_data.danger_level >= 3:
 		danger_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	elif planet_data.danger_level >= 2:
 		danger_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.3))
 	else:
 		danger_label.add_theme_color_override("font_color", Color(0.6, 0.8, 0.6))
-	# Color planet type
+
 	var type_color: Color = Color(0.6, 0.6, 0.7)
 	match planet_data.planet_type:
 		0: type_color = Color(0.4, 0.6, 1.0)
@@ -365,7 +715,7 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 		3: type_color = Color(0.3, 0.9, 1.0)
 		4: type_color = Color(1.0, 0.3, 0.3)
 	planet_type_label.add_theme_color_override("font_color", type_color)
-	# Available goods
+
 	var available: Array = EconomyManager.get_available_goods(type_text)
 	if available.size() > 0:
 		trades_label.text = "Trades: " + ", ".join(available)
@@ -387,7 +737,6 @@ func _on_travel_pressed() -> void:
 
 func _style_nav_button(btn: Button, accent: Color) -> void:
 	UIStyles.style_accent_button(btn, accent.darkened(0.5))
-	# Nav buttons use dark font on bright accent background
 	var normal: StyleBoxFlat = btn.get_theme_stylebox("normal").duplicate()
 	normal.bg_color.a = 0.85
 	normal.border_color = accent
@@ -398,14 +747,17 @@ func _style_nav_button(btn: Button, accent: Color) -> void:
 	normal.shadow_color = Color(accent.r, accent.g, accent.b, 0.3)
 	normal.shadow_size = 6
 	btn.add_theme_stylebox_override("normal", normal)
+
 	var hover: StyleBoxFlat = normal.duplicate()
 	hover.bg_color = accent.darkened(0.35)
 	hover.bg_color.a = 0.9
 	hover.border_color = accent.lightened(0.1)
 	btn.add_theme_stylebox_override("hover", hover)
+
 	var pressed: StyleBoxFlat = normal.duplicate()
 	pressed.bg_color = accent.darkened(0.6)
 	btn.add_theme_stylebox_override("pressed", pressed)
+
 	btn.add_theme_color_override("font_color", Color(0.05, 0.05, 0.05))
 	btn.add_theme_color_override("font_hover_color", Color(0.0, 0.0, 0.0))
 

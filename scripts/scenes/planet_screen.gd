@@ -27,6 +27,8 @@ const TYPE_COLORS = {
 const HOLO_BORDER := Color(0.0, 0.65, 0.95, 0.85)
 const ACCENT_DEPART := Color(0.0, 0.85, 0.45)
 const HOLO_SHADOW := Color(0.0, 0.45, 0.9, 0.25)
+const CARGO_ICON_SLOT_WIDTH: float = 20.0
+const CARGO_FALLBACK_ROW_WIDTH: float = 120.0
 
 var current_planet_data: Resource = null
 var _smuggler_bought: Dictionary = {}  # good_name -> qty bought from smuggler this visit
@@ -82,8 +84,11 @@ func _ready() -> void:
 	_style_cargo_bar()
 	_style_ship_panel()
 	_style_info_bar()
+	ship_status_panel.clip_contents = true
+	cargo_items_row.clip_contents = true
 	_update_ui()
 	_add_header_buttons()
+	call_deferred("_update_cargo_items")
 
 	# Space background — use image if available, else procedural
 	if current_planet_data:
@@ -500,6 +505,19 @@ func _update_ship_status() -> void:
 	hull_bar.value = hull
 
 	shield_label.text = "Shield: %d/%d" % [shield, max_shield]
+	
+	var shield_bar_bg := StyleBoxFlat.new()
+	shield_bar_bg.bg_color = Color(0.04, 0.08, 0.16)
+	shield_bar_bg.set_corner_radius_all(3)
+	shield_bar_bg.border_color = Color(0.1, 0.2, 0.4)
+	shield_bar_bg.set_border_width_all(1)
+	shield_bar.add_theme_stylebox_override("background", shield_bar_bg)
+	
+	var shield_bar_fill := StyleBoxFlat.new()
+	shield_bar_fill.bg_color = Color(0.4, 0.65, 1.0)
+	shield_bar_fill.set_corner_radius_all(3)
+	shield_bar.add_theme_stylebox_override("fill", shield_bar_fill)
+	
 	shield_bar.max_value = max(max_shield, 1)
 	shield_bar.value = shield
 
@@ -525,7 +543,28 @@ func _update_quest_label() -> void:
 func _update_cargo_items() -> void:
 	for child in cargo_items_row.get_children():
 		child.queue_free()
-	for item in GameManager.cargo:
+	var cargo_items: Array = GameManager.cargo
+	if cargo_items.is_empty():
+		return
+
+	var available_width: float = cargo_items_row.size.x
+	if available_width <= 2.0:
+		var parent_ctrl := cargo_items_row.get_parent() as Control
+		if parent_ctrl:
+			available_width = parent_ctrl.size.x
+	if available_width <= 2.0:
+		available_width = CARGO_FALLBACK_ROW_WIDTH
+
+	var max_icons: int = maxi(1, int(floor((available_width + 2.0) / CARGO_ICON_SLOT_WIDTH)))
+	var visible_count: int = mini(cargo_items.size(), max_icons)
+	var hidden_count: int = 0
+	if cargo_items.size() > max_icons:
+		# Reserve one slot for overflow indicator (e.g. +3).
+		visible_count = maxi(1, max_icons - 1)
+		hidden_count = cargo_items.size() - visible_count
+
+	for i in visible_count:
+		var item: Dictionary = cargo_items[i]
 		var good_name: String = item["good_name"]
 		var qty: int = item["quantity"]
 		var icon := Control.new()
@@ -534,6 +573,14 @@ func _update_cargo_items() -> void:
 		icon.tooltip_text = "%s x%d" % [good_name, qty]
 		cargo_items_row.add_child(icon)
 
+	if hidden_count > 0:
+		var more_label := Label.new()
+		more_label.text = "+%d" % hidden_count
+		more_label.add_theme_font_size_override("font_size", 12)
+		more_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.35))
+		more_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		more_label.tooltip_text = "%d more cargo types" % hidden_count
+		cargo_items_row.add_child(more_label)
 
 func _update_crew_items() -> void:
 	for child in crew_items_row.get_children():

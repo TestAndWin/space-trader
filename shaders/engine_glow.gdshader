@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode blend_add, cull_disabled, unshaded, billboard;
+render_mode blend_add, cull_disabled, unshaded;
 
 uniform vec4 glow_color : source_color = vec4(1.0, 0.6, 0.15, 1.0);
 uniform float pulse_speed : hint_range(0.5, 5.0) = 2.5;
