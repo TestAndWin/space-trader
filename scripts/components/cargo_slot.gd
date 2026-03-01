@@ -15,19 +15,32 @@ var good_name: String = ""
 var price: int = 0
 var quantity: int = 0
 var mode: String = "buy"  # "buy" or "sell"
+var trade_enabled: bool = true
+var trade_disabled_suffix: String = ""
 
 var selected_quantity: int = 1
 
 
-func setup(p_good_name: String, p_price: int, p_quantity: int, p_mode: String, avg_price: int = -1) -> void:
+func setup(
+	p_good_name: String,
+	p_price: int,
+	p_quantity: int,
+	p_mode: String,
+	avg_price: int = -1,
+	p_trade_enabled: bool = true,
+	p_trade_disabled_suffix: String = ""
+) -> void:
 	good_name = p_good_name
 	price = p_price
 	quantity = p_quantity
 	mode = p_mode
+	trade_enabled = p_trade_enabled
+	trade_disabled_suffix = p_trade_disabled_suffix
 	_setup_row_bg()
 	_setup_icon()
 	_style_buttons()
 	_update_display()
+	_update_trade_controls()
 	_update_price_indicator(avg_price)
 
 
@@ -65,6 +78,13 @@ func _style_buttons() -> void:
 	_style_action_button($ActionButton, action_color)
 	_style_pm_button($MinusButton)
 	_style_pm_button($PlusButton)
+
+
+func _update_trade_controls() -> void:
+	var show_trade_controls: bool = mode == "buy" or trade_enabled
+	$ActionButton.visible = show_trade_controls
+	$MinusButton.visible = show_trade_controls
+	$PlusButton.visible = show_trade_controls
 
 
 func _style_action_button(btn: Button, accent: Color) -> void:
@@ -151,7 +171,12 @@ func _update_display() -> void:
 		$QuantityLabel.text = "x" + str(selected_quantity)
 	else:
 		$ActionButton.text = "SELL"
-		$QuantityLabel.text = "x" + str(selected_quantity) + " (" + str(quantity) + ")"
+		if trade_enabled:
+			$QuantityLabel.text = "x" + str(selected_quantity) + " (" + str(quantity) + ")"
+		else:
+			$QuantityLabel.text = "x" + str(quantity)
+			if trade_disabled_suffix != "":
+				$QuantityLabel.text += " " + trade_disabled_suffix
 	$QuantityLabel.add_theme_color_override("font_color", Color(0.65, 0.68, 0.7))
 	# Color price based on profitability
 	if price > 0 and good_data:
@@ -204,15 +229,21 @@ func _find_good_data(gname: String) -> Resource:
 
 
 func _on_action_button_pressed() -> void:
+	if mode == "sell" and not trade_enabled:
+		return
 	action_pressed.emit(good_name, selected_quantity)
 
 
 func _on_plus_pressed() -> void:
+	if mode == "sell" and not trade_enabled:
+		return
 	var max_qty: int = 10 if mode == "buy" else quantity
 	selected_quantity = min(selected_quantity + 1, max_qty)
 	_update_display()
 
 
 func _on_minus_pressed() -> void:
+	if mode == "sell" and not trade_enabled:
+		return
 	selected_quantity = max(selected_quantity - 1, 1)
 	_update_display()

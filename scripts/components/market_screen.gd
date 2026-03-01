@@ -47,7 +47,7 @@ const MARKET_ICONS = {
 }
 
 var _planet_type: int = 0
-var _smuggler_bought: Dictionary = {}
+var _arrival_gained_cargo: Dictionary = {}
 var _credits_label: Label
 var _cargo_label: Label
 var _market_list: VBoxContainer
@@ -57,9 +57,9 @@ var _status_label: Label
 var ShowroomBgScene := preload("res://scenes/components/dealer_showroom_bg.tscn")
 
 
-func setup(planet_type: int, smuggler_bought: Dictionary = {}) -> void:
+func setup(planet_type: int, arrival_gained_cargo: Dictionary = {}) -> void:
 	_planet_type = planet_type
-	_smuggler_bought = smuggler_bought
+	_arrival_gained_cargo = arrival_gained_cargo
 	_refresh_all()
 
 
@@ -275,27 +275,33 @@ func _populate_market() -> void:
 func _populate_cargo() -> void:
 	for child in _cargo_list.get_children():
 		child.queue_free()
+	var has_rows: bool = false
 	var planet_name: String = GameManager.current_planet
 	for item in GameManager.cargo:
 		var good_name: String = item["good_name"]
 		var qty: int = item["quantity"]
-		# Reduce sellable quantity by goods bought from smuggler this visit
-		var blocked: int = _smuggler_bought.get(good_name, 0)
-		var sellable_qty: int = qty - blocked
-		if sellable_qty <= 0:
-			continue
+		# Reduce sellable quantity by goods gained on arrival this visit.
+		var blocked: int = mini(_arrival_gained_cargo.get(good_name, 0), qty)
+		var sellable_qty: int = maxi(qty - blocked, 0)
 		var sell_price: int = EconomyManager.get_sell_price(planet_name, good_name)
 		if sell_price < 0:
 			sell_price = 0
-		var slot := CargoSlotScene.instantiate()
-		_cargo_list.add_child(slot)
 		var avg_sell: int = EconomyManager.get_average_price(good_name)
 		if avg_sell > 0:
 			avg_sell = int(round(avg_sell * EconomyManager.SELL_RATIO))
-		slot.setup(good_name, sell_price, sellable_qty, "sell", avg_sell)
-		slot.action_pressed.connect(_on_sell)
+		if sellable_qty > 0:
+			var slot := CargoSlotScene.instantiate()
+			_cargo_list.add_child(slot)
+			slot.setup(good_name, sell_price, sellable_qty, "sell", avg_sell)
+			slot.action_pressed.connect(_on_sell)
+			has_rows = true
+		if blocked > 0:
+			var locked_slot := CargoSlotScene.instantiate()
+			_cargo_list.add_child(locked_slot)
+			locked_slot.setup(good_name, sell_price, blocked, "sell", avg_sell, false, "(arrival)")
+			has_rows = true
 
-	if GameManager.cargo.is_empty():
+	if not has_rows:
 		var empty_lbl := Label.new()
 		empty_lbl.text = "Cargo hold is empty"
 		empty_lbl.add_theme_font_size_override("font_size", 13)

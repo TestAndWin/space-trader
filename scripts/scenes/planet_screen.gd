@@ -31,7 +31,7 @@ const CARGO_ICON_SLOT_WIDTH: float = 20.0
 const CARGO_FALLBACK_ROW_WIDTH: float = 120.0
 
 var current_planet_data: Resource = null
-var _smuggler_bought: Dictionary = {}  # good_name -> qty bought from smuggler this visit
+var _arrival_gained_cargo: Dictionary = {}  # good_name -> qty gained on arrival and blocked from market sell
 var _mission_done: bool = false
 var _casino_done: bool = false
 var _casino_rounds: int = 0
@@ -112,32 +112,42 @@ func _ready() -> void:
 			smuggler.queue_free()
 		else:
 			# Snapshot cargo before the deal to detect smuggler purchases
-			var cargo_before: Dictionary = {}
-			for item in GameManager.cargo:
-				cargo_before[item["good_name"]] = item["quantity"]
+			var cargo_before := _snapshot_cargo()
 			smuggler.deal_closed.connect(func():
-				# Track goods added by smuggler deal
-				for item in GameManager.cargo:
-					var gname: String = item["good_name"]
-					var old_qty: int = cargo_before.get(gname, 0)
-					if item["quantity"] > old_qty:
-						_smuggler_bought[gname] = _smuggler_bought.get(gname, 0) + (item["quantity"] - old_qty)
+				_track_arrival_cargo_gains(cargo_before)
 				_update_ui(); _update_log()
 			)
 		# Planet arrival event (only if no smuggler event)
 		if not smuggler_active and current_planet_data:
+			var cargo_before_event := _snapshot_cargo()
 			var planet_event := PlanetEventScene.instantiate()
 			add_child(planet_event)
 			if not planet_event.try_trigger(current_planet_data.planet_type):
 				planet_event.queue_free()
 			else:
 				planet_event.event_resolved.connect(func():
+					_track_arrival_cargo_gains(cargo_before_event)
 					_update_ui(); _update_log()
 				)
 
 
 func _find_planet_data() -> void:
 	current_planet_data = EconomyManager.get_planet_data(GameManager.current_planet)
+
+
+func _snapshot_cargo() -> Dictionary:
+	var snapshot: Dictionary = {}
+	for item in GameManager.cargo:
+		snapshot[item["good_name"]] = item["quantity"]
+	return snapshot
+
+
+func _track_arrival_cargo_gains(cargo_before: Dictionary) -> void:
+	for item in GameManager.cargo:
+		var gname: String = item["good_name"]
+		var old_qty: int = cargo_before.get(gname, 0)
+		if item["quantity"] > old_qty:
+			_arrival_gained_cargo[gname] = _arrival_gained_cargo.get(gname, 0) + (item["quantity"] - old_qty)
 
 
 func _load_background_image() -> void:
@@ -181,7 +191,7 @@ func _on_market_pressed() -> void:
 	var market := MarketScreenScene.instantiate()
 	market.name = "MarketScreen"
 	add_child(market)
-	market.setup(pt, _smuggler_bought)
+	market.setup(pt, _arrival_gained_cargo)
 	market.market_closed.connect(func(): _update_ui(); _update_log())
 
 
