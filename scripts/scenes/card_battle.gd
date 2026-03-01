@@ -21,6 +21,7 @@ var combo_active: bool = false
 var recycled_this_shuffle: bool = false
 
 @onready var ship_display := %ShipDisplay
+@onready var battle_background: Control = $BattleBackground
 
 # Special ability state
 var turn_count: int = 0
@@ -212,6 +213,8 @@ func _start_player_turn() -> void:
 	if encounter.special_ability == EncounterData.SpecialAbility.SHIELD_BOOST and turn_count % 2 == 0:
 		enemy_shield += 3
 		_show_battle_message("Enemy shield reinforced! (+3)")
+		if battle_background and battle_background.has_method("play_enemy_shield_charge_effect"):
+			battle_background.call("play_enemy_shield_charge_effect", 3)
 
 	# FOCUS_FIRE: attack bonus increases from turn 2 onward
 	if encounter.special_ability == EncounterData.SpecialAbility.FOCUS_FIRE and turn_count >= 2:
@@ -263,6 +266,7 @@ func _hand_has_keyword(keyword: int) -> bool:
 
 func _apply_damage_to_enemy(raw_damage: int) -> void:
 	var damage := raw_damage
+	var shield_absorb: int = 0
 
 	# ADAPTATION: reduce damage taken each turn
 	if encounter.special_ability == EncounterData.SpecialAbility.ADAPTATION:
@@ -273,13 +277,16 @@ func _apply_damage_to_enemy(raw_damage: int) -> void:
 
 	# SHIELD_BOOST: enemy shield absorbs damage first
 	if enemy_shield > 0:
-		var shield_absorb := mini(damage, enemy_shield)
+		shield_absorb = mini(damage, enemy_shield)
 		enemy_shield -= shield_absorb
 		damage -= shield_absorb
 		if shield_absorb > 0:
 			_show_battle_message("Enemy shield absorbed %d damage" % shield_absorb)
 
 	enemy_health -= damage
+
+	if battle_background and battle_background.has_method("play_player_attack_effect"):
+		battle_background.call("play_player_attack_effect", raw_damage, shield_absorb, damage)
 
 	# Trigger hit animation on enemy ship display
 	if damage > 0 or raw_damage > 0:
@@ -349,6 +356,8 @@ func _apply_attack_card(card_data: Resource) -> void:
 
 func _apply_defense_card(card_data: Resource) -> void:
 	GameManager.current_shield = min(GameManager.max_shield, GameManager.current_shield + card_data.defense_value)
+	if card_data.defense_value > 0 and battle_background and battle_background.has_method("play_player_shield_charge_effect"):
+		battle_background.call("play_player_shield_charge_effect", card_data.defense_value)
 	# SHIELD_ECHO on defense: deal shield/2 as damage
 	if card_data.keywords.has(CardData.CardKeyword.SHIELD_ECHO) and GameManager.current_shield > 0:
 		_apply_damage_to_enemy(int(GameManager.current_shield / 2.0))
@@ -461,6 +470,8 @@ func _on_end_turn_pressed() -> void:
 		GameManager.current_shield -= shield_absorb
 		damage -= shield_absorb
 		GameManager.current_hull -= damage
+		if battle_background and battle_background.has_method("play_enemy_attack_effect"):
+			battle_background.call("play_enemy_attack_effect", shield_absorb, damage)
 
 		# Play hit animation on player ship
 		if shield_absorb > 0 and damage == 0:
