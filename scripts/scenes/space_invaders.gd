@@ -3,6 +3,7 @@ extends Control
 ## Space Invaders mini-game — destroy all enemies to win credits.
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
 const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.35)
@@ -60,7 +61,7 @@ var _info_label: Label
 
 func _ready() -> void:
 	# Setup background
-	_add_building_background("mission")
+	BackgroundUtils.add_building_background(self, "mission", 0.6)
 
 	# Crew attack bonus: faster shooting
 	if GameManager.has_crew_bonus(CrewData.CrewBonus.ATTACK_BONUS):
@@ -460,20 +461,3 @@ func _update_particles(delta: float) -> void:
 			_particles.remove_at(i)
 		i -= 1
 
-
-func _add_building_background(building_key: String) -> void:
-	var path: String = "res://assets/sprites/bg_building_%s.png" % building_key
-	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
-	if tex:
-		var bg := TextureRect.new()
-		bg.texture = tex
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(bg)
-		var dim := ColorRect.new()
-		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-		dim.color = Color(0.0, 0.0, 0.0, 0.6)
-		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(dim)

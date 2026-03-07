@@ -1,6 +1,7 @@
 extends Node3D
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 const PLANET_TYPE_COLORS := {
 	0: Color(0.35, 0.55, 0.95),
@@ -785,23 +786,13 @@ func _style_nav_button(btn: Button, accent: Color) -> void:
 
 
 func _add_galaxy_background() -> void:
-	var path: String = "res://assets/sprites/bg_galaxy_map.png"
-	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
-	if not tex:
-		return
-	# Place as a large 3D quad behind the starfield
-	var bg_quad := MeshInstance3D.new()
-	var quad_mesh := QuadMesh.new()
-	quad_mesh.size = Vector2(320.0, 180.0)
-	bg_quad.mesh = quad_mesh
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_texture = tex
-	mat.albedo_color = Color(1.0, 1.0, 1.0, 0.35)
-	bg_quad.material_override = mat
-	bg_quad.position = Vector3(0.0, 0.0, -80.0)
-	starfield_container.add_child(bg_quad)
+	BackgroundUtils.add_3d_quad_background(
+		starfield_container,
+		"res://assets/sprites/bg_galaxy_map.png",
+		Vector2(320.0, 180.0),
+		-80.0,
+		0.35
+	)
 
 
 func _on_land_pressed() -> void:

@@ -6,6 +6,7 @@ extends ColorRect
 signal upgrades_closed
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 # Planet type -> allowed upgrade slots
 const PLANET_UPGRADE_SLOTS := {
@@ -53,7 +54,7 @@ func _load_all_upgrades() -> void:
 
 func _build_ui() -> void:
 	# Background image
-	_add_building_background("shipyard")
+	BackgroundUtils.add_building_background(self, "shipyard", 0.4)
 
 	# Semi-transparent main panel
 	var panel := PanelContainer.new()
@@ -133,7 +134,7 @@ func _build_ui() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Leave Workshop"
 	close_btn.custom_minimum_size = Vector2(140, 36)
-	_style_action_button(close_btn, Color(0.5, 0.15, 0.1))
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
 	close_btn.pressed.connect(_close)
 	header.add_child(close_btn)
 
@@ -254,10 +255,6 @@ func _build_ship_stats_panel() -> PanelContainer:
 	stats_scroll.add_child(_stats_list)
 
 	return panel
-
-
-func _style_action_button(btn: Button, accent: Color) -> void:
-	UIStyles.style_accent_button(btn, accent)
 
 
 func _style_buy_button(btn: Button) -> void:
@@ -451,24 +448,6 @@ func _add_stat_row(stat_name: String, stat_value: String) -> void:
 	row.add_child(val_lbl)
 
 	_stats_list.add_child(row)
-
-
-func _add_building_background(building_key: String) -> void:
-	var path: String = "res://assets/sprites/bg_building_%s.png" % building_key
-	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
-	if tex:
-		var bg := TextureRect.new()
-		bg.texture = tex
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(bg)
-		var dim := ColorRect.new()
-		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-		dim.color = Color(0.0, 0.0, 0.0, 0.4)
-		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(dim)
 
 
 func _close() -> void:

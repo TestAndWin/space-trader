@@ -4,6 +4,8 @@ signal credits_changed(new_amount: int)
 signal cargo_changed
 signal crew_changed
 
+const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
+
 # Player identity
 var player_name: String = "Pilot"
 
@@ -65,6 +67,7 @@ var total_flights: int = 0
 
 
 func _ready() -> void:
+	BackgroundUtils.validate_required_backgrounds()
 	build_starter_deck()
 
 

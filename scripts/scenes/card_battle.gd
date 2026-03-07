@@ -1,6 +1,7 @@
 extends Control
 
 const CardDisplayScene = preload("res://scenes/components/card_display.tscn")
+const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 const FLEE_COST := 150
 const FLEE_CHANCE := 0.5
@@ -32,29 +33,9 @@ var effective_energy_per_turn: int = 0
 func _ready() -> void:
 	encounter = GameManager.current_encounter
 	_style_battle_buttons()
-	_add_battle_background()
+	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/bg_battle.png", 0.5, 1)
 	if encounter:
 		start_battle(encounter)
-
-
-func _add_battle_background() -> void:
-	var path: String = "res://assets/sprites/bg_battle.png"
-	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
-	if tex:
-		var bg := TextureRect.new()
-		bg.texture = tex
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(bg)
-		move_child(bg, 1)  # After Background ColorRect
-		var dim := ColorRect.new()
-		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-		dim.color = Color(0.0, 0.0, 0.0, 0.5)
-		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(dim)
-		move_child(dim, 2)
 
 
 func _style_battle_buttons() -> void:

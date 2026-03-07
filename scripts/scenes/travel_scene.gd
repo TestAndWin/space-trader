@@ -2,6 +2,7 @@ extends Control
 
 const HULL_SHADER := preload("res://shaders/ship_hull.gdshader")
 const ENGINE_SHADER := preload("res://shaders/engine_glow.gdshader")
+const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 var destination_planet: String = ""
 var dot_count: int = 0
@@ -132,7 +133,7 @@ func _ready() -> void:
 	var flash_tween := create_tween()
 	flash_tween.tween_property(flash, "modulate:a", 0.0, 0.6).set_ease(Tween.EASE_OUT)
 	flash_tween.tween_callback(flash.queue_free)
-	_add_travel_background()
+	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/bg_travel.png", 0.4, 0)
 	_style_bottom_panel()
 
 
@@ -146,26 +147,6 @@ func _style_bottom_panel() -> void:
 	style.shadow_size = 6
 	style.set_content_margin_all(8)
 	$HUD/BottomPanel.add_theme_stylebox_override("panel", style)
-
-
-func _add_travel_background() -> void:
-	var path: String = "res://assets/sprites/bg_travel.png"
-	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
-	if tex:
-		var bg := TextureRect.new()
-		bg.texture = tex
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(bg)
-		move_child(bg, 0)  # Behind everything
-		var dim := ColorRect.new()
-		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-		dim.color = Color(0.0, 0.0, 0.0, 0.4)
-		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(dim)
-		move_child(dim, 1)
 
 
 func _get_destination_type() -> int:

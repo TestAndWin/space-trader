@@ -2,6 +2,7 @@ extends Control
 
 var card_display_scene: PackedScene = preload("res://scenes/components/card_display.tscn")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 var card_selected: bool = false
 var reward_chosen: bool = false
 
@@ -57,7 +58,7 @@ func _ready() -> void:
 	%ContinueButton.pressed.connect(_on_continue_pressed)
 	%SkipButton.pressed.connect(_on_skip_pressed)
 	_style_buttons()
-	_add_battle_result_background()
+	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/bg_battle_result.png", 0.5, 1)
 
 
 # ── Credits + Card reward (original behavior) ───────────────────────────────
@@ -295,26 +296,6 @@ func _on_reward_skip_pressed() -> void:
 func _style_buttons() -> void:
 	for btn: Button in [%ContinueButton, %SkipButton, %AcceptButton, %RewardSkipButton]:
 		UIStyles.style_secondary_button(btn)
-
-
-func _add_battle_result_background() -> void:
-	var path: String = "res://assets/sprites/bg_battle_result.png"
-	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
-	if tex:
-		var bg := TextureRect.new()
-		bg.texture = tex
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(bg)
-		move_child(bg, 1)  # After Background ColorRect
-		var dim := ColorRect.new()
-		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-		dim.color = Color(0.0, 0.0, 0.0, 0.5)
-		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(dim)
-		move_child(dim, 2)
 
 
 func _on_continue_pressed() -> void:

@@ -6,6 +6,7 @@ extends ColorRect
 signal crew_closed
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
 const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.35)
@@ -50,7 +51,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	# Background image
-	_add_building_background("crew")
+	BackgroundUtils.add_building_background(self, "crew", 0.4)
 
 	# Main panel
 	var margin := MarginContainer.new()
@@ -173,24 +174,6 @@ func _refresh_ui() -> void:
 	if not _credits_label:
 		return
 	_credits_label.text = "%d cr" % GameManager.credits
-
-
-func _add_building_background(building_key: String) -> void:
-	var path: String = "res://assets/sprites/bg_building_%s.png" % building_key
-	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
-	if tex:
-		var bg := TextureRect.new()
-		bg.texture = tex
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(bg)
-		var dim := ColorRect.new()
-		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-		dim.color = Color(0.0, 0.0, 0.0, 0.4)
-		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(dim)
 
 
 func _close() -> void:

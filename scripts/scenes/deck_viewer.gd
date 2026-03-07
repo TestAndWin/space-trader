@@ -5,6 +5,7 @@ extends Control
 
 const CardDisplayScene = preload("res://scenes/components/card_display.tscn")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
 const BORDER_COLOR := Color(0.0, 0.65, 0.95, 0.35)
@@ -88,7 +89,7 @@ func _build_ui() -> void:
 	add_child(dim)
 
 	# Background image
-	_add_building_background("deck")
+	BackgroundUtils.add_building_background(self, "deck", 0.4)
 
 	# Semi-transparent main panel
 	var panel := PanelContainer.new()
@@ -167,7 +168,7 @@ func _build_ui() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.custom_minimum_size = Vector2(90, 36)
-	_style_action_button(close_btn, Color(0.5, 0.15, 0.1))
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
 	close_btn.pressed.connect(_on_close_pressed)
 	header.add_child(close_btn)
 
@@ -340,28 +341,6 @@ func _on_sell_card(card_data: Resource, sell_price: int) -> void:
 func _refresh_all() -> void:
 	_populate_shop()
 	_populate_deck()
-
-
-func _style_action_button(btn: Button, accent: Color) -> void:
-	UIStyles.style_accent_button(btn, accent)
-
-
-func _add_building_background(building_key: String) -> void:
-	var path: String = "res://assets/sprites/bg_building_%s.png" % building_key
-	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
-	if tex:
-		var bg := TextureRect.new()
-		bg.texture = tex
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(bg)
-		var bg_dim := ColorRect.new()
-		bg_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg_dim.color = Color(0.0, 0.0, 0.0, 0.4)
-		bg_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(bg_dim)
 
 
 func _on_close_pressed() -> void:

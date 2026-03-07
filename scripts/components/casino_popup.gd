@@ -6,6 +6,7 @@ extends ColorRect
 signal casino_closed
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 enum State { SELECT, PLAYING, RESULT }
 enum Game { BLACKJACK, SLOTS }
@@ -88,7 +89,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	# Background image
-	_add_building_background("casino")
+	BackgroundUtils.add_building_background(self, "casino", 0.4)
 
 	# Semi-transparent casino panel
 	var margin := MarginContainer.new()
@@ -168,11 +169,12 @@ func _build_ui() -> void:
 	_credits_label.add_theme_color_override("font_color", GOLD)
 	header.add_child(_credits_label)
 
-	var close_btn := Button.new()
-	close_btn.text = "Leave Casino"
-	close_btn.custom_minimum_size = Vector2(130, 36)
-	_style_casino_button(close_btn, Color(0.5, 0.15, 0.1))
-	close_btn.pressed.connect(_close)
+	var close_btn := _create_casino_button(
+		"Leave Casino",
+		Vector2(130, 36),
+		Color(0.5, 0.15, 0.1),
+		_close
+	)
 	header.add_child(close_btn)
 
 	# Separator line
@@ -196,8 +198,21 @@ func _build_ui() -> void:
 	_main_vbox.add_child(_content_area)
 
 
-func _style_casino_button(btn: Button, accent: Color) -> void:
+func _create_casino_button(
+	text: String,
+	min_size: Vector2,
+	accent: Color,
+	on_pressed: Callable = Callable(),
+	disabled: bool = false
+) -> Button:
+	var btn := Button.new()
+	btn.text = text
+	btn.custom_minimum_size = min_size
 	UIStyles.style_accent_button(btn, accent)
+	btn.disabled = disabled
+	if on_pressed.is_valid():
+		btn.pressed.connect(on_pressed)
+	return btn
 
 
 func _refresh_ui() -> void:
@@ -270,13 +285,15 @@ func _build_select_ui() -> void:
 
 	var bets: Array = [25, 50, 100, 200]
 	for amount in bets:
-		var btn := Button.new()
-		btn.text = "%d cr" % amount
-		btn.custom_minimum_size = Vector2(100, 48)
-		btn.disabled = GameManager.credits < amount
+		var is_disabled: bool = GameManager.credits < amount
 		var accent := Color(0.25, 0.18, 0.0) if GameManager.credits >= amount else Color(0.05, 0.08, 0.12)
-		_style_casino_button(btn, accent)
-		btn.pressed.connect(_on_bet_and_play.bind(amount))
+		var btn := _create_casino_button(
+			"%d cr" % amount,
+			Vector2(100, 48),
+			accent,
+			_on_bet_and_play.bind(amount),
+			is_disabled
+		)
 		bet_row.add_child(btn)
 
 	# Payout info
@@ -525,18 +542,20 @@ func _build_blackjack_ui() -> void:
 	btn_row.add_theme_constant_override("separation", 20)
 	_content_area.add_child(btn_row)
 
-	var hit_btn := Button.new()
-	hit_btn.text = "HIT"
-	hit_btn.custom_minimum_size = Vector2(120, 50)
-	_style_casino_button(hit_btn, Color(0.0, 0.22, 0.10))
-	hit_btn.pressed.connect(_on_bj_hit)
+	var hit_btn := _create_casino_button(
+		"HIT",
+		Vector2(120, 50),
+		Color(0.0, 0.22, 0.10),
+		_on_bj_hit
+	)
 	btn_row.add_child(hit_btn)
 
-	var stand_btn := Button.new()
-	stand_btn.text = "STAND"
-	stand_btn.custom_minimum_size = Vector2(120, 50)
-	_style_casino_button(stand_btn, Color(0.25, 0.18, 0.0))
-	stand_btn.pressed.connect(_on_bj_stand)
+	var stand_btn := _create_casino_button(
+		"STAND",
+		Vector2(120, 50),
+		Color(0.25, 0.18, 0.0),
+		_on_bj_stand
+	)
 	btn_row.add_child(stand_btn)
 
 
@@ -791,50 +810,40 @@ func _build_result_ui() -> void:
 	btn_row.add_theme_constant_override("separation", 20)
 	_content_area.add_child(btn_row)
 
-	var again_btn := Button.new()
 	var remaining: int = _max_rounds - rounds_played
+	var again_btn: Button
 	if remaining > 0:
-		again_btn.text = "Play Again (%d left)" % remaining
-		again_btn.custom_minimum_size = Vector2(160, 50)
-		_style_casino_button(again_btn, Color(0.25, 0.18, 0.0))
-		again_btn.pressed.connect(func():
-			_state = State.SELECT
-			_bet = 0
-			_refresh_ui()
+		again_btn = _create_casino_button(
+			"Play Again (%d left)" % remaining,
+			Vector2(160, 50),
+			Color(0.25, 0.18, 0.0),
+			_on_play_again_pressed
 		)
 	else:
-		again_btn.text = "No rounds left"
-		again_btn.custom_minimum_size = Vector2(160, 50)
-		_style_casino_button(again_btn, Color(0.04, 0.06, 0.10))
-		again_btn.disabled = true
+		again_btn = _create_casino_button(
+			"No rounds left",
+			Vector2(160, 50),
+			Color(0.04, 0.06, 0.10),
+			Callable(),
+			true
+		)
 	btn_row.add_child(again_btn)
 
-	var close_btn := Button.new()
-	close_btn.text = "Leave Casino"
-	close_btn.custom_minimum_size = Vector2(140, 50)
-	_style_casino_button(close_btn, Color(0.4, 0.15, 0.1))
-	close_btn.pressed.connect(_close)
+	var close_btn := _create_casino_button(
+		"Leave Casino",
+		Vector2(140, 50),
+		Color(0.4, 0.15, 0.1),
+		_close
+	)
 	btn_row.add_child(close_btn)
-
-
-func _add_building_background(building_key: String) -> void:
-	var path: String = "res://assets/sprites/bg_building_%s.png" % building_key
-	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
-	if tex:
-		var bg := TextureRect.new()
-		bg.texture = tex
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(bg)
-		var dim := ColorRect.new()
-		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-		dim.color = Color(0.0, 0.0, 0.0, 0.4)
-		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(dim)
 
 
 func _close() -> void:
 	casino_closed.emit()
 	queue_free()
+
+
+func _on_play_again_pressed() -> void:
+	_state = State.SELECT
+	_bet = 0
+	_refresh_ui()

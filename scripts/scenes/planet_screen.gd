@@ -12,6 +12,7 @@ const CrewScreenScene: PackedScene = preload("res://scenes/components/crew_scree
 const ShipyardScreenScene: PackedScene = preload("res://scenes/components/shipyard_screen.tscn")
 const QuestScreenScene: PackedScene = preload("res://scenes/components/quest_screen.tscn")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 const GoodIcon = preload("res://scripts/components/good_icon.gd")
 const CrewIcon = preload("res://scripts/components/crew_icon.gd")
 
@@ -168,13 +169,12 @@ func _track_arrival_cargo_gains(cargo_before: Dictionary) -> void:
 
 func _load_background_image() -> void:
 	var planet_name: String = current_planet_data.planet_name.to_lower().replace(" ", "_")
-	for ext: String in ["jpg", "jpeg", "png"]:
-		var tex := load("res://assets/sprites/bg_%s.%s" % [planet_name, ext]) as Texture2D
-		if tex:
-			bg_image.texture = tex
-			bg_image.visible = true
-			_create_image_hotspots(_get_building_states())
-			return
+	var path := "res://assets/sprites/bg_%s.png" % planet_name
+	var tex := BackgroundUtils.load_texture(path)
+	if tex:
+		bg_image.texture = tex
+		bg_image.visible = true
+		_create_image_hotspots(_get_building_states())
 
 
 func _get_building_states() -> Dictionary:
@@ -394,55 +394,60 @@ func _start_pulse_loop(dots: Array[ColorRect], glows: Array[ColorRect]) -> void:
 # ── Header & Info ────────────────────────────────────────────────────────────
 
 
-func _style_info_bar() -> void:
+func _make_holo_panel_style(
+	bg_alpha: float = 0.75,
+	border_color: Color = HOLO_BORDER,
+	corner_radius: int = 8,
+	content_margin: int = 8,
+	with_shadow: bool = true
+) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
-	style.border_color = HOLO_BORDER
+	style.bg_color = Color(0.02, 0.06, 0.14, bg_alpha)
+	style.border_color = border_color
 	style.set_border_width_all(2)
-	style.set_corner_radius_all(8)
-	style.shadow_color = HOLO_SHADOW
-	style.shadow_size = 6
-	style.set_content_margin_all(8)
-	$InfoBar.add_theme_stylebox_override("panel", style)
+	style.set_corner_radius_all(corner_radius)
+	if with_shadow:
+		style.shadow_color = HOLO_SHADOW
+		style.shadow_size = 6
+	style.set_content_margin_all(content_margin)
+	return style
+
+
+func _make_bar_background_style(bg_color: Color, border_color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.set_corner_radius_all(3)
+	style.border_color = border_color
+	style.set_border_width_all(1)
+	return style
+
+
+func _make_bar_fill_style(fill_color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill_color
+	style.set_corner_radius_all(3)
+	return style
+
+
+func _style_info_bar() -> void:
+	$InfoBar.add_theme_stylebox_override("panel", _make_holo_panel_style())
 
 
 func _style_ship_panel() -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
-	style.border_color = HOLO_BORDER
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(8)
-	style.shadow_color = HOLO_SHADOW
-	style.shadow_size = 6
-	style.set_content_margin_all(8)
-	ship_status_panel.add_theme_stylebox_override("panel", style)
+	ship_status_panel.add_theme_stylebox_override("panel", _make_holo_panel_style())
 
 	# Hull bar colors
-	var bar_bg := StyleBoxFlat.new()
-	bar_bg.bg_color = Color(0.08, 0.04, 0.04)
-	bar_bg.set_corner_radius_all(3)
-	bar_bg.border_color = Color(0.3, 0.1, 0.1)
-	bar_bg.set_border_width_all(1)
+	var bar_bg := _make_bar_background_style(Color(0.08, 0.04, 0.04), Color(0.3, 0.1, 0.1))
 	hull_bar.add_theme_stylebox_override("background", bar_bg)
 
-	var bar_fill := StyleBoxFlat.new()
-	bar_fill.bg_color = Color(0.2, 0.9, 0.2)
-	bar_fill.set_corner_radius_all(3)
-	hull_bar.add_theme_stylebox_override("fill", bar_fill)
+	hull_bar.add_theme_stylebox_override("fill", _make_bar_fill_style(Color(0.2, 0.9, 0.2)))
 
 
 func _style_cargo_bar() -> void:
-	var bar_bg := StyleBoxFlat.new()
-	bar_bg.bg_color = Color(0.02, 0.06, 0.16)
-	bar_bg.set_corner_radius_all(3)
-	bar_bg.border_color = Color(0.0, 0.30, 0.50)
-	bar_bg.set_border_width_all(1)
+	var bar_bg := _make_bar_background_style(Color(0.02, 0.06, 0.16), Color(0.0, 0.30, 0.50))
 	cargo_bar.add_theme_stylebox_override("background", bar_bg)
 
-	var bar_fill := StyleBoxFlat.new()
-	bar_fill.bg_color = Color(0.0, 0.80, 1.0)
-	bar_fill.set_corner_radius_all(3)
-	cargo_bar.add_theme_stylebox_override("fill", bar_fill)
+	cargo_bar.add_theme_stylebox_override("fill", _make_bar_fill_style(Color(0.0, 0.80, 1.0)))
 
 
 func _on_event_log_pressed() -> void:
@@ -464,13 +469,10 @@ func _on_event_log_pressed() -> void:
 	overlay.add_child(margin)
 
 	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.06, 0.14, 0.85)
-	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(12)
-	style.set_content_margin_all(16)
-	panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override(
+		"panel",
+		_make_holo_panel_style(0.85, Color(0.0, 0.65, 0.95, 0.85), 12, 16, false)
+	)
 	margin.add_child(panel)
 
 	var vbox := VBoxContainer.new()
@@ -585,8 +587,7 @@ func _update_ship_status() -> void:
 		hull_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
 
 	# Hull bar fill color mirrors hull status
-	var bar_fill := StyleBoxFlat.new()
-	bar_fill.set_corner_radius_all(3)
+	var bar_fill := _make_bar_fill_style(Color(0.2, 0.9, 0.2))
 	if hull_pct > 0.6:
 		bar_fill.bg_color = Color(0.2, 0.9, 0.2)
 	elif hull_pct > 0.3:
@@ -599,17 +600,10 @@ func _update_ship_status() -> void:
 
 	shield_label.text = "Shield: %d/%d" % [shield, max_shield]
 	
-	var shield_bar_bg := StyleBoxFlat.new()
-	shield_bar_bg.bg_color = Color(0.04, 0.08, 0.16)
-	shield_bar_bg.set_corner_radius_all(3)
-	shield_bar_bg.border_color = Color(0.1, 0.2, 0.4)
-	shield_bar_bg.set_border_width_all(1)
+	var shield_bar_bg := _make_bar_background_style(Color(0.04, 0.08, 0.16), Color(0.1, 0.2, 0.4))
 	shield_bar.add_theme_stylebox_override("background", shield_bar_bg)
 	
-	var shield_bar_fill := StyleBoxFlat.new()
-	shield_bar_fill.bg_color = Color(0.4, 0.65, 1.0)
-	shield_bar_fill.set_corner_radius_all(3)
-	shield_bar.add_theme_stylebox_override("fill", shield_bar_fill)
+	shield_bar.add_theme_stylebox_override("fill", _make_bar_fill_style(Color(0.4, 0.65, 1.0)))
 	
 	shield_bar.max_value = max(max_shield, 1)
 	shield_bar.value = shield
@@ -705,13 +699,7 @@ func _on_depart_pressed() -> void:
 	overlay.add_child(center)
 
 	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.06, 0.14, 0.95)
-	style.border_color = ACCENT_DEPART
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(14)
-	style.set_content_margin_all(32)
-	panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override("panel", _make_holo_panel_style(0.95, ACCENT_DEPART, 14, 32, false))
 	panel.custom_minimum_size = Vector2(340, 0)
 	center.add_child(panel)
 
@@ -770,34 +758,34 @@ func _update_log() -> void:
 
 func _add_header_buttons() -> void:
 	var header := $InfoBar/InfoBarBox
-	# Small button style shared by Menu and Event Log
-	var _make_small_btn := func(text: String, callback: Callable) -> Button:
-		var btn := Button.new()
-		btn.text = text
-		btn.add_theme_font_size_override("font_size", 11)
-		btn.add_theme_color_override("font_color", Color(0.35, 0.6, 0.8))
-		btn.add_theme_color_override("font_hover_color", Color(0.55, 0.78, 0.98))
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.02, 0.04, 0.08, 0.5)
-		style.border_color = Color(0.0, 0.25, 0.45, 0.4)
-		style.set_border_width_all(1)
-		style.set_corner_radius_all(3)
-		style.content_margin_left = 8
-		style.content_margin_right = 8
-		style.content_margin_top = 2
-		style.content_margin_bottom = 2
-		btn.add_theme_stylebox_override("normal", style)
-		var hover_style := style.duplicate()
-		hover_style.bg_color = Color(0.04, 0.08, 0.14, 0.6)
-		btn.add_theme_stylebox_override("hover", hover_style)
-		btn.pressed.connect(callback)
-		return btn
-
-	var event_log_btn: Button = _make_small_btn.call("Event Log", _on_event_log_pressed)
+	var event_log_btn := _create_small_header_button("Event Log", _on_event_log_pressed)
 	header.add_child(event_log_btn)
 
-	var menu_btn: Button = _make_small_btn.call("Menu", _on_menu_pressed)
+	var menu_btn := _create_small_header_button("Menu", _on_menu_pressed)
 	header.add_child(menu_btn)
+
+
+func _create_small_header_button(text: String, callback: Callable) -> Button:
+	var btn := Button.new()
+	btn.text = text
+	btn.add_theme_font_size_override("font_size", 11)
+	btn.add_theme_color_override("font_color", Color(0.35, 0.6, 0.8))
+	btn.add_theme_color_override("font_hover_color", Color(0.55, 0.78, 0.98))
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.02, 0.04, 0.08, 0.5)
+	style.border_color = Color(0.0, 0.25, 0.45, 0.4)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 2
+	style.content_margin_bottom = 2
+	btn.add_theme_stylebox_override("normal", style)
+	var hover_style := style.duplicate()
+	hover_style.bg_color = Color(0.04, 0.08, 0.14, 0.6)
+	btn.add_theme_stylebox_override("hover", hover_style)
+	btn.pressed.connect(callback)
+	return btn
 
 
 func _on_menu_pressed() -> void:
