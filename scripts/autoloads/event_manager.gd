@@ -84,7 +84,7 @@ func _pick_random_planet_except_current() -> String:
 func _pick_agricultural_planet() -> String:
 	var options: Array = []
 	for planet in _planets:
-		if planet.planet_type == 1:  # PlanetType.AGRICULTURAL
+		if planet.planet_type == EconomyManager.PT_AGRICULTURAL:
 			options.append(planet.planet_name)
 	if options.is_empty():
 		return ""

@@ -7,6 +7,13 @@ var goods: Array = []
 # Sell prices are roughly 75% of buy prices.
 const SELL_RATIO := 0.75
 
+# Planet type integer constants (avoids magic numbers).
+const PT_INDUSTRIAL := 0
+const PT_AGRICULTURAL := 1
+const PT_MINING := 2
+const PT_TECH := 3
+const PT_OUTLAW := 4
+
 # Map PlanetType enum values to string keys.
 const PLANET_TYPE_NAMES := {
 	0: "Industrial",   # INDUSTRIAL

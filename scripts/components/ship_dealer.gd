@@ -9,15 +9,7 @@ signal dealer_closed
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
-const BG_COLOR := Color(0.01, 0.02, 0.05)
-const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
-const BORDER_COLOR := Color(0.0, 0.65, 0.95, 0.35)
-const ACCENT := Color(0.0, 0.9, 1.0)
-const ACCENT_DIM := Color(0.0, 0.45, 0.75, 0.6)
-const GOLD := Color(1.0, 0.90, 0.25)
-const POSITIVE := Color(0.2, 0.9, 0.35)
-const NEGATIVE := Color(1.0, 0.35, 0.3)
-const NEUTRAL := Color(0.6, 0.65, 0.75)
+
 
 var _planet_type: int = 0
 var _ship_list_container: VBoxContainer
@@ -46,8 +38,8 @@ func _build_ui() -> void:
 	var panel := PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var style := StyleBoxFlat.new()
-	style.bg_color = PANEL_COLOR
-	style.border_color = BORDER_COLOR
+	style.bg_color = UIStyles.PANEL_COLOR
+	style.border_color = UIStyles.BORDER_COLOR
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(16)
 	style.content_margin_left = 28
@@ -78,19 +70,19 @@ func _build_ui() -> void:
 	var left_deco := Label.new()
 	left_deco.text = "\u2726 \u2605 \u2726"
 	left_deco.add_theme_font_size_override("font_size", 16)
-	left_deco.add_theme_color_override("font_color", ACCENT_DIM)
+	left_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	title_row.add_child(left_deco)
 
 	var title := Label.new()
 	title.text = "STARSHIP SHOWROOM"
 	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", ACCENT)
+	title.add_theme_color_override("font_color", UIStyles.ACCENT)
 	title_row.add_child(title)
 
 	var right_deco := Label.new()
 	right_deco.text = "\u2726 \u2605 \u2726"
 	right_deco.add_theme_font_size_override("font_size", 16)
-	right_deco.add_theme_color_override("font_color", ACCENT_DIM)
+	right_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	title_row.add_child(right_deco)
 
 	var subtitle := Label.new()
@@ -110,7 +102,7 @@ func _build_ui() -> void:
 
 	_credits_label = Label.new()
 	_credits_label.add_theme_font_size_override("font_size", 20)
-	_credits_label.add_theme_color_override("font_color", GOLD)
+	_credits_label.add_theme_color_override("font_color", UIStyles.GOLD)
 	header.add_child(_credits_label)
 
 	var close_btn := Button.new()
@@ -123,7 +115,7 @@ func _build_ui() -> void:
 	# Separator with glow
 	var sep := HSeparator.new()
 	sep.add_theme_constant_override("separation", 6)
-	sep.add_theme_color_override("separator", ACCENT_DIM)
+	sep.add_theme_color_override("separator", UIStyles.ACCENT_DIM)
 	main_vbox.add_child(sep)
 
 	# Status label
@@ -145,7 +137,7 @@ func _build_ui() -> void:
 
 	# Vertical divider
 	var vsep := VSeparator.new()
-	vsep.add_theme_color_override("separator", ACCENT_DIM)
+	vsep.add_theme_color_override("separator", UIStyles.ACCENT_DIM)
 	content.add_child(vsep)
 
 	# Right: Ship list
@@ -158,7 +150,7 @@ func _build_ui() -> void:
 	var avail_header := Label.new()
 	avail_header.text = "\u25C6 AVAILABLE SHIPS \u25C6"
 	avail_header.add_theme_font_size_override("font_size", 16)
-	avail_header.add_theme_color_override("font_color", ACCENT)
+	avail_header.add_theme_color_override("font_color", UIStyles.ACCENT)
 	avail_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	right_col.add_child(avail_header)
 
@@ -179,7 +171,7 @@ func _build_current_ship_panel() -> PanelContainer:
 	panel.custom_minimum_size = Vector2(280, 0)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.015, 0.04, 0.10, 0.7)
-	style.border_color = ACCENT
+	style.border_color = UIStyles.ACCENT
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(10)
 	style.set_content_margin_all(14)
@@ -196,7 +188,7 @@ func _build_current_ship_panel() -> PanelContainer:
 	var header := Label.new()
 	header.text = "YOUR SHIP"
 	header.add_theme_font_size_override("font_size", 14)
-	header.add_theme_color_override("font_color", ACCENT_DIM)
+	header.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(header)
 
@@ -214,7 +206,7 @@ func _build_current_ship_panel() -> PanelContainer:
 		var name_lbl := Label.new()
 		name_lbl.text = ship.ship_name
 		name_lbl.add_theme_font_size_override("font_size", 20)
-		name_lbl.add_theme_color_override("font_color", ACCENT)
+		name_lbl.add_theme_color_override("font_color", UIStyles.ACCENT)
 		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vbox.add_child(name_lbl)
 
@@ -237,7 +229,7 @@ func _build_current_ship_panel() -> PanelContainer:
 			var trade_lbl := Label.new()
 			trade_lbl.text = "Trade-in value: %d cr" % trade_in
 			trade_lbl.add_theme_font_size_override("font_size", 12)
-			trade_lbl.add_theme_color_override("font_color", GOLD)
+			trade_lbl.add_theme_color_override("font_color", UIStyles.GOLD)
 			trade_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			vbox.add_child(trade_lbl)
 
@@ -294,7 +286,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 
 	if is_current:
 		card_style.bg_color = Color(0.03, 0.10, 0.22, 0.85)
-		card_style.border_color = ACCENT
+		card_style.border_color = UIStyles.ACCENT
 		card_style.set_border_width_all(2)
 		# Spotlight glow effect for current ship
 		card_style.shadow_color = Color(0.0, 0.5, 0.9, 0.2)
@@ -342,7 +334,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 	var name_lbl := Label.new()
 	name_lbl.text = ship.ship_name + ("  \u2605 EQUIPPED" if is_current else "")
 	name_lbl.add_theme_font_size_override("font_size", 17)
-	name_lbl.add_theme_color_override("font_color", ACCENT if is_current else Color(0.75, 0.88, 1.0))
+	name_lbl.add_theme_color_override("font_color", UIStyles.ACCENT if is_current else Color(0.75, 0.88, 1.0))
 	info.add_child(name_lbl)
 
 	var desc_lbl := Label.new()
@@ -369,7 +361,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 		var price_lbl := Label.new()
 		price_lbl.text = "%d cr" % net_cost
 		price_lbl.add_theme_font_size_override("font_size", 16)
-		price_lbl.add_theme_color_override("font_color", GOLD if GameManager.credits >= net_cost else Color(0.5, 0.3, 0.3))
+		price_lbl.add_theme_color_override("font_color", UIStyles.GOLD if GameManager.credits >= net_cost else Color(0.5, 0.3, 0.3))
 		price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		btn_col.add_child(price_lbl)
 
@@ -432,14 +424,14 @@ func _build_stat_comparison(ship: Resource, current: Resource) -> HBoxContainer:
 func _add_stat_chip(container: HBoxContainer, stat_name: String, value: int, diff: int) -> void:
 	var chip := Label.new()
 	var diff_str: String = ""
-	var col: Color = NEUTRAL
+	var col: Color = Color(0.6, 0.65, 0.75)
 
 	if diff > 0:
 		diff_str = " +%d" % diff
-		col = POSITIVE
+		col = UIStyles.POSITIVE
 	elif diff < 0:
 		diff_str = " %d" % diff
-		col = NEGATIVE
+		col = UIStyles.NEGATIVE
 
 	chip.text = "%s:%d%s" % [stat_name, value, diff_str]
 	chip.add_theme_font_size_override("font_size", 11)

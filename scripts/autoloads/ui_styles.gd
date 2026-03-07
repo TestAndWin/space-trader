@@ -12,6 +12,19 @@ const NEGATIVE := Color(1.0, 0.35, 0.3)
 const PANEL_BG := Color(0.02, 0.06, 0.14)
 const PANEL_BORDER := Color(0.0, 0.65, 0.95, 0.85)
 
+# Overlay-screen panel colors (used by market, shipyard, casino, crew, etc.)
+const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
+const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.35)
+
+# Planet-type accent colors (indexed by planet_type int)
+const TYPE_COLORS := {
+	0: Color(0.4, 0.6, 1.0),    # INDUSTRIAL - blue
+	1: Color(0.4, 0.9, 0.4),    # AGRICULTURAL - green
+	2: Color(0.9, 0.6, 0.3),    # MINING - orange
+	3: Color(0.3, 0.9, 1.0),    # TECH - cyan
+	4: Color(1.0, 0.3, 0.3),    # OUTLAW - red
+}
+
 
 # ── Accent button ────────────────────────────────────────────────────────────
 # Used for: close/action buttons with a colored accent background.
@@ -206,3 +219,132 @@ static func style_overlay_panel(node: Control) -> void:
 	style.content_margin_top = 16
 	style.content_margin_bottom = 16
 	node.add_theme_stylebox_override("panel", style)
+
+
+# ── Hull color helper ────────────────────────────────────────────────────────
+# Returns green / yellow / red based on hull percentage.
+
+static func get_hull_color(pct: float) -> Color:
+	if pct > 0.6:
+		return Color(0.2, 0.9, 0.35)
+	elif pct > 0.3:
+		return Color(1.0, 0.9, 0.2)
+	else:
+		return Color(1.0, 0.3, 0.2)
+
+
+# ── Overlay scaffold ────────────────────────────────────────────────────────
+# Builds the standard header + panel chrome used by every overlay screen.
+# Returns a Dictionary with:
+#   "main_vbox": the VBoxContainer below the separator (add your content here)
+#   "credits_label": the Label showing credits (update in _refresh_ui)
+#   "separator": the HSeparator (for reference if needed)
+#   "header": the HBoxContainer for the header row
+
+static func create_overlay_scaffold(
+	parent: Control,
+	title_text: String,
+	subtitle_text: String,
+	icon_text: String,
+	close_text: String,
+	close_callback: Callable,
+	title_color: Color = ACCENT,
+	icon_color: Color = ACCENT_DIM,
+	sep_color: Color = ACCENT_DIM,
+) -> Dictionary:
+	# Main panel
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 0)
+	margin.add_theme_constant_override("margin_right", 0)
+	margin.add_theme_constant_override("margin_top", 0)
+	margin.add_theme_constant_override("margin_bottom", 0)
+	parent.add_child(margin)
+
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = PANEL_COLOR
+	style.border_color = BORDER_COLOR
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(16)
+	style.content_margin_left = 28
+	style.content_margin_right = 28
+	style.content_margin_top = 16
+	style.content_margin_bottom = 16
+	panel.add_theme_stylebox_override("panel", style)
+	margin.add_child(panel)
+
+	var main_vbox := VBoxContainer.new()
+	main_vbox.add_theme_constant_override("separation", 12)
+	panel.add_child(main_vbox)
+
+	# ── Header ──
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 12)
+	main_vbox.add_child(header)
+
+	var title_vbox := VBoxContainer.new()
+	title_vbox.add_theme_constant_override("separation", 0)
+	header.add_child(title_vbox)
+
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 10)
+	title_vbox.add_child(title_row)
+
+	var left_deco := Label.new()
+	left_deco.text = icon_text
+	left_deco.add_theme_font_size_override("font_size", 16)
+	left_deco.add_theme_color_override("font_color", icon_color)
+	title_row.add_child(left_deco)
+
+	var title := Label.new()
+	title.text = title_text
+	title.add_theme_font_size_override("font_size", 26)
+	title.add_theme_color_override("font_color", title_color)
+	title_row.add_child(title)
+
+	var right_deco := Label.new()
+	right_deco.text = icon_text
+	right_deco.add_theme_font_size_override("font_size", 16)
+	right_deco.add_theme_color_override("font_color", icon_color)
+	title_row.add_child(right_deco)
+
+	var subtitle := Label.new()
+	subtitle.text = subtitle_text
+	var sub_settings := LabelSettings.new()
+	sub_settings.font_size = 11
+	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
+	sub_settings.shadow_size = 3
+	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
+	sub_settings.shadow_offset = Vector2(1, 1)
+	subtitle.label_settings = sub_settings
+	title_vbox.add_child(subtitle)
+
+	var header_spacer := Control.new()
+	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(header_spacer)
+
+	var credits_label := Label.new()
+	credits_label.add_theme_font_size_override("font_size", 20)
+	credits_label.add_theme_color_override("font_color", GOLD)
+	header.add_child(credits_label)
+
+	var close_btn := Button.new()
+	close_btn.text = close_text
+	close_btn.custom_minimum_size = Vector2(140, 36)
+	style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
+	close_btn.pressed.connect(close_callback)
+	header.add_child(close_btn)
+
+	# Separator
+	var sep := HSeparator.new()
+	sep.add_theme_constant_override("separation", 6)
+	sep.add_theme_color_override("separator", sep_color)
+	main_vbox.add_child(sep)
+
+	return {
+		"main_vbox": main_vbox,
+		"credits_label": credits_label,
+		"separator": sep,
+		"header": header,
+	}

@@ -8,11 +8,6 @@ signal crew_closed
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
-const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
-const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.35)
-const ACCENT := Color(0.0, 0.9, 1.0)
-const ACCENT_DIM := Color(0.0, 0.45, 0.75, 0.6)
-
 const CREW_NAMES = {
 	0: "TECH ACADEMY",
 	1: "FARMHANDS GUILD",
@@ -53,95 +48,16 @@ func _build_ui() -> void:
 	# Background image
 	BackgroundUtils.add_building_background(self, "crew", 0.4)
 
-	# Main panel
-	var margin := MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 0)
-	margin.add_theme_constant_override("margin_right", 0)
-	margin.add_theme_constant_override("margin_top", 0)
-	margin.add_theme_constant_override("margin_bottom", 0)
-	add_child(margin)
-
-	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = PANEL_COLOR
-	style.border_color = BORDER_COLOR
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(16)
-	style.content_margin_left = 28
-	style.content_margin_right = 28
-	style.content_margin_top = 16
-	style.content_margin_bottom = 16
-	panel.add_theme_stylebox_override("panel", style)
-	margin.add_child(panel)
-
-	var main_vbox := VBoxContainer.new()
-	main_vbox.add_theme_constant_override("separation", 12)
-	panel.add_child(main_vbox)
-
-	# ── Header ──
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
-	main_vbox.add_child(header)
-
-	var title_vbox := VBoxContainer.new()
-	title_vbox.add_theme_constant_override("separation", 0)
-	header.add_child(title_vbox)
-
-	var title_row := HBoxContainer.new()
-	title_row.add_theme_constant_override("separation", 10)
-	title_vbox.add_child(title_row)
-
-	var left_deco := Label.new()
-	left_deco.text = CREW_ICONS.get(_planet_type, "\u2726")
-	left_deco.add_theme_font_size_override("font_size", 16)
-	left_deco.add_theme_color_override("font_color", ACCENT_DIM)
-	title_row.add_child(left_deco)
-
-	var title := Label.new()
-	title.text = CREW_NAMES.get(_planet_type, "CREW QUARTERS")
-	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", ACCENT)
-	title_row.add_child(title)
-
-	var right_deco := Label.new()
-	right_deco.text = CREW_ICONS.get(_planet_type, "\u2726")
-	right_deco.add_theme_font_size_override("font_size", 16)
-	right_deco.add_theme_color_override("font_color", ACCENT_DIM)
-	title_row.add_child(right_deco)
-
-	var subtitle := Label.new()
-	subtitle.text = "Recruit specialists to aid your journey"
-	var sub_settings := LabelSettings.new()
-	sub_settings.font_size = 11
-	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
-	sub_settings.shadow_size = 3
-	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
-	sub_settings.shadow_offset = Vector2(1, 1)
-	subtitle.label_settings = sub_settings
-	title_vbox.add_child(subtitle)
-
-	var header_spacer := Control.new()
-	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(header_spacer)
-
-	_credits_label = Label.new()
-	_credits_label.add_theme_font_size_override("font_size", 20)
-	_credits_label.add_theme_color_override("font_color", Color(1.0, 0.90, 0.25))
-	header.add_child(_credits_label)
-
-	var close_btn := Button.new()
-	close_btn.text = "Leave Crew Quarters"
-	close_btn.custom_minimum_size = Vector2(170, 36)
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
-	close_btn.pressed.connect(_close)
-	header.add_child(close_btn)
-
-	# Separator
-	var sep := HSeparator.new()
-	sep.add_theme_constant_override("separation", 6)
-	sep.add_theme_color_override("separator", ACCENT_DIM)
-	main_vbox.add_child(sep)
+	var scaffold: Dictionary = UIStyles.create_overlay_scaffold(
+		self,
+		CREW_NAMES.get(_planet_type, "CREW QUARTERS"),
+		"Recruit specialists to aid your journey",
+		CREW_ICONS.get(_planet_type, "\u2726"),
+		"Leave Crew Quarters",
+		_close,
+	)
+	var main_vbox: VBoxContainer = scaffold["main_vbox"]
+	_credits_label = scaffold["credits_label"]
 
 	# Spacer to push content to lower third
 	var top_spacer := Control.new()

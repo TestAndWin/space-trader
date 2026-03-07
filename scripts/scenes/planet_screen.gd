@@ -16,13 +16,7 @@ const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 const GoodIcon = preload("res://scripts/components/good_icon.gd")
 const CrewIcon = preload("res://scripts/components/crew_icon.gd")
 
-const TYPE_COLORS = {
-	0: Color(0.4, 0.6, 1.0),
-	1: Color(0.4, 0.9, 0.4),
-	2: Color(0.9, 0.6, 0.3),
-	3: Color(0.3, 0.9, 1.0),
-	4: Color(1.0, 0.3, 0.3),
-}
+
 
 # Hologram panel style constants
 const HOLO_BORDER := Color(0.0, 0.65, 0.95, 0.85)
@@ -110,7 +104,7 @@ func _ready() -> void:
 			var cargo_before := _snapshot_cargo()
 			smuggler.deal_closed.connect(func():
 				_track_arrival_cargo_gains(cargo_before)
-				_update_ui(); _update_log()
+				_update_ui()
 			)
 		# Planet arrival event (only if no smuggler event)
 		if not smuggler_active and current_planet_data:
@@ -122,7 +116,7 @@ func _ready() -> void:
 			else:
 				planet_event.event_resolved.connect(func():
 					_track_arrival_cargo_gains(cargo_before_event)
-					_update_ui(); _update_log()
+					_update_ui()
 				)
 
 
@@ -206,7 +200,7 @@ func _on_market_pressed() -> void:
 	market.name = "MarketScreen"
 	add_child(market)
 	market.setup(pt, _arrival_gained_cargo)
-	market.market_closed.connect(func(): _update_ui(); _update_log())
+	market.market_closed.connect(func(): _update_ui())
 
 
 func _on_shipyard_pressed() -> void:
@@ -217,7 +211,7 @@ func _on_shipyard_pressed() -> void:
 	shipyard.name = "ShipyardScreen"
 	add_child(shipyard)
 	shipyard.setup(pt)
-	shipyard.shipyard_closed.connect(func(): _update_ui(); _update_log())
+	shipyard.shipyard_closed.connect(func(): _update_ui())
 
 
 func _on_casino_pressed() -> void:
@@ -234,7 +228,7 @@ func _on_casino_pressed() -> void:
 		if _casino_rounds >= 5:
 			_casino_done = true
 			_rebuild_hub_buildings()
-		_update_ui(); _update_log()
+		_update_ui()
 	)
 
 
@@ -246,7 +240,7 @@ func _on_crew_pressed() -> void:
 	crew.name = "CrewScreen"
 	add_child(crew)
 	crew.setup(pt)
-	crew.crew_closed.connect(func(): _update_ui(); _update_log())
+	crew.crew_closed.connect(func(): _update_ui())
 
 func _on_quest_pressed() -> void:
 	if has_node("QuestScreen"):
@@ -256,13 +250,13 @@ func _on_quest_pressed() -> void:
 	quest.name = "QuestScreen"
 	add_child(quest)
 	quest.setup(pt, GameManager.current_planet)
-	quest.quest_closed.connect(func(): _update_ui(); _update_log())
+	quest.quest_closed.connect(func(): _update_ui())
 
 
 func _on_mission_pressed() -> void:
 	if GameManager.credits < 100:
 		EventLog.add_entry("Not enough credits for mission (100cr required).")
-		_update_log()
+		_update_ui()
 		return
 	GameManager.remove_credits(100)
 	GameManager.mission_return_planet = GameManager.current_planet
@@ -747,13 +741,11 @@ func _on_view_deck_pressed() -> void:
 	var pt: int = current_planet_data.planet_type if current_planet_data else -1
 	viewer.setup(pt)
 	add_child(viewer)
-	viewer.tree_exited.connect(func(): _update_ui(); _update_log())
+	viewer.tree_exited.connect(func(): _update_ui())
 
 
 
-func _update_log() -> void:
-	# No-op — log is now shown via overlay popup
-	pass
+
 
 
 func _add_header_buttons() -> void:

@@ -7,11 +7,7 @@ const CardDisplayScene = preload("res://scenes/components/card_display.tscn")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
-const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
-const BORDER_COLOR := Color(0.0, 0.65, 0.95, 0.35)
-const ACCENT := Color(0.0, 0.9, 1.0)
-const ACCENT_DIM := Color(0.0, 0.45, 0.75, 0.6)
-const GOLD := Color(1.0, 0.90, 0.25)
+
 
 const MIN_DECK_SIZE: int = 5
 const SELL_RATIO: float = 0.5
@@ -95,8 +91,8 @@ func _build_ui() -> void:
 	var panel := PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var style := StyleBoxFlat.new()
-	style.bg_color = PANEL_COLOR
-	style.border_color = BORDER_COLOR
+	style.bg_color = UIStyles.PANEL_COLOR
+	style.border_color = UIStyles.BORDER_COLOR
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(16)
 	style.content_margin_left = 16
@@ -127,18 +123,18 @@ func _build_ui() -> void:
 	var left_deco := Label.new()
 	left_deco.text = "\u2726 \u2660 \u2726"
 	left_deco.add_theme_font_size_override("font_size", 16)
-	left_deco.add_theme_color_override("font_color", ACCENT_DIM)
+	left_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	title_row.add_child(left_deco)
 
 	_title_label = Label.new()
 	_title_label.add_theme_font_size_override("font_size", 26)
-	_title_label.add_theme_color_override("font_color", ACCENT)
+	_title_label.add_theme_color_override("font_color", UIStyles.ACCENT)
 	title_row.add_child(_title_label)
 
 	var right_deco := Label.new()
 	right_deco.text = "\u2726 \u2660 \u2726"
 	right_deco.add_theme_font_size_override("font_size", 16)
-	right_deco.add_theme_color_override("font_color", ACCENT_DIM)
+	right_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	title_row.add_child(right_deco)
 
 	var subtitle := Label.new()
@@ -162,7 +158,7 @@ func _build_ui() -> void:
 	if _trading_enabled:
 		_credits_label = Label.new()
 		_credits_label.add_theme_font_size_override("font_size", 20)
-		_credits_label.add_theme_color_override("font_color", GOLD)
+		_credits_label.add_theme_color_override("font_color", UIStyles.GOLD)
 		header.add_child(_credits_label)
 
 	var close_btn := Button.new()
@@ -175,7 +171,7 @@ func _build_ui() -> void:
 	# Separator
 	var sep := HSeparator.new()
 	sep.add_theme_constant_override("separation", 2)
-	sep.add_theme_color_override("separator", ACCENT_DIM)
+	sep.add_theme_color_override("separator", UIStyles.ACCENT_DIM)
 	_main_vbox.add_child(sep)
 
 	# Status label (trading only)
@@ -203,7 +199,7 @@ func _build_ui() -> void:
 	if _trading_enabled and _shop_cards.size() > 0:
 		var shop_sep := HSeparator.new()
 		shop_sep.add_theme_constant_override("separation", 6)
-		shop_sep.add_theme_color_override("separator", ACCENT_DIM)
+		shop_sep.add_theme_color_override("separator", UIStyles.ACCENT_DIM)
 		_main_vbox.add_child(shop_sep)
 
 		_shop_section = VBoxContainer.new()
@@ -213,7 +209,7 @@ func _build_ui() -> void:
 		var shop_label := Label.new()
 		shop_label.text = "\u25C6 FOR SALE \u25C6"
 		shop_label.add_theme_font_size_override("font_size", 16)
-		shop_label.add_theme_color_override("font_color", ACCENT)
+		shop_label.add_theme_color_override("font_color", UIStyles.ACCENT)
 		shop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_shop_section.add_child(shop_label)
 
@@ -284,7 +280,7 @@ func _populate_deck() -> void:
 				var count_label := Label.new()
 				count_label.text = "x%d" % count
 				count_label.add_theme_font_size_override("font_size", 16)
-				count_label.add_theme_color_override("font_color", GOLD)
+				count_label.add_theme_color_override("font_color", UIStyles.GOLD)
 				count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				card_display.get_node("VBoxContainer").add_child(count_label)
 		else:
@@ -297,7 +293,7 @@ func _populate_deck() -> void:
 				var count_label := Label.new()
 				count_label.text = "x%d" % count
 				count_label.add_theme_font_size_override("font_size", 16)
-				count_label.add_theme_color_override("font_color", GOLD)
+				count_label.add_theme_color_override("font_color", UIStyles.GOLD)
 				count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				card_display.get_node("VBoxContainer").add_child(count_label)
 

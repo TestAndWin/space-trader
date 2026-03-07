@@ -5,7 +5,9 @@ signal card_played(card_data)
 var card_data: Resource = null
 var playable: bool = true
 
-const TYPE_COLORS = {
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+
+const CARD_TYPE_COLORS = {
 	0: Color(0.9, 0.3, 0.3),   # ATTACK - red
 	1: Color(0.3, 0.5, 0.9),   # DEFENSE - blue
 	2: Color(0.3, 0.8, 0.3),   # UTILITY - green
@@ -36,7 +38,7 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 	%DescriptionLabel.text = card_data.description
 
 	var type_int := int(card_data.card_type)
-	var type_color: Color = TYPE_COLORS.get(type_int, Color(0.5, 0.5, 0.5))
+	var type_color: Color = CARD_TYPE_COLORS.get(type_int, Color(0.5, 0.5, 0.5))
 	%TypeIndicator.color = type_color
 
 	# Style the card panel based on type

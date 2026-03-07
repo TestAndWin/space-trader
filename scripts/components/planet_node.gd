@@ -1,5 +1,7 @@
 extends Area2D
 
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+
 signal planet_clicked(planet_data)
 signal planet_hovered(planet_data)
 signal planet_unhovered()
@@ -14,19 +16,11 @@ var pulse_time: float = 0.0
 const PLANET_RADIUS: float = 18.0
 const GLOW_RADIUS: float = 28.0
 
-const TYPE_COLORS = {
-	0: Color(0.35, 0.55, 0.95),  # INDUSTRIAL - blue
-	1: Color(0.3, 0.8, 0.35),    # AGRICULTURAL - green
-	2: Color(0.8, 0.55, 0.2),    # MINING - orange
-	3: Color(0.2, 0.85, 0.95),   # TECH - cyan
-	4: Color(0.95, 0.2, 0.2),    # OUTLAW - red
-}
-
 
 func setup(data: Resource) -> void:
 	planet_data = data
 	$NameLabel.text = data.planet_name
-	base_color = TYPE_COLORS.get(data.planet_type, Color.WHITE)
+	base_color = UIStyles.TYPE_COLORS.get(data.planet_type, Color.WHITE)
 	position = data.map_position
 	queue_redraw()
 

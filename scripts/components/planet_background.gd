@@ -216,7 +216,7 @@ func _draw_moon(center: Vector2, radius: float) -> void:
 	var moon_radius := radius * 0.12
 	var moon_color: Color
 
-	if planet_type == 1:
+	if planet_type == EconomyManager.PT_AGRICULTURAL:
 		moon_color = Color(0.75, 0.75, 0.7)  # Grey-ish moon for agricultural
 	else:
 		moon_color = Color(0.6, 0.7, 0.8)  # Blue-grey for tech

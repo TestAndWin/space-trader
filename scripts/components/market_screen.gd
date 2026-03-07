@@ -10,18 +10,7 @@ const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 const CargoSlotScene = preload("res://scenes/components/cargo_slot.tscn")
 const GoodIcon = preload("res://scripts/components/good_icon.gd")
 
-const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
-const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.35)
-const ACCENT := Color(0.0, 0.9, 1.0)
-const ACCENT_DIM := Color(0.0, 0.45, 0.75, 0.6)
 
-const TYPE_COLORS = {
-	0: Color(0.4, 0.6, 1.0),
-	1: Color(0.4, 0.9, 0.4),
-	2: Color(0.9, 0.6, 0.3),
-	3: Color(0.3, 0.9, 1.0),
-	4: Color(1.0, 0.3, 0.3),
-}
 
 const MARKET_NAMES = {
 	0: "CYBER MARKET",
@@ -82,8 +71,8 @@ func _build_ui() -> void:
 
 	var panel := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = PANEL_COLOR
-	style.border_color = BORDER_COLOR
+	style.bg_color = UIStyles.PANEL_COLOR
+	style.border_color = UIStyles.BORDER_COLOR
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(16)
 	style.content_margin_left = 28
@@ -115,19 +104,19 @@ func _build_ui() -> void:
 	var left_deco := Label.new()
 	left_deco.text = MARKET_ICONS.get(_planet_type, "\u25C8")
 	left_deco.add_theme_font_size_override("font_size", 16)
-	left_deco.add_theme_color_override("font_color", ACCENT_DIM)
+	left_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	title_row.add_child(left_deco)
 
 	var title := Label.new()
 	title.text = MARKET_NAMES.get(_planet_type, "MARKET")
 	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", TYPE_COLORS.get(_planet_type, ACCENT))
+	title.add_theme_color_override("font_color", UIStyles.TYPE_COLORS.get(_planet_type, UIStyles.ACCENT))
 	title_row.add_child(title)
 
 	var right_deco := Label.new()
 	right_deco.text = MARKET_ICONS.get(_planet_type, "\u25C8")
 	right_deco.add_theme_font_size_override("font_size", 16)
-	right_deco.add_theme_color_override("font_color", ACCENT_DIM)
+	right_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	title_row.add_child(right_deco)
 
 	var subtitle := Label.new()
@@ -166,7 +155,7 @@ func _build_ui() -> void:
 	# Separator
 	var sep := HSeparator.new()
 	sep.add_theme_constant_override("separation", 6)
-	sep.add_theme_color_override("separator", ACCENT_DIM)
+	sep.add_theme_color_override("separator", UIStyles.ACCENT_DIM)
 	main_vbox.add_child(sep)
 
 	# Status
@@ -194,7 +183,7 @@ func _build_ui() -> void:
 	market_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var market_style := StyleBoxFlat.new()
 	market_style.bg_color = Color(0.015, 0.04, 0.10, 0.5)
-	market_style.border_color = ACCENT_DIM
+	market_style.border_color = UIStyles.ACCENT_DIM
 	market_style.set_border_width_all(1)
 	market_style.set_corner_radius_all(8)
 	market_style.set_content_margin_all(8)
@@ -208,7 +197,7 @@ func _build_ui() -> void:
 	var market_header := Label.new()
 	market_header.text = "\u25C6 BUY GOODS \u25C6"
 	market_header.add_theme_font_size_override("font_size", 16)
-	market_header.add_theme_color_override("font_color", TYPE_COLORS.get(_planet_type, ACCENT))
+	market_header.add_theme_color_override("font_color", UIStyles.TYPE_COLORS.get(_planet_type, UIStyles.ACCENT))
 	market_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	market_vbox.add_child(market_header)
 

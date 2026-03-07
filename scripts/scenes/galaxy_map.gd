@@ -3,13 +3,6 @@ extends Node3D
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
-const PLANET_TYPE_COLORS := {
-	0: Color(0.35, 0.55, 0.95),
-	1: Color(0.30, 0.80, 0.35),
-	2: Color(0.82, 0.58, 0.22),
-	3: Color(0.20, 0.85, 0.95),
-	4: Color(0.95, 0.22, 0.22),
-}
 
 const GALAXY_CENTER_2D := Vector2(640.0, 360.0)
 const GALAXY_WORLD_SCALE: float = 72.0
@@ -269,7 +262,7 @@ func _spawn_planets() -> void:
 		node.position = world_pos
 		planets_container.add_child(node)
 
-		var base_color: Color = PLANET_TYPE_COLORS.get(planet.planet_type, Color(0.8, 0.8, 0.9))
+		var base_color: Color = UIStyles.TYPE_COLORS.get(planet.planet_type, Color(0.8, 0.8, 0.9))
 		var radius: float = 0.92 + float(planet.danger_level) * 0.14
 
 		var sphere := MeshInstance3D.new()
@@ -726,13 +719,7 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 	else:
 		danger_label.add_theme_color_override("font_color", Color(0.6, 0.8, 0.6))
 
-	var type_color: Color = Color(0.6, 0.6, 0.7)
-	match planet_data.planet_type:
-		0: type_color = Color(0.4, 0.6, 1.0)
-		1: type_color = Color(0.4, 0.9, 0.4)
-		2: type_color = Color(0.9, 0.6, 0.3)
-		3: type_color = Color(0.3, 0.9, 1.0)
-		4: type_color = Color(1.0, 0.3, 0.3)
+	var type_color: Color = UIStyles.TYPE_COLORS.get(planet_data.planet_type, Color(0.6, 0.6, 0.7))
 	planet_type_label.add_theme_color_override("font_color", type_color)
 
 	var available: Array = EconomyManager.get_available_goods(type_text)

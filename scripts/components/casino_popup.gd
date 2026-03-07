@@ -236,7 +236,7 @@ func _refresh_ui() -> void:
 
 
 func _build_select_ui() -> void:
-	var has_blackjack: bool = _planet_type != 1
+	var has_blackjack: bool = _planet_type != EconomyManager.PT_AGRICULTURAL
 
 	if not has_blackjack:
 		_status_label.text = "Slot Machine — Place your bet!"
