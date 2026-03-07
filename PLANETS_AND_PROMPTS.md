@@ -17,6 +17,14 @@
 - Filename: bg_galaxy_map.png
 - Background Prompt: A deep space panorama seen looking at a holographic star chart, a vast dark nebula-filled void stretching in all directions, clusters of distant stars and galaxies glowing faintly, colorful gas clouds in deep blue purple and teal tones, subtle grid lines of a navigation overlay faintly visible, a sense of vastness and exploration, the bridge window frame subtly visible at the edges, dark atmospheric mood with pinpoints of light, painterly sci-fi illustration style, no text, no UI elements, no characters, 1280x720
 
+### Game Over
+- Filename: bg_game_over.png
+- Background Prompt: A destroyed spaceship drifting lifelessly through dark space, the hull is broken open and torn apart, fires burning inside the wreckage casting orange and red light, sparks and electrical arcs flickering across exposed wiring, escape pods ejecting in the distance, a cold dark nebula backdrop with few dim stars, smoke and debris cloud surrounding the ship, a feeling of total defeat and loss, dark oppressive atmosphere with deep shadows, painterly sci-fi illustration style, no text, no UI elements, no characters, 1280x720
+
+### Victory
+- Filename: bg_victory.png
+- Background Prompt: A triumphant spaceship flying majestically through a beautiful golden nebula, the ship is intact and gleaming with lights, a bright warm sun illuminating the scene from behind, a trail of golden particles and engine glow behind the ship, several friendly ships flying in formation nearby, a stunning colorful nebula in golds purples and blues filling the background, a celebratory and hopeful atmosphere, lens flares and light rays streaming through the scene, painterly sci-fi illustration style, no text, no UI elements, no characters, 1280x720
+
 ### Main Menu
 - Background Prompt: A wide establishing shot of a vast space scene, deep space panorama with distant galaxies and colorful nebulae, a large futuristic space station in the center-right with glowing lights and docking bays, several spaceships of different sizes flying nearby, a bright star illuminating the scene from the left, asteroid field in the foreground, rich deep blue and purple tones with warm orange accents from distant suns, sense of adventure and exploration, painterly sci-fi illustration style, no text, no UI elements, 1280x720
 
