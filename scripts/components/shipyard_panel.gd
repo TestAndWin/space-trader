@@ -2,6 +2,8 @@ extends PanelContainer
 
 signal shipyard_action
 signal ships_requested
+
+const AGRICULTURAL_TYPE := 1
 signal upgrades_requested
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
@@ -15,6 +17,7 @@ const CARGO_UPGRADE_AMOUNT := 2
 
 var ShipDisplayScene := preload("res://scenes/components/ship_display_3d.tscn")
 var ship_display_node: Control
+var _planet_type: int = 0
 
 var hull_bar: ProgressBar
 var hull_bar_label: Label
@@ -24,6 +27,7 @@ var repair_button: Button
 var hull_upgrade_button: Button
 var shield_upgrade_button: Button
 var cargo_upgrade_button: Button
+var _bottom_row: HBoxContainer
 var status_label: Label
 
 
@@ -95,23 +99,23 @@ func _ready() -> void:
 	UIStyles.style_small_secondary_button(cargo_upgrade_button)
 	vbox.add_child(cargo_upgrade_button)
 
-	var bottom_row := HBoxContainer.new()
-	bottom_row.add_theme_constant_override("separation", 4)
-	vbox.add_child(bottom_row)
+	_bottom_row = HBoxContainer.new()
+	_bottom_row.add_theme_constant_override("separation", 4)
+	vbox.add_child(_bottom_row)
 
 	var ship_upgrades_button := Button.new()
 	ship_upgrades_button.text = "Upgrades"
 	ship_upgrades_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ship_upgrades_button.pressed.connect(_on_ship_upgrades_pressed)
 	UIStyles.style_small_secondary_button(ship_upgrades_button)
-	bottom_row.add_child(ship_upgrades_button)
+	_bottom_row.add_child(ship_upgrades_button)
 
 	var ships_button := Button.new()
 	ships_button.text = "Ships"
 	ships_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ships_button.pressed.connect(_on_ships_pressed)
 	UIStyles.style_small_secondary_button(ships_button)
-	bottom_row.add_child(ships_button)
+	_bottom_row.add_child(ships_button)
 
 	status_label = Label.new()
 	status_label.text = ""
@@ -171,7 +175,13 @@ func _create_stat_bar(label_text: String, bg_color: Color, fill_color: Color) ->
 	return container
 
 
-func setup() -> void:
+func setup(planet_type: int = 0) -> void:
+	_planet_type = planet_type
+	var is_agricultural := (_planet_type == AGRICULTURAL_TYPE)
+	hull_upgrade_button.visible = not is_agricultural
+	shield_upgrade_button.visible = not is_agricultural
+	cargo_upgrade_button.visible = not is_agricultural
+	_bottom_row.visible = not is_agricultural
 	_refresh_display()
 
 

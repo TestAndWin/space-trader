@@ -147,21 +147,21 @@ func _build_ui() -> void:
 	# Spacer to push content to lower third
 	var top_spacer := Control.new()
 	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	top_spacer.size_flags_stretch_ratio = 3.0
+	top_spacer.size_flags_stretch_ratio = 4.0
 	top_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	main_vbox.add_child(top_spacer)
 
-	# ── Content: Quest display (half width, centered) ──
+	# ── Content: Quest display (centered, compact) ──
 	var content_hbox := HBoxContainer.new()
 	content_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_hbox.size_flags_stretch_ratio = 1.0
+	content_hbox.size_flags_stretch_ratio = 0.7
 	content_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	main_vbox.add_child(content_hbox)
 
 	_quest_display = QuestDisplayScene.instantiate()
 	_quest_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_quest_display.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
-	_quest_display.custom_minimum_size = Vector2(500, 0)
+	_quest_display.custom_minimum_size = Vector2(350, 0)
 	content_hbox.add_child(_quest_display)
 	_quest_display.setup(_planet_name)
 	_quest_display.quest_changed.connect(_on_quest_changed)

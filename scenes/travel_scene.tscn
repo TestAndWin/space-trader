@@ -55,31 +55,34 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="TopPanel" type="MarginContainer" parent="HUD"]
+[node name="BottomPanel" type="PanelContainer" parent="HUD"]
 layout_mode = 1
-anchors_preset = 10
+anchor_top = 1.0
 anchor_right = 1.0
-offset_left = 24.0
-offset_top = 28.0
-offset_right = -24.0
-offset_bottom = 150.0
-grow_horizontal = 2
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -50.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_vertical = 0
 mouse_filter = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="HUD/TopPanel"]
+[node name="HBoxContainer" type="HBoxContainer" parent="HUD/BottomPanel"]
 layout_mode = 2
-theme_override_constants/separation = 8
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/separation = 12
 
-[node name="TravelLabel" type="Label" parent="HUD/TopPanel/VBoxContainer"]
+[node name="TravelLabel" type="Label" parent="HUD/BottomPanel/HBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.7, 0.95, 1, 1)
 text = "Traveling..."
-horizontal_alignment = 1
 
-[node name="WarningLabel" type="Label" parent="HUD/TopPanel/VBoxContainer"]
+[node name="WarningLabel" type="Label" parent="HUD/BottomPanel/HBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(1, 0.58, 0.25, 0.9)
 text = ""
-horizontal_alignment = 1
+horizontal_alignment = 2

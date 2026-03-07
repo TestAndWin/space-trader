@@ -41,7 +41,7 @@ var ShipUpgradeScene: PackedScene = preload("res://scenes/ship_upgrade.tscn")
 func setup(planet_type: int) -> void:
 	_planet_type = planet_type
 	if _shipyard_panel:
-		_shipyard_panel.setup()
+		_shipyard_panel.setup(_planet_type)
 	_refresh_ui()
 
 
@@ -113,7 +113,7 @@ func _build_ui() -> void:
 	title_row.add_child(right_deco)
 
 	var subtitle := Label.new()
-	subtitle.text = "Repair, upgrade, and customize your vessel"
+	subtitle.text = "Repairs only" if _planet_type == 1 else "Repair, upgrade, and customize your vessel"
 	var sub_settings := LabelSettings.new()
 	sub_settings.font_size = 11
 	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
@@ -162,9 +162,9 @@ func _build_ui() -> void:
 	_shipyard_panel = ShipyardPanelScene.instantiate()
 	_shipyard_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_shipyard_panel.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
-	_shipyard_panel.custom_minimum_size = Vector2(600, 0)
+	_shipyard_panel.custom_minimum_size = Vector2(480, 0)
 	content_hbox.add_child(_shipyard_panel)
-	_shipyard_panel.setup()
+	_shipyard_panel.setup(_planet_type)
 	_shipyard_panel.shipyard_action.connect(_on_shipyard_action)
 	_shipyard_panel.ships_requested.connect(_on_ship_dealer_pressed)
 	_shipyard_panel.upgrades_requested.connect(_on_ship_upgrades_pressed)
@@ -184,7 +184,7 @@ func _on_ship_dealer_pressed() -> void:
 	dealer.dealer_closed.connect(func():
 		_refresh_ui()
 		if _shipyard_panel:
-			_shipyard_panel.setup()
+			_shipyard_panel.setup(_planet_type)
 	)
 
 
@@ -198,7 +198,7 @@ func _on_ship_upgrades_pressed() -> void:
 	upgrades.upgrades_closed.connect(func():
 		_refresh_ui()
 		if _shipyard_panel:
-			_shipyard_panel.setup()
+			_shipyard_panel.setup(_planet_type)
 	)
 
 

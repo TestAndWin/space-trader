@@ -159,7 +159,7 @@ func _build_ui() -> void:
 	_crew_panel = CrewPanelScene.instantiate()
 	_crew_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_crew_panel.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
-	_crew_panel.custom_minimum_size = Vector2(400, 0)
+	_crew_panel.custom_minimum_size = Vector2(280, 0)
 	content_hbox.add_child(_crew_panel)
 	_crew_panel.setup(_planet_type)
 	_crew_panel.crew_action.connect(_on_crew_action)

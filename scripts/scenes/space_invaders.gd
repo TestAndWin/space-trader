@@ -2,7 +2,6 @@ extends Control
 
 ## Space Invaders mini-game — destroy all enemies to win credits.
 
-const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
@@ -69,7 +68,6 @@ func _ready() -> void:
 
 	_build_ui()
 	_init_game()
-	CockpitFrame.add_to(self)
 
 
 func _build_ui() -> void:

@@ -1,6 +1,5 @@
 extends Node3D
 
-const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 const PLANET_TYPE_COLORS := {
@@ -35,18 +34,18 @@ var _player_marker_base_position: Vector3 = Vector3.ZERO
 @onready var planets_container: Node3D = $GalaxyWorld/Planets3D
 @onready var markers_container: Node3D = $GalaxyWorld/Markers3D
 
-@onready var credits_label := $CanvasLayer/TopBar/CreditsLabel
-@onready var cargo_label := $CanvasLayer/TopBar/CargoLabel
+@onready var credits_label := $CanvasLayer/BottomBar/HBoxContainer/CreditsLabel
+@onready var cargo_label := $CanvasLayer/BottomBar/HBoxContainer/CargoLabel
 @onready var info_panel := $CanvasLayer/InfoPanel
 @onready var planet_name_label := $CanvasLayer/InfoPanel/VBoxContainer/PlanetNameLabel
 @onready var planet_type_label := $CanvasLayer/InfoPanel/VBoxContainer/PlanetTypeLabel
 @onready var danger_label := $CanvasLayer/InfoPanel/VBoxContainer/DangerLabel
-@onready var travel_button := $CanvasLayer/TravelButton
-@onready var current_planet_label := $CanvasLayer/TopBar/CurrentPlanetLabel
-@onready var hull_label := $CanvasLayer/TopBar/HullLabel
-@onready var shield_label := $CanvasLayer/TopBar/ShieldLabel
+@onready var travel_button := $CanvasLayer/InfoPanel/VBoxContainer/TravelButton
+@onready var current_planet_label := $CanvasLayer/BottomBar/HBoxContainer/CurrentPlanetLabel
+@onready var hull_label := $CanvasLayer/BottomBar/HBoxContainer/HullLabel
+@onready var shield_label := $CanvasLayer/BottomBar/HBoxContainer/ShieldLabel
 @onready var trades_label := $CanvasLayer/InfoPanel/VBoxContainer/TradesLabel
-@onready var land_button := $CanvasLayer/LandButton
+@onready var land_button := $CanvasLayer/InfoPanel/VBoxContainer/LandButton
 
 
 func _ready() -> void:
@@ -69,9 +68,27 @@ func _ready() -> void:
 	_style_nav_button(travel_button, Color(0.0, 0.85, 0.45))
 	_style_nav_button(land_button, Color(0.0, 0.65, 0.95))
 
+	# Show info panel with current planet on start
+	var current := _find_planet_by_name(GameManager.current_planet)
+	if current:
+		_on_planet_hovered(current)
+
 	map_camera.position = Vector3(0.0, 0.35, 24.0)
 	map_camera.look_at(Vector3(0.0, -0.1, 0.0), Vector3.UP)
-	CockpitFrame.add_to(self, true)
+	_add_galaxy_background()
+	_style_bottom_bar()
+
+
+func _style_bottom_bar() -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
+	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.shadow_color = Color(0.0, 0.45, 0.9, 0.25)
+	style.shadow_size = 6
+	style.set_content_margin_all(8)
+	$CanvasLayer/BottomBar.add_theme_stylebox_override("panel", style)
 
 
 func _process(delta: float) -> void:
@@ -675,9 +692,10 @@ func _on_planet_mouse_exited(planet_data: Resource) -> void:
 
 func _on_planet_clicked(planet_data: Resource) -> void:
 	if planet_data.planet_name == GameManager.current_planet:
-		selected_planet = null
+		selected_planet = planet_data
 		travel_button.visible = false
 		land_button.visible = true
+		_on_planet_hovered(planet_data)
 		_update_planet_states()
 		return
 
@@ -724,7 +742,11 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 
 
 func _on_planet_unhovered() -> void:
-	info_panel.visible = false
+	if selected_planet:
+		# Keep panel visible with selected planet info
+		_on_planet_hovered(selected_planet)
+	else:
+		info_panel.visible = false
 
 
 func _on_travel_pressed() -> void:
@@ -760,6 +782,26 @@ func _style_nav_button(btn: Button, accent: Color) -> void:
 
 	btn.add_theme_color_override("font_color", Color(0.05, 0.05, 0.05))
 	btn.add_theme_color_override("font_hover_color", Color(0.0, 0.0, 0.0))
+
+
+func _add_galaxy_background() -> void:
+	var path: String = "res://assets/sprites/bg_galaxy_map.png"
+	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	if not tex:
+		return
+	# Place as a large 3D quad behind the starfield
+	var bg_quad := MeshInstance3D.new()
+	var quad_mesh := QuadMesh.new()
+	quad_mesh.size = Vector2(320.0, 180.0)
+	bg_quad.mesh = quad_mesh
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_texture = tex
+	mat.albedo_color = Color(1.0, 1.0, 1.0, 0.35)
+	bg_quad.material_override = mat
+	bg_quad.position = Vector3(0.0, 0.0, -80.0)
+	starfield_container.add_child(bg_quad)
 
 
 func _on_land_pressed() -> void:

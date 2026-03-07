@@ -1,6 +1,5 @@
 extends Control
 
-const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
 const HULL_SHADER := preload("res://shaders/ship_hull.gdshader")
 const ENGINE_SHADER := preload("res://shaders/engine_glow.gdshader")
 
@@ -19,9 +18,16 @@ var _warp_color: Color = Color(0.25, 0.6, 0.85)
 var _rng := RandomNumberGenerator.new()
 var _star_nodes: Array = []
 var _star_speeds: Array = []
+var _star_base_scales: Array = []
+
+var _dust_nodes: Array = []
+var _dust_speeds: Array = []
+var _dust_rotations: Array = []
+
 var _planet_root: Node3D
 var _planet_material: StandardMaterial3D
 var _planet_atmo_material: StandardMaterial3D
+
 
 # Planet type accent colors matching planet_background.gd atmosphere palette
 const PLANET_WARP_COLORS: Dictionary = {
@@ -40,10 +46,11 @@ const PLANET_SURFACE_COLORS: Dictionary = {
 	4: Color(0.45, 0.18, 0.16),  # OUTLAW
 }
 
-const STAR_COUNT: int = 360
-const STARFIELD_BOUNDS: Vector2 = Vector2(72.0, 42.0)
-const STARFIELD_Z_NEAR: float = 1.5
-const STARFIELD_Z_FAR: float = -320.0
+const STAR_COUNT: int = 1200
+const DUST_COUNT: int = 250
+const STARFIELD_BOUNDS: Vector2 = Vector2(85.0, 50.0)
+const STARFIELD_Z_NEAR: float = 2.0
+const STARFIELD_Z_FAR: float = -350.0
 
 # Normalized 3D polygon coords (Y-up, ×2 scale, tip at +Y, engines at −Y).
 const HULL_POLYGONS: Array = [
@@ -86,8 +93,8 @@ const ENGINE_POSITIONS: Array = [
 @onready var starfield_root: Node3D = $TravelViewport/SubViewport/TravelWorld/Starfield
 @onready var ship_root: Node3D = $TravelViewport/SubViewport/TravelWorld/Ship
 @onready var planet_container: Node3D = $TravelViewport/SubViewport/TravelWorld/Planet
-@onready var travel_label: Label = $HUD/TopPanel/VBoxContainer/TravelLabel
-@onready var warning_label: Label = $HUD/TopPanel/VBoxContainer/WarningLabel
+@onready var travel_label: Label = $HUD/BottomPanel/HBoxContainer/TravelLabel
+@onready var warning_label: Label = $HUD/BottomPanel/HBoxContainer/WarningLabel
 
 
 func _ready() -> void:
@@ -103,8 +110,10 @@ func _ready() -> void:
 	var dest_type: int = _get_destination_type()
 	_warp_color = PLANET_WARP_COLORS.get(dest_type, PLANET_WARP_COLORS[3])
 
+	viewport.transparent_bg = true
 	_setup_environment(_warp_color)
 	_generate_starfield(_warp_color)
+	_generate_dust(_warp_color)
 	_build_ship_3d(_warp_color)
 	_build_destination_planet(dest_type, _warp_color)
 	_sync_viewport_size()
@@ -123,7 +132,40 @@ func _ready() -> void:
 	var flash_tween := create_tween()
 	flash_tween.tween_property(flash, "modulate:a", 0.0, 0.6).set_ease(Tween.EASE_OUT)
 	flash_tween.tween_callback(flash.queue_free)
-	CockpitFrame.add_to(self)
+	_add_travel_background()
+	_style_bottom_panel()
+
+
+func _style_bottom_panel() -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
+	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.shadow_color = Color(0.0, 0.45, 0.9, 0.25)
+	style.shadow_size = 6
+	style.set_content_margin_all(8)
+	$HUD/BottomPanel.add_theme_stylebox_override("panel", style)
+
+
+func _add_travel_background() -> void:
+	var path: String = "res://assets/sprites/bg_travel.png"
+	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	if tex:
+		var bg := TextureRect.new()
+		bg.texture = tex
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(bg)
+		move_child(bg, 0)  # Behind everything
+		var dim := ColorRect.new()
+		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+		dim.color = Color(0.0, 0.0, 0.0, 0.4)
+		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(dim)
+		move_child(dim, 1)
 
 
 func _get_destination_type() -> int:
@@ -144,6 +186,7 @@ func _process(delta: float) -> void:
 	_flight_elapsed += delta
 	var progress := clampf(_flight_elapsed / _travel_duration, 0.0, 1.0)
 	_animate_starfield(delta, progress)
+	_animate_dust(delta, progress)
 	_animate_ship(delta, progress)
 	_animate_planet(delta, progress)
 	_animate_camera(progress)
@@ -160,12 +203,7 @@ func _sync_viewport_size() -> void:
 
 func _setup_environment(warp_color: Color) -> void:
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(
-		0.01 + warp_color.r * 0.03,
-		0.01 + warp_color.g * 0.03,
-		0.02 + warp_color.b * 0.05
-	)
+	env.background_mode = Environment.BG_CLEAR_COLOR
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.12, 0.16, 0.26).lerp(Color(warp_color.r * 0.25, warp_color.g * 0.25, warp_color.b * 0.25), 0.35)
 	env.ambient_light_energy = 0.95
@@ -184,15 +222,21 @@ func _setup_environment(warp_color: Color) -> void:
 
 	var fill_light := DirectionalLight3D.new()
 	fill_light.light_color = Color(warp_color.r * 0.75 + 0.2, warp_color.g * 0.75 + 0.2, warp_color.b * 0.9 + 0.1)
-	fill_light.light_energy = 0.4
+	fill_light.light_energy = 0.5
 	fill_light.rotation = Vector3(35.0, -130.0, 0.0) * (PI / 180.0)
 	travel_world.add_child(fill_light)
+	
+	var rim_light := DirectionalLight3D.new()
+	rim_light.light_color = Color(warp_color.r, warp_color.g, 1.0)
+	rim_light.light_energy = 0.8
+	rim_light.rotation = Vector3(15.0, 160.0, 0.0) * (PI / 180.0)
+	travel_world.add_child(rim_light)
 
 	var cockpit_light := OmniLight3D.new()
-	cockpit_light.light_color = Color(0.2, 0.35, 0.95)
-	cockpit_light.light_energy = 1.0
+	cockpit_light.light_color = Color(0.2, 0.45, 1.0)
+	cockpit_light.light_energy = 1.5
 	cockpit_light.omni_range = 16.0
-	cockpit_light.position = Vector3(0.0, -0.8, 2.0)
+	cockpit_light.position = Vector3(0.0, -0.6, 2.5)
 	travel_world.add_child(cockpit_light)
 
 
@@ -201,12 +245,14 @@ func _generate_starfield(warp_color: Color) -> void:
 		child.queue_free()
 	_star_nodes.clear()
 	_star_speeds.clear()
+	_star_base_scales.clear()
 
 	for i in STAR_COUNT:
 		var star := MeshInstance3D.new()
 		var quad := QuadMesh.new()
-		var star_size: float = _rng.randf_range(0.05, 0.18)
-		quad.size = Vector2(star_size, star_size * _rng.randf_range(2.2, 4.8))
+		var star_size: float = _rng.randf_range(0.02, 0.12)
+		var length_mult: float = _rng.randf_range(3.0, 8.0)
+		quad.size = Vector2(star_size, star_size * length_mult)
 		star.mesh = quad
 
 		var mat := StandardMaterial3D.new()
@@ -214,47 +260,117 @@ func _generate_starfield(warp_color: Color) -> void:
 		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		var brightness: float = _rng.randf_range(0.35, 1.0)
-		var tint: float = _rng.randf_range(0.2, 0.75)
+		
+		# More diverse and vibrant star colors
+		var brightness: float = _rng.randf_range(0.4, 1.0)
+		var tint: float = _rng.randf_range(0.1, 0.9)
+		# Mix white, warp_color, and a complementary warm color occasionally
+		var base_color = warp_color if _rng.randf() > 0.3 else Color(1.0, 0.9, 0.7)
+		if _rng.randf() > 0.9:
+			base_color = Color(0.9, 0.4, 0.8) # rare pink/purple hues
+			
 		var color := Color(
-			lerpf(brightness, warp_color.r * brightness, tint),
-			lerpf(brightness, warp_color.g * brightness, tint),
-			lerpf(brightness, warp_color.b * brightness, tint),
-			_rng.randf_range(0.18, 0.95)
+			lerpf(brightness, base_color.r * brightness, tint),
+			lerpf(brightness, base_color.g * brightness, tint),
+			lerpf(brightness, base_color.b * brightness, tint),
+			_rng.randf_range(0.3, 1.0)
 		)
 		mat.albedo_color = color
 		mat.emission_enabled = true
 		mat.emission = color
-		mat.emission_energy_multiplier = _rng.randf_range(0.7, 2.0)
+		mat.emission_energy_multiplier = _rng.randf_range(1.0, 3.5)
 		star.material_override = mat
 
 		_place_star(star, false)
 		starfield_root.add_child(star)
 		_star_nodes.append(star)
-		_star_speeds.append(_rng.randf_range(40.0, 120.0))
+		_star_speeds.append(_rng.randf_range(60.0, 220.0))
+		_star_base_scales.append(length_mult)
 
+
+
+func _generate_dust(warp_color: Color) -> void:
+	for i in DUST_COUNT:
+		var dust := MeshInstance3D.new()
+		var quad := QuadMesh.new()
+		var dust_size: float = _rng.randf_range(0.5, 4.5)
+		quad.size = Vector2(dust_size, dust_size)
+		dust.mesh = quad
+
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		
+		# Dust should be very faint and nebulous
+		var alpha = _rng.randf_range(0.02, 0.15)
+		var color := Color(warp_color.r, warp_color.g, warp_color.b, alpha)
+		# Occasionally different color
+		if _rng.randf() > 0.8:
+			color = Color(0.8, 0.3, 0.5, alpha * 0.8)
+			
+		mat.albedo_color = color
+		
+		# Use a soft circular mask if possible, else just quad.
+		# Since we don't have a texture easily loaded here, we rely on low alpha and additive blending to make it soft.
+		dust.material_override = mat
+
+		_place_star(dust, false)
+		# Spread dust slightly wider
+		dust.position.x *= 1.5
+		dust.position.y *= 1.5
+		
+		starfield_root.add_child(dust)
+		_dust_nodes.append(dust)
+		_dust_speeds.append(_rng.randf_range(15.0, 45.0))
+		_dust_rotations.append(_rng.randf_range(-1.0, 1.0))
 
 func _place_star(star: MeshInstance3D, reset_far: bool) -> void:
 	var z: float = _rng.randf_range(STARFIELD_Z_FAR, STARFIELD_Z_NEAR - 1.0)
 	if reset_far:
-		z = STARFIELD_Z_FAR - _rng.randf_range(0.0, 75.0)
+		z = STARFIELD_Z_FAR - _rng.randf_range(0.0, 120.0)
 	star.position = Vector3(
 		_rng.randf_range(-STARFIELD_BOUNDS.x, STARFIELD_BOUNDS.x),
 		_rng.randf_range(-STARFIELD_BOUNDS.y, STARFIELD_BOUNDS.y),
 		z
 	)
 
-
 func _animate_starfield(delta: float, progress: float) -> void:
-	var speed_multiplier := lerpf(1.2, 6.8, progress * progress)
-	var stretch := lerpf(1.0, 3.8, progress)
+	# Start extremely fast, slow down as approaching planet
+	var speed_multiplier := lerpf(12.0, 1.0, pow(progress, 0.5))
+	var stretch := lerpf(6.0, 1.0, pow(progress, 0.5))
 	for i in _star_nodes.size():
 		var star: MeshInstance3D = _star_nodes[i]
 		star.position.z += delta * _star_speeds[i] * speed_multiplier
+		
+		# Twinkle effect based on z position
+		if star.material_override:
+			var mat: StandardMaterial3D = star.material_override
+			mat.emission_energy_multiplier = 2.0 + sin(star.position.z * 0.1 + float(i)) * 1.5
+			
 		if star.position.z > STARFIELD_Z_NEAR:
 			_place_star(star, true)
 		star.rotation.z = atan2(star.position.y, star.position.x) + PI * 0.5
-		star.scale = Vector3(1.0, stretch, 1.0)
+		star.scale = Vector3(1.0, stretch * _star_base_scales[i] * 0.5, 1.0)
+
+func _animate_dust(delta: float, progress: float) -> void:
+	var speed_multiplier := lerpf(8.0, 0.8, pow(progress, 0.5))
+	for i in _dust_nodes.size():
+		var dust: MeshInstance3D = _dust_nodes[i]
+		dust.position.z += delta * _dust_speeds[i] * speed_multiplier
+		dust.rotation.z += delta * _dust_rotations[i]
+		
+		# Fade out dust as we get close to planet to not obscure it
+		if dust.material_override:
+			var mat: StandardMaterial3D = dust.material_override
+			var a = mat.albedo_color.a
+			mat.albedo_color.a = lerpf(a, a * (1.0 - progress), delta * 2.0)
+			
+		if dust.position.z > STARFIELD_Z_NEAR:
+			_place_star(dust, true)
+			dust.position.x *= 1.5
+			dust.position.y *= 1.5
 
 
 func _build_ship_3d(warp_color: Color) -> void:
@@ -438,12 +554,22 @@ func _build_destination_planet(dest_type: int, warp_color: Color) -> void:
 
 
 func _animate_ship(_delta: float, progress: float) -> void:
-	var bob := sin(_flight_elapsed * 2.9) * 0.05
-	var sway := sin(_flight_elapsed * 0.85) * 0.08
-	ship_root.position = _ship_base_position + Vector3(sway, bob, -progress * 0.45)
-	ship_root.rotation.z = sin(_flight_elapsed * 1.2) * 0.03
-	ship_root.rotation.y = sin(_flight_elapsed * 0.7) * 0.025
-	var particle_speed := lerpf(1.0, 2.6, progress)
+	# Add a slight banking as if navigating hyperspace currents
+	var bob := sin(_flight_elapsed * 3.4) * 0.08 + cos(_flight_elapsed * 1.7) * 0.04
+	var sway := sin(_flight_elapsed * 2.1) * 0.12 + sin(_flight_elapsed * 0.9) * 0.06
+	
+	# Ease the ship forward as we exit hyperspace
+	var forward_push = lerpf(0.0, 1.5, pow(progress, 4.0))
+	
+	ship_root.position = _ship_base_position + Vector3(sway, bob, -progress * 0.2 + forward_push)
+	
+	# More dynamic rotation tied to sway/bob
+	ship_root.rotation.z = -sway * 0.3 + sin(_flight_elapsed * 4.5) * 0.015
+	ship_root.rotation.y = -sway * 0.15 + sin(_flight_elapsed * 1.3) * 0.03
+	ship_root.rotation.x = -PI * 0.5 + bob * 0.15 + (forward_push * 0.1)
+
+	# Engine particles should slow down as we arrive
+	var particle_speed := lerpf(3.0, 0.8, progress)
 	for child in ship_root.get_children():
 		if child is GPUParticles3D:
 			child.speed_scale = particle_speed
@@ -466,13 +592,33 @@ func _animate_planet(delta: float, progress: float) -> void:
 
 
 func _animate_camera(progress: float) -> void:
-	var shake := 1.0 - progress * 0.45
-	travel_camera.position = Vector3(
-		sin(_flight_elapsed * 1.9) * 0.05 * shake,
-		-0.2 + sin(_flight_elapsed * 3.8) * 0.015 * shake,
-		lerpf(1.2, 0.7, progress)
+	# High speed shake early on, completely smooth at destination
+	var shake_intensity = lerpf(1.0, 0.0, pow(progress, 0.4))
+	
+	# FOV warp effect - wide at start, normal at end
+	travel_camera.fov = lerpf(100.0, 72.0, pow(progress, 0.6))
+	
+	var shake_offset = Vector3(
+		_rng.randf_range(-1.0, 1.0) * 0.04 * shake_intensity,
+		_rng.randf_range(-1.0, 1.0) * 0.04 * shake_intensity,
+		0.0
 	)
-	travel_camera.look_at(Vector3(0.0, -0.4, -80.0), Vector3.UP)
+	
+	# Smooth orbital movement
+	var orbital_x = sin(_flight_elapsed * 0.8) * 0.4 * shake_intensity
+	var orbital_y = cos(_flight_elapsed * 1.1) * 0.3 * shake_intensity
+	
+	# Pull back slightly as we arrive for a wider view of the planet
+	var cam_z = lerpf(0.5, 2.5, pow(progress, 2.0))
+	
+	travel_camera.position = Vector3(
+		orbital_x,
+		-0.2 + orbital_y,
+		cam_z
+	) + shake_offset
+	
+	# Look slightly ahead of the ship
+	travel_camera.look_at(ship_root.position + Vector3(0, 1.0, -10.0), Vector3.UP)
 
 
 # Builds an extruded low-poly hull mesh from a 2D polygon (CW winding, Y-up).

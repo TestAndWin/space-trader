@@ -35,46 +35,52 @@ position = Vector3(0, 0.35, 16.8)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="TopBar" type="HBoxContainer" parent="CanvasLayer"]
-anchors_preset = 10
+[node name="BottomBar" type="PanelContainer" parent="CanvasLayer"]
+anchor_top = 1.0
 anchor_right = 1.0
-offset_left = 10.0
-offset_top = 6.0
-offset_right = -10.0
-offset_bottom = 30.0
-grow_horizontal = 2
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -38.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/BottomBar"]
+layout_mode = 2
+size_flags_vertical = 3
 mouse_filter = 2
 theme_override_constants/separation = 20
 
-[node name="CurrentPlanetLabel" type="Label" parent="CanvasLayer/TopBar"]
+[node name="CurrentPlanetLabel" type="Label" parent="CanvasLayer/BottomBar/HBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(1, 0.95, 0.4, 1)
 text = "@ Starport Alpha"
 mouse_filter = 2
 
-[node name="CreditsLabel" type="Label" parent="CanvasLayer/TopBar"]
+[node name="CreditsLabel" type="Label" parent="CanvasLayer/BottomBar/HBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.65, 0.88, 1.0, 1)
 text = "Credits: 1000"
 mouse_filter = 2
 
-[node name="CargoLabel" type="Label" parent="CanvasLayer/TopBar"]
+[node name="CargoLabel" type="Label" parent="CanvasLayer/BottomBar/HBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.65, 0.88, 1.0, 1)
 text = "Cargo: 0/10"
 mouse_filter = 2
 
-[node name="HullLabel" type="Label" parent="CanvasLayer/TopBar"]
+[node name="HullLabel" type="Label" parent="CanvasLayer/BottomBar/HBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.9, 0.4, 0.4, 1)
 text = "Hull: 30/30"
 mouse_filter = 2
 
-[node name="ShieldLabel" type="Label" parent="CanvasLayer/TopBar"]
+[node name="ShieldLabel" type="Label" parent="CanvasLayer/BottomBar/HBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.4, 0.65, 1, 1)
@@ -119,33 +125,13 @@ theme_override_colors/font_color = Color(0.45, 0.75, 0.95, 0.9)
 text = ""
 autowrap_mode = 2
 
-[node name="TravelButton" type="Button" parent="CanvasLayer"]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -110.0
-offset_top = -52.0
-offset_right = 110.0
-offset_bottom = -12.0
-grow_horizontal = 2
-grow_vertical = 0
+[node name="TravelButton" type="Button" parent="CanvasLayer/InfoPanel/VBoxContainer"]
+layout_mode = 2
 visible = false
 theme_override_font_sizes/font_size = 16
 text = "Travel"
 
-[node name="LandButton" type="Button" parent="CanvasLayer"]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -110.0
-offset_top = -52.0
-offset_right = 110.0
-offset_bottom = -12.0
-grow_horizontal = 2
-grow_vertical = 0
+[node name="LandButton" type="Button" parent="CanvasLayer/InfoPanel/VBoxContainer"]
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Land on Planet"
