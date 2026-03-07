@@ -609,8 +609,8 @@ func _update_quest_label() -> void:
 		return
 	var q: Dictionary = QuestManager.current_quest
 	var trips_left: int = q.get("turns_left", 0)
-	quest_label.text = "%dx %s → %s  |  %d trips left  |  +%d cr" % [
-		q["deliver_qty"], q["deliver_good"], q["destination"], trips_left, q["reward_credits"]
+	quest_label.text = "%dx %s → %s  |  %d trips left" % [
+		q["deliver_qty"], q["deliver_good"], q["destination"], trips_left
 	]
 	if trips_left <= 1:
 		quest_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
