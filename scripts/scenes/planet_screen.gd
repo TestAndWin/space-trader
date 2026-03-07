@@ -292,8 +292,9 @@ func _create_image_hotspots(states: Dictionary) -> void:
 	add_child(container)
 
 	# StyleBoxes shared across all hotspot buttons
+	var empty := StyleBoxEmpty.new()
 	var hover_style := StyleBoxFlat.new()
-	hover_style.bg_color = Color(1.0, 1.0, 1.0, 0.06)
+	hover_style.bg_color = Color(1.0, 1.0, 1.0, 0.08)
 	hover_style.border_color = HOLO_BORDER
 	hover_style.set_border_width_all(2)
 	hover_style.set_corner_radius_all(4)
@@ -310,22 +311,84 @@ func _create_image_hotspots(states: Dictionary) -> void:
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		btn.disabled = states.get(bid, false)
-		btn.text = bid
-		btn.add_theme_color_override("font_color", Color.RED)
-		btn.add_theme_color_override("font_hover_color", Color.RED)
-		btn.add_theme_color_override("font_disabled_color", Color.RED)
-		var label_style := StyleBoxFlat.new()
-		label_style.bg_color = Color(0, 0, 0, 0.7)
-		label_style.set_corner_radius_all(4)
-		btn.add_theme_stylebox_override("normal",   label_style)
-		btn.add_theme_stylebox_override("pressed",  label_style)
-		btn.add_theme_stylebox_override("disabled", label_style)
-		btn.add_theme_stylebox_override("focus",    label_style)
+		btn.add_theme_stylebox_override("normal",   empty)
+		btn.add_theme_stylebox_override("pressed",  empty)
+		btn.add_theme_stylebox_override("disabled", empty)
+		btn.add_theme_stylebox_override("focus",    empty)
 		btn.add_theme_stylebox_override("hover",    hover_style)
 
 		var captured_bid: String = bid
 		btn.pressed.connect(func() -> void: _on_building_clicked(captured_bid))
 		container.add_child(btn)
+
+		# Pulsing dot indicator
+		var dot := ColorRect.new()
+		dot.size = Vector2(8, 8)
+		dot.color = Color(0.0, 0.8, 1.0, 0.7)
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		dot.position = Vector2(rect.position.x + rect.size.x * 0.5 - 4, rect.position.y + rect.size.y * 0.5 - 4)
+		container.add_child(dot)
+
+		# Glow ring around dot
+		var glow := ColorRect.new()
+		glow.size = Vector2(16, 16)
+		glow.color = Color(0.0, 0.8, 1.0, 0.2)
+		glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		glow.position = Vector2(rect.position.x + rect.size.x * 0.5 - 8, rect.position.y + rect.size.y * 0.5 - 8)
+		container.add_child(glow)
+
+	# Start pulsing animation + initial flash
+	_animate_hotspot_dots(container)
+
+
+func _animate_hotspot_dots(container: Control) -> void:
+	# Collect dots and glows (every 3rd child after buttons: dot, glow pairs)
+	var dots: Array[ColorRect] = []
+	var glows: Array[ColorRect] = []
+	for child in container.get_children():
+		if child is ColorRect:
+			if child.size.x == 8:
+				dots.append(child)
+			elif child.size.x == 16:
+				glows.append(child)
+
+	# Initial flash: briefly highlight all hotspots then fade
+	for i: int in dots.size():
+		var dot: ColorRect = dots[i]
+		var glow: ColorRect = glows[i]
+		# Flash bright
+		dot.color = Color(0.2, 1.0, 1.0, 1.0)
+		glow.color = Color(0.0, 0.8, 1.0, 0.5)
+		glow.size = Vector2(24, 24)
+		glow.position -= Vector2(4, 4)
+
+	# Fade flash after short delay, then start pulse
+	var tween := create_tween()
+	tween.tween_interval(0.6)
+	tween.tween_callback(func() -> void:
+		for i: int in dots.size():
+			var glow: ColorRect = glows[i]
+			glow.size = Vector2(16, 16)
+			glow.position += Vector2(4, 4)
+		_start_pulse_loop(dots, glows)
+	)
+
+
+func _start_pulse_loop(dots: Array[ColorRect], glows: Array[ColorRect]) -> void:
+	var tween := create_tween().set_loops()
+	tween.tween_method(func(t: float) -> void:
+		var alpha: float = 0.3 + sin(t * TAU) * 0.3
+		var glow_alpha: float = 0.1 + sin(t * TAU) * 0.15
+		var glow_scale: float = 1.0 + sin(t * TAU) * 0.3
+		for dot: ColorRect in dots:
+			dot.color = Color(0.0, 0.8, 1.0, alpha)
+		for glow: ColorRect in glows:
+			glow.color = Color(0.0, 0.8, 1.0, glow_alpha)
+			var center: Vector2 = glow.position + glow.size * 0.5
+			var new_size: float = 16.0 * glow_scale
+			glow.size = Vector2(new_size, new_size)
+			glow.position = center - glow.size * 0.5
+	, 0.0, 1.0, 2.0)
 
 
 # ── Header & Info ────────────────────────────────────────────────────────────
