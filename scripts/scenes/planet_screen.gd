@@ -30,8 +30,12 @@ var _arrival_gained_cargo: Dictionary = {}  # good_name -> qty gained on arrival
 var _mission_done: bool = false
 var _casino_done: bool = false
 var _casino_rounds: int = 0
+var _news_full_text: String = ""
+var _quest_full_text: String = ""
 
 @onready var planet_name_label := $VBoxContainer/PlanetNameLabel
+@onready var info_bar_box := $InfoBar/InfoBarBox
+@onready var header_spacer: Control = $InfoBar/InfoBarBox/HeaderSpacer
 @onready var news_banner := $InfoBar/InfoBarBox/NewsBanner
 @onready var quest_label := $InfoBar/InfoBarBox/QuestLabel
 @onready var goal_label := $InfoBar/InfoBarBox/GoalLabel
@@ -81,6 +85,7 @@ func _ready() -> void:
 	cargo_items_row.clip_contents = true
 	_update_ui()
 	_add_header_buttons()
+	call_deferred("_refresh_info_bar_text_layout")
 	call_deferred("_update_cargo_items")
 	SaveManager.save_game()
 
@@ -140,6 +145,11 @@ func _process(_delta: float) -> void:
 	if _debug_label:
 		var pos: Vector2 = get_viewport().get_mouse_position()
 		_debug_label.text = "X: %d  Y: %d" % [int(pos.x), int(pos.y)]
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_refresh_info_bar_text_layout()
 
 
 func _find_planet_data() -> void:
@@ -425,6 +435,7 @@ func _make_bar_fill_style(fill_color: Color) -> StyleBoxFlat:
 
 func _style_info_bar() -> void:
 	$InfoBar.add_theme_stylebox_override("panel", _make_holo_panel_style())
+	header_spacer.visible = false
 
 
 func _style_ship_panel() -> void:
@@ -524,10 +535,12 @@ func _update_header() -> void:
 func _update_news_banner() -> void:
 	var event_text := EventManager.get_event_display_text()
 	if event_text != "":
-		news_banner.text = "SPACE NEWS: " + event_text
+		_news_full_text = "SPACE NEWS: " + _compact_news_text(event_text)
 		news_banner.visible = true
 	else:
+		_news_full_text = ""
 		news_banner.visible = false
+	_refresh_info_bar_text_layout()
 
 
 func _update_ui() -> void:
@@ -552,12 +565,13 @@ func _update_ui() -> void:
 		goal_label.text = "GOAL REACHED!"
 		goal_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
 	else:
-		goal_label.text = "%d/%d cr | %d/%d planets" % [mini(GameManager.credits, GameManager.WIN_CREDITS), GameManager.WIN_CREDITS, planets_visited, GameManager.WIN_PLANETS]
+		goal_label.text = "%d/%dcr | %d/%dp" % [mini(GameManager.credits, GameManager.WIN_CREDITS), GameManager.WIN_CREDITS, planets_visited, GameManager.WIN_PLANETS]
 		var credit_progress: float = clampf(float(GameManager.credits) / float(GameManager.WIN_CREDITS), 0.0, 1.0)
 		var planet_progress: float = clampf(float(planets_visited) / float(GameManager.WIN_PLANETS), 0.0, 1.0)
 		var progress: float = (credit_progress + planet_progress) / 2.0
 		var goal_color := Color(0.5 + progress * 0.5, 0.4 + progress * 0.6, 0.1 + progress * 0.2)
 		goal_label.add_theme_color_override("font_color", goal_color)
+	_refresh_info_bar_text_layout()
 
 
 func _update_ship_status() -> void:
@@ -605,11 +619,13 @@ func _update_ship_status() -> void:
 
 func _update_quest_label() -> void:
 	if not QuestManager.has_active_quest():
+		_quest_full_text = ""
 		quest_label.visible = false
+		_refresh_info_bar_text_layout()
 		return
 	var q: Dictionary = QuestManager.current_quest
 	var trips_left: int = q.get("turns_left", 0)
-	quest_label.text = "%dx %s → %s  |  %d trips left" % [
+	_quest_full_text = "%dx %s -> %s | %dt" % [
 		q["deliver_qty"], q["deliver_good"], q["destination"], trips_left
 	]
 	if trips_left <= 1:
@@ -619,6 +635,101 @@ func _update_quest_label() -> void:
 	else:
 		quest_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.25))
 	quest_label.visible = true
+	_refresh_info_bar_text_layout()
+
+
+func _refresh_info_bar_text_layout() -> void:
+	if not is_instance_valid(info_bar_box):
+		return
+	if info_bar_box.size.x <= 8.0:
+		return
+
+	news_banner.tooltip_text = _news_full_text
+	quest_label.tooltip_text = _quest_full_text
+
+	var button_width: float = 0.0
+	var button_count: int = 0
+	for child in info_bar_box.get_children():
+		if child is Button and child.visible:
+			button_width += (child as Control).get_combined_minimum_size().x
+			button_count += 1
+
+	var separator: float = float(info_bar_box.get_theme_constant("separation"))
+	var goal_width := _measure_label_text(goal_label, goal_label.text)
+	var reserved := button_width + goal_width + separator * float(button_count + 3) + 24.0
+	var available := info_bar_box.size.x - reserved
+
+	if available <= 0.0:
+		news_banner.text = ""
+		quest_label.visible = false
+		return
+
+	var show_news := _news_full_text != ""
+	var show_quest := _quest_full_text != ""
+	if not show_news:
+		news_banner.visible = false
+	if not show_quest:
+		quest_label.visible = false
+
+	if show_news and show_quest:
+		var quest_budget := clampf(available * 0.38, 100.0, 280.0)
+		var news_budget := available - quest_budget - separator
+		if news_budget < 120.0:
+			quest_budget = clampf(available * 0.30, 84.0, 220.0)
+			news_budget = available - quest_budget - separator
+		if news_budget < 100.0:
+			quest_label.visible = false
+			news_budget = available
+		else:
+			quest_label.visible = true
+			quest_label.text = _truncate_label_text(quest_label, _quest_full_text, quest_budget)
+		news_banner.visible = true
+		news_banner.text = _truncate_label_text(news_banner, _news_full_text, news_budget)
+	elif show_news:
+		news_banner.visible = true
+		news_banner.text = _truncate_label_text(news_banner, _news_full_text, available)
+	elif show_quest:
+		quest_label.visible = true
+		quest_label.text = _truncate_label_text(quest_label, _quest_full_text, available)
+
+
+func _truncate_label_text(label: Label, text: String, max_width: float) -> String:
+	if text == "":
+		return ""
+	if max_width <= 0.0:
+		return ""
+	if _measure_label_text(label, text) <= max_width:
+		return text
+
+	var ellipsis := "..."
+	if _measure_label_text(label, ellipsis) > max_width:
+		return ""
+
+	var low: int = 0
+	var high: int = text.length()
+	while low < high:
+		var mid: int = (low + high + 1) / 2
+		var candidate := text.substr(0, mid).strip_edges(false, true) + ellipsis
+		if _measure_label_text(label, candidate) <= max_width:
+			low = mid
+		else:
+			high = mid - 1
+	return text.substr(0, low).strip_edges(false, true) + ellipsis
+
+
+func _measure_label_text(label: Label, text: String) -> float:
+	var font: Font = label.get_theme_font("font")
+	var font_size: int = label.get_theme_font_size("font_size")
+	if font:
+		return font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	return float(text.length()) * float(maxi(6, font_size)) * 0.55
+
+
+func _compact_news_text(text: String) -> String:
+	var compact := text
+	compact = compact.replace("encounter chance", "encounters")
+	compact = compact.replace("trips left", "trips")
+	return compact
 
 
 func _update_cargo_items() -> void:
@@ -755,6 +866,7 @@ func _add_header_buttons() -> void:
 
 	var menu_btn := _create_small_header_button("Menu", _on_menu_pressed)
 	header.add_child(menu_btn)
+	_refresh_info_bar_text_layout()
 
 
 func _create_small_header_button(text: String, callback: Callable) -> Button:

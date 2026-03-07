@@ -8,13 +8,6 @@ signal upgrades_requested
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
-const HULL_UPGRADE_COST := 200
-const HULL_UPGRADE_AMOUNT := 5
-const SHIELD_UPGRADE_COST := 250
-const SHIELD_UPGRADE_AMOUNT := 3
-const CARGO_UPGRADE_COST := 300
-const CARGO_UPGRADE_AMOUNT := 2
-
 var ShipDisplayScene := preload("res://scenes/components/ship_display_3d.tscn")
 var ship_display_node: Control
 var _planet_type: int = 0
@@ -24,9 +17,6 @@ var hull_bar_label: Label
 var shield_bar: ProgressBar
 var shield_bar_label: Label
 var repair_button: Button
-var hull_upgrade_button: Button
-var shield_upgrade_button: Button
-var cargo_upgrade_button: Button
 var _bottom_row: HBoxContainer
 var status_label: Label
 
@@ -77,27 +67,6 @@ func _ready() -> void:
 	repair_button.pressed.connect(_on_repair_pressed)
 	UIStyles.style_small_secondary_button(repair_button)
 	vbox.add_child(repair_button)
-
-	hull_upgrade_button = Button.new()
-	hull_upgrade_button.text = "+%d Max Hull (%dcr)" % [HULL_UPGRADE_AMOUNT, HULL_UPGRADE_COST]
-	hull_upgrade_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hull_upgrade_button.pressed.connect(_on_hull_upgrade_pressed)
-	UIStyles.style_small_secondary_button(hull_upgrade_button)
-	vbox.add_child(hull_upgrade_button)
-
-	shield_upgrade_button = Button.new()
-	shield_upgrade_button.text = "+%d Max Shield (%dcr)" % [SHIELD_UPGRADE_AMOUNT, SHIELD_UPGRADE_COST]
-	shield_upgrade_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	shield_upgrade_button.pressed.connect(_on_shield_upgrade_pressed)
-	UIStyles.style_small_secondary_button(shield_upgrade_button)
-	vbox.add_child(shield_upgrade_button)
-
-	cargo_upgrade_button = Button.new()
-	cargo_upgrade_button.text = "+%d Cargo Space (%dcr)" % [CARGO_UPGRADE_AMOUNT, CARGO_UPGRADE_COST]
-	cargo_upgrade_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	cargo_upgrade_button.pressed.connect(_on_cargo_upgrade_pressed)
-	UIStyles.style_small_secondary_button(cargo_upgrade_button)
-	vbox.add_child(cargo_upgrade_button)
 
 	_bottom_row = HBoxContainer.new()
 	_bottom_row.add_theme_constant_override("separation", 4)
@@ -178,9 +147,6 @@ func _create_stat_bar(label_text: String, bg_color: Color, fill_color: Color) ->
 func setup(planet_type: int = 0) -> void:
 	_planet_type = planet_type
 	var is_agricultural := (_planet_type == AGRICULTURAL_TYPE)
-	hull_upgrade_button.visible = not is_agricultural
-	shield_upgrade_button.visible = not is_agricultural
-	cargo_upgrade_button.visible = not is_agricultural
 	_bottom_row.visible = not is_agricultural
 	_refresh_display()
 
@@ -222,33 +188,6 @@ func _refresh_display() -> void:
 		repair_button.text = "Repair Hull (%dcr)" % repair_cost
 		repair_button.disabled = GameManager.credits < repair_cost
 
-	# Update upgrade buttons with remaining count
-	var hull_remaining: int = GameManager.MAX_STAT_UPGRADES - GameManager.hull_upgrades_bought
-	var shield_remaining: int = GameManager.MAX_STAT_UPGRADES - GameManager.shield_upgrades_bought
-	var cargo_remaining: int = GameManager.MAX_STAT_UPGRADES - GameManager.cargo_upgrades_bought
-
-	if hull_remaining <= 0:
-		hull_upgrade_button.text = "+%d Max Hull (MAX)" % HULL_UPGRADE_AMOUNT
-		hull_upgrade_button.disabled = true
-	else:
-		hull_upgrade_button.text = "+%d Max Hull (%dcr) [%d/%d]" % [HULL_UPGRADE_AMOUNT, HULL_UPGRADE_COST, GameManager.hull_upgrades_bought, GameManager.MAX_STAT_UPGRADES]
-		hull_upgrade_button.disabled = GameManager.credits < HULL_UPGRADE_COST
-
-	if shield_remaining <= 0:
-		shield_upgrade_button.text = "+%d Max Shield (MAX)" % SHIELD_UPGRADE_AMOUNT
-		shield_upgrade_button.disabled = true
-	else:
-		shield_upgrade_button.text = "+%d Max Shield (%dcr) [%d/%d]" % [SHIELD_UPGRADE_AMOUNT, SHIELD_UPGRADE_COST, GameManager.shield_upgrades_bought, GameManager.MAX_STAT_UPGRADES]
-		shield_upgrade_button.disabled = GameManager.credits < SHIELD_UPGRADE_COST
-
-	if cargo_remaining <= 0:
-		cargo_upgrade_button.text = "+%d Cargo Space (MAX)" % CARGO_UPGRADE_AMOUNT
-		cargo_upgrade_button.disabled = true
-	else:
-		cargo_upgrade_button.text = "+%d Cargo Space (%dcr) [%d/%d]" % [CARGO_UPGRADE_AMOUNT, CARGO_UPGRADE_COST, GameManager.cargo_upgrades_bought, GameManager.MAX_STAT_UPGRADES]
-		cargo_upgrade_button.disabled = GameManager.credits < CARGO_UPGRADE_COST
-
-
 func _on_repair_pressed() -> void:
 	var missing_hull := GameManager.max_hull - GameManager.current_hull
 	if missing_hull <= 0:
@@ -262,46 +201,6 @@ func _on_repair_pressed() -> void:
 	status_label.text = "Repaired %d hull for %dcr" % [missing_hull, repair_cost]
 	_refresh_display()
 	shipyard_action.emit()
-
-
-func _apply_stat_upgrade(stat_name: String, cost: int, amount: int,
-		bought_key: String, upgrade_callback: Callable) -> void:
-	var bought: int = GameManager.get(bought_key)
-	if bought >= GameManager.MAX_STAT_UPGRADES:
-		status_label.text = "Max %s upgrades reached!" % stat_name
-		return
-	if not GameManager.remove_credits(cost):
-		status_label.text = "Not enough credits!"
-		return
-	upgrade_callback.call()
-	GameManager.set(bought_key, bought + 1)
-	EventLog.add_entry("Upgraded %s by %d for %dcr." % [stat_name, amount, cost])
-	status_label.text = "%s +%d" % [stat_name.capitalize(), amount]
-	_refresh_display()
-	shipyard_action.emit()
-
-
-func _on_hull_upgrade_pressed() -> void:
-	_apply_stat_upgrade("max hull", HULL_UPGRADE_COST, HULL_UPGRADE_AMOUNT,
-		"hull_upgrades_bought", func():
-			GameManager.max_hull += HULL_UPGRADE_AMOUNT
-			GameManager.current_hull += HULL_UPGRADE_AMOUNT
-	)
-
-
-func _on_shield_upgrade_pressed() -> void:
-	_apply_stat_upgrade("max shield", SHIELD_UPGRADE_COST, SHIELD_UPGRADE_AMOUNT,
-		"shield_upgrades_bought", func():
-			GameManager.max_shield += SHIELD_UPGRADE_AMOUNT
-			GameManager.current_shield += SHIELD_UPGRADE_AMOUNT
-	)
-
-
-func _on_cargo_upgrade_pressed() -> void:
-	_apply_stat_upgrade("cargo capacity", CARGO_UPGRADE_COST, CARGO_UPGRADE_AMOUNT,
-		"cargo_upgrades_bought", func():
-			GameManager.cargo_capacity += CARGO_UPGRADE_AMOUNT
-	)
 
 
 func _on_ship_upgrades_pressed() -> void:

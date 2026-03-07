@@ -72,13 +72,12 @@ func _build_ui() -> void:
 
 	# ── Content: Shipyard panel (half width, centered) ──
 	var content_hbox := HBoxContainer.new()
-	content_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_hbox.size_flags_stretch_ratio = 1.0
+	content_hbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	content_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	main_vbox.add_child(content_hbox)
 
 	_shipyard_panel = ShipyardPanelScene.instantiate()
-	_shipyard_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_shipyard_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_shipyard_panel.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
 	_shipyard_panel.custom_minimum_size = Vector2(480, 0)
 	content_hbox.add_child(_shipyard_panel)
