@@ -437,7 +437,7 @@ func _build_destination_planet(dest_type: int, warp_color: Color) -> void:
 		_planet_root.add_child(ring)
 
 
-func _animate_ship(delta: float, progress: float) -> void:
+func _animate_ship(_delta: float, progress: float) -> void:
 	var bob := sin(_flight_elapsed * 2.9) * 0.05
 	var sway := sin(_flight_elapsed * 0.85) * 0.08
 	ship_root.position = _ship_base_position + Vector3(sway, bob, -progress * 0.45)

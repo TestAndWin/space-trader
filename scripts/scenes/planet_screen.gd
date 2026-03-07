@@ -45,14 +45,12 @@ var _casino_rounds: int = 0
 @onready var capacity_label := $ShipStatusPanel/ShipStatusBox/ShipStats/CargoRow/CapacityLabel
 @onready var cargo_items_row := $ShipStatusPanel/ShipStatusBox/ShipStats/CargoItemsRow
 @onready var crew_items_row := $ShipStatusPanel/ShipStatusBox/ShipColumn/CrewItemsRow
-@onready var planet_background := $VBoxContainer/MainContent/LeftColumn/PlanetBackground
 @onready var ship_status_panel := $ShipStatusPanel
 @onready var ship_display := $ShipStatusPanel/ShipStatusBox/ShipColumn/ShipDisplay
 @onready var hull_label := $ShipStatusPanel/ShipStatusBox/ShipStats/HullLabel
 @onready var hull_bar := $ShipStatusPanel/ShipStatusBox/ShipStats/HullBar
 @onready var shield_label := $ShipStatusPanel/ShipStatusBox/ShipStats/ShieldLabel
 @onready var shield_bar := $ShipStatusPanel/ShipStatusBox/ShipStats/ShieldBar
-@onready var space_background := $Background
 @onready var bg_image: TextureRect = $BgImage
 
 
@@ -89,15 +87,11 @@ func _ready() -> void:
 	_update_ui()
 	_add_header_buttons()
 	call_deferred("_update_cargo_items")
+	SaveManager.save_game()
 
-	# Space background — use image if available, else procedural
+	# Background image
 	if current_planet_data:
 		_load_background_image()
-		if not bg_image.visible:
-			space_background.setup(current_planet_data.planet_type, current_planet_data.danger_level)
-	# Planet background
-	if current_planet_data:
-		planet_background.setup(current_planet_data.planet_type)
 	# Mark mission as done if already played this landing
 	if GameManager.mission_done_this_landing:
 		_mission_done = true
@@ -131,6 +125,28 @@ func _ready() -> void:
 				)
 
 
+var _debug_label: Label = null
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F9:
+		if _debug_label:
+			_debug_label.queue_free()
+			_debug_label = null
+		else:
+			_debug_label = Label.new()
+			_debug_label.z_index = 100
+			_debug_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_debug_label.add_theme_color_override("font_color", Color.YELLOW)
+			_debug_label.add_theme_font_size_override("font_size", 16)
+			_debug_label.position = Vector2(10, 700)
+			add_child(_debug_label)
+
+func _process(_delta: float) -> void:
+	if _debug_label:
+		var pos: Vector2 = get_viewport().get_mouse_position()
+		_debug_label.text = "X: %d  Y: %d" % [int(pos.x), int(pos.y)]
+
+
 func _find_planet_data() -> void:
 	current_planet_data = EconomyManager.get_planet_data(GameManager.current_planet)
 
@@ -157,8 +173,6 @@ func _load_background_image() -> void:
 		if tex:
 			bg_image.texture = tex
 			bg_image.visible = true
-			space_background.visible = false
-			planet_background.visible = false
 			_create_image_hotspots(_get_building_states())
 			return
 
@@ -278,7 +292,6 @@ func _create_image_hotspots(states: Dictionary) -> void:
 	add_child(container)
 
 	# StyleBoxes shared across all hotspot buttons
-	var empty := StyleBoxEmpty.new()
 	var hover_style := StyleBoxFlat.new()
 	hover_style.bg_color = Color(1.0, 1.0, 1.0, 0.06)
 	hover_style.border_color = HOLO_BORDER
@@ -297,10 +310,17 @@ func _create_image_hotspots(states: Dictionary) -> void:
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		btn.disabled = states.get(bid, false)
-		btn.add_theme_stylebox_override("normal",   empty)
-		btn.add_theme_stylebox_override("pressed",  empty)
-		btn.add_theme_stylebox_override("disabled", empty)
-		btn.add_theme_stylebox_override("focus",    empty)
+		btn.text = bid
+		btn.add_theme_color_override("font_color", Color.RED)
+		btn.add_theme_color_override("font_hover_color", Color.RED)
+		btn.add_theme_color_override("font_disabled_color", Color.RED)
+		var label_style := StyleBoxFlat.new()
+		label_style.bg_color = Color(0, 0, 0, 0.7)
+		label_style.set_corner_radius_all(4)
+		btn.add_theme_stylebox_override("normal",   label_style)
+		btn.add_theme_stylebox_override("pressed",  label_style)
+		btn.add_theme_stylebox_override("disabled", label_style)
+		btn.add_theme_stylebox_override("focus",    label_style)
 		btn.add_theme_stylebox_override("hover",    hover_style)
 
 		var captured_bid: String = bid

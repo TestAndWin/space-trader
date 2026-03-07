@@ -26,8 +26,11 @@ func _on_new_game_pressed() -> void:
 
 
 func _on_continue_pressed() -> void:
-	if SaveManager.load_game():
-		get_tree().change_scene_to_file("res://scenes/planet_screen.tscn")
+	var success := SaveManager.load_game()
+	if not success:
+		print("ERROR: Failed to load save game")
+		return
+	get_tree().change_scene_to_file("res://scenes/planet_screen.tscn")
 
 
 func _on_how_to_play_pressed() -> void:

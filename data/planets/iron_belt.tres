@@ -10,4 +10,4 @@ description = "Asteroid mining operations."
 map_position = Vector2(850, 300)
 danger_level = 2
 connected_planets = Array[String](["Green Reach", "Dust Haven"])
-image_hotspots = {"market": Rect2(550, 155, 200, 50), "shipyard": Rect2(760, 250, 200, 50), "crew": Rect2(240, 250, 215, 50), "quest": Rect2(240, 470, 180, 100), "deck": Rect2(1070, 270, 140, 60), "depart": Rect2(900, 540, 230, 120)}
+image_hotspots = {"crew": Rect2(750, 350, 220, 140), "deck": Rect2(960, 460, 200, 100), "depart": Rect2(1100, 70, 230, 90), "market": Rect2(560, 240, 200, 90), "quest": Rect2(640, 80, 180, 90), "shipyard": Rect2(30, 330, 210, 100)}

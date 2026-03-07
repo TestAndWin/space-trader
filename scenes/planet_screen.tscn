@@ -1,8 +1,6 @@
 [gd_scene format=3 uid="uid://qnw3fwrb83ie"]
 
 [ext_resource type="Script" uid="uid://e5dwqm2t36ni" path="res://scripts/scenes/planet_screen.gd" id="1_ps1"]
-[ext_resource type="PackedScene" path="res://scenes/components/planet_background.tscn" id="4_pb1"]
-[ext_resource type="PackedScene" path="res://scenes/components/space_background.tscn" id="6_sb1"]
 [ext_resource type="PackedScene" path="res://scenes/components/ship_display_3d.tscn" id="7_sd1"]
 [ext_resource type="Script" uid="uid://ccengsm5qkliu" path="res://scripts/components/cockpit_frame.gd" id="8_cf1"]
 
@@ -25,10 +23,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-stretch_mode = 1
-
-[node name="Background" parent="." unique_id=1237204138 instance=ExtResource("6_sb1")]
-layout_mode = 1
+expand_mode = 1
+stretch_mode = 6
 
 [node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1740380511]
 layout_mode = 1
@@ -67,12 +63,6 @@ size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.6
 mouse_filter = 2
 theme_override_constants/separation = 8
-
-[node name="PlanetBackground" parent="VBoxContainer/MainContent/LeftColumn" unique_id=1915893958 instance=ExtResource("4_pb1")]
-custom_minimum_size = Vector2(200, 200)
-size_flags_horizontal = 4
-size_flags_vertical = 3
-
 
 [node name="ShipStatusPanel" type="PanelContainer" parent="." unique_id=55560276]
 layout_mode = 1

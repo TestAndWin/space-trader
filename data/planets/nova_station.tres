@@ -10,4 +10,4 @@ description = "A lawless space station. Contraband welcome."
 map_position = Vector2(500, 150)
 danger_level = 4
 connected_planets = Array[String](["Nexus Prime", "Dust Haven"])
-image_hotspots = {"market": Rect2(550, 155, 200, 50), "shipyard": Rect2(760, 250, 200, 50), "casino": Rect2(400, 290, 120, 50), "crew": Rect2(240, 250, 215, 50), "quest": Rect2(240, 470, 180, 100), "deck": Rect2(1070, 270, 140, 60), "depart": Rect2(900, 540, 230, 120), "mission": Rect2(580, 460, 195, 50)}
+image_hotspots = {"casino": Rect2(700, 305, 120, 50), "crew": Rect2(480, 30, 150, 70), "deck": Rect2(815, 115, 100, 35), "depart": Rect2(1000, 50, 210, 45), "market": Rect2(470, 250, 160, 80), "mission": Rect2(1030, 400, 215, 80), "quest": Rect2(1125, 285, 125, 60), "shipyard": Rect2(60, 295, 280, 80)}
