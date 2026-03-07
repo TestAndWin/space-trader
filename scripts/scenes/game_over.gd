@@ -1,6 +1,5 @@
 extends Control
 
-const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
@@ -15,11 +14,9 @@ func _ready() -> void:
 	%MainMenuButton.pressed.connect(_on_main_menu_pressed)
 	UIStyles.style_secondary_button(%MainMenuButton, 18)
 	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/bg_game_over.png", 0.5, 1)
-	CockpitFrame.add_to(self)
 
 
 func _on_main_menu_pressed() -> void:
 	SaveManager.delete_save()
 	GameManager.reset()
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
-
