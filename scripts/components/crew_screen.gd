@@ -7,8 +7,8 @@ signal crew_closed
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
-const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.65)
-const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.55)
+const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
+const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.35)
 const ACCENT := Color(0.0, 0.9, 1.0)
 const ACCENT_DIM := Color(0.0, 0.45, 0.75, 0.6)
 
@@ -32,7 +32,6 @@ var _planet_type: int = 0
 var _credits_label: Label
 var _crew_panel: Control  # CrewPanel instance
 
-var ShowroomBgScene := preload("res://scenes/components/dealer_showroom_bg.tscn")
 var CrewPanelScene := preload("res://scenes/components/crew_panel.tscn")
 
 
@@ -45,16 +44,13 @@ func setup(planet_type: int) -> void:
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	color = Color(0, 0, 0, 0.85)
+	color = Color(0, 0, 0, 0.0)
 	_build_ui()
 
 
 func _build_ui() -> void:
-	# Showroom background
-	var showroom_bg := ShowroomBgScene.instantiate()
-	showroom_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	showroom_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(showroom_bg)
+	# Background image
+	_add_building_background("crew")
 
 	# Main panel
 	var margin := MarginContainer.new()
@@ -115,8 +111,13 @@ func _build_ui() -> void:
 
 	var subtitle := Label.new()
 	subtitle.text = "Recruit specialists to aid your journey"
-	subtitle.add_theme_font_size_override("font_size", 11)
-	subtitle.add_theme_color_override("font_color", Color(0.45, 0.5, 0.55, 0.8))
+	var sub_settings := LabelSettings.new()
+	sub_settings.font_size = 11
+	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
+	sub_settings.shadow_size = 3
+	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
+	sub_settings.shadow_offset = Vector2(1, 1)
+	subtitle.label_settings = sub_settings
 	title_vbox.add_child(subtitle)
 
 	var header_spacer := Control.new()
@@ -141,11 +142,25 @@ func _build_ui() -> void:
 	sep.add_theme_color_override("separator", ACCENT_DIM)
 	main_vbox.add_child(sep)
 
-	# ── Content: Crew panel (centered, expanded) ──
+	# Spacer to push content to lower third
+	var top_spacer := Control.new()
+	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	top_spacer.size_flags_stretch_ratio = 2.0
+	top_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	main_vbox.add_child(top_spacer)
+
+	# ── Content: Crew panel (half width, centered) ──
+	var content_hbox := HBoxContainer.new()
+	content_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_hbox.size_flags_stretch_ratio = 1.0
+	content_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	main_vbox.add_child(content_hbox)
+
 	_crew_panel = CrewPanelScene.instantiate()
 	_crew_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_crew_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	main_vbox.add_child(_crew_panel)
+	_crew_panel.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
+	_crew_panel.custom_minimum_size = Vector2(400, 0)
+	content_hbox.add_child(_crew_panel)
 	_crew_panel.setup(_planet_type)
 	_crew_panel.crew_action.connect(_on_crew_action)
 
@@ -158,6 +173,24 @@ func _refresh_ui() -> void:
 	if not _credits_label:
 		return
 	_credits_label.text = "%d cr" % GameManager.credits
+
+
+func _add_building_background(building_key: String) -> void:
+	var path: String = "res://assets/sprites/bg_building_%s.png" % building_key
+	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	if tex:
+		var bg := TextureRect.new()
+		bg.texture = tex
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(bg)
+		var dim := ColorRect.new()
+		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+		dim.color = Color(0.0, 0.0, 0.0, 0.4)
+		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(dim)
 
 
 func _close() -> void:

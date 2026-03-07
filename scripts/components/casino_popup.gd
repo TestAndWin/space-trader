@@ -38,8 +38,8 @@ const SUIT_SYMBOLS: Dictionary = {
 }
 
 # Casino colors — premium gold + dark blue
-const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.65)
-const BORDER_COLOR := Color(0.65, 0.52, 0.08, 0.55)
+const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
+const BORDER_COLOR := Color(0.65, 0.52, 0.08, 0.35)
 const GOLD := Color(1.0, 0.90, 0.25)
 const GOLD_DIM := Color(0.65, 0.52, 0.08)
 const ACCENT := Color(1.0, 0.85, 0.2)
@@ -73,9 +73,6 @@ var _content_area: VBoxContainer
 var _credits_label: Label
 var _status_label: Label
 
-var ShowroomBgScene := preload("res://scenes/components/dealer_showroom_bg.tscn")
-
-
 func setup(planet_type: int, max_rounds: int = 5) -> void:
 	_planet_type = planet_type
 	_max_rounds = max_rounds
@@ -85,16 +82,13 @@ func setup(planet_type: int, max_rounds: int = 5) -> void:
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	color = Color(0, 0, 0, 0.85)
+	color = Color(0, 0, 0, 0.0)
 	_build_ui()
 
 
 func _build_ui() -> void:
-	# Showroom background (behind everything)
-	var showroom_bg := ShowroomBgScene.instantiate()
-	showroom_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	showroom_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(showroom_bg)
+	# Background image
+	_add_building_background("casino")
 
 	# Semi-transparent casino panel
 	var margin := MarginContainer.new()
@@ -156,8 +150,13 @@ func _build_ui() -> void:
 
 	var subtitle := Label.new()
 	subtitle.text = "High Stakes \u2022 Fair Games \u2022 Galactic Gaming License #4827"
-	subtitle.add_theme_font_size_override("font_size", 11)
-	subtitle.add_theme_color_override("font_color", Color(0.55, 0.45, 0.25, 0.8))
+	var sub_settings := LabelSettings.new()
+	sub_settings.font_size = 11
+	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
+	sub_settings.shadow_size = 3
+	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
+	sub_settings.shadow_offset = Vector2(1, 1)
+	subtitle.label_settings = sub_settings
 	title_vbox.add_child(subtitle)
 
 	var header_spacer := Control.new()
@@ -816,6 +815,24 @@ func _build_result_ui() -> void:
 	_style_casino_button(close_btn, Color(0.4, 0.15, 0.1))
 	close_btn.pressed.connect(_close)
 	btn_row.add_child(close_btn)
+
+
+func _add_building_background(building_key: String) -> void:
+	var path: String = "res://assets/sprites/bg_building_%s.png" % building_key
+	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	if tex:
+		var bg := TextureRect.new()
+		bg.texture = tex
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(bg)
+		var dim := ColorRect.new()
+		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+		dim.color = Color(0.0, 0.0, 0.0, 0.4)
+		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(dim)
 
 
 func _close() -> void:

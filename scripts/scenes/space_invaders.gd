@@ -3,6 +3,13 @@ extends Control
 ## Space Invaders mini-game — destroy all enemies to win credits.
 
 const CockpitFrame := preload("res://scripts/components/cockpit_frame.gd")
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+
+const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
+const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.35)
+const ACCENT := Color(0.0, 0.9, 1.0)
+const ACCENT_DIM := Color(0.0, 0.45, 0.75, 0.6)
+
 const ENTRY_COST: int = 100
 const WIN_REWARD: int = 300
 const LOSE_HULL_MIN: int = 3
@@ -44,6 +51,8 @@ var _game_active: bool = false
 var _game_won: bool = false
 var _result_shown: bool = false
 var _result_timer: float = 0.0
+var _particles: Array = []  # Array of { x, y, vx, vy, life, color }
+var _player_flash: float = 0.0  # Screen shake / flash timer on player hit
 
 var _canvas: Control
 var _lives_label: Label
@@ -52,8 +61,7 @@ var _info_label: Label
 
 func _ready() -> void:
 	# Setup background
-	var bg := $Background
-	bg.setup(3, 2)  # Tech type, medium danger
+	_add_building_background("mission")
 
 	# Crew attack bonus: faster shooting
 	if GameManager.has_crew_bonus(CrewData.CrewBonus.ATTACK_BONUS):
@@ -65,61 +73,107 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	# HUD at top
-	var hud := HBoxContainer.new()
-	hud.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	hud.offset_top = 8
-	hud.offset_left = 16
-	hud.offset_right = -16
-	hud.add_theme_constant_override("separation", 20)
-	add_child(hud)
+	# Main panel
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 0)
+	margin.add_theme_constant_override("margin_right", 0)
+	margin.add_theme_constant_override("margin_top", 0)
+	margin.add_theme_constant_override("margin_bottom", 0)
+	add_child(margin)
+
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = PANEL_COLOR
+	style.border_color = BORDER_COLOR
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(16)
+	style.content_margin_left = 28
+	style.content_margin_right = 28
+	style.content_margin_top = 16
+	style.content_margin_bottom = 16
+	panel.add_theme_stylebox_override("panel", style)
+	margin.add_child(panel)
+
+	var main_vbox := VBoxContainer.new()
+	main_vbox.add_theme_constant_override("separation", 8)
+	panel.add_child(main_vbox)
+
+	# ── Header ──
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 12)
+	main_vbox.add_child(header)
+
+	var title_vbox := VBoxContainer.new()
+	title_vbox.add_theme_constant_override("separation", 0)
+	header.add_child(title_vbox)
+
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 10)
+	title_vbox.add_child(title_row)
+
+	var left_deco := Label.new()
+	left_deco.text = "\u2726 \u2694 \u2726"
+	left_deco.add_theme_font_size_override("font_size", 16)
+	left_deco.add_theme_color_override("font_color", ACCENT_DIM)
+	title_row.add_child(left_deco)
 
 	var title := Label.new()
 	title.text = "SPACE INVADERS"
-	title.add_theme_font_size_override("font_size", 20)
-	title.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
-	hud.add_child(title)
+	title.add_theme_font_size_override("font_size", 26)
+	title.add_theme_color_override("font_color", ACCENT)
+	title_row.add_child(title)
+
+	var right_deco := Label.new()
+	right_deco.text = "\u2726 \u2694 \u2726"
+	right_deco.add_theme_font_size_override("font_size", 16)
+	right_deco.add_theme_color_override("font_color", ACCENT_DIM)
+	title_row.add_child(right_deco)
+
+	var subtitle := Label.new()
+	subtitle.text = "Destroy all enemies to earn credits"
+	var sub_settings := LabelSettings.new()
+	sub_settings.font_size = 11
+	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
+	sub_settings.shadow_size = 3
+	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
+	sub_settings.shadow_offset = Vector2(1, 1)
+	subtitle.label_settings = sub_settings
+	title_vbox.add_child(subtitle)
+
+	var header_spacer := Control.new()
+	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(header_spacer)
 
 	_lives_label = Label.new()
 	_lives_label.add_theme_font_size_override("font_size", 18)
 	_lives_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
-	hud.add_child(_lives_label)
-
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hud.add_child(spacer)
+	header.add_child(_lives_label)
 
 	_info_label = Label.new()
 	_info_label.add_theme_font_size_override("font_size", 16)
 	_info_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.4))
-	hud.add_child(_info_label)
+	header.add_child(_info_label)
 
 	var abort_btn := Button.new()
 	abort_btn.text = "Abort (%dcr)" % ABORT_PENALTY
-	abort_btn.add_theme_font_size_override("font_size", 14)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.5, 0.15, 0.1)
-	style.border_color = Color(0.7, 0.3, 0.2)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(4)
-	style.content_margin_left = 10
-	style.content_margin_right = 10
-	style.content_margin_top = 4
-	style.content_margin_bottom = 4
-	abort_btn.add_theme_stylebox_override("normal", style)
-	var hover_style := style.duplicate()
-	hover_style.bg_color = Color(0.6, 0.2, 0.15)
-	abort_btn.add_theme_stylebox_override("hover", hover_style)
-	abort_btn.add_theme_color_override("font_color", Color(0.95, 0.85, 0.8))
+	abort_btn.custom_minimum_size = Vector2(130, 36)
+	UIStyles.style_accent_button(abort_btn, Color(0.5, 0.15, 0.1))
 	abort_btn.pressed.connect(_on_abort_pressed)
-	hud.add_child(abort_btn)
+	header.add_child(abort_btn)
 
-	# Game canvas for _draw
+	# Separator
+	var sep := HSeparator.new()
+	sep.add_theme_constant_override("separation", 4)
+	sep.add_theme_color_override("separator", ACCENT_DIM)
+	main_vbox.add_child(sep)
+
+	# Game canvas for _draw (fills remaining space)
 	_canvas = Control.new()
-	_canvas.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.draw.connect(_on_canvas_draw)
-	add_child(_canvas)
+	main_vbox.add_child(_canvas)
 
 
 func _init_game() -> void:
@@ -153,13 +207,19 @@ func _init_game() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_particles(delta)
+	if _player_flash > 0.0:
+		_player_flash -= delta
+
 	if _result_shown:
 		_result_timer -= delta
+		_canvas.queue_redraw()
 		if _result_timer <= 0:
 			_return_to_planet()
 		return
 
 	if not _game_active:
+		_canvas.queue_redraw()
 		return
 
 	_handle_input(delta)
@@ -242,6 +302,7 @@ func _check_collisions() -> void:
 			if not enemy["alive"]:
 				continue
 			if absf(bx - enemy["x"]) < ENEMY_SIZE.x * 0.6 and absf(by - enemy["y"]) < ENEMY_SIZE.y * 0.6:
+				_spawn_explosion(enemy["x"], enemy["y"], Color(1.0, 0.6, 0.1))
 				enemy["alive"] = false
 				_player_bullet = {}
 				break
@@ -264,6 +325,8 @@ func _check_collisions() -> void:
 		var by: float = _enemy_bullets[i]["y"]
 		if absf(bx - _player_x) < PLAYER_SIZE.x * 0.7 and absf(by - player_y) < PLAYER_SIZE.y * 0.7:
 			_enemy_bullets.remove_at(i)
+			_spawn_explosion(_player_x, player_y, Color(1.0, 0.2, 0.2))
+			_player_flash = 0.3
 			_player_lives -= 1
 			if _player_lives <= 0:
 				_on_game_lost()
@@ -361,3 +424,58 @@ func _on_canvas_draw() -> void:
 	for bullet in _enemy_bullets:
 		var br := Rect2(bullet["x"] - ENEMY_BULLET_SIZE.x * 0.5, bullet["y"] - ENEMY_BULLET_SIZE.y * 0.5, ENEMY_BULLET_SIZE.x, ENEMY_BULLET_SIZE.y)
 		_canvas.draw_rect(br, Color(1.0, 0.3, 0.3))
+
+	# Draw explosion particles
+	for p in _particles:
+		var alpha: float = clampf(p["life"] / 0.4, 0.0, 1.0)
+		var col: Color = p["color"]
+		col.a = alpha
+		var radius: float = lerpf(1.0, 4.0, alpha)
+		_canvas.draw_circle(Vector2(p["x"], p["y"]), radius, col)
+
+	# Player hit flash (red screen overlay)
+	if _player_flash > 0.0:
+		var flash_alpha: float = clampf(_player_flash / 0.3, 0.0, 1.0) * 0.25
+		_canvas.draw_rect(Rect2(Vector2.ZERO, _canvas.size), Color(1.0, 0.0, 0.0, flash_alpha))
+
+
+func _spawn_explosion(x: float, y: float, base_color: Color) -> void:
+	for i in 8:
+		var angle: float = randf() * TAU
+		var speed: float = randf_range(60.0, 180.0)
+		_particles.append({
+			"x": x, "y": y,
+			"vx": cos(angle) * speed,
+			"vy": sin(angle) * speed,
+			"life": randf_range(0.3, 0.6),
+			"color": base_color.lightened(randf_range(0.0, 0.3)),
+		})
+
+
+func _update_particles(delta: float) -> void:
+	var i: int = _particles.size() - 1
+	while i >= 0:
+		_particles[i]["x"] += _particles[i]["vx"] * delta
+		_particles[i]["y"] += _particles[i]["vy"] * delta
+		_particles[i]["life"] -= delta
+		if _particles[i]["life"] <= 0:
+			_particles.remove_at(i)
+		i -= 1
+
+
+func _add_building_background(building_key: String) -> void:
+	var path: String = "res://assets/sprites/bg_building_%s.png" % building_key
+	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	if tex:
+		var bg := TextureRect.new()
+		bg.texture = tex
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(bg)
+		var dim := ColorRect.new()
+		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+		dim.color = Color(0.0, 0.0, 0.0, 0.6)
+		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(dim)

@@ -4,11 +4,10 @@ extends Control
 ## Full-screen immersive style with showroom background.
 
 const CardDisplayScene = preload("res://scenes/components/card_display.tscn")
-var ShowroomBgScene := preload("res://scenes/components/dealer_showroom_bg.tscn")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
-const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.65)
-const BORDER_COLOR := Color(0.0, 0.65, 0.95, 0.55)
+const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
+const BORDER_COLOR := Color(0.0, 0.65, 0.95, 0.35)
 const ACCENT := Color(0.0, 0.9, 1.0)
 const ACCENT_DIM := Color(0.0, 0.45, 0.75, 0.6)
 const GOLD := Color(1.0, 0.90, 0.25)
@@ -81,18 +80,15 @@ func _generate_shop() -> void:
 
 
 func _build_ui() -> void:
-	# Dim background
+	# Dim background (click blocker)
 	var dim := ColorRect.new()
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0, 0, 0, 0.85)
+	dim.color = Color(0, 0, 0, 0.0)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(dim)
 
-	# Showroom background
-	var showroom_bg := ShowroomBgScene.instantiate()
-	showroom_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	showroom_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(showroom_bg)
+	# Background image
+	_add_building_background("deck")
 
 	# Semi-transparent main panel
 	var panel := PanelContainer.new()
@@ -149,8 +145,13 @@ func _build_ui() -> void:
 		subtitle.text = "View & Trade Cards \u2022 Sell Unwanted \u2022 Buy New Strategies"
 	else:
 		subtitle.text = "Review Your Battle Cards \u2022 Plan Your Strategy"
-	subtitle.add_theme_font_size_override("font_size", 11)
-	subtitle.add_theme_color_override("font_color", Color(0.3, 0.55, 0.75, 0.8))
+	var sub_settings := LabelSettings.new()
+	sub_settings.font_size = 11
+	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
+	sub_settings.shadow_size = 3
+	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
+	sub_settings.shadow_offset = Vector2(1, 1)
+	subtitle.label_settings = sub_settings
 	title_vbox.add_child(subtitle)
 
 	var header_spacer := Control.new()
@@ -343,6 +344,24 @@ func _refresh_all() -> void:
 
 func _style_action_button(btn: Button, accent: Color) -> void:
 	UIStyles.style_accent_button(btn, accent)
+
+
+func _add_building_background(building_key: String) -> void:
+	var path: String = "res://assets/sprites/bg_building_%s.png" % building_key
+	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	if tex:
+		var bg := TextureRect.new()
+		bg.texture = tex
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(bg)
+		var bg_dim := ColorRect.new()
+		bg_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg_dim.color = Color(0.0, 0.0, 0.0, 0.4)
+		bg_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(bg_dim)
 
 
 func _on_close_pressed() -> void:

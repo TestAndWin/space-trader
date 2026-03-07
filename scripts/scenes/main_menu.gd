@@ -3,10 +3,39 @@ extends Control
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 
+@onready var title_label: Label = $VBoxContainer/TitleLabel
+@onready var subtitle_label: Label = $VBoxContainer/SubtitleLabel
+@onready var version_label: Label = $VBoxContainer/VersionLabel
+
 func _ready() -> void:
 	$VBoxContainer/ContinueButton.visible = SaveManager.has_save()
-	_generate_starfield()
 	_style_buttons()
+	_apply_title_glow()
+	_apply_text_shadow(subtitle_label)
+	_apply_text_shadow(version_label)
+
+
+func _apply_title_glow() -> void:
+	# Add golden glow via outline and shadow
+	var settings := LabelSettings.new()
+	settings.font_size = 52
+	settings.font_color = Color(1.0, 0.88, 0.25, 1.0)
+	settings.outline_size = 6
+	settings.outline_color = Color(1.0, 0.6, 0.0, 0.6)
+	settings.shadow_size = 12
+	settings.shadow_color = Color(1.0, 0.5, 0.0, 0.45)
+	settings.shadow_offset = Vector2(0, 2)
+	title_label.label_settings = settings
+
+
+func _apply_text_shadow(label: Label) -> void:
+	var settings := LabelSettings.new()
+	settings.font_size = label.get_theme_font_size("font_size")
+	settings.font_color = label.get_theme_color("font_color")
+	settings.shadow_size = 4
+	settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
+	settings.shadow_offset = Vector2(1, 1)
+	label.label_settings = settings
 
 
 func _style_buttons() -> void:
@@ -39,25 +68,3 @@ func _on_how_to_play_pressed() -> void:
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
-
-
-func _generate_starfield() -> void:
-	var stars_node := $Stars
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 99
-	for i in 150:
-		var star := ColorRect.new()
-		star.position = Vector2(rng.randf_range(0, 1280), rng.randf_range(0, 720))
-		var s: float = rng.randf_range(0.5, 2.0)
-		star.size = Vector2(s, s)
-		var b: float = rng.randf_range(0.1, 0.5)
-		star.color = Color(b, b, b * 1.1, b)
-		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		stars_node.add_child(star)
-	for i in 10:
-		var star := ColorRect.new()
-		star.position = Vector2(rng.randf_range(0, 1280), rng.randf_range(0, 720))
-		star.size = Vector2(2.5, 2.5)
-		star.color = Color(0.7, 0.75, 1.0, 0.7)
-		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		stars_node.add_child(star)

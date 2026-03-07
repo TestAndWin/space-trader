@@ -9,8 +9,8 @@ const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const CargoSlotScene = preload("res://scenes/components/cargo_slot.tscn")
 const GoodIcon = preload("res://scripts/components/good_icon.gd")
 
-const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.65)
-const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.55)
+const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
+const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.35)
 const ACCENT := Color(0.0, 0.9, 1.0)
 const ACCENT_DIM := Color(0.0, 0.45, 0.75, 0.6)
 
@@ -54,9 +54,6 @@ var _market_list: VBoxContainer
 var _cargo_list: VBoxContainer
 var _status_label: Label
 
-var ShowroomBgScene := preload("res://scenes/components/dealer_showroom_bg.tscn")
-
-
 func setup(planet_type: int, arrival_gained_cargo: Dictionary = {}) -> void:
 	_planet_type = planet_type
 	_arrival_gained_cargo = arrival_gained_cargo
@@ -65,16 +62,13 @@ func setup(planet_type: int, arrival_gained_cargo: Dictionary = {}) -> void:
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	color = Color(0, 0, 0, 0.85)
+	color = Color(0, 0, 0, 0.0)
 	_build_ui()
 
 
 func _build_ui() -> void:
-	# Showroom background
-	var showroom_bg := ShowroomBgScene.instantiate()
-	showroom_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	showroom_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(showroom_bg)
+	# Background image
+	_add_building_background("market")
 
 	# Main panel
 	var margin := MarginContainer.new()
@@ -137,8 +131,13 @@ func _build_ui() -> void:
 
 	var subtitle := Label.new()
 	subtitle.text = MARKET_FLAVOR.get(_planet_type, "")
-	subtitle.add_theme_font_size_override("font_size", 11)
-	subtitle.add_theme_color_override("font_color", Color(0.45, 0.5, 0.55, 0.8))
+	var sub_settings := LabelSettings.new()
+	sub_settings.font_size = 11
+	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
+	sub_settings.shadow_size = 3
+	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
+	sub_settings.shadow_offset = Vector2(1, 1)
+	subtitle.label_settings = sub_settings
 	title_vbox.add_child(subtitle)
 
 	var header_spacer := Control.new()
@@ -177,6 +176,12 @@ func _build_ui() -> void:
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	main_vbox.add_child(_status_label)
 
+	# Spacer to push content to lower half
+	var top_spacer := Control.new()
+	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	top_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	main_vbox.add_child(top_spacer)
+
 	# ── Content: Market (left) + Cargo (right) ──
 	var content := HBoxContainer.new()
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -187,7 +192,7 @@ func _build_ui() -> void:
 	var market_panel := PanelContainer.new()
 	market_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var market_style := StyleBoxFlat.new()
-	market_style.bg_color = Color(0.015, 0.04, 0.10, 0.7)
+	market_style.bg_color = Color(0.015, 0.04, 0.10, 0.5)
 	market_style.border_color = ACCENT_DIM
 	market_style.set_border_width_all(1)
 	market_style.set_corner_radius_all(8)
@@ -341,6 +346,25 @@ func _on_sell(good_name: String, quantity: int) -> void:
 	_refresh_all()
 	if GameManager.check_win_condition():
 		get_tree().change_scene_to_file("res://scenes/victory.tscn")
+
+
+func _add_building_background(building_key: String) -> void:
+	var path: String = "res://assets/sprites/bg_building_%s.png" % building_key
+	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	if tex:
+		var bg := TextureRect.new()
+		bg.texture = tex
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(bg)
+		# Dim overlay so UI remains readable
+		var dim := ColorRect.new()
+		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+		dim.color = Color(0.0, 0.0, 0.0, 0.4)
+		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(dim)
 
 
 func _close() -> void:
