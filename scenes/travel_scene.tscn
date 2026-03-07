@@ -42,8 +42,6 @@ fov = 72.0
 
 [node name="Starfield" type="Node3D" parent="TravelViewport/SubViewport/TravelWorld"]
 
-[node name="Ship" type="Node3D" parent="TravelViewport/SubViewport/TravelWorld"]
-
 [node name="Planet" type="Node3D" parent="TravelViewport/SubViewport/TravelWorld"]
 
 [node name="HUD" type="Control" parent="."]

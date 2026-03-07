@@ -1,7 +1,5 @@
 extends Control
 
-const HULL_SHADER := preload("res://shaders/ship_hull.gdshader")
-const ENGINE_SHADER := preload("res://shaders/engine_glow.gdshader")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 var destination_planet: String = ""
@@ -10,7 +8,6 @@ var dot_timer: float = 0.0
 var _flight_elapsed: float = 0.0
 var _arrival_triggered: bool = false
 
-var _ship_base_position: Vector3 = Vector3(0.0, -1.0, -2.8)
 var _planet_start_z: float = -290.0
 var _planet_target_z: float = -30.0
 var _travel_duration: float = 4.6
@@ -53,46 +50,11 @@ const STARFIELD_BOUNDS: Vector2 = Vector2(85.0, 50.0)
 const STARFIELD_Z_NEAR: float = 2.0
 const STARFIELD_Z_FAR: float = -350.0
 
-# Normalized 3D polygon coords (Y-up, ×2 scale, tip at +Y, engines at −Y).
-const HULL_POLYGONS: Array = [
-	# 0: Scout
-	[Vector2(0.0, 0.84), Vector2(0.24, 0.50), Vector2(0.64, -0.20),
-	 Vector2(0.36, -0.30), Vector2(0.20, -0.70), Vector2(-0.20, -0.70),
-	 Vector2(-0.36, -0.30), Vector2(-0.64, -0.20), Vector2(-0.24, 0.50)],
-	# 1: Freighter
-	[Vector2(0.0, 0.64), Vector2(0.40, 0.50), Vector2(0.56, 0.10),
-	 Vector2(0.56, -0.40), Vector2(0.30, -0.70), Vector2(-0.30, -0.70),
-	 Vector2(-0.56, -0.40), Vector2(-0.56, 0.10), Vector2(-0.40, 0.50)],
-	# 2: Warship
-	[Vector2(0.0, 0.88), Vector2(0.16, 0.60), Vector2(0.70, 0.0),
-	 Vector2(0.60, -0.30), Vector2(0.30, -0.40), Vector2(0.24, -0.76),
-	 Vector2(-0.24, -0.76), Vector2(-0.30, -0.40), Vector2(-0.60, -0.30),
-	 Vector2(-0.70, 0.0), Vector2(-0.16, 0.60)],
-	# 3: Smuggler
-	[Vector2(0.0, 0.90), Vector2(0.16, 0.60), Vector2(0.36, 0.0),
-	 Vector2(0.44, -0.30), Vector2(0.24, -0.70), Vector2(-0.24, -0.70),
-	 Vector2(-0.44, -0.30), Vector2(-0.36, 0.0), Vector2(-0.16, 0.60)],
-	# 4: Explorer
-	[Vector2(0.0, 0.76), Vector2(0.30, 0.56), Vector2(0.50, 0.20),
-	 Vector2(0.50, -0.20), Vector2(0.36, -0.50), Vector2(0.20, -0.70),
-	 Vector2(-0.20, -0.70), Vector2(-0.36, -0.50), Vector2(-0.50, -0.20),
-	 Vector2(-0.50, 0.20), Vector2(-0.30, 0.56)],
-]
-
-const ENGINE_POSITIONS: Array = [
-	[Vector2(-0.12, -0.68), Vector2(0.12, -0.68)],           # Scout
-	[Vector2(-0.20, -0.68), Vector2(0.20, -0.68)],           # Freighter
-	[Vector2(0.0, -0.74), Vector2(-0.24, -0.64), Vector2(0.24, -0.64)],  # Warship
-	[Vector2(-0.12, -0.68), Vector2(0.12, -0.68)],           # Smuggler
-	[Vector2(-0.16, -0.68), Vector2(0.16, -0.68)],           # Explorer
-]
-
 @onready var viewport: SubViewport = $TravelViewport/SubViewport
 @onready var world_environment: WorldEnvironment = $TravelViewport/SubViewport/TravelWorld/WorldEnvironment
 @onready var travel_world: Node3D = $TravelViewport/SubViewport/TravelWorld
 @onready var travel_camera: Camera3D = $TravelViewport/SubViewport/TravelWorld/TravelCamera
 @onready var starfield_root: Node3D = $TravelViewport/SubViewport/TravelWorld/Starfield
-@onready var ship_root: Node3D = $TravelViewport/SubViewport/TravelWorld/Ship
 @onready var planet_container: Node3D = $TravelViewport/SubViewport/TravelWorld/Planet
 @onready var travel_label: Label = $HUD/BottomPanel/HBoxContainer/TravelLabel
 @onready var warning_label: Label = $HUD/BottomPanel/HBoxContainer/WarningLabel
@@ -115,7 +77,6 @@ func _ready() -> void:
 	_setup_environment(_warp_color)
 	_generate_starfield(_warp_color)
 	_generate_dust(_warp_color)
-	_build_ship_3d(_warp_color)
 	_build_destination_planet(dest_type, _warp_color)
 	_sync_viewport_size()
 	travel_camera.look_at(Vector3(0.0, -0.4, -80.0), Vector3.UP)
@@ -168,7 +129,6 @@ func _process(delta: float) -> void:
 	var progress := clampf(_flight_elapsed / _travel_duration, 0.0, 1.0)
 	_animate_starfield(delta, progress)
 	_animate_dust(delta, progress)
-	_animate_ship(delta, progress)
 	_animate_planet(delta, progress)
 	_animate_camera(progress)
 	if progress >= 1.0 and not _arrival_triggered:
@@ -354,118 +314,6 @@ func _animate_dust(delta: float, progress: float) -> void:
 			dust.position.y *= 1.5
 
 
-func _build_ship_3d(warp_color: Color) -> void:
-	for child in ship_root.get_children():
-		child.queue_free()
-
-	var ship_data: Resource = GameManager.get_ship_data()
-	var ship_shape: int = 0
-	var hull_color: Color = Color(0.3, 0.85, 0.3)
-	if ship_data:
-		ship_shape = ship_data.hull_shape
-		hull_color = ship_data.hull_color_primary
-
-	ship_root.position = _ship_base_position
-	ship_root.rotation = Vector3(-PI * 0.5, 0.0, 0.0)
-
-	var hull_mat := ShaderMaterial.new()
-	hull_mat.shader = HULL_SHADER
-	hull_mat.set_shader_parameter("hull_color", hull_color)
-	hull_mat.set_shader_parameter("emissive_strength", 0.08)
-	hull_mat.set_shader_parameter("emissive_color", Color(1.0, 0.45, 0.2))
-
-	var hull := MeshInstance3D.new()
-	hull.mesh = _build_hull_mesh(PackedVector2Array(HULL_POLYGONS[clampi(ship_shape, 0, HULL_POLYGONS.size() - 1)]))
-	hull.material_override = hull_mat
-	hull.scale = Vector3.ONE * 2.0
-	ship_root.add_child(hull)
-
-	var canopy := MeshInstance3D.new()
-	var canopy_mesh := SphereMesh.new()
-	canopy_mesh.radius = 0.18
-	canopy_mesh.height = 0.36
-	canopy.mesh = canopy_mesh
-	canopy.position = Vector3(0.0, 0.78, 0.18)
-	var canopy_mat := StandardMaterial3D.new()
-	canopy_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	canopy_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	canopy_mat.albedo_color = Color(0.5, 0.9, 1.0, 0.45)
-	canopy_mat.emission_enabled = true
-	canopy_mat.emission = Color(0.3, 0.8, 1.0, 1.0)
-	canopy_mat.emission_energy_multiplier = 0.45
-	canopy.material_override = canopy_mat
-	ship_root.add_child(canopy)
-
-	var engine_positions: Array = ENGINE_POSITIONS[clampi(ship_shape, 0, ENGINE_POSITIONS.size() - 1)]
-	var base_engine_mat := ShaderMaterial.new()
-	base_engine_mat.shader = ENGINE_SHADER
-	base_engine_mat.set_shader_parameter("glow_color", Color(warp_color.r * 0.4 + 0.6, warp_color.g * 0.4 + 0.5, 1.0, 0.95))
-	base_engine_mat.set_shader_parameter("pulse_speed", 4.0)
-
-	for i in engine_positions.size():
-		var p: Vector2 = engine_positions[i] * 2.0
-		var glow := MeshInstance3D.new()
-		var glow_mesh := QuadMesh.new()
-		glow_mesh.size = Vector2(0.38, 0.38)
-		glow.mesh = glow_mesh
-		var glow_mat: ShaderMaterial = base_engine_mat.duplicate()
-		glow_mat.set_shader_parameter("pulse_phase", float(i) * 1.3)
-		glow.material_override = glow_mat
-		glow.position = Vector3(p.x, p.y, 0.18)
-		ship_root.add_child(glow)
-
-		ship_root.add_child(_create_engine_particles(Vector3(p.x, p.y, 0.18), warp_color))
-
-
-func _create_engine_particles(local_position: Vector3, warp_color: Color) -> GPUParticles3D:
-	var particles := GPUParticles3D.new()
-	particles.amount = 72
-	particles.lifetime = 0.28
-	particles.one_shot = false
-	particles.preprocess = 0.28
-	particles.speed_scale = 1.0
-	particles.local_coords = true
-	particles.emitting = true
-	particles.position = local_position
-	particles.visibility_aabb = AABB(Vector3(-2.0, -3.5, -2.0), Vector3(4.0, 7.0, 7.0))
-
-	var quad := QuadMesh.new()
-	quad.size = Vector2(0.06, 0.30)
-	particles.draw_pass_1 = quad
-
-	var draw_mat := StandardMaterial3D.new()
-	draw_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	draw_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	draw_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	draw_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	draw_mat.albedo_color = Color(warp_color.r * 0.35 + 0.6, warp_color.g * 0.35 + 0.6, 1.0, 0.45)
-	particles.material_override = draw_mat
-
-	var process_mat := ParticleProcessMaterial.new()
-	process_mat.direction = Vector3(0.0, -1.0, 0.0)
-	process_mat.spread = 10.0
-	process_mat.gravity = Vector3.ZERO
-	process_mat.initial_velocity_min = 8.0
-	process_mat.initial_velocity_max = 12.0
-	process_mat.linear_accel_min = 2.0
-	process_mat.linear_accel_max = 4.0
-	process_mat.scale_min = 0.15
-	process_mat.scale_max = 0.42
-	process_mat.angle_min = -16.0
-	process_mat.angle_max = 16.0
-	process_mat.damping_min = 0.0
-	process_mat.damping_max = 0.6
-	var gradient := Gradient.new()
-	gradient.add_point(0.0, Color(1.0, 0.95, 0.8, 1.0))
-	gradient.add_point(0.32, Color(0.55, 0.78, 1.0, 0.85))
-	gradient.add_point(1.0, Color(0.2, 0.45, 1.0, 0.0))
-	var ramp := GradientTexture1D.new()
-	ramp.gradient = gradient
-	process_mat.color_ramp = ramp
-	particles.process_material = process_mat
-	return particles
-
-
 func _build_destination_planet(dest_type: int, warp_color: Color) -> void:
 	for child in planet_container.get_children():
 		child.queue_free()
@@ -534,28 +382,6 @@ func _build_destination_planet(dest_type: int, warp_color: Color) -> void:
 		_planet_root.add_child(ring)
 
 
-func _animate_ship(_delta: float, progress: float) -> void:
-	# Add a slight banking as if navigating hyperspace currents
-	var bob := sin(_flight_elapsed * 3.4) * 0.08 + cos(_flight_elapsed * 1.7) * 0.04
-	var sway := sin(_flight_elapsed * 2.1) * 0.12 + sin(_flight_elapsed * 0.9) * 0.06
-	
-	# Ease the ship forward as we exit hyperspace
-	var forward_push = lerpf(0.0, 1.5, pow(progress, 4.0))
-	
-	ship_root.position = _ship_base_position + Vector3(sway, bob, -progress * 0.2 + forward_push)
-	
-	# More dynamic rotation tied to sway/bob
-	ship_root.rotation.z = -sway * 0.3 + sin(_flight_elapsed * 4.5) * 0.015
-	ship_root.rotation.y = -sway * 0.15 + sin(_flight_elapsed * 1.3) * 0.03
-	ship_root.rotation.x = -PI * 0.5 + bob * 0.15 + (forward_push * 0.1)
-
-	# Engine particles should slow down as we arrive
-	var particle_speed := lerpf(3.0, 0.8, progress)
-	for child in ship_root.get_children():
-		if child is GPUParticles3D:
-			child.speed_scale = particle_speed
-
-
 func _animate_planet(delta: float, progress: float) -> void:
 	if not _planet_root:
 		return
@@ -598,74 +424,11 @@ func _animate_camera(progress: float) -> void:
 		cam_z
 	) + shake_offset
 	
-	# Look slightly ahead of the ship
-	travel_camera.look_at(ship_root.position + Vector3(0, 1.0, -10.0), Vector3.UP)
-
-
-# Builds an extruded low-poly hull mesh from a 2D polygon (CW winding, Y-up).
-func _build_hull_mesh(poly: PackedVector2Array) -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var n: int = poly.size()
-	const depth: float = 0.125
-
-	var cx: float = 0.0
-	var cy: float = 0.0
-	for v: Vector2 in poly:
-		cx += v.x
-		cy += v.y
-	cx /= float(n)
-	cy /= float(n)
-
-	for i in n:
-		var v0: Vector2 = poly[i]
-		var v1: Vector2 = poly[(i + 1) % n]
-		st.set_normal(Vector3(0.0, 0.0, 1.0))
-		st.set_uv(Vector2(cx * 0.5 + 0.5, -cy * 0.5 + 0.5))
-		st.add_vertex(Vector3(cx, cy, depth))
-		st.set_normal(Vector3(0.0, 0.0, 1.0))
-		st.set_uv(Vector2(v1.x * 0.5 + 0.5, -v1.y * 0.5 + 0.5))
-		st.add_vertex(Vector3(v1.x, v1.y, depth))
-		st.set_normal(Vector3(0.0, 0.0, 1.0))
-		st.set_uv(Vector2(v0.x * 0.5 + 0.5, -v0.y * 0.5 + 0.5))
-		st.add_vertex(Vector3(v0.x, v0.y, depth))
-
-	for i in n:
-		var v0: Vector2 = poly[i]
-		var v1: Vector2 = poly[(i + 1) % n]
-		st.set_normal(Vector3(0.0, 0.0, -1.0))
-		st.set_uv(Vector2(cx * 0.5 + 0.5, -cy * 0.5 + 0.5))
-		st.add_vertex(Vector3(cx, cy, -depth))
-		st.set_normal(Vector3(0.0, 0.0, -1.0))
-		st.set_uv(Vector2(v0.x * 0.5 + 0.5, -v0.y * 0.5 + 0.5))
-		st.add_vertex(Vector3(v0.x, v0.y, -depth))
-		st.set_normal(Vector3(0.0, 0.0, -1.0))
-		st.set_uv(Vector2(v1.x * 0.5 + 0.5, -v1.y * 0.5 + 0.5))
-		st.add_vertex(Vector3(v1.x, v1.y, -depth))
-
-	for i in n:
-		var v0: Vector2 = poly[i]
-		var v1: Vector2 = poly[(i + 1) % n]
-		var d: Vector2 = v1 - v0
-		var normal := Vector3(-d.y, d.x, 0.0).normalized()
-		var v0f := Vector3(v0.x, v0.y, depth)
-		var v1f := Vector3(v1.x, v1.y, depth)
-		var v0b := Vector3(v0.x, v0.y, -depth)
-		var v1b := Vector3(v1.x, v1.y, -depth)
-		st.set_normal(normal)
-		st.add_vertex(v0f)
-		st.set_normal(normal)
-		st.add_vertex(v1f)
-		st.set_normal(normal)
-		st.add_vertex(v1b)
-		st.set_normal(normal)
-		st.add_vertex(v0f)
-		st.set_normal(normal)
-		st.add_vertex(v1b)
-		st.set_normal(normal)
-		st.add_vertex(v0b)
-
-	return st.commit()
+	# Focus camera on the destination planet approach.
+	var look_target := Vector3(0.0, 0.0, -60.0)
+	if _planet_root:
+		look_target = _planet_root.global_position + Vector3(0.0, 0.8, -6.0)
+	travel_camera.look_at(look_target, Vector3.UP)
 
 
 func _on_travel_complete() -> void:
