@@ -165,12 +165,11 @@ theme_override_constants/separation = 2
 
 [node name="InfoBar" type="PanelContainer" parent="." unique_id=234567890]
 layout_mode = 1
-anchor_left = 0.0
+anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 228.0
-offset_top = 0.0
 offset_right = -8.0
 offset_bottom = -8.0
 grow_vertical = 0
@@ -183,23 +182,21 @@ mouse_filter = 2
 theme_override_constants/separation = 8
 
 [node name="NewsBanner" type="Label" parent="InfoBar/InfoBarBox" unique_id=456789012]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
-visible = false
 theme_override_colors/font_color = Color(1, 0.9, 0.3, 1)
 theme_override_font_sizes/font_size = 12
-text = ""
 
 [node name="HeaderSpacer" type="Control" parent="InfoBar/InfoBarBox" unique_id=567890123]
 layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="QuestLabel" type="Label" parent="InfoBar/InfoBarBox" unique_id=678901234]
-layout_mode = 2
 visible = false
+layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.85, 0.25, 1)
 theme_override_font_sizes/font_size = 12
-text = ""
 
 [node name="GoalLabel" type="Label" parent="InfoBar/InfoBarBox" unique_id=789012345]
 layout_mode = 2

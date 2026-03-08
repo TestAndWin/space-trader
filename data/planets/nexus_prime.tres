@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="PlanetData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PlanetData" format=3 uid="uid://b6i654fjfpdfa"]
 
-[ext_resource type="Script" path="res://scripts/resources/planet_data.gd" id="1_np7"]
+[ext_resource type="Script" uid="uid://dveaw0qgbnqge" path="res://scripts/resources/planet_data.gd" id="1_np7"]
 
 [resource]
 script = ExtResource("1_np7")
@@ -10,4 +10,13 @@ description = "Advanced research facility."
 map_position = Vector2(350, 150)
 danger_level = 2
 connected_planets = Array[String](["Forge World", "Nova Station"])
-image_hotspots = {"casino": Rect2(380, 380, 90, 70), "crew": Rect2(390, 50, 170, 70), "deck": Rect2(1050, 420, 150, 50), "depart": Rect2(120, 155, 120, 50), "market": Rect2(500, 230, 150, 55), "mission": Rect2(950, 200, 170, 50), "quest": Rect2(790, 180, 100, 30), "shipyard": Rect2(35, 370, 295, 100)}
+image_hotspots = {
+"casino": Rect2(380, 380, 90, 70),
+"crew": Rect2(390, 50, 170, 70),
+"deck": Rect2(1050, 420, 150, 50),
+"depart": Rect2(120, 155, 120, 50),
+"market": Rect2(500, 230, 150, 55),
+"mission": Rect2(950, 200, 170, 50),
+"quest": Rect2(790, 180, 100, 30),
+"shipyard": Rect2(35, 370, 295, 100)
+}

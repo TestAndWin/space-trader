@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="PlanetData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PlanetData" format=3 uid="uid://ur6y01jmngha"]
 
-[ext_resource type="Script" path="res://scripts/resources/planet_data.gd" id="1_gr3"]
+[ext_resource type="Script" uid="uid://dveaw0qgbnqge" path="res://scripts/resources/planet_data.gd" id="1_gr3"]
 
 [resource]
 script = ExtResource("1_gr3")
@@ -8,6 +8,13 @@ planet_name = "Green Reach"
 planet_type = 1
 description = "Lush farming colonies."
 map_position = Vector2(900, 400)
-danger_level = 1
 connected_planets = Array[String](["Starport Alpha", "Iron Belt"])
-image_hotspots = {"casino": Rect2(670, 350, 110, 70), "crew": Rect2(950, 390, 120, 60), "deck": Rect2(1030, 95, 110, 70), "depart": Rect2(820, 550, 220, 120), "market": Rect2(50, 430, 200, 90), "quest": Rect2(750, 190, 140, 70), "shipyard": Rect2(380, 380, 160, 70)}
+image_hotspots = {
+"casino": Rect2(670, 350, 110, 70),
+"crew": Rect2(950, 390, 120, 60),
+"deck": Rect2(1030, 95, 110, 70),
+"depart": Rect2(820, 550, 220, 120),
+"market": Rect2(50, 430, 200, 90),
+"quest": Rect2(750, 190, 140, 70),
+"shipyard": Rect2(380, 380, 160, 70)
+}

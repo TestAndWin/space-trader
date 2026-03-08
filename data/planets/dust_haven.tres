@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="PlanetData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PlanetData" format=3 uid="uid://c72rbmi20gukd"]
 
-[ext_resource type="Script" path="res://scripts/resources/planet_data.gd" id="1_dh4"]
+[ext_resource type="Script" uid="uid://dveaw0qgbnqge" path="res://scripts/resources/planet_data.gd" id="1_dh4"]
 
 [resource]
 script = ExtResource("1_dh4")
@@ -10,4 +10,11 @@ description = "A dusty mining outpost."
 map_position = Vector2(700, 250)
 danger_level = 3
 connected_planets = Array[String](["Nova Station", "Iron Belt"])
-image_hotspots = {"crew": Rect2(760, 350, 130, 70), "deck": Rect2(990, 460, 170, 75), "depart": Rect2(1100, 70, 130, 60), "market": Rect2(560, 240, 210, 75), "quest": Rect2(640, 80, 180, 90), "shipyard": Rect2(30, 330, 170, 70)}
+image_hotspots = {
+"crew": Rect2(760, 350, 130, 70),
+"deck": Rect2(990, 460, 170, 75),
+"depart": Rect2(1100, 70, 130, 60),
+"market": Rect2(560, 240, 210, 75),
+"quest": Rect2(640, 80, 180, 90),
+"shipyard": Rect2(30, 330, 170, 70)
+}

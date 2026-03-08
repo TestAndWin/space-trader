@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="PlanetData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PlanetData" format=3 uid="uid://hnca66qpulb6"]
 
-[ext_resource type="Script" path="res://scripts/resources/planet_data.gd" id="1_ib5"]
+[ext_resource type="Script" uid="uid://dveaw0qgbnqge" path="res://scripts/resources/planet_data.gd" id="1_ib5"]
 
 [resource]
 script = ExtResource("1_ib5")
@@ -10,4 +10,11 @@ description = "Asteroid mining operations."
 map_position = Vector2(850, 300)
 danger_level = 2
 connected_planets = Array[String](["Green Reach", "Dust Haven"])
-image_hotspots = {"crew": Rect2(750, 350, 220, 140), "deck": Rect2(960, 460, 200, 100), "depart": Rect2(1100, 70, 230, 90), "market": Rect2(560, 240, 200, 90), "quest": Rect2(640, 80, 180, 90), "shipyard": Rect2(30, 330, 210, 100)}
+image_hotspots = {
+"crew": Rect2(750, 350, 150, 60),
+"deck": Rect2(990, 470, 150, 60),
+"depart": Rect2(1100, 70, 140, 50),
+"market": Rect2(560, 240, 205, 65),
+"quest": Rect2(640, 80, 180, 90),
+"shipyard": Rect2(30, 330, 160, 70)
+}

@@ -58,6 +58,10 @@ const STARFIELD_Z_NEAR: float = 2.0
 const STARFIELD_Z_FAR: float = -350.0
 const WARP_EXIT_START_PROGRESS: float = 0.84
 const WARP_EXIT_DURATION: float = 0.55
+const PLANET_TARGET_Z_BASE: float = -44.0
+const PLANET_TARGET_Z_DANGER_STEP: float = 2.0
+const PLANET_END_Y: float = -0.9
+const PLANET_END_SCALE: float = 1.08
 
 @onready var viewport: SubViewport = $TravelViewport/SubViewport
 @onready var world_environment: WorldEnvironment = $TravelViewport/SubViewport/TravelWorld/WorldEnvironment
@@ -349,7 +353,7 @@ func _build_destination_planet(dest_type: int, warp_color: Color) -> void:
 	var danger_level: int = 1
 	if planet_data:
 		danger_level = planet_data.danger_level
-	_planet_target_z = -32.0 - float(danger_level) * 2.8
+	_planet_target_z = PLANET_TARGET_Z_BASE - float(danger_level) * PLANET_TARGET_Z_DANGER_STEP
 	_travel_duration = 4.2 + float(maxi(0, danger_level - 1)) * 0.15
 
 	var body := MeshInstance3D.new()
@@ -409,10 +413,10 @@ func _animate_planet(delta: float, progress: float) -> void:
 	if not _planet_root:
 		return
 	_planet_root.position.z = lerpf(_planet_start_z, _planet_target_z, progress)
-	_planet_root.position.y = lerpf(-1.9, -0.55, progress)
+	_planet_root.position.y = lerpf(-1.9, PLANET_END_Y, progress)
 	_planet_root.rotation.y += delta * 0.08
 	_planet_root.rotation.x = sin(_flight_elapsed * 0.35) * 0.04
-	var planet_scale := lerpf(0.42, 1.55, progress)
+	var planet_scale := lerpf(0.42, PLANET_END_SCALE, progress)
 	_planet_root.scale = Vector3.ONE * planet_scale
 	if _planet_material:
 		_planet_material.emission_energy_multiplier = lerpf(0.4, 1.2, progress)
@@ -434,7 +438,7 @@ func _animate_camera(progress: float, approach_progress: float) -> void:
 	
 	var orbital_x := sin(_flight_elapsed * 0.8) * 0.35 * shake_intensity
 	var orbital_y := cos(_flight_elapsed * 1.1) * 0.28 * shake_intensity
-	var cam_z := lerpf(0.35, 2.35, pow(approach_progress, 1.75))
+	var cam_z := lerpf(0.35, 2.75, pow(approach_progress, 1.75))
 	
 	travel_camera.position = Vector3(
 		orbital_x,
@@ -444,7 +448,7 @@ func _animate_camera(progress: float, approach_progress: float) -> void:
 	
 	var look_target := Vector3(0.0, 0.0, -60.0)
 	if _planet_root:
-		look_target = _planet_root.global_position + Vector3(0.0, 0.8, -6.0)
+		look_target = _planet_root.global_position + Vector3(0.0, 0.55, -10.0)
 	travel_camera.look_at(look_target, Vector3.UP)
 
 

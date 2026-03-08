@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="PlanetData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PlanetData" format=3 uid="uid://qo0csavyaj0l"]
 
-[ext_resource type="Script" path="res://scripts/resources/planet_data.gd" id="1_ns6"]
+[ext_resource type="Script" uid="uid://dveaw0qgbnqge" path="res://scripts/resources/planet_data.gd" id="1_ns6"]
 
 [resource]
 script = ExtResource("1_ns6")
@@ -10,4 +10,13 @@ description = "A lawless space station. Contraband welcome."
 map_position = Vector2(500, 150)
 danger_level = 4
 connected_planets = Array[String](["Nexus Prime", "Dust Haven"])
-image_hotspots = {"casino": Rect2(700, 305, 120, 50), "crew": Rect2(480, 30, 150, 70), "deck": Rect2(815, 115, 100, 35), "depart": Rect2(1000, 50, 210, 45), "market": Rect2(470, 250, 160, 80), "mission": Rect2(1030, 400, 215, 80), "quest": Rect2(1125, 285, 125, 60), "shipyard": Rect2(60, 295, 280, 80)}
+image_hotspots = {
+"casino": Rect2(700, 305, 120, 50),
+"crew": Rect2(480, 30, 150, 70),
+"deck": Rect2(815, 115, 100, 35),
+"depart": Rect2(1000, 50, 210, 45),
+"market": Rect2(470, 250, 160, 80),
+"mission": Rect2(1030, 400, 215, 80),
+"quest": Rect2(1125, 285, 125, 60),
+"shipyard": Rect2(60, 295, 280, 80)
+}

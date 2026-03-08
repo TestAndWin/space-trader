@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="PlanetData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PlanetData" format=3 uid="uid://d4l20ioinsg7b"]
 
-[ext_resource type="Script" path="res://scripts/resources/planet_data.gd" id="1_sa1"]
+[ext_resource type="Script" uid="uid://dveaw0qgbnqge" path="res://scripts/resources/planet_data.gd" id="1_sa1"]
 
 [resource]
 script = ExtResource("1_sa1")
@@ -8,6 +8,14 @@ planet_name = "Starport Alpha"
 planet_type = 3
 description = "A bustling tech hub and your home port."
 map_position = Vector2(640, 550)
-danger_level = 1
 connected_planets = Array[String](["Forge World", "Green Reach"])
-image_hotspots = {"market": Rect2(170, 350, 170, 90), "mission": Rect2(675, 355, 155, 45), "depart": Rect2(60, 170, 190, 50), "casino": Rect2(490, 190, 95, 60), "crew": Rect2(810, 220, 120, 60), "deck": Rect2(675, 500, 230, 95), "shipyard": Rect2(425, 300, 110, 80), "quest": Rect2(1040, 295, 240, 60)}
+image_hotspots = {
+"casino": Rect2(490, 190, 95, 60),
+"crew": Rect2(810, 220, 120, 60),
+"deck": Rect2(675, 500, 230, 95),
+"depart": Rect2(60, 170, 190, 50),
+"market": Rect2(170, 350, 170, 90),
+"mission": Rect2(675, 355, 155, 45),
+"quest": Rect2(1040, 295, 240, 60),
+"shipyard": Rect2(425, 300, 110, 80)
+}

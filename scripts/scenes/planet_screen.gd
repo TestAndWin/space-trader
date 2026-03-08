@@ -34,7 +34,7 @@ var _news_full_text: String = ""
 var _quest_full_text: String = ""
 
 @onready var planet_name_label := $VBoxContainer/PlanetNameLabel
-@onready var info_bar_box := $InfoBar/InfoBarBox
+@onready var info_bar_box: HBoxContainer = $InfoBar/InfoBarBox
 @onready var header_spacer: Control = $InfoBar/InfoBarBox/HeaderSpacer
 @onready var news_banner := $InfoBar/InfoBarBox/NewsBanner
 @onready var quest_label := $InfoBar/InfoBarBox/QuestLabel
@@ -278,7 +278,7 @@ func _rebuild_hub_buildings() -> void:
 	var states := _get_building_states()
 	var hotspot_node := get_node_or_null("ImageHotspots")
 	if hotspot_node:
-		hotspot_node.free()
+		hotspot_node.queue_free()
 		_create_image_hotspots(states)
 
 
@@ -357,7 +357,8 @@ func _animate_hotspot_dots(container: Control) -> void:
 				glows.append(child)
 
 	# Initial flash: briefly highlight all hotspots then fade
-	for i: int in dots.size():
+	var pair_count: int = mini(dots.size(), glows.size())
+	for i: int in pair_count:
 		var dot: ColorRect = dots[i]
 		var glow: ColorRect = glows[i]
 		# Flash bright
@@ -370,28 +371,41 @@ func _animate_hotspot_dots(container: Control) -> void:
 	var tween := create_tween()
 	tween.tween_interval(0.6)
 	tween.tween_callback(func() -> void:
-		for i: int in dots.size():
+		if not is_instance_valid(container):
+			return
+		for i: int in pair_count:
 			var glow: ColorRect = glows[i]
-			glow.size = Vector2(16, 16)
-			glow.position += Vector2(4, 4)
-		_start_pulse_loop(dots, glows)
+			if is_instance_valid(glow):
+				glow.size = Vector2(16, 16)
+				glow.position += Vector2(4, 4)
+		_start_pulse_loop(container, dots, glows)
 	)
 
 
-func _start_pulse_loop(dots: Array[ColorRect], glows: Array[ColorRect]) -> void:
+func _start_pulse_loop(container: Control, dots: Array[ColorRect], glows: Array[ColorRect]) -> void:
 	var tween := create_tween().set_loops()
 	tween.tween_method(func(t: float) -> void:
+		if not is_instance_valid(container):
+			tween.kill()
+			return
 		var alpha: float = 0.3 + sin(t * TAU) * 0.3
 		var glow_alpha: float = 0.1 + sin(t * TAU) * 0.15
 		var glow_scale: float = 1.0 + sin(t * TAU) * 0.3
+		var has_live_nodes: bool = false
 		for dot: ColorRect in dots:
-			dot.color = Color(0.0, 0.8, 1.0, alpha)
+			if is_instance_valid(dot):
+				dot.color = Color(0.0, 0.8, 1.0, alpha)
+				has_live_nodes = true
 		for glow: ColorRect in glows:
-			glow.color = Color(0.0, 0.8, 1.0, glow_alpha)
-			var center: Vector2 = glow.position + glow.size * 0.5
-			var new_size: float = 16.0 * glow_scale
-			glow.size = Vector2(new_size, new_size)
-			glow.position = center - glow.size * 0.5
+			if is_instance_valid(glow):
+				glow.color = Color(0.0, 0.8, 1.0, glow_alpha)
+				var center: Vector2 = glow.position + glow.size * 0.5
+				var new_size: float = 16.0 * glow_scale
+				glow.size = Vector2(new_size, new_size)
+				glow.position = center - glow.size * 0.5
+				has_live_nodes = true
+		if not has_live_nodes:
+			tween.kill()
 	, 0.0, 1.0, 2.0)
 
 
@@ -435,7 +449,7 @@ func _make_bar_fill_style(fill_color: Color) -> StyleBoxFlat:
 
 func _style_info_bar() -> void:
 	$InfoBar.add_theme_stylebox_override("panel", _make_holo_panel_style())
-	header_spacer.visible = false
+	header_spacer.visible = true
 
 
 func _style_ship_panel() -> void:
@@ -565,7 +579,7 @@ func _update_ui() -> void:
 		goal_label.text = "GOAL REACHED!"
 		goal_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
 	else:
-		goal_label.text = "%d/%dcr | %d/%dp" % [mini(GameManager.credits, GameManager.WIN_CREDITS), GameManager.WIN_CREDITS, planets_visited, GameManager.WIN_PLANETS]
+		goal_label.text = "%d/%d cr | %d/%d planets" % [mini(GameManager.credits, GameManager.WIN_CREDITS), GameManager.WIN_CREDITS, planets_visited, GameManager.WIN_PLANETS]
 		var credit_progress: float = clampf(float(GameManager.credits) / float(GameManager.WIN_CREDITS), 0.0, 1.0)
 		var planet_progress: float = clampf(float(planets_visited) / float(GameManager.WIN_PLANETS), 0.0, 1.0)
 		var progress: float = (credit_progress + planet_progress) / 2.0
@@ -625,7 +639,7 @@ func _update_quest_label() -> void:
 		return
 	var q: Dictionary = QuestManager.current_quest
 	var trips_left: int = q.get("turns_left", 0)
-	_quest_full_text = "%dx %s -> %s | %dt" % [
+	_quest_full_text = "%dx %s -> %s | %d trips left" % [
 		q["deliver_qty"], q["deliver_good"], q["destination"], trips_left
 	]
 	if trips_left <= 1:
@@ -651,29 +665,29 @@ func _refresh_info_bar_text_layout() -> void:
 	var button_count: int = 0
 	for child in info_bar_box.get_children():
 		if child is Button and child.visible:
-			button_width += (child as Control).get_combined_minimum_size().x
+			button_width += float((child as Control).get_combined_minimum_size().x)
 			button_count += 1
 
 	var separator: float = float(info_bar_box.get_theme_constant("separation"))
-	var goal_width := _measure_label_text(goal_label, goal_label.text)
-	var reserved := button_width + goal_width + separator * float(button_count + 3) + 24.0
-	var available := info_bar_box.size.x - reserved
+	var goal_width: float = _measure_label_text(goal_label, goal_label.text)
+	var reserved: float = button_width + goal_width + separator * float(button_count + 3) + 24.0
+	var available: float = float(info_bar_box.size.x) - reserved
 
 	if available <= 0.0:
 		news_banner.text = ""
 		quest_label.visible = false
 		return
 
-	var show_news := _news_full_text != ""
-	var show_quest := _quest_full_text != ""
+	var show_news: bool = _news_full_text != ""
+	var show_quest: bool = _quest_full_text != ""
 	if not show_news:
 		news_banner.visible = false
 	if not show_quest:
 		quest_label.visible = false
 
 	if show_news and show_quest:
-		var quest_budget := clampf(available * 0.38, 100.0, 280.0)
-		var news_budget := available - quest_budget - separator
+		var quest_budget: float = clampf(available * 0.38, 100.0, 280.0)
+		var news_budget: float = available - quest_budget - separator
 		if news_budget < 120.0:
 			quest_budget = clampf(available * 0.30, 84.0, 220.0)
 			news_budget = available - quest_budget - separator
@@ -728,7 +742,6 @@ func _measure_label_text(label: Label, text: String) -> float:
 func _compact_news_text(text: String) -> String:
 	var compact := text
 	compact = compact.replace("encounter chance", "encounters")
-	compact = compact.replace("trips left", "trips")
 	return compact
 
 
@@ -866,6 +879,7 @@ func _add_header_buttons() -> void:
 
 	var menu_btn := _create_small_header_button("Menu", _on_menu_pressed)
 	header.add_child(menu_btn)
+	header.move_child(header_spacer, header.get_child_count() - 3)
 	_refresh_info_bar_text_layout()
 
 
