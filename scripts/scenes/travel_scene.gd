@@ -29,6 +29,8 @@ var _dust_parallax: Array = []
 var _planet_root: Node3D
 var _planet_material: StandardMaterial3D
 var _planet_atmo_material: StandardMaterial3D
+var _planet_cloud_layer: MeshInstance3D
+var _planet_cloud_material: StandardMaterial3D
 var _warp_exit_wave: MeshInstance3D
 var _warp_exit_wave_material: StandardMaterial3D
 var _arrival_flash_overlay: ColorRect
@@ -62,6 +64,9 @@ const PLANET_TARGET_Z_BASE: float = -44.0
 const PLANET_TARGET_Z_DANGER_STEP: float = 2.0
 const PLANET_END_Y: float = -0.9
 const PLANET_END_SCALE: float = 1.08
+const PLANET_START_SCALE: float = 0.462  # 10% larger than previous 0.42 start
+const PLANET_TEX_WIDTH: int = 384
+const PLANET_TEX_HEIGHT: int = 192
 
 @onready var viewport: SubViewport = $TravelViewport/SubViewport
 @onready var world_environment: WorldEnvironment = $TravelViewport/SubViewport/TravelWorld/WorldEnvironment
@@ -347,6 +352,7 @@ func _build_destination_planet(dest_type: int, warp_color: Color) -> void:
 
 	_planet_root = Node3D.new()
 	_planet_root.position = Vector3(0.0, -1.9, _planet_start_z)
+	_planet_root.scale = Vector3.ONE * PLANET_START_SCALE
 	planet_container.add_child(_planet_root)
 
 	var planet_data := EconomyManager.get_planet_data(destination_planet)
@@ -371,8 +377,29 @@ func _build_destination_planet(dest_type: int, warp_color: Color) -> void:
 	_planet_material.emission_enabled = true
 	_planet_material.emission = Color(warp_color.r * 0.15, warp_color.g * 0.15, warp_color.b * 0.18)
 	_planet_material.emission_energy_multiplier = 0.4
+	var planet_seed: int = int(destination_planet.hash())
+	_planet_material.albedo_texture = _generate_planet_surface_texture(dest_type, planet_seed)
 	body.material_override = _planet_material
 	_planet_root.add_child(body)
+
+	_planet_cloud_layer = MeshInstance3D.new()
+	var cloud_mesh := SphereMesh.new()
+	cloud_mesh.radius = 11.2
+	cloud_mesh.height = 22.4
+	cloud_mesh.radial_segments = 64
+	cloud_mesh.rings = 28
+	_planet_cloud_layer.mesh = cloud_mesh
+	_planet_cloud_material = StandardMaterial3D.new()
+	_planet_cloud_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_planet_cloud_material.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+	_planet_cloud_material.albedo_color = Color(1.0, 1.0, 1.0, 0.23)
+	_planet_cloud_material.albedo_texture = _generate_planet_cloud_texture(planet_seed + 911)
+	_planet_cloud_material.roughness = 1.0
+	_planet_cloud_material.emission_enabled = true
+	_planet_cloud_material.emission = Color(warp_color.r * 0.18 + 0.08, warp_color.g * 0.18 + 0.08, warp_color.b * 0.2 + 0.08)
+	_planet_cloud_material.emission_energy_multiplier = 0.12
+	_planet_cloud_layer.material_override = _planet_cloud_material
+	_planet_root.add_child(_planet_cloud_layer)
 
 	var atmo := MeshInstance3D.new()
 	var atmo_mesh := SphereMesh.new()
@@ -409,6 +436,115 @@ func _build_destination_planet(dest_type: int, warp_color: Color) -> void:
 		_planet_root.add_child(ring)
 
 
+func _generate_planet_surface_texture(dest_type: int, seed: int) -> Texture2D:
+	var image: Image = Image.create(PLANET_TEX_WIDTH, PLANET_TEX_HEIGHT, false, Image.FORMAT_RGBA8)
+	var base_color: Color = PLANET_SURFACE_COLORS.get(dest_type, PLANET_SURFACE_COLORS[3])
+	var ocean_color: Color = base_color.darkened(0.46).lerp(Color(0.08, 0.2, 0.35), 0.45)
+	var land_color: Color = base_color.lightened(0.08)
+	var highland_color: Color = base_color.lightened(0.22)
+	var arid_color: Color = base_color.lerp(Color(0.78, 0.64, 0.38), 0.58)
+
+	var continent_noise := FastNoiseLite.new()
+	continent_noise.seed = seed
+	continent_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	continent_noise.frequency = 1.25
+	continent_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	continent_noise.fractal_octaves = 5
+	continent_noise.fractal_gain = 0.52
+
+	var detail_noise := FastNoiseLite.new()
+	detail_noise.seed = seed + 173
+	detail_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	detail_noise.frequency = 4.2
+	detail_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	detail_noise.fractal_octaves = 3
+	detail_noise.fractal_gain = 0.6
+
+	var humidity_noise := FastNoiseLite.new()
+	humidity_noise.seed = seed + 331
+	humidity_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	humidity_noise.frequency = 2.35
+
+	var sea_level: float = -0.06
+	if dest_type == 1:
+		sea_level = -0.01
+	elif dest_type == 4:
+		sea_level = -0.14
+
+	for y: int in PLANET_TEX_HEIGHT:
+		var v: float = float(y) / float(PLANET_TEX_HEIGHT - 1)
+		var polar: float = absf(v * 2.0 - 1.0)
+		for x: int in PLANET_TEX_WIDTH:
+			var u: float = float(x) / float(PLANET_TEX_WIDTH - 1)
+			var continents: float = continent_noise.get_noise_2d(u * 3.8, v * 1.9)
+			var detail: float = detail_noise.get_noise_2d(u * 9.5, v * 4.75)
+			var humidity: float = humidity_noise.get_noise_2d(u * 5.3 + 7.0, v * 2.4 - 3.5)
+			var elevation: float = continents * 0.8 + detail * 0.24
+
+			var px_color: Color
+			if elevation < sea_level:
+				var depth_t: float = clampf((sea_level - elevation) / 0.9, 0.0, 1.0)
+				px_color = ocean_color.darkened(depth_t * 0.45)
+			else:
+				var land_t: float = clampf((elevation - sea_level) / 0.9, 0.0, 1.0)
+				px_color = land_color.lerp(highland_color, land_t)
+				if humidity < -0.12:
+					px_color = px_color.lerp(arid_color, 0.35)
+				if elevation > sea_level + 0.48:
+					px_color = px_color.lightened(0.14)
+
+			var ice_t: float = _smoothstep(clampf((polar - 0.74) / 0.26, 0.0, 1.0))
+			if ice_t > 0.0:
+				px_color = px_color.lerp(Color(0.9, 0.96, 1.0), ice_t * 0.75)
+
+			# Mild day/night sweep in UV-space for stronger spherical depth cues.
+			var daylight: float = 0.78 + clampf(cos((u - 0.24) * TAU) * 0.2, -0.22, 0.22)
+			px_color *= daylight
+			image.set_pixel(x, y, Color(px_color.r, px_color.g, px_color.b, 1.0))
+
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
+
+
+func _generate_planet_cloud_texture(seed: int) -> Texture2D:
+	var image: Image = Image.create(PLANET_TEX_WIDTH, PLANET_TEX_HEIGHT, false, Image.FORMAT_RGBA8)
+
+	var cloud_noise := FastNoiseLite.new()
+	cloud_noise.seed = seed
+	cloud_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	cloud_noise.frequency = 2.1
+	cloud_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	cloud_noise.fractal_octaves = 5
+	cloud_noise.fractal_gain = 0.58
+
+	var wisp_noise := FastNoiseLite.new()
+	wisp_noise.seed = seed + 97
+	wisp_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	wisp_noise.frequency = 6.4
+	wisp_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	wisp_noise.fractal_octaves = 2
+	wisp_noise.fractal_gain = 0.5
+
+	for y: int in PLANET_TEX_HEIGHT:
+		var v: float = float(y) / float(PLANET_TEX_HEIGHT - 1)
+		var polar: float = absf(v * 2.0 - 1.0)
+		for x: int in PLANET_TEX_WIDTH:
+			var u: float = float(x) / float(PLANET_TEX_WIDTH - 1)
+			var base_n: float = cloud_noise.get_noise_2d(u * 5.4, v * 2.5)
+			var wisp_n: float = wisp_noise.get_noise_2d(u * 12.0, v * 5.7)
+			var density: float = base_n * 0.78 + wisp_n * 0.22
+			if density > 0.08:
+				var alpha: float = pow(clampf((density - 0.08) / 0.62, 0.0, 1.0), 1.45) * 0.72
+				var polar_fade: float = _smoothstep(clampf((polar - 0.88) / 0.12, 0.0, 1.0))
+				alpha *= 1.0 - polar_fade * 0.65
+				image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+			else:
+				image.set_pixel(x, y, Color(0.0, 0.0, 0.0, 0.0))
+
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
+
+
 func _animate_planet(delta: float, progress: float) -> void:
 	if not _planet_root:
 		return
@@ -416,10 +552,14 @@ func _animate_planet(delta: float, progress: float) -> void:
 	_planet_root.position.y = lerpf(-1.9, PLANET_END_Y, progress)
 	_planet_root.rotation.y += delta * 0.08
 	_planet_root.rotation.x = sin(_flight_elapsed * 0.35) * 0.04
-	var planet_scale := lerpf(0.42, PLANET_END_SCALE, progress)
+	var planet_scale := lerpf(PLANET_START_SCALE, PLANET_END_SCALE, progress)
 	_planet_root.scale = Vector3.ONE * planet_scale
 	if _planet_material:
 		_planet_material.emission_energy_multiplier = lerpf(0.4, 1.2, progress)
+	if _planet_cloud_layer:
+		_planet_cloud_layer.rotation.y -= delta * 0.11
+	if _planet_cloud_material:
+		_planet_cloud_material.albedo_color = Color(1.0, 1.0, 1.0, lerpf(0.2, 0.32, progress))
 	if _planet_atmo_material:
 		_planet_atmo_material.albedo_color = Color(_warp_color.r, _warp_color.g, _warp_color.b, lerpf(0.24, 0.42, progress))
 

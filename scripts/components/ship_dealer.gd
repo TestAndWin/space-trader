@@ -154,15 +154,11 @@ func _build_ui() -> void:
 	avail_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	right_col.add_child(avail_header)
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	right_col.add_child(scroll)
-
 	_ship_list_container = VBoxContainer.new()
+	_ship_list_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_ship_list_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_ship_list_container.add_theme_constant_override("separation", 8)
-	scroll.add_child(_ship_list_container)
+	_ship_list_container.add_theme_constant_override("separation", 4)
+	right_col.add_child(_ship_list_container)
 
 
 func _build_current_ship_panel() -> PanelContainer:
@@ -299,11 +295,11 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 		card_style.shadow_size = 4
 
 	card_style.set_corner_radius_all(8)
-	card_style.set_content_margin_all(12)
+	card_style.set_content_margin_all(8)
 	card.add_theme_stylebox_override("panel", card_style)
 
 	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 14)
+	hbox.add_theme_constant_override("separation", 10)
 	card.add_child(hbox)
 
 	# Ship preview — larger in showroom
@@ -321,14 +317,14 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 	hbox.add_child(preview_container)
 
 	var ship_preview := ShipDisplayScene.instantiate()
-	ship_preview.custom_minimum_size = Vector2(100, 100)
+	ship_preview.custom_minimum_size = Vector2(70, 70)
 	preview_container.add_child(ship_preview)
 	ship_preview.update_ship(1.0, 0.5, 0, ship.base_cargo_capacity, ship.hull_shape)
 
 	# Info column
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info.add_theme_constant_override("separation", 3)
+	info.add_theme_constant_override("separation", 1)
 	hbox.add_child(info)
 
 	var name_lbl := Label.new()
