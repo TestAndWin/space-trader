@@ -29,7 +29,7 @@ const ENEMY_FIRE_INTERVAL: float = 1.5
 const AREA_LEFT: float = 100.0
 const AREA_RIGHT: float = 1180.0
 const AREA_TOP: float = 60.0
-const AREA_BOTTOM: float = 650.0
+const AREA_BOTTOM: float = 560.0
 
 var _player_x: float = 640.0
 var _player_lives: int = 3

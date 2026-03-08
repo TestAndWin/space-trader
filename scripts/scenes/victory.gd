@@ -17,4 +17,6 @@ func _ready() -> void:
 
 
 func _on_main_menu_pressed() -> void:
+	SaveManager.delete_save()
+	GameManager.reset()
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")

@@ -64,7 +64,7 @@ const PLANET_TARGET_Z_BASE: float = -44.0
 const PLANET_TARGET_Z_DANGER_STEP: float = 2.0
 const PLANET_END_Y: float = -0.9
 const PLANET_END_SCALE: float = 1.08
-const PLANET_START_SCALE: float = 0.462  # 10% larger than previous 0.42 start
+const PLANET_START_SCALE: float = 2.5
 const PLANET_TEX_WIDTH: int = 384
 const PLANET_TEX_HEIGHT: int = 192
 

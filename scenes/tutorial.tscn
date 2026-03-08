@@ -71,6 +71,42 @@ size_flags_horizontal = 3
 mouse_filter = 2
 theme_override_constants/separation = 16
 
+[node name="GoalSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/GoalSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1.0, 0.9, 0.25, 1)
+text = "Your Goal"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/GoalSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Accumulate 8000 credits AND visit all 7 planets to win the game. Trade goods, complete quests, win battles, and explore the galaxy to reach your goal. If your hull reaches zero, the game is over."
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="PlanetScreenSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/PlanetScreenSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.0, 0.85, 0.95, 1)
+text = "Planet View"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/PlanetScreenSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Each planet has a city map with clickable buildings. Click on a building to open it. Available buildings vary by planet type: Market (buy/sell goods), Shipyard (repairs, upgrades, new ships), Casino (gamble for credits), Crew (recruit crew members), Quest Board (accept delivery missions), Armory (view your deck), and Starport (depart to another planet). Some buildings are only available on certain planet types."
+autowrap_mode = 3
+mouse_filter = 2
+
 [node name="TradingSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
 layout_mode = 2
 mouse_filter = 2
@@ -125,6 +161,24 @@ text = "When you encounter enemies, you fight using cards. Each turn you draw ca
 autowrap_mode = 3
 mouse_filter = 2
 
+[node name="CrewSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CrewSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.6, 0.4, 1.0, 1)
+text = "Crew"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CrewSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Recruit up to 3 crew members at the Crew building on each planet. Each crew member provides a passive bonus: reduced encounter chance, attack bonus in combat, hull regeneration on arrival, better sell prices, smuggle protection against fines, or increased max hull. Different crew are available depending on the planet type. You can dismiss crew to make room for new ones."
+autowrap_mode = 3
+mouse_filter = 2
+
 [node name="UpgradesSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
 layout_mode = 2
 mouse_filter = 2
@@ -139,7 +193,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/UpgradesSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Visit the Upgrades shop on planets to improve your ship. Upgrades can increase hull, shields, cargo capacity, or add new cards to your deck. Different planet types offer different upgrades - Tech planets have the widest selection."
+text = "Visit the Shipyard to repair your hull, improve your ship stats, or buy a new ship entirely. Upgrades can increase hull, shields, cargo capacity, energy, or add new cards to your deck. The Ship Dealer lets you trade in your current ship for a different model with unique stats and bonuses."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -175,7 +229,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TipsSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Start by trading between nearby safe planets to build credits. Buy upgrades early to make combat easier. Keep some credits in reserve for repairs. Build your deck strategically - too many cards dilute your best ones."
+text = "Start by trading between nearby safe planets to build credits. Buy upgrades early to make combat easier. Keep some credits in reserve for repairs. Build your deck strategically - too many cards dilute your best ones. Recruit crew early for their passive bonuses."
 autowrap_mode = 3
 mouse_filter = 2
 
