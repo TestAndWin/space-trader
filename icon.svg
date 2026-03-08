@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0a1628"/>
+      <stop offset="100%" stop-color="#020810"/>
+    </radialGradient>
+    <radialGradient id="planet" cx="40%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#1a6b8a"/>
+      <stop offset="100%" stop-color="#0d3448"/>
+    </radialGradient>
+    <linearGradient id="ship_body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5adf5a"/>
+      <stop offset="100%" stop-color="#1a8a2a"/>
+    </linearGradient>
+    <linearGradient id="engine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffdd44"/>
+      <stop offset="100%" stop-color="#ff8800"/>
+    </linearGradient>
+    <linearGradient id="coin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe566"/>
+      <stop offset="100%" stop-color="#cc9900"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="128" height="128" rx="16" fill="url(#bg)"/>
+
+  <!-- Stars -->
+  <circle cx="15" cy="12" r="1.2" fill="#ffffff" opacity="0.9"/>
+  <circle cx="108" cy="18" r="0.9" fill="#ffffff" opacity="0.7"/>
+  <circle cx="45" cy="8" r="0.8" fill="#88ccff" opacity="0.6"/>
+  <circle cx="85" cy="25" r="1.0" fill="#ffffff" opacity="0.5"/>
+  <circle cx="22" cy="42" r="0.7" fill="#aaddff" opacity="0.6"/>
+  <circle cx="118" cy="55" r="1.1" fill="#ffffff" opacity="0.8"/>
+  <circle cx="8" cy="75" r="0.9" fill="#ffffff" opacity="0.5"/>
+  <circle cx="55" cy="118" r="0.8" fill="#88ccff" opacity="0.7"/>
+  <circle cx="100" cy="108" r="1.0" fill="#ffffff" opacity="0.6"/>
+  <circle cx="30" cy="105" r="0.7" fill="#ffffff" opacity="0.5"/>
+  <circle cx="75" cy="6" r="0.6" fill="#ffddaa" opacity="0.6"/>
+  <circle cx="120" cy="85" r="0.8" fill="#aaddff" opacity="0.5"/>
+
+  <!-- Planet (bottom right, partially visible) -->
+  <circle cx="100" cy="105" r="38" fill="url(#planet)" opacity="0.6"/>
+  <ellipse cx="100" cy="100" rx="38" ry="4" fill="#1a8aaa" opacity="0.25"/>
+  <ellipse cx="100" cy="108" rx="35" ry="3" fill="#0d5a6a" opacity="0.2"/>
+  <!-- Planet atmosphere glow -->
+  <circle cx="100" cy="105" r="40" fill="none" stroke="#22aacc" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Ship (center, pointing up-right) -->
+  <g transform="translate(48, 52) rotate(-25)">
+    <!-- Engine glow -->
+    <ellipse cx="0" cy="24" rx="5" ry="8" fill="#ff8800" opacity="0.35"/>
+    <ellipse cx="0" cy="22" rx="3" ry="6" fill="#ffdd44" opacity="0.5"/>
+
+    <!-- Ship hull -->
+    <polygon points="0,-28 14,12 8,18 -8,18 -14,12" fill="url(#ship_body)" stroke="#2aaa3a" stroke-width="1"/>
+
+    <!-- Cockpit -->
+    <ellipse cx="0" cy="-14" rx="4" ry="6" fill="#44ddff" opacity="0.85"/>
+    <ellipse cx="-1" cy="-16" rx="2" ry="3" fill="#aaeeff" opacity="0.6"/>
+
+    <!-- Wing accents -->
+    <line x1="-10" y1="8" x2="-16" y2="16" stroke="#2aaa3a" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="10" y1="8" x2="16" y2="16" stroke="#2aaa3a" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- Engine flames -->
+    <polygon points="-5,18 0,30 5,18" fill="url(#engine)" opacity="0.9"/>
+    <polygon points="-3,18 0,26 3,18" fill="#ffff88" opacity="0.7"/>
+  </g>
+
+  <!-- Credit coin (bottom left) -->
+  <g transform="translate(24, 96)">
+    <circle cx="0" cy="0" r="14" fill="url(#coin)" stroke="#aa7700" stroke-width="1.5"/>
+    <circle cx="0" cy="0" r="11" fill="none" stroke="#aa7700" stroke-width="0.8" opacity="0.5"/>
+    <!-- C symbol for credits -->
+    <text x="0" y="5" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="16" fill="#886600">C</text>
+    <!-- Coin shine -->
+    <ellipse cx="-4" cy="-5" rx="3" ry="5" fill="#ffffff" opacity="0.2" transform="rotate(-20)"/>
+  </g>
+
+  <!-- Title area - "ST" monogram -->
+  <text x="64" y="22" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="14" fill="#00ddff" opacity="0.7" letter-spacing="4">ST</text>
+
+  <!-- Subtle scan lines for retro feel -->
+  <line x1="0" y1="32" x2="128" y2="32" stroke="#22aacc" stroke-width="0.3" opacity="0.15"/>
+  <line x1="0" y1="64" x2="128" y2="64" stroke="#22aacc" stroke-width="0.3" opacity="0.15"/>
+  <line x1="0" y1="96" x2="128" y2="96" stroke="#22aacc" stroke-width="0.3" opacity="0.15"/>
+</svg>
