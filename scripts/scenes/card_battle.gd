@@ -33,7 +33,14 @@ var effective_energy_per_turn: int = 0
 func _ready() -> void:
 	encounter = GameManager.current_encounter
 	_style_battle_buttons()
-	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/bg_battle.png", 0.5, 1)
+	BackgroundUtils.add_fullscreen_background(
+		self,
+		"res://assets/sprites/bg_battle.png",
+		0.5,
+		1,
+		true,
+		TextureRect.STRETCH_SCALE
+	)
 	if encounter:
 		start_battle(encounter)
 

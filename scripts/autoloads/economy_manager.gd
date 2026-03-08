@@ -117,7 +117,8 @@ func get_buy_price(planet_name: String, good_name: String) -> int:
 			return -1
 	var base: int = price_table[planet_name][good_name]
 	var event_mod: float = EventManager.get_price_modifier(planet_name, good_name)
-	return max(1, int(round(base * event_mod)))
+	var rep_mod: float = GameManager.get_market_buy_modifier(planet_name)
+	return max(1, int(round(base * event_mod * rep_mod)))
 
 
 func get_sell_price(planet_name: String, good_name: String) -> int:
@@ -136,6 +137,7 @@ func get_sell_price(planet_name: String, good_name: String) -> int:
 	# Ship contraband bonus
 	if good_name in _contraband_goods:
 		base_sell *= (1.0 + GameManager.get_contraband_bonus())
+	base_sell *= GameManager.get_market_sell_modifier(planet_name)
 	return max(1, int(round(base_sell)))
 
 

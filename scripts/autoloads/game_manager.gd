@@ -65,9 +65,33 @@ var total_trades: int = 0
 var total_encounters_won: int = 0
 var total_flights: int = 0
 
+# Factions / reputation
+const FACTION_NEUTRAL := 0
+const REPUTATION_MIN := -100
+const REPUTATION_MAX := 100
+const FACTION_BY_PLANET_TYPE := {
+	0: "Consortium", # INDUSTRIAL
+	1: "Agri Union", # AGRICULTURAL
+	2: "Mining Guild", # MINING
+	3: "Helix Directorate", # TECH
+	4: "Free Cartel", # OUTLAW
+}
+var faction_reputation: Dictionary = {} # { faction_name: int }
+
+# Finance pressure
+const LOAN_DEFAULT_AMOUNT := 1000
+const LOAN_DEFAULT_TERM := 7
+const LOAN_DEFAULT_INTEREST := 0.08
+const LOAN_REPAY_CHUNK := 300
+var outstanding_debt: int = 0
+var debt_due_in_trips: int = 0
+var debt_interest_rate: float = 0.0
+var missed_debt_payments: int = 0
+
 
 func _ready() -> void:
 	BackgroundUtils.validate_required_backgrounds()
+	init_faction_reputation()
 	build_starter_deck()
 
 
@@ -96,6 +120,11 @@ func reset() -> void:
 	total_trades = 0
 	total_encounters_won = 0
 	total_flights = 0
+	init_faction_reputation()
+	outstanding_debt = 0
+	debt_due_in_trips = 0
+	debt_interest_rate = 0.0
+	missed_debt_payments = 0
 	current_encounter = null
 	battle_result = ""
 	last_cargo_lost_text = ""
@@ -107,7 +136,14 @@ func reset() -> void:
 	EventLog.clear()
 	EventLog.add_entry("Welcome to Starport Alpha. Your journey begins.")
 	QuestManager.current_quest.clear()
+	QuestManager.next_chain_id = 1
 	QuestManager.generate_quests()
+
+
+func init_faction_reputation() -> void:
+	faction_reputation.clear()
+	for faction in FACTION_BY_PLANET_TYPE.values():
+		faction_reputation[faction] = FACTION_NEUTRAL
 
 
 func build_starter_deck() -> void:
@@ -145,6 +181,162 @@ func remove_credits(amount: int) -> bool:
 	credits -= amount
 	credits_changed.emit(credits)
 	return true
+
+
+# ── Reputation ───────────────────────────────────────────────────────────────
+
+func get_planet_faction(planet_name: String) -> String:
+	var planet: Resource = EconomyManager.get_planet_data(planet_name)
+	if planet:
+		return FACTION_BY_PLANET_TYPE.get(planet.planet_type, "Independent")
+	return "Independent"
+
+
+func get_faction_reputation(faction_name: String) -> int:
+	return int(faction_reputation.get(faction_name, FACTION_NEUTRAL))
+
+
+func get_current_planet_reputation() -> int:
+	var faction: String = get_planet_faction(current_planet)
+	return get_faction_reputation(faction)
+
+
+func add_faction_reputation(faction_name: String, amount: int, reason: String = "") -> void:
+	if amount == 0:
+		return
+	var current_rep: int = get_faction_reputation(faction_name)
+	var new_rep: int = clampi(current_rep + amount, REPUTATION_MIN, REPUTATION_MAX)
+	faction_reputation[faction_name] = new_rep
+	if current_rep == new_rep:
+		return
+	if reason != "":
+		EventLog.add_entry("%s reputation %+d (%s)" % [faction_name, (new_rep - current_rep), reason])
+	else:
+		EventLog.add_entry("%s reputation %+d" % [faction_name, (new_rep - current_rep)])
+
+
+func get_market_buy_modifier(planet_name: String) -> float:
+	# Positive reputation gives better buy prices.
+	var rep: int = get_faction_reputation(get_planet_faction(planet_name))
+	return clampf(1.0 - float(rep) * 0.0012, 0.90, 1.15)
+
+
+func get_market_sell_modifier(planet_name: String) -> float:
+	# Positive reputation gives better sell prices.
+	var rep: int = get_faction_reputation(get_planet_faction(planet_name))
+	return clampf(1.0 + float(rep) * 0.0009, 0.88, 1.12)
+
+
+func get_local_encounter_modifier(planet_name: String) -> float:
+	# Bad local standing leads to more inspections; good standing lowers friction.
+	var rep: int = get_faction_reputation(get_planet_faction(planet_name))
+	return clampf(-float(rep) * 0.0007, -0.06, 0.07)
+
+
+# ── Finance pressure ─────────────────────────────────────────────────────────
+
+func has_active_loan() -> bool:
+	return outstanding_debt > 0
+
+
+func can_take_loan() -> bool:
+	return not has_active_loan()
+
+
+func take_loan(
+	amount: int = LOAN_DEFAULT_AMOUNT,
+	term_trips: int = LOAN_DEFAULT_TERM,
+	interest_rate: float = LOAN_DEFAULT_INTEREST
+) -> bool:
+	if has_active_loan():
+		return false
+	if amount <= 0 or term_trips <= 0:
+		return false
+	outstanding_debt = amount
+	debt_due_in_trips = term_trips
+	debt_interest_rate = maxf(interest_rate, 0.0)
+	missed_debt_payments = 0
+	add_credits(amount)
+	EventLog.add_entry("Loan approved: +%d cr, %d trips, %.0f%% interest/trip" % [
+		amount, term_trips, debt_interest_rate * 100.0
+	])
+	return true
+
+
+func repay_loan(amount: int) -> int:
+	if not has_active_loan():
+		return 0
+	var capped_amount: int = amount
+	if capped_amount < 0:
+		capped_amount = outstanding_debt
+	capped_amount = mini(capped_amount, outstanding_debt)
+	capped_amount = mini(capped_amount, credits)
+	if capped_amount <= 0:
+		return 0
+	remove_credits(capped_amount)
+	outstanding_debt -= capped_amount
+	if outstanding_debt <= 0:
+		outstanding_debt = 0
+		debt_due_in_trips = 0
+		debt_interest_rate = 0.0
+		missed_debt_payments = 0
+		EventLog.add_entry("Loan fully repaid.")
+	else:
+		EventLog.add_entry("Loan repayment: -%d cr (%d cr left)" % [capped_amount, outstanding_debt])
+	return capped_amount
+
+
+func process_loan_tick() -> void:
+	if not has_active_loan():
+		return
+	outstanding_debt = int(ceil(float(outstanding_debt) * (1.0 + debt_interest_rate)))
+	debt_due_in_trips = maxi(debt_due_in_trips - 1, 0)
+	if debt_due_in_trips > 0:
+		return
+
+	# Debt reached maturity: attempt automatic collection.
+	var collected: int = mini(credits, outstanding_debt)
+	if collected > 0:
+		remove_credits(collected)
+		outstanding_debt -= collected
+	if outstanding_debt <= 0:
+		outstanding_debt = 0
+		debt_interest_rate = 0.0
+		missed_debt_payments = 0
+		EventLog.add_entry("Loan auto-collected at maturity.")
+		return
+
+	missed_debt_payments += 1
+	debt_due_in_trips = 2
+	var hull_damage: int = 2 + missed_debt_payments * 2
+	current_hull = maxi(1, current_hull - hull_damage)
+	credits_changed.emit(credits)
+	EventLog.add_entry("Debt collectors hit you: Hull -%d, debt remaining %d cr" % [hull_damage, outstanding_debt])
+
+	# Missing payments hurts lawful factions.
+	for planet_type in [0, 1, 2, 3]:
+		var faction: String = FACTION_BY_PLANET_TYPE.get(planet_type, "")
+		if faction != "":
+			add_faction_reputation(faction, -1, "debt default")
+
+
+func get_debt_status_text() -> String:
+	if not has_active_loan():
+		return "Debt: none"
+	return "Debt: %d cr (%d trips)" % [outstanding_debt, debt_due_in_trips]
+
+
+func get_loan_repay_chunk() -> int:
+	return LOAN_REPAY_CHUNK
+
+
+func get_debt_risk_modifier() -> float:
+	if not has_active_loan():
+		return 0.0
+	var pressure: float = float(missed_debt_payments) * 0.02
+	if debt_due_in_trips <= 1:
+		pressure += 0.02
+	return clampf(pressure, 0.0, 0.10)
 
 
 # ── Cargo ────────────────────────────────────────────────────────────────────

@@ -20,6 +20,7 @@ func save_game() -> void:
 		"total_trades": GameManager.total_trades,
 		"total_encounters_won": GameManager.total_encounters_won,
 		"total_flights": GameManager.total_flights,
+		"faction_reputation": GameManager.faction_reputation.duplicate(),
 		"current_ship": GameManager.current_ship,
 		"installed_upgrades": GameManager.installed_upgrades.duplicate(),
 		"removed_cards": GameManager.removed_cards.duplicate(),
@@ -32,6 +33,11 @@ func save_game() -> void:
 		"event_manager": EventManager.save_data(),
 		"quest_current": QuestManager.current_quest.duplicate() if QuestManager.current_quest.size() > 0 else {},
 		"quest_available": QuestManager.available_quests.duplicate(true),
+		"quest_next_chain_id": QuestManager.next_chain_id,
+		"outstanding_debt": GameManager.outstanding_debt,
+		"debt_due_in_trips": GameManager.debt_due_in_trips,
+		"debt_interest_rate": GameManager.debt_interest_rate,
+		"missed_debt_payments": GameManager.missed_debt_payments,
 	}
 	var json_string := JSON.stringify(save_data, "\t")
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -68,6 +74,10 @@ func load_game() -> bool:
 	GameManager.total_trades = int(data.get("total_trades", 0))
 	GameManager.total_encounters_won = int(data.get("total_encounters_won", 0))
 	GameManager.total_flights = int(data.get("total_flights", 0))
+	GameManager.init_faction_reputation()
+	var loaded_rep: Dictionary = data.get("faction_reputation", {})
+	for faction in loaded_rep:
+		GameManager.faction_reputation[str(faction)] = int(loaded_rep[faction])
 	GameManager.current_ship = data.get("current_ship", "res://data/ships/scout.tres")
 	GameManager.installed_upgrades = data.get("installed_upgrades", [])
 	GameManager.removed_cards = data.get("removed_cards", [])
@@ -85,6 +95,11 @@ func load_game() -> bool:
 	# Restore quest state
 	QuestManager.current_quest = data.get("quest_current", {})
 	QuestManager.available_quests = data.get("quest_available", {})
+	QuestManager.next_chain_id = int(data.get("quest_next_chain_id", 1))
+	GameManager.outstanding_debt = int(data.get("outstanding_debt", 0))
+	GameManager.debt_due_in_trips = int(data.get("debt_due_in_trips", 0))
+	GameManager.debt_interest_rate = float(data.get("debt_interest_rate", 0.0))
+	GameManager.missed_debt_payments = int(data.get("missed_debt_payments", 0))
 	return true
 
 

@@ -14,6 +14,13 @@ func _load_encounters() -> void:
 
 
 func should_encounter_happen(danger_level: int) -> bool:
+	var chance: float = estimate_encounter_chance(danger_level, GameManager.current_planet)
+	return randf() < chance
+
+
+func estimate_encounter_chance(danger_level: int, planet_name: String = "") -> float:
+	if planet_name == "":
+		planet_name = GameManager.current_planet
 	var chance: float = 0.3 + (danger_level - 1) * 0.1
 	# Carrying contraband increases encounter chance
 	if is_carrying_contraband():
@@ -25,7 +32,10 @@ func should_encounter_happen(danger_level: int) -> bool:
 		chance -= GameManager.get_crew_bonus_value(0)
 	# Galaxy event modifier
 	chance += EventManager.get_encounter_modifier()
-	return randf() < chance
+	# Local standing and debt pressure affect inspection intensity.
+	chance += GameManager.get_local_encounter_modifier(planet_name)
+	chance += GameManager.get_debt_risk_modifier()
+	return clampf(chance, 0.05, 0.90)
 
 
 func is_carrying_contraband() -> bool:

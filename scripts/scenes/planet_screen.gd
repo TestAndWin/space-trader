@@ -126,9 +126,16 @@ func _ready() -> void:
 
 
 var _debug_label: Label = null
+var _systems_debug_label: Label = null
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_F9:
+	if not (event is InputEventKey):
+		return
+	var key_event := event as InputEventKey
+	if not key_event.pressed or key_event.echo:
+		return
+
+	if key_event.keycode == KEY_F9:
 		if _debug_label:
 			_debug_label.queue_free()
 			_debug_label = null
@@ -140,11 +147,103 @@ func _unhandled_input(event: InputEvent) -> void:
 			_debug_label.add_theme_font_size_override("font_size", 16)
 			_debug_label.position = Vector2(10, 700)
 			add_child(_debug_label)
+		get_viewport().set_input_as_handled()
+		return
+
+	if key_event.keycode == KEY_F10:
+		if _systems_debug_label:
+			_systems_debug_label.queue_free()
+			_systems_debug_label = null
+		else:
+			_systems_debug_label = Label.new()
+			_systems_debug_label.z_index = 110
+			_systems_debug_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_systems_debug_label.add_theme_color_override("font_color", Color(0.9, 1.0, 0.85))
+			_systems_debug_label.add_theme_font_size_override("font_size", 13)
+			_systems_debug_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
+			_systems_debug_label.add_theme_constant_override("outline_size", 6)
+			_systems_debug_label.position = Vector2(12, 10)
+			add_child(_systems_debug_label)
+			_systems_debug_label.text = _build_systems_debug_text()
+		get_viewport().set_input_as_handled()
+		return
+
+	if key_event.keycode == KEY_ESCAPE:
+		if _close_top_overlay():
+			get_viewport().set_input_as_handled()
+		return
+
+	if _has_overlay_open():
+		return
+
+	var handled := true
+	match key_event.keycode:
+		KEY_M: _on_market_pressed()       # Market
+		KEY_C: _on_crew_pressed()         # Crew
+		KEY_Q: _on_quest_pressed()        # Quest
+		KEY_S: _on_shipyard_pressed()     # Shipyard
+		KEY_D: _on_view_deck_pressed()    # Deck
+		KEY_K: _on_casino_pressed()       # Casino
+		KEY_I: _on_mission_pressed()      # Mission
+		KEY_G: _on_depart_pressed()       # Depart / Galaxy
+		KEY_L: _on_event_log_pressed()    # Event log
+		_: handled = false
+	if handled:
+		get_viewport().set_input_as_handled()
+
+
+func _has_overlay_open() -> bool:
+	return _get_top_overlay() != null
+
+
+func _get_top_overlay() -> Node:
+	# Prioritize nested overlays first (inside ShipyardScreen), then root overlays.
+	var overlay_paths: Array[String] = [
+		"ShipyardScreen/ShipUpgrades",
+		"ShipyardScreen/ShipDealer",
+		"DeckViewer",
+		"QuestScreen",
+		"CrewScreen",
+		"MarketScreen",
+		"CasinoPopup",
+		"ShipyardScreen",
+		"EventLogPopup",
+		"DepartOverlay",
+		"SmugglerEvent",
+		"PlanetEvent",
+	]
+	for path in overlay_paths:
+		var node := get_node_or_null(path)
+		if node:
+			return node
+	return null
+
+
+func _close_top_overlay() -> bool:
+	var overlay := _get_top_overlay()
+	if overlay == null:
+		return false
+	_close_overlay_node(overlay)
+	_update_ui()
+	return true
+
+
+func _close_overlay_node(node: Node) -> void:
+	if not is_instance_valid(node):
+		return
+	if node.has_method("_close"):
+		node.call("_close")
+	elif node.has_method("_on_close_pressed"):
+		node.call("_on_close_pressed")
+	else:
+		node.queue_free()
 
 func _process(_delta: float) -> void:
 	if _debug_label:
 		var pos: Vector2 = get_viewport().get_mouse_position()
 		_debug_label.text = "X: %d  Y: %d" % [int(pos.x), int(pos.y)]
+	if _systems_debug_label:
+		_systems_debug_label.text = _build_systems_debug_text()
 
 
 func _notification(what: int) -> void:
@@ -225,6 +324,8 @@ func _on_shipyard_pressed() -> void:
 
 
 func _on_casino_pressed() -> void:
+	if _casino_done:
+		return
 	if has_node("CasinoPopup"):
 		return
 	var pt: int = current_planet_data.planet_type if current_planet_data else 0
@@ -264,6 +365,8 @@ func _on_quest_pressed() -> void:
 
 
 func _on_mission_pressed() -> void:
+	if _mission_done:
+		return
 	if GameManager.credits < 100:
 		EventLog.add_entry("Not enough credits for mission (100cr required).")
 		_update_ui()
@@ -543,7 +646,9 @@ func _on_event_log_pressed() -> void:
 
 
 func _update_header() -> void:
-	planet_name_label.text = GameManager.current_planet
+	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
+	var rep: int = GameManager.get_faction_reputation(faction)
+	planet_name_label.text = "%s | %s (%+d)" % [GameManager.current_planet, faction, rep]
 
 
 func _update_news_banner() -> void:
@@ -558,6 +663,7 @@ func _update_news_banner() -> void:
 
 
 func _update_ui() -> void:
+	_update_header()
 	var used: int = GameManager.get_cargo_used()
 	var cap: int = GameManager.cargo_capacity
 	cargo_bar.value = used
@@ -585,6 +691,8 @@ func _update_ui() -> void:
 		var progress: float = (credit_progress + planet_progress) / 2.0
 		var goal_color := Color(0.5 + progress * 0.5, 0.4 + progress * 0.6, 0.1 + progress * 0.2)
 		goal_label.add_theme_color_override("font_color", goal_color)
+	if GameManager.has_active_loan():
+		goal_label.text += " | Debt %d (%d)" % [GameManager.outstanding_debt, GameManager.debt_due_in_trips]
 	_refresh_info_bar_text_layout()
 
 
@@ -642,6 +750,7 @@ func _update_quest_label() -> void:
 	_quest_full_text = "%dx %s -> %s | %d trips left" % [
 		q["deliver_qty"], q["deliver_good"], q["destination"], trips_left
 	]
+	_quest_full_text += " | Stage %d/%d" % [q.get("stage", 1), q.get("chain_length", 1)]
 	if trips_left <= 1:
 		quest_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
 	elif trips_left == 2:
@@ -743,6 +852,45 @@ func _compact_news_text(text: String) -> String:
 	var compact := text
 	compact = compact.replace("encounter chance", "encounters")
 	return compact
+
+
+func _build_systems_debug_text() -> String:
+	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
+	var rep: int = GameManager.get_faction_reputation(faction)
+	var buy_mod: float = GameManager.get_market_buy_modifier(GameManager.current_planet)
+	var sell_mod: float = GameManager.get_market_sell_modifier(GameManager.current_planet)
+	var chance: float = EncounterManager.estimate_encounter_chance(
+		current_planet_data.danger_level if current_planet_data else 1,
+		GameManager.current_planet
+	)
+
+	var rep_parts: Array[String] = []
+	for f in GameManager.faction_reputation.keys():
+		rep_parts.append("%s:%d" % [str(f), int(GameManager.faction_reputation[f])])
+	rep_parts.sort()
+
+	var quest_text := "none"
+	if QuestManager.has_active_quest():
+		var q: Dictionary = QuestManager.current_quest
+		quest_text = "%s %d/%d | %d trips" % [
+			q.get("issuer_faction", "Independent"),
+			q.get("stage", 1),
+			q.get("chain_length", 1),
+			q.get("turns_left", 0)
+		]
+
+	return "DEBUG [F10]\nPlanet: %s\nLocal Faction: %s (%+d)\nBuy/Sell Mod: %.2f / %.2f\nEncounter Chance: %.0f%%\nDebt: %s | Risk +%.0f%%\nQuest: %s\nAll Reps: %s" % [
+		GameManager.current_planet,
+		faction,
+		rep,
+		buy_mod,
+		sell_mod,
+		chance * 100.0,
+		GameManager.get_debt_status_text(),
+		GameManager.get_debt_risk_modifier() * 100.0,
+		quest_text,
+		", ".join(rep_parts)
+	]
 
 
 func _update_cargo_items() -> void:
@@ -853,6 +1001,7 @@ func _do_depart() -> void:
 	QuestManager.tick()
 	EventManager.tick()
 	EconomyManager.tick_economy()
+	GameManager.process_loan_tick()
 	SaveManager.save_game()
 	GameManager.change_scene("res://scenes/galaxy_map.tscn")
 

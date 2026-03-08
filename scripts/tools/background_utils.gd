@@ -32,16 +32,24 @@ static func load_texture(path: String, strict: bool = true) -> Texture2D:
 	return tex
 
 
-static func add_fullscreen_background(parent: Control, image_path: String, dim_alpha: float = 0.5, insert_index: int = -1, strict: bool = true) -> bool:
+static func add_fullscreen_background(
+	parent: Control,
+	image_path: String,
+	dim_alpha: float = 0.5,
+	insert_index: int = -1,
+	strict: bool = true,
+	stretch_mode: int = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+) -> bool:
 	var tex: Texture2D = load_texture(image_path, strict)
 	if tex == null:
 		return false
 
 	var bg := TextureRect.new()
+	bg.name = "FullscreenBackground"
 	bg.texture = tex
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	bg.stretch_mode = stretch_mode
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(bg)
 
@@ -50,6 +58,7 @@ static func add_fullscreen_background(parent: Control, image_path: String, dim_a
 
 	if dim_alpha > 0.0:
 		var dim := ColorRect.new()
+		dim.name = "FullscreenBackgroundDim"
 		dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 		dim.color = Color(0.0, 0.0, 0.0, dim_alpha)
 		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE

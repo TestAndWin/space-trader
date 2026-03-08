@@ -4,6 +4,7 @@ signal quest_changed
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const ACCENT_GREEN := Color(0.0, 0.75, 0.35)
+const ACCENT_RED := Color(0.75, 0.2, 0.2)
 
 var planet_name: String = ""
 var just_completed: bool = false
@@ -43,6 +44,7 @@ func _build_ui() -> void:
 		next_btn.pressed.connect(func(): just_completed = false; _build_ui())
 		UIStyles.style_accent_button(next_btn, ACCENT_GREEN)
 		vbox.add_child(next_btn)
+		_add_loan_panel(vbox)
 		return
 
 	# Active quest
@@ -54,6 +56,16 @@ func _build_ui() -> void:
 		desc.add_theme_font_size_override("font_size", 12)
 		desc.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
 		vbox.add_child(desc)
+
+		var chain_label := Label.new()
+		chain_label.text = "%s | Stage %d/%d" % [
+			q.get("issuer_faction", "Independent"),
+			q.get("stage", 1),
+			q.get("chain_length", 1)
+		]
+		chain_label.add_theme_font_size_override("font_size", 11)
+		chain_label.add_theme_color_override("font_color", Color(0.6, 0.78, 1.0))
+		vbox.add_child(chain_label)
 
 		var turns: int = q.get("turns_left", 0)
 		var penalty: int = q.get("penalty", 0)
@@ -80,6 +92,7 @@ func _build_ui() -> void:
 			missing_label.add_theme_font_size_override("font_size", 11)
 			missing_label.add_theme_color_override("font_color", Color(0.7, 0.4, 0.3))
 			vbox.add_child(missing_label)
+		_add_loan_panel(vbox)
 		return
 
 	# No active quest — show local offer
@@ -99,6 +112,16 @@ func _build_ui() -> void:
 	offer_desc.add_theme_color_override("font_color", Color(0.55, 0.78, 1.0))
 	vbox.add_child(offer_desc)
 
+	var offer_chain := Label.new()
+	offer_chain.text = "%s | Stage %d/%d" % [
+		offer.get("issuer_faction", "Independent"),
+		offer.get("stage", 1),
+		offer.get("chain_length", 1)
+	]
+	offer_chain.add_theme_font_size_override("font_size", 11)
+	offer_chain.add_theme_color_override("font_color", Color(0.55, 0.72, 0.95))
+	vbox.add_child(offer_chain)
+
 	var offer_turns: int = offer.get("turns_left", 0)
 	var offer_penalty: int = offer.get("penalty", 0)
 	var info_label := Label.new()
@@ -113,6 +136,8 @@ func _build_ui() -> void:
 	UIStyles.style_accent_button(accept_btn, ACCENT_GREEN)
 	vbox.add_child(accept_btn)
 
+	_add_loan_panel(vbox)
+
 
 func _player_has_goods(q: Dictionary) -> bool:
 	for item in GameManager.cargo:
@@ -124,13 +149,68 @@ func _player_has_goods(q: Dictionary) -> bool:
 func _on_accept() -> void:
 	if QuestManager.accept_quest(planet_name):
 		var q: Dictionary = QuestManager.current_quest
-		EventLog.add_entry("Accepted quest: deliver %d %s to %s" % [q["deliver_qty"], q["deliver_good"], q["destination"]])
+		EventLog.add_entry("Accepted quest (%s %d/%d): deliver %d %s to %s" % [
+			q.get("issuer_faction", "Independent"),
+			q.get("stage", 1),
+			q.get("chain_length", 1),
+			q["deliver_qty"],
+			q["deliver_good"],
+			q["destination"]
+		])
 	_build_ui()
 
 
 func _on_deliver() -> void:
 	var reward: int = QuestManager.try_complete_quest(planet_name)
 	if reward > 0:
-		just_completed = true
+		just_completed = not QuestManager.has_active_quest()
 		quest_changed.emit()
+	_build_ui()
+
+
+func _add_loan_panel(vbox: VBoxContainer) -> void:
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	var debt_label := Label.new()
+	debt_label.text = GameManager.get_debt_status_text()
+	debt_label.add_theme_font_size_override("font_size", 11)
+	debt_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
+	vbox.add_child(debt_label)
+
+	if GameManager.has_active_loan():
+		var repay_chunk := Button.new()
+		repay_chunk.text = "Repay %d cr" % GameManager.get_loan_repay_chunk()
+		repay_chunk.pressed.connect(_on_repay_chunk)
+		UIStyles.style_accent_button(repay_chunk, ACCENT_GREEN)
+		vbox.add_child(repay_chunk)
+
+		var repay_all := Button.new()
+		repay_all.text = "Repay All (%d cr)" % GameManager.outstanding_debt
+		repay_all.pressed.connect(_on_repay_all)
+		UIStyles.style_accent_button(repay_all, ACCENT_RED)
+		vbox.add_child(repay_all)
+	else:
+		var loan_btn := Button.new()
+		loan_btn.text = "Take Loan (+%d cr)" % GameManager.LOAN_DEFAULT_AMOUNT
+		loan_btn.pressed.connect(_on_take_loan)
+		UIStyles.style_accent_button(loan_btn, ACCENT_RED)
+		vbox.add_child(loan_btn)
+
+
+func _on_take_loan() -> void:
+	if GameManager.take_loan():
+		quest_changed.emit()
+	_build_ui()
+
+
+func _on_repay_chunk() -> void:
+	GameManager.repay_loan(GameManager.get_loan_repay_chunk())
+	quest_changed.emit()
+	_build_ui()
+
+
+func _on_repay_all() -> void:
+	GameManager.repay_loan(-1)
+	quest_changed.emit()
 	_build_ui()

@@ -331,6 +331,17 @@ func _on_sell(good_name: String, quantity: int) -> void:
 	GameManager.remove_cargo(good_name, quantity)
 	GameManager.add_credits(total_income)
 	GameManager.total_trades += 1
+	if _planet_type != EconomyManager.PT_OUTLAW and _is_contraband(good_name):
+		GameManager.add_faction_reputation(
+			GameManager.get_planet_faction(planet_name),
+			-maxi(1, quantity),
+			"contraband sale"
+		)
+		GameManager.add_faction_reputation(
+			GameManager.FACTION_BY_PLANET_TYPE.get(EconomyManager.PT_OUTLAW, "Free Cartel"),
+			maxi(1, int(quantity / 2)),
+			"contraband network"
+		)
 	EventLog.add_entry("Sold %d %s for %d cr" % [quantity, good_name, total_income])
 	_status_label.text = "Sold %d %s for %d cr" % [quantity, good_name, total_income]
 	_refresh_all()
@@ -342,3 +353,10 @@ func _close() -> void:
 	# Close first so the overlay always disappears, even if listeners error.
 	queue_free()
 	market_closed.emit()
+
+
+func _is_contraband(good_name: String) -> bool:
+	for good in EconomyManager.goods:
+		if good.good_name == good_name:
+			return bool(good.is_contraband)
+	return false

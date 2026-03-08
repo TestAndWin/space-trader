@@ -19,6 +19,7 @@ var _route_data: Array = []          # [{ from_name, to_name, from_pos, to_pos, 
 var _hovered_planet_name: String = ""
 var _player_marker: Node3D
 var _player_marker_base_position: Vector3 = Vector3.ZERO
+var _systems_debug_label: Label = null
 
 @onready var map_camera: Camera3D = $GalaxyWorld/MapCamera
 @onready var world_environment: WorldEnvironment = $GalaxyWorld/WorldEnvironment
@@ -91,6 +92,24 @@ func _process(delta: float) -> void:
 	_animate_planets(delta)
 	_animate_routes()
 	_animate_player_marker()
+	if _systems_debug_label:
+		_systems_debug_label.text = _build_systems_debug_text()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F10:
+		if _systems_debug_label:
+			_systems_debug_label.queue_free()
+			_systems_debug_label = null
+		else:
+			_systems_debug_label = Label.new()
+			_systems_debug_label.z_index = 120
+			_systems_debug_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_systems_debug_label.add_theme_color_override("font_color", Color(0.95, 1.0, 0.9))
+			_systems_debug_label.add_theme_font_size_override("font_size", 13)
+			_systems_debug_label.position = Vector2(12, 12)
+			$CanvasLayer.add_child(_systems_debug_label)
+			_systems_debug_label.text = _build_systems_debug_text()
 
 
 func _configure_info_panel() -> void:
@@ -743,6 +762,34 @@ func _on_travel_pressed() -> void:
 	GameManager.travel_origin = GameManager.current_planet
 	GameManager.travel_destination = selected_planet.planet_name
 	GameManager.change_scene("res://scenes/travel_scene.tscn")
+
+
+func _build_systems_debug_text() -> String:
+	var focus_planet: String = GameManager.current_planet
+	var danger: int = 1
+	if selected_planet:
+		focus_planet = selected_planet.planet_name
+		danger = selected_planet.danger_level
+	else:
+		var p := _find_planet_by_name(GameManager.current_planet)
+		if p:
+			danger = p.danger_level
+
+	var faction: String = GameManager.get_planet_faction(focus_planet)
+	var rep: int = GameManager.get_faction_reputation(faction)
+	var chance: float = EncounterManager.estimate_encounter_chance(danger, GameManager.current_planet)
+
+	return "DEBUG [F10]\nCurrent: %s\nFocus: %s (Danger %d)\nFaction: %s (%+d)\nBuy/Sell Mod @Focus: %.2f / %.2f\nEncounter Chance from Current: %.0f%%\nDebt: %s" % [
+		GameManager.current_planet,
+		focus_planet,
+		danger,
+		faction,
+		rep,
+		GameManager.get_market_buy_modifier(focus_planet),
+		GameManager.get_market_sell_modifier(focus_planet),
+		chance * 100.0,
+		GameManager.get_debt_status_text()
+	]
 
 
 func _style_nav_button(btn: Button, accent: Color) -> void:

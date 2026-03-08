@@ -2,10 +2,22 @@ extends Node
 
 var available_quests: Dictionary = {}  # { planet_name: quest_data } — not yet accepted
 var current_quest: Dictionary = {}     # the single active quest, or empty
+var next_chain_id: int = 1
 
 const DEADLINE_MIN := 3
 const DEADLINE_MAX := 5
 const PENALTY_RATIO := 0.4
+const CHAIN_CHANCE := 0.35
+const MAX_CHAIN_LENGTH := 3
+const STAGE_REWARD_MULT := 1.25
+const REPUTATION_REWARD_BASE := 2
+const REPUTATION_FAIL_PENALTY := -4
+const QUEST_FLAVORS: Array[String] = [
+	"Priority route",
+	"Sensitive shipment",
+	"Time-critical manifest",
+	"Escrow courier run",
+]
 
 
 func _ready() -> void:
@@ -15,12 +27,18 @@ func _ready() -> void:
 func generate_quests() -> void:
 	available_quests.clear()
 	for planet in EconomyManager.planets:
-		var quest := _make_quest(planet)
+		var chain_length: int = _roll_chain_length()
+		var quest := _make_quest(planet, 1, _next_chain_id(), chain_length)
 		if quest.size() > 0:
 			available_quests[planet.planet_name] = quest
 
 
-func _make_quest(planet: Resource) -> Dictionary:
+func _make_quest(
+	planet: Resource,
+	stage: int = 1,
+	chain_id: int = -1,
+	chain_length: int = 1
+) -> Dictionary:
 	if EconomyManager.goods.is_empty():
 		return {}
 	var good: Resource = EconomyManager.goods[randi() % EconomyManager.goods.size()]
@@ -32,10 +50,14 @@ func _make_quest(planet: Resource) -> Dictionary:
 	if all_planet_names.is_empty():
 		return {}
 	var dest: String = all_planet_names[randi() % all_planet_names.size()]
-	var qty: int = randi_range(1, 3)
-	var reward: int = int(good.base_price * qty * 1.8) + randi_range(50, 150)
-	var deadline: int = randi_range(DEADLINE_MIN, DEADLINE_MAX)
+	var qty: int = randi_range(1, 3) + (1 if stage >= 3 else 0)
+	var stage_mult: float = pow(STAGE_REWARD_MULT, float(maxi(stage - 1, 0)))
+	var reward: int = int((good.base_price * qty * 1.8 + randi_range(50, 150)) * stage_mult)
+	var deadline: int = randi_range(DEADLINE_MIN, DEADLINE_MAX) + maxi(stage - 1, 0)
 	var penalty: int = int(reward * PENALTY_RATIO)
+	var issuer_faction: String = GameManager.get_planet_faction(planet.planet_name)
+	if chain_id < 0:
+		chain_id = _next_chain_id()
 	return {
 		"deliver_good": good.good_name,
 		"deliver_qty": qty,
@@ -44,10 +66,22 @@ func _make_quest(planet: Resource) -> Dictionary:
 		"origin": planet.planet_name,
 		"turns_left": deadline,
 		"penalty": penalty,
+		"stage": stage,
+		"chain_length": chain_length,
+		"chain_id": chain_id,
+		"issuer_faction": issuer_faction,
+		"flavor": QUEST_FLAVORS[randi() % QUEST_FLAVORS.size()],
 	}
 
 
 func get_offer_for_planet(planet_name: String) -> Dictionary:
+	if planet_name not in available_quests:
+		var planet: Resource = EconomyManager.get_planet_data(planet_name)
+		if planet:
+			var chain_length: int = _roll_chain_length()
+			var quest := _make_quest(planet, 1, _next_chain_id(), chain_length)
+			if quest.size() > 0:
+				available_quests[planet_name] = quest
 	if planet_name in available_quests:
 		return available_quests[planet_name]
 	return {}
@@ -84,6 +118,14 @@ func check_expired_quest() -> bool:
 	EventLog.add_entry("Quest FAILED! Deliver %d %s to %s — penalty: %d cr" % [
 		current_quest["deliver_qty"], current_quest["deliver_good"],
 		current_quest["destination"], penalty])
+	var issuer_faction: String = current_quest.get("issuer_faction", "")
+	if issuer_faction != "":
+		var stage: int = int(current_quest.get("stage", 1))
+		GameManager.add_faction_reputation(
+			issuer_faction,
+			REPUTATION_FAIL_PENALTY - maxi(stage - 1, 0),
+			"quest failure"
+		)
 	if GameManager.credits < penalty:
 		GameManager.credits = 0
 		GameManager.credits_changed.emit(GameManager.credits)
@@ -112,8 +154,56 @@ func try_complete_quest(planet_name: String) -> int:
 	var quest_bonus: float = GameManager.get_quest_reward_bonus()
 	if quest_bonus > 0.0:
 		reward = int(round(reward * (1.0 + quest_bonus)))
+	var completed_quest: Dictionary = current_quest.duplicate(true)
 	GameManager.add_credits(reward)
-	EventLog.add_entry("Quest complete! Delivered %d %s. +%d cr" % [
-		current_quest["deliver_qty"], current_quest["deliver_good"], reward])
-	current_quest.clear()
+	_apply_reputation_on_completion(completed_quest)
+	if _promote_followup_quest(planet_name, completed_quest):
+		EventLog.add_entry("Quest stage %d/%d complete! +%d cr. Follow-up assigned." % [
+			completed_quest.get("stage", 1),
+			completed_quest.get("chain_length", 1),
+			reward
+		])
+	else:
+		EventLog.add_entry("Quest complete! Delivered %d %s. +%d cr" % [
+			completed_quest["deliver_qty"], completed_quest["deliver_good"], reward
+		])
+		current_quest.clear()
 	return reward
+
+
+func _apply_reputation_on_completion(completed_quest: Dictionary) -> void:
+	var issuer_faction: String = completed_quest.get("issuer_faction", "")
+	if issuer_faction == "":
+		return
+	var stage: int = int(completed_quest.get("stage", 1))
+	var rep_gain: int = REPUTATION_REWARD_BASE + stage
+	GameManager.add_faction_reputation(issuer_faction, rep_gain, "quest completion")
+
+
+func _promote_followup_quest(current_planet_name: String, completed_quest: Dictionary) -> bool:
+	var stage: int = int(completed_quest.get("stage", 1))
+	var chain_length: int = int(completed_quest.get("chain_length", 1))
+	if stage >= chain_length:
+		return false
+	var origin_planet: Resource = EconomyManager.get_planet_data(current_planet_name)
+	if not origin_planet:
+		return false
+	var next_stage: int = stage + 1
+	var chain_id: int = int(completed_quest.get("chain_id", _next_chain_id()))
+	var next_quest: Dictionary = _make_quest(origin_planet, next_stage, chain_id, chain_length)
+	if next_quest.is_empty():
+		return false
+	current_quest = next_quest
+	return true
+
+
+func _roll_chain_length() -> int:
+	if randf() >= CHAIN_CHANCE:
+		return 1
+	return randi_range(2, MAX_CHAIN_LENGTH)
+
+
+func _next_chain_id() -> int:
+	var id: int = next_chain_id
+	next_chain_id += 1
+	return id
