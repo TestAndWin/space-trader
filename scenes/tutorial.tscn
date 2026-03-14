@@ -251,6 +251,33 @@ text = "At the Quest building, you can take a loan for quick capital. Debt accru
 autowrap_mode = 3
 mouse_filter = 2
 
+[node name="HotkeysSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/HotkeysSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.7, 0.85, 1.0, 1)
+text = "Keyboard Shortcuts"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/HotkeysSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "On the planet screen you can use keyboard shortcuts to quickly open buildings:
+
+M - Market    S - Shipyard    K - Casino
+C - Crew    Q - Quest Board    D - Deck Viewer
+I - Mission    G - Galaxy Map / Depart    L - Event Log
+ESC - Close current overlay
+
+Space Invaders mini-game controls:
+A / Left Arrow - Move left    D / Right Arrow - Move right
+Space / Enter - Shoot"
+autowrap_mode = 3
+mouse_filter = 2
+
 [node name="TipsSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
 layout_mode = 2
 mouse_filter = 2
