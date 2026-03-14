@@ -339,7 +339,7 @@ func _on_sell(good_name: String, quantity: int) -> void:
 		)
 		GameManager.add_faction_reputation(
 			GameManager.FACTION_BY_PLANET_TYPE.get(EconomyManager.PT_OUTLAW, "Free Cartel"),
-			maxi(1, int(quantity / 2)),
+			maxi(1, floori(quantity / 2.0)),
 			"contraband network"
 		)
 	EventLog.add_entry("Sold %d %s for %d cr" % [quantity, good_name, total_income])

@@ -436,7 +436,7 @@ func _build_destination_planet(dest_type: int, warp_color: Color) -> void:
 		_planet_root.add_child(ring)
 
 
-func _generate_planet_surface_texture(dest_type: int, seed: int) -> Texture2D:
+func _generate_planet_surface_texture(dest_type: int, noise_seed: int) -> Texture2D:
 	var image: Image = Image.create(PLANET_TEX_WIDTH, PLANET_TEX_HEIGHT, false, Image.FORMAT_RGBA8)
 	var base_color: Color = PLANET_SURFACE_COLORS.get(dest_type, PLANET_SURFACE_COLORS[3])
 	var ocean_color: Color = base_color.darkened(0.46).lerp(Color(0.08, 0.2, 0.35), 0.45)
@@ -445,7 +445,7 @@ func _generate_planet_surface_texture(dest_type: int, seed: int) -> Texture2D:
 	var arid_color: Color = base_color.lerp(Color(0.78, 0.64, 0.38), 0.58)
 
 	var continent_noise := FastNoiseLite.new()
-	continent_noise.seed = seed
+	continent_noise.seed = noise_seed
 	continent_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	continent_noise.frequency = 1.25
 	continent_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
@@ -453,7 +453,7 @@ func _generate_planet_surface_texture(dest_type: int, seed: int) -> Texture2D:
 	continent_noise.fractal_gain = 0.52
 
 	var detail_noise := FastNoiseLite.new()
-	detail_noise.seed = seed + 173
+	detail_noise.seed = noise_seed + 173
 	detail_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	detail_noise.frequency = 4.2
 	detail_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
@@ -461,7 +461,7 @@ func _generate_planet_surface_texture(dest_type: int, seed: int) -> Texture2D:
 	detail_noise.fractal_gain = 0.6
 
 	var humidity_noise := FastNoiseLite.new()
-	humidity_noise.seed = seed + 331
+	humidity_noise.seed = noise_seed + 331
 	humidity_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	humidity_noise.frequency = 2.35
 
@@ -506,11 +506,11 @@ func _generate_planet_surface_texture(dest_type: int, seed: int) -> Texture2D:
 	return ImageTexture.create_from_image(image)
 
 
-func _generate_planet_cloud_texture(seed: int) -> Texture2D:
+func _generate_planet_cloud_texture(noise_seed: int) -> Texture2D:
 	var image: Image = Image.create(PLANET_TEX_WIDTH, PLANET_TEX_HEIGHT, false, Image.FORMAT_RGBA8)
 
 	var cloud_noise := FastNoiseLite.new()
-	cloud_noise.seed = seed
+	cloud_noise.seed = noise_seed
 	cloud_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	cloud_noise.frequency = 2.1
 	cloud_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
@@ -518,7 +518,7 @@ func _generate_planet_cloud_texture(seed: int) -> Texture2D:
 	cloud_noise.fractal_gain = 0.58
 
 	var wisp_noise := FastNoiseLite.new()
-	wisp_noise.seed = seed + 97
+	wisp_noise.seed = noise_seed + 97
 	wisp_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	wisp_noise.frequency = 6.4
 	wisp_noise.fractal_type = FastNoiseLite.FRACTAL_FBM

@@ -32,6 +32,7 @@ var _casino_done: bool = false
 var _casino_rounds: int = 0
 var _news_full_text: String = ""
 var _quest_full_text: String = ""
+var _hotspot_pulse_tween: Tween = null
 
 @onready var planet_name_label := $VBoxContainer/PlanetNameLabel
 @onready var info_bar_box: HBoxContainer = $InfoBar/InfoBarBox
@@ -379,6 +380,9 @@ func _on_mission_pressed() -> void:
 
 func _rebuild_hub_buildings() -> void:
 	var states := _get_building_states()
+	if _hotspot_pulse_tween and _hotspot_pulse_tween.is_valid():
+		_hotspot_pulse_tween.kill()
+		_hotspot_pulse_tween = null
 	var hotspot_node := get_node_or_null("ImageHotspots")
 	if hotspot_node:
 		hotspot_node.queue_free()
@@ -486,7 +490,10 @@ func _animate_hotspot_dots(container: Control) -> void:
 
 
 func _start_pulse_loop(container: Control, dots: Array[ColorRect], glows: Array[ColorRect]) -> void:
+	if _hotspot_pulse_tween and _hotspot_pulse_tween.is_valid():
+		_hotspot_pulse_tween.kill()
 	var tween := create_tween().set_loops()
+	_hotspot_pulse_tween = tween
 	tween.tween_method(func(t: float) -> void:
 		if not is_instance_valid(container):
 			tween.kill()
@@ -611,9 +618,9 @@ func _on_event_log_pressed() -> void:
 	title.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
 	header.add_child(title)
 
-	var header_spacer := Control.new()
-	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(header_spacer)
+	var log_header_spacer := Control.new()
+	log_header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(log_header_spacer)
 
 	var close_btn := Button.new()
 	close_btn.text = "Close"
@@ -831,6 +838,7 @@ func _truncate_label_text(label: Label, text: String, max_width: float) -> Strin
 	var low: int = 0
 	var high: int = text.length()
 	while low < high:
+		@warning_ignore("integer_division")
 		var mid: int = (low + high + 1) / 2
 		var candidate := text.substr(0, mid).strip_edges(false, true) + ellipsis
 		if _measure_label_text(label, candidate) <= max_width:

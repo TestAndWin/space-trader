@@ -38,7 +38,7 @@ static func add_fullscreen_background(
 	dim_alpha: float = 0.5,
 	insert_index: int = -1,
 	strict: bool = true,
-	stretch_mode: int = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	stretch_mode: TextureRect.StretchMode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 ) -> bool:
 	var tex: Texture2D = load_texture(image_path, strict)
 	if tex == null:
