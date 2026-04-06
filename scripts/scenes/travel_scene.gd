@@ -83,10 +83,7 @@ func _ready() -> void:
 	_rng.seed = randi()
 	destination_planet = GameManager.travel_destination if GameManager.travel_destination != "" else "Unknown"
 	GameManager.total_flights += 1
-	if EncounterManager.is_carrying_contraband():
-		warning_label.text = "CONTRABAND ABOARD - Increased encounter risk!"
-	else:
-		warning_label.text = ""
+	warning_label.text = _build_warning_text()
 	travel_label.text = "Traveling to " + destination_planet + "..."
 
 	var dest_type: int = _get_destination_type()
@@ -128,6 +125,16 @@ func _style_bottom_panel() -> void:
 	style.shadow_size = 6
 	style.set_content_margin_all(8)
 	$HUD/BottomPanel.add_theme_stylebox_override("panel", style)
+
+
+func _build_warning_text() -> String:
+	var warnings: Array[String] = []
+	if EncounterManager.is_carrying_contraband():
+		warnings.append("CONTRABAND ABOARD")
+	var event_warning: String = EventManager.get_travel_warning_text(destination_planet)
+	if event_warning != "":
+		warnings.append(event_warning)
+	return " | ".join(warnings)
 
 
 func _get_destination_type() -> int:

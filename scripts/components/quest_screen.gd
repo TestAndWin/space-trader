@@ -27,6 +27,7 @@ const QUEST_ICONS = {
 var _planet_type: int = 0
 var _planet_name: String = ""
 var _credits_label: Label
+var _status_label: Label
 var _quest_display: Control  # QuestDisplay instance
 
 var QuestDisplayScene := preload("res://scenes/components/quest_display.tscn")
@@ -61,6 +62,13 @@ func _build_ui() -> void:
 	var main_vbox: VBoxContainer = scaffold["main_vbox"]
 	_credits_label = scaffold["credits_label"]
 
+	_status_label = Label.new()
+	_status_label.add_theme_font_size_override("font_size", 12)
+	_status_label.add_theme_color_override("font_color", Color(0.9, 0.82, 0.55))
+	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	main_vbox.add_child(_status_label)
+
 	# Spacer to push content to lower third
 	var top_spacer := Control.new()
 	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -92,6 +100,21 @@ func _refresh_ui() -> void:
 	if not _credits_label:
 		return
 	_credits_label.text = "%d cr" % GameManager.credits
+	if _status_label:
+		var faction: String = GameManager.get_planet_faction(_planet_name)
+		_status_label.text = "%s | Reputation %s | Loyalty %s | Bounty %s" % [
+			faction,
+			GameManager.get_reputation_tier(faction),
+			_get_loyalty_status_text(_planet_name),
+			GameManager.get_bounty_tier(),
+		]
+
+
+func _get_loyalty_status_text(planet_name: String) -> String:
+	var loyalty_tier: String = GameManager.get_loyalty_tier(planet_name)
+	if loyalty_tier == "Unknown":
+		return "No standing yet"
+	return loyalty_tier
 
 
 func _close() -> void:

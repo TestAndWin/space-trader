@@ -17,6 +17,7 @@ var quantity: int = 0
 var mode: String = "buy"  # "buy" or "sell"
 var trade_enabled: bool = true
 var trade_disabled_suffix: String = ""
+var price_note: String = ""
 
 var selected_quantity: int = 1
 
@@ -28,7 +29,8 @@ func setup(
 	p_mode: String,
 	avg_price: int = -1,
 	p_trade_enabled: bool = true,
-	p_trade_disabled_suffix: String = ""
+	p_trade_disabled_suffix: String = "",
+	p_price_note: String = ""
 ) -> void:
 	good_name = p_good_name
 	price = p_price
@@ -36,6 +38,7 @@ func setup(
 	mode = p_mode
 	trade_enabled = p_trade_enabled
 	trade_disabled_suffix = p_trade_disabled_suffix
+	price_note = p_price_note
 	_setup_row_bg()
 	_setup_icon()
 	_style_buttons()
@@ -164,6 +167,9 @@ func _update_display() -> void:
 		$GoodNameLabel.add_theme_color_override("font_color", Color(1.0, 0.5, 0.2))
 	else:
 		$GoodNameLabel.add_theme_color_override("font_color", Color(0.75, 0.88, 1.0))
+	if price_note != "":
+		display_name += " [%s]" % price_note
+		$GoodNameLabel.add_theme_color_override("font_color", Color(1.0, 0.88, 0.35))
 	$GoodNameLabel.text = display_name
 	$PriceLabel.text = str(price) + " cr"
 	if mode == "buy":

@@ -43,6 +43,7 @@ var _cargo_label: Label
 var _market_list: VBoxContainer
 var _cargo_list: VBoxContainer
 var _status_label: Label
+var _status_detail_label: Label
 
 func setup(planet_type: int, arrival_gained_cargo: Dictionary = {}) -> void:
 	_planet_type = planet_type
@@ -159,6 +160,13 @@ func _build_ui() -> void:
 	main_vbox.add_child(sep)
 
 	# Status
+	_status_detail_label = Label.new()
+	_status_detail_label.add_theme_font_size_override("font_size", 12)
+	_status_detail_label.add_theme_color_override("font_color", Color(0.85, 0.82, 0.55))
+	_status_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_status_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	main_vbox.add_child(_status_detail_label)
+
 	_status_label = Label.new()
 	_status_label.add_theme_font_size_override("font_size", 14)
 	_status_label.add_theme_color_override("font_color", Color(0.0, 1.0, 0.6))
@@ -247,6 +255,8 @@ func _refresh_all() -> void:
 	var used: int = GameManager.get_cargo_used()
 	var cap: int = GameManager.cargo_capacity
 	_cargo_label.text = "Cargo: %d/%d" % [used, cap]
+	_record_market_snapshot()
+	_status_detail_label.text = _build_market_context_text()
 	_populate_market()
 	_populate_cargo()
 
@@ -263,7 +273,8 @@ func _populate_market() -> void:
 		var slot := CargoSlotScene.instantiate()
 		_market_list.add_child(slot)
 		var avg: int = EconomyManager.get_average_price(good_name)
-		slot.setup(good_name, buy_price, 0, "buy", avg)
+		slot.setup(good_name, buy_price, 0, "buy", avg, true, "", _get_price_note(good_name, "buy", buy_price))
+		slot.tooltip_text = _build_trade_tooltip(good_name, "buy")
 		slot.action_pressed.connect(_on_buy)
 
 
@@ -287,13 +298,24 @@ func _populate_cargo() -> void:
 		if sellable_qty > 0:
 			var slot := CargoSlotScene.instantiate()
 			_cargo_list.add_child(slot)
-			slot.setup(good_name, sell_price, sellable_qty, "sell", avg_sell)
+			slot.setup(good_name, sell_price, sellable_qty, "sell", avg_sell, true, "", _get_price_note(good_name, "sell", sell_price))
+			slot.tooltip_text = _build_trade_tooltip(good_name, "sell")
 			slot.action_pressed.connect(_on_sell)
 			has_rows = true
 		if blocked > 0:
 			var locked_slot := CargoSlotScene.instantiate()
 			_cargo_list.add_child(locked_slot)
-			locked_slot.setup(good_name, sell_price, blocked, "sell", avg_sell, false, "(arrival)")
+			locked_slot.setup(
+				good_name,
+				sell_price,
+				blocked,
+				"sell",
+				avg_sell,
+				false,
+				"(arrival)",
+				_get_price_note(good_name, "sell", sell_price)
+			)
+			locked_slot.tooltip_text = _build_trade_tooltip(good_name, "sell")
 			has_rows = true
 
 	if not has_rows:
@@ -317,7 +339,8 @@ func _on_buy(good_name: String, quantity: int) -> void:
 		return
 	GameManager.add_cargo(good_name, quantity)
 	GameManager.total_trades += 1
-	GameManager.add_trade_loyalty(planet_name, 1)
+	GameManager.add_trade_loyalty(planet_name, GameManager.get_trade_loyalty_gain(quantity, total_cost))
+	GameManager.record_market_observation(planet_name, good_name, buy_price, EconomyManager.get_sell_price(planet_name, good_name))
 	AchievementManager.check_trades(GameManager.total_trades)
 	EventLog.add_entry("Bought %d %s for %d cr" % [quantity, good_name, total_cost])
 	_status_label.text = "Bought %d %s for %d cr" % [quantity, good_name, total_cost]
@@ -333,17 +356,26 @@ func _on_sell(good_name: String, quantity: int) -> void:
 	GameManager.remove_cargo(good_name, quantity)
 	GameManager.add_credits(total_income)
 	GameManager.total_trades += 1
-	GameManager.add_trade_loyalty(planet_name, 1)
+	GameManager.add_trade_loyalty(planet_name, GameManager.get_trade_loyalty_gain(quantity, total_income))
+	GameManager.record_market_observation(planet_name, good_name, EconomyManager.get_buy_price(planet_name, good_name), sell_price)
 	AchievementManager.check_trades(GameManager.total_trades)
 	if _planet_type != EconomyManager.PT_OUTLAW and _is_contraband(good_name):
+		var faction: String = GameManager.get_planet_faction(planet_name)
+		var rep_loss: int = maxi(1, quantity)
+		match GameManager.get_reputation_tier(faction):
+			"Trusted":
+				rep_loss += 1
+			"Allied":
+				rep_loss += 2
 		GameManager.add_faction_reputation(
-			GameManager.get_planet_faction(planet_name),
-			-maxi(1, quantity),
+			faction,
+			-rep_loss,
 			"contraband sale"
 		)
+		GameManager.add_trade_loyalty(planet_name, -mini(quantity * 2, 6))
 		GameManager.add_faction_reputation(
 			GameManager.FACTION_BY_PLANET_TYPE.get(EconomyManager.PT_OUTLAW, "Free Cartel"),
-			maxi(1, floori(quantity / 2.0)),
+			maxi(1, quantity),
 			"contraband network"
 		)
 	EventLog.add_entry("Sold %d %s for %d cr" % [quantity, good_name, total_income])
@@ -364,3 +396,133 @@ func _is_contraband(good_name: String) -> bool:
 		if good.good_name == good_name:
 			return bool(good.is_contraband)
 	return false
+
+
+func _record_market_snapshot() -> void:
+	var planet_name: String = GameManager.current_planet
+	for good in EconomyManager.goods:
+		var good_name: String = good.good_name
+		var buy_price: int = EconomyManager.get_buy_price(planet_name, good_name)
+		var sell_price: int = EconomyManager.get_sell_price(planet_name, good_name)
+		if buy_price >= 0 or sell_price >= 0:
+			GameManager.record_market_observation(planet_name, good_name, buy_price, sell_price)
+
+
+func _build_market_context_text() -> String:
+	var planet_name: String = GameManager.current_planet
+	var faction: String = GameManager.get_planet_faction(planet_name)
+	var rep: int = GameManager.get_faction_reputation(faction)
+	var loyalty: int = GameManager.get_trade_loyalty(planet_name)
+	var loyalty_text: String = _get_loyalty_status_text(planet_name)
+	var notes: Array[String] = [
+		"%s | Reputation %+d (%s) | Loyalty %d (%s)" % [
+			faction,
+			rep,
+			GameManager.get_reputation_tier(faction),
+			loyalty,
+			loyalty_text,
+		],
+		_get_service_fee_text(planet_name),
+	]
+	var event_lines: Array[String] = EventManager.get_planet_status_lines(planet_name)
+	if not event_lines.is_empty():
+		notes.append(event_lines[0])
+	return "\n".join(notes)
+
+
+func _get_loyalty_status_text(planet_name: String) -> String:
+	var loyalty_tier: String = GameManager.get_loyalty_tier(planet_name)
+	if loyalty_tier == "Unknown":
+		return "No standing yet"
+	return loyalty_tier
+
+
+func _get_service_fee_text(planet_name: String) -> String:
+	var fee_modifier: float = GameManager.get_planet_service_fee_modifier(planet_name)
+	var fee_percent: float = (fee_modifier - 1.0) * 100.0
+	var faction: String = GameManager.get_planet_faction(planet_name)
+	var rep: int = GameManager.get_faction_reputation(faction)
+	var bounty_tier: String = GameManager.get_bounty_tier()
+	var loyalty: int = GameManager.get_trade_loyalty(planet_name)
+	var rep_fee: float = 0.0
+	if rep <= GameManager.REPUTATION_HOSTILE_MAX:
+		rep_fee = 10.0
+	elif rep <= GameManager.REPUTATION_COLD_MAX:
+		rep_fee = 5.0
+
+	var bounty_fee: float = 0.0
+	match bounty_tier:
+		"Wanted":
+			bounty_fee = 4.0
+		"Most Wanted":
+			bounty_fee = 8.0
+
+	var loyalty_discount: float = clampf(float(loyalty) * 0.05, 0.0, 5.0)
+	return "Dock/Market Fee: %+.1f%% (Reputation %+.1f%%, Loyalty -%.1f%%, Bounty %+.1f%%)" % [
+		fee_percent,
+		rep_fee,
+		loyalty_discount,
+		bounty_fee,
+	]
+
+
+func _build_trade_tooltip(good_name: String, mode: String) -> String:
+	var planet_name: String = GameManager.current_planet
+	var lines: Array[String] = []
+	if mode == "buy":
+		var breakdown: Dictionary = EconomyManager.get_buy_price_breakdown(planet_name, good_name)
+		if not breakdown.is_empty():
+			lines.append("%s buy breakdown" % good_name)
+			lines.append("Base: %d cr" % int(breakdown.get("base_price", 0)))
+			lines.append("Event x%.2f | Reputation x%.2f | Loyalty x%.2f | Service x%.2f" % [
+				float(breakdown.get("event_modifier", 1.0)),
+				float(breakdown.get("rep_modifier", 1.0)),
+				float(breakdown.get("loyalty_modifier", 1.0)),
+				float(breakdown.get("service_fee_modifier", 1.0)),
+			])
+	else:
+		var sell_breakdown: Dictionary = EconomyManager.get_sell_price_breakdown(planet_name, good_name)
+		if not sell_breakdown.is_empty():
+			lines.append("%s sell breakdown" % good_name)
+			lines.append("Base: %d cr" % int(sell_breakdown.get("base_price", 0)))
+			lines.append("Event x%.2f | Ratio x%.2f | Reputation x%.2f | Loyalty x%.2f" % [
+				float(sell_breakdown.get("event_modifier", 1.0)),
+				float(sell_breakdown.get("sell_ratio", EconomyManager.SELL_RATIO)),
+				float(sell_breakdown.get("rep_modifier", 1.0)),
+				float(sell_breakdown.get("loyalty_modifier", 1.0)),
+			])
+			lines.append("Service x%.2f" % (1.0 / float(sell_breakdown.get("service_fee_modifier", 1.0))))
+
+	var best_buy: Dictionary = GameManager.get_best_buy_hint(good_name)
+	if not best_buy.is_empty():
+		lines.append("Best buy seen: %s %d cr" % [best_buy.get("planet", "?"), int(best_buy.get("price", 0))])
+	var best_sell: Dictionary = GameManager.get_best_sell_hint(good_name)
+	if not best_sell.is_empty():
+		lines.append("Best sell seen: %s %d cr" % [best_sell.get("planet", "?"), int(best_sell.get("price", 0))])
+	var last_seen: Dictionary = GameManager.get_last_seen_prices(planet_name, good_name)
+	if not last_seen.is_empty():
+		lines.append("Last seen here: buy %s / sell %s" % [
+			str(last_seen.get("buy", "-")),
+			str(last_seen.get("sell", "-")),
+		])
+	return "\n".join(lines)
+
+
+func _get_price_note(good_name: String, mode: String, price: int) -> String:
+	if _get_known_market_count(good_name) < 2:
+		return ""
+	if mode == "buy":
+		var best_buy: Dictionary = GameManager.get_best_buy_hint(good_name)
+		if not best_buy.is_empty() and int(best_buy.get("price", price + 1)) == price:
+			return "BEST"
+		return ""
+	var best_sell: Dictionary = GameManager.get_best_sell_hint(good_name)
+	if not best_sell.is_empty() and int(best_sell.get("price", price - 1)) == price:
+		return "BEST"
+	return ""
+
+
+func _get_known_market_count(good_name: String) -> int:
+	var good_memory: Dictionary = GameManager.trade_route_memory.get(good_name, {})
+	var last_seen: Dictionary = good_memory.get("last_seen", {})
+	return last_seen.size()

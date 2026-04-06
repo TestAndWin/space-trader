@@ -717,7 +717,8 @@ func _on_planet_clicked(planet_data: Resource) -> void:
 	if current and planet_data.planet_name in current.connected_planets:
 		selected_planet = planet_data
 		travel_button.visible = true
-		travel_button.text = "Travel to %s" % planet_data.planet_name
+		travel_button.text = _get_travel_button_text(planet_data)
+		travel_button.tooltip_text = EventManager.get_travel_warning_text(planet_data.planet_name)
 	else:
 		selected_planet = null
 		travel_button.visible = false
@@ -728,8 +729,18 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 	info_panel.visible = true
 	planet_name_label.text = planet_data.planet_name
 	var type_text: String = EconomyManager.PLANET_TYPE_NAMES.get(planet_data.planet_type, "Unknown")
-	planet_type_label.text = type_text
-	danger_label.text = "Danger: %d" % planet_data.danger_level
+	var faction: String = GameManager.get_planet_faction(planet_data.planet_name)
+	var rep: int = GameManager.get_faction_reputation(faction)
+	planet_type_label.text = "%s | %s %+d %s" % [
+		type_text,
+		faction,
+		rep,
+		GameManager.get_reputation_tier(faction),
+	]
+	danger_label.text = "Danger: %d | Loyalty %s" % [
+		planet_data.danger_level,
+		GameManager.get_loyalty_tier(planet_data.planet_name),
+	]
 
 	if planet_data.danger_level >= 3:
 		danger_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
@@ -742,10 +753,16 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 	planet_type_label.add_theme_color_override("font_color", type_color)
 
 	var available: Array = EconomyManager.get_available_goods(type_text)
+	var hint_lines: Array[String] = _build_trade_hints_for_planet(planet_data.planet_name, available)
+	var warning: String = EventManager.get_travel_warning_text(planet_data.planet_name)
 	if available.size() > 0:
 		trades_label.text = "Trades: " + ", ".join(available)
 	else:
-		trades_label.text = ""
+		trades_label.text = "Trades: none listed"
+	if not hint_lines.is_empty():
+		trades_label.text += "\n" + "\n".join(hint_lines)
+	if warning != "":
+		trades_label.text += "\nWarning: " + warning
 
 
 func _on_planet_unhovered() -> void:
@@ -777,17 +794,21 @@ func _build_systems_debug_text() -> String:
 
 	var faction: String = GameManager.get_planet_faction(focus_planet)
 	var rep: int = GameManager.get_faction_reputation(faction)
-	var chance: float = EncounterManager.estimate_encounter_chance(danger, GameManager.current_planet)
+	var chance: float = EncounterManager.estimate_encounter_chance(danger, focus_planet)
 
-	return "DEBUG [F10]\nCurrent: %s\nFocus: %s (Danger %d)\nFaction: %s (%+d)\nBuy/Sell Mod @Focus: %.2f / %.2f\nEncounter Chance from Current: %.0f%%\nDebt: %s" % [
+	return "DEBUG [F10]\nCurrent: %s\nFocus: %s (Danger %d)\nFaction: %s (%+d, %s)\nLoyalty: %s | Bounty: %s\nBuy/Sell Mod @Focus: %.2f / %.2f\nEncounter Chance to Focus: %.0f%%\nTravel Warning: %s\nDebt: %s" % [
 		GameManager.current_planet,
 		focus_planet,
 		danger,
 		faction,
 		rep,
+		GameManager.get_reputation_tier(faction),
+		GameManager.get_loyalty_tier(focus_planet),
+		GameManager.get_bounty_tier(),
 		GameManager.get_market_buy_modifier(focus_planet),
 		GameManager.get_market_sell_modifier(focus_planet),
 		chance * 100.0,
+		EventManager.get_travel_warning_text(focus_planet),
 		GameManager.get_debt_status_text()
 	]
 
@@ -831,3 +852,27 @@ func _add_galaxy_background() -> void:
 
 func _on_land_pressed() -> void:
 	GameManager.change_scene("res://scenes/planet_screen.tscn")
+
+
+func _build_trade_hints_for_planet(planet_name: String, goods: Array) -> Array[String]:
+	var hints: Array[String] = []
+	for good_name in goods:
+		var best_buy: Dictionary = GameManager.get_best_buy_hint(str(good_name))
+		var best_sell: Dictionary = GameManager.get_best_sell_hint(str(good_name))
+		if best_buy.get("planet", "") == planet_name:
+			hints.append("%s: best buy seen (%d cr)" % [good_name, int(best_buy.get("price", 0))])
+		elif best_sell.get("planet", "") == planet_name:
+			hints.append("%s: best sell seen (%d cr)" % [good_name, int(best_sell.get("price", 0))])
+		if hints.size() >= 3:
+			break
+	return hints
+
+
+func _get_travel_button_text(planet_data: Resource) -> String:
+	var warning: String = EventManager.get_travel_warning_text(planet_data.planet_name)
+	if warning != "":
+		return "Travel to %s (Risk)" % planet_data.planet_name
+	var chance: float = EncounterManager.estimate_encounter_chance(planet_data.danger_level, planet_data.planet_name)
+	if chance >= 0.60:
+		return "Travel to %s (High Risk)" % planet_data.planet_name
+	return "Travel to %s" % planet_data.planet_name

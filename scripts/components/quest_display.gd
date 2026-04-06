@@ -32,6 +32,9 @@ func _build_ui() -> void:
 	title.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
 	vbox.add_child(title)
 
+	var quality: Dictionary = QuestManager.get_offer_quality_for_planet(planet_name)
+	_add_quality_summary(vbox, quality)
+
 	# Just completed
 	if just_completed:
 		var done_label := Label.new()
@@ -53,14 +56,18 @@ func _build_ui() -> void:
 		var q: Dictionary = QuestManager.current_quest
 		var desc := Label.new()
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD
-		desc.text = "Deliver %d %s to %s\nReward: %d cr" % [q["deliver_qty"], q["deliver_good"], q["destination"], q["reward_credits"]]
+		desc.text = "%s\nDeliver %d %s to %s\nReward: %d cr" % [
+			q.get("flavor", "Contract"),
+			q["deliver_qty"], q["deliver_good"], q["destination"], q["reward_credits"]
+		]
 		desc.add_theme_font_size_override("font_size", 12)
 		desc.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
 		vbox.add_child(desc)
 
 		var chain_label := Label.new()
-		chain_label.text = "%s | Stage %d/%d" % [
+		chain_label.text = "%s (Reputation %s) | Stage %d/%d" % [
 			q.get("issuer_faction", "Independent"),
+			q.get("issuer_rep_tier", "Neutral"),
 			q.get("stage", 1),
 			q.get("chain_length", 1)
 		]
@@ -68,15 +75,19 @@ func _build_ui() -> void:
 		chain_label.add_theme_color_override("font_color", Color(0.6, 0.78, 1.0))
 		vbox.add_child(chain_label)
 
+		_add_offer_modifiers(vbox, q)
+		_add_quality_notes(vbox, q.get("quality_notes", []), Color(0.75, 0.75, 0.95))
+
 		var turns: int = q.get("turns_left", 0)
 		var penalty: int = q.get("penalty", 0)
+		var route_hops: int = q.get("route_hops", 0)
 		var deadline_label := Label.new()
 		deadline_label.add_theme_font_size_override("font_size", 11)
 		if turns <= 1:
-			deadline_label.text = "LAST CHANCE! Penalty: %d cr" % penalty
+			deadline_label.text = "LAST CHANCE! Route: %d jumps | Penalty: %d cr" % [route_hops, penalty]
 			deadline_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 		else:
-			deadline_label.text = "%d trips left | Penalty: %d cr" % [turns, penalty]
+			deadline_label.text = "%d trips left | Route: %d jumps | Penalty: %d cr" % [turns, route_hops, penalty]
 			deadline_label.add_theme_color_override("font_color", Color(0.8, 0.6, 0.2))
 		vbox.add_child(deadline_label)
 
@@ -106,17 +117,32 @@ func _build_ui() -> void:
 		none_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.5))
 		vbox.add_child(none_label)
 		return
+	if bool(offer.get("blocked", false)):
+		var blocked_label := Label.new()
+		blocked_label.text = str(offer.get("blocked_reason", "No quests available"))
+		blocked_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+		blocked_label.add_theme_font_size_override("font_size", 12)
+		blocked_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.35))
+		vbox.add_child(blocked_label)
+		_add_quality_notes(vbox, offer.get("quality_notes", []), Color(0.9, 0.72, 0.45))
+		_add_loan_panel(vbox)
+		_add_bounty_panel(vbox)
+		return
 
 	var offer_desc := Label.new()
 	offer_desc.autowrap_mode = TextServer.AUTOWRAP_WORD
-	offer_desc.text = "Deliver %d %s to %s\nReward: %d cr" % [offer["deliver_qty"], offer["deliver_good"], offer["destination"], offer["reward_credits"]]
+	offer_desc.text = "%s\nDeliver %d %s to %s\nReward: %d cr" % [
+		offer.get("flavor", "Contract"),
+		offer["deliver_qty"], offer["deliver_good"], offer["destination"], offer["reward_credits"]
+	]
 	offer_desc.add_theme_font_size_override("font_size", 12)
 	offer_desc.add_theme_color_override("font_color", Color(0.55, 0.78, 1.0))
 	vbox.add_child(offer_desc)
 
 	var offer_chain := Label.new()
-	offer_chain.text = "%s | Stage %d/%d" % [
+	offer_chain.text = "%s (Reputation %s) | Stage %d/%d" % [
 		offer.get("issuer_faction", "Independent"),
+		offer.get("issuer_rep_tier", "Neutral"),
 		offer.get("stage", 1),
 		offer.get("chain_length", 1)
 	]
@@ -124,10 +150,14 @@ func _build_ui() -> void:
 	offer_chain.add_theme_color_override("font_color", Color(0.55, 0.72, 0.95))
 	vbox.add_child(offer_chain)
 
+	_add_offer_modifiers(vbox, offer)
+	_add_quality_notes(vbox, offer.get("quality_notes", []), Color(0.78, 0.78, 0.95))
+
 	var offer_turns: int = offer.get("turns_left", 0)
 	var offer_penalty: int = offer.get("penalty", 0)
+	var offer_route_hops: int = offer.get("route_hops", 0)
 	var info_label := Label.new()
-	info_label.text = "Deadline: %d trips | Penalty: %d cr" % [offer_turns, offer_penalty]
+	info_label.text = "Deadline: %d trips | Route: %d jumps | Penalty: %d cr" % [offer_turns, offer_route_hops, offer_penalty]
 	info_label.add_theme_font_size_override("font_size", 11)
 	info_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	vbox.add_child(info_label)
@@ -227,7 +257,7 @@ func _add_bounty_panel(vbox: VBoxContainer) -> void:
 	vbox.add_child(sep)
 
 	var bounty_label := Label.new()
-	bounty_label.text = "Bounty: %d cr" % GameManager.bounty_amount
+	bounty_label.text = "Bounty: %d cr (%s)" % [GameManager.bounty_amount, GameManager.get_bounty_tier()]
 	bounty_label.add_theme_font_size_override("font_size", 11)
 	bounty_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 	vbox.add_child(bounty_label)
@@ -245,3 +275,40 @@ func _on_pay_bounty() -> void:
 	if GameManager.pay_off_bounty():
 		quest_changed.emit()
 	_build_ui()
+
+
+func _add_quality_summary(vbox: VBoxContainer, quality: Dictionary) -> void:
+	var issuer_faction: String = quality.get("issuer_faction", "Independent")
+	var summary := Label.new()
+	summary.text = "%s | Reputation %s | Loyalty %s" % [
+		issuer_faction,
+		quality.get("issuer_rep_tier", "Neutral"),
+		quality.get("loyalty_tier", "Unknown"),
+	]
+	summary.add_theme_font_size_override("font_size", 11)
+	summary.add_theme_color_override("font_color", Color(0.82, 0.84, 0.6))
+	vbox.add_child(summary)
+
+
+func _add_offer_modifiers(vbox: VBoxContainer, offer: Dictionary) -> void:
+	var reward_pct: int = int(round(float(offer.get("offer_reward_modifier", 0.0)) * 100.0))
+	var deadline_bonus: int = int(offer.get("offer_deadline_modifier", 0))
+	var label := Label.new()
+	label.text = "Terms: reward %+d%% | deadline %+d" % [reward_pct, deadline_bonus]
+	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_color_override("font_color", Color(0.7, 0.85, 0.95))
+	vbox.add_child(label)
+
+
+func _add_quality_notes(vbox: VBoxContainer, notes: Array, color: Color) -> void:
+	if notes.is_empty():
+		return
+	var note_parts: Array[String] = []
+	for note in notes:
+		note_parts.append(str(note))
+	var note_label := Label.new()
+	note_label.text = "Notes: " + " | ".join(note_parts)
+	note_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	note_label.add_theme_font_size_override("font_size", 10)
+	note_label.add_theme_color_override("font_color", color)
+	vbox.add_child(note_label)

@@ -104,43 +104,80 @@ func _generate_initial_prices() -> void:
 # ── Public API ───────────────────────────────────────────────────────────────
 
 func get_buy_price(planet_name: String, good_name: String) -> int:
-	if not (planet_name in price_table and good_name in price_table[planet_name]):
+	var breakdown: Dictionary = get_buy_price_breakdown(planet_name, good_name)
+	if breakdown.is_empty():
 		return -1
-	# Check if this good is available for purchase at this planet type
-	var planet_type := _get_planet_type(planet_name)
-	var available: Array = _type_available_goods.get(planet_type, [])
-	if available.size() > 0 and not (good_name in available):
-		return -1
-	# Contraband can only be BOUGHT at Outlaw planets
-	if good_name in _contraband_goods:
-		if planet_type != "Outlaw":
-			return -1
-	var base: int = price_table[planet_name][good_name]
-	var event_mod: float = EventManager.get_price_modifier(planet_name, good_name)
-	var rep_mod: float = GameManager.get_market_buy_modifier(planet_name)
-	var loyalty_mod: float = GameManager.get_loyalty_buy_modifier(planet_name)
-	return max(1, int(round(base * event_mod * rep_mod * loyalty_mod)))
+	return int(breakdown.get("final_price", -1))
 
 
 func get_sell_price(planet_name: String, good_name: String) -> int:
-	if not (planet_name in price_table and good_name in price_table[planet_name]):
+	var breakdown: Dictionary = get_sell_price_breakdown(planet_name, good_name)
+	if breakdown.is_empty():
 		return -1
-	var local_price: int = price_table[planet_name][good_name]
-	var event_mod: float = EventManager.get_price_modifier(planet_name, good_name)
-	var ratio: float = SELL_RATIO
-	var override: float = EventManager.get_sell_ratio_override()
-	if override > 0.0:
-		ratio = override
-	# Crew trader bonus: use best sell ratio
+	return int(breakdown.get("final_price", -1))
+
+
+func get_buy_price_breakdown(planet_name: String, good_name: String) -> Dictionary:
+	if not _can_buy_good(planet_name, good_name):
+		return {}
+	var base_price: int = _get_local_price(planet_name, good_name)
+	if base_price < 0:
+		return {}
+	var event_entries: Array = EventManager.get_price_modifiers_for(planet_name, good_name)
+	var event_modifier: float = _multiply_event_entries(event_entries)
+	var rep_modifier: float = GameManager.get_market_buy_modifier(planet_name)
+	var loyalty_modifier: float = GameManager.get_loyalty_buy_modifier(planet_name)
+	var service_fee_modifier: float = GameManager.get_planet_service_fee_modifier(planet_name)
+	var final_price: int = max(
+		1,
+		int(round(float(base_price) * event_modifier * rep_modifier * loyalty_modifier * service_fee_modifier))
+	)
+	return {
+		"base_price": base_price,
+		"event_modifier": event_modifier,
+		"event_entries": event_entries,
+		"rep_modifier": rep_modifier,
+		"loyalty_modifier": loyalty_modifier,
+		"service_fee_modifier": service_fee_modifier,
+		"final_price": final_price,
+	}
+
+
+func get_sell_price_breakdown(planet_name: String, good_name: String) -> Dictionary:
+	var local_price: int = _get_local_price(planet_name, good_name)
+	if local_price < 0:
+		return {}
+	var event_entries: Array = EventManager.get_price_modifiers_for(planet_name, good_name)
+	var event_modifier: float = _multiply_event_entries(event_entries)
+	var sell_ratio: float = SELL_RATIO
+	var override_ratio: float = EventManager.get_sell_ratio_override(planet_name)
+	if override_ratio > 0.0:
+		sell_ratio = override_ratio
 	if GameManager.has_crew_bonus(3):  # SELL_BONUS
-		ratio = maxf(ratio, GameManager.get_crew_bonus_value(3))
-	var base_sell: float = local_price * event_mod * ratio
-	# Ship contraband bonus
-	if good_name in _contraband_goods:
-		base_sell *= (1.0 + GameManager.get_contraband_bonus())
-	base_sell *= GameManager.get_market_sell_modifier(planet_name)
-	base_sell *= GameManager.get_loyalty_sell_modifier(planet_name)
-	return max(1, int(round(base_sell)))
+		sell_ratio = maxf(sell_ratio, GameManager.get_crew_bonus_value(3))
+	var contraband_modifier: float = 1.0
+	if _is_contraband_good(good_name):
+		contraband_modifier += GameManager.get_contraband_bonus()
+	var rep_modifier: float = GameManager.get_market_sell_modifier(planet_name)
+	var loyalty_modifier: float = GameManager.get_loyalty_sell_modifier(planet_name)
+	var service_fee_modifier: float = 1.0 / GameManager.get_planet_service_fee_modifier(planet_name)
+	var final_price: int = max(
+		1,
+		int(round(
+			float(local_price) * event_modifier * sell_ratio * contraband_modifier * rep_modifier * loyalty_modifier * service_fee_modifier
+		))
+	)
+	return {
+		"base_price": local_price,
+		"event_modifier": event_modifier,
+		"event_entries": event_entries,
+		"sell_ratio": sell_ratio,
+		"contraband_modifier": contraband_modifier,
+		"rep_modifier": rep_modifier,
+		"loyalty_modifier": loyalty_modifier,
+		"service_fee_modifier": service_fee_modifier,
+		"final_price": final_price,
+	}
 
 
 func get_average_price(good_name: String) -> int:
@@ -171,6 +208,35 @@ func _get_planet_type(planet_name: String) -> String:
 	if planet:
 		return PLANET_TYPE_NAMES.get(planet.planet_type, "Industrial")
 	return "Industrial"
+
+
+func _get_local_price(planet_name: String, good_name: String) -> int:
+	if not (planet_name in price_table and good_name in price_table[planet_name]):
+		return -1
+	return int(price_table[planet_name][good_name])
+
+
+func _can_buy_good(planet_name: String, good_name: String) -> bool:
+	if not (planet_name in price_table and good_name in price_table[planet_name]):
+		return false
+	var planet_type: String = _get_planet_type(planet_name)
+	var available: Array = _type_available_goods.get(planet_type, [])
+	if available.size() > 0 and not (good_name in available):
+		return false
+	if _is_contraband_good(good_name) and planet_type != "Outlaw":
+		return false
+	return true
+
+
+func _is_contraband_good(good_name: String) -> bool:
+	return good_name in _contraband_goods
+
+
+func _multiply_event_entries(entries: Array) -> float:
+	var modifier: float = 1.0
+	for entry in entries:
+		modifier *= float((entry as Dictionary).get("modifier", 1.0))
+	return modifier
 
 
 # ── Economy tick (called after departure) ────────────────────────────────────

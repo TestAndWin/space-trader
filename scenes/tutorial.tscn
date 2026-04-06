@@ -85,7 +85,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/GoalSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Accumulate 8000 credits AND visit all 7 planets to win the game. Trade goods, complete quest chains, win battles, and explore the galaxy to reach your goal. Your faction reputation, debt pressure, and hull condition all affect how risky your run becomes. If your hull reaches zero, the game is over."
+text = "Accumulate 8000 credits AND visit all 7 planets to win the game. Trade goods, complete quest chains, win battles, and explore the galaxy to reach your goal. Reputation, local trade loyalty, bounty pressure, debt, and active world events all shape how risky or profitable your run becomes. If your hull reaches zero, the game is over."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -103,7 +103,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/PlanetScreenSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Each planet has a city map with clickable buildings. Click on a building to open it. Available buildings vary by planet type: Market (buy/sell goods), Shipyard (repairs, upgrades, new ships), Casino (gamble for credits), Crew (recruit crew members), Quest Board (accept delivery missions), Armory (view your deck), and Starport (depart to another planet). Some buildings are only available on certain planet types."
+text = "Each planet has a city map with clickable buildings. Click on a building to open it. Available buildings vary by planet type: Market (buy/sell goods), Shipyard (repairs, upgrades, new ships), Casino (gamble for credits), Crew (recruit crew members), Quest Board (accept delivery missions), Armory (view your deck), and Starport (depart to another planet). The header and status bars now also show the local faction, your reputation tier, loyalty tier, bounty status, and important local warnings such as patrol pressure or trader discounts."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -121,7 +121,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TradingSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Buy goods cheaply at one planet and sell them at another for profit. Different planet types affect prices - Agricultural planets sell food cheaply, while Industrial planets pay more for it. Your local faction reputation now modifies market prices too: good standing improves buy/sell rates, bad standing makes trade worse."
+text = "Buy goods cheaply at one planet and sell them at another for profit. Different planet types affect prices, but markets are also modified by faction reputation, local trade loyalty, service fees, and active world events. Market tooltips show a price breakdown and remember the best buy/sell prices you have seen so far. After you have compared at least two markets, especially good known prices are marked directly in the list."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -139,7 +139,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/NavigationSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Click on connected planets in the Galaxy Map to travel. Each journey may trigger a random encounter based on the route's danger level. Higher danger means more encounters but also better trading opportunities."
+text = "Click on connected planets in the Galaxy Map to travel. Each journey may trigger a random encounter based on the route's danger level, but bounty, contraband, debt pressure, local standing, and active world events can push the risk higher or lower. Planet hover info and travel warnings help you spot dangerous patrol routes, shortages, or smuggling opportunities before you launch."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -211,7 +211,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/ContrabandSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Spice and Stolen Tech are contraband goods only available at Outlaw planets. They sell at premium prices but carrying them increases your risk of patrol encounters. Selling contraband at lawful worlds hurts local reputation and can make future trade and travel harder."
+text = "Spice and Stolen Tech are contraband goods mainly available at Outlaw planets. They can sell for huge profits, but carrying them increases patrol pressure and selling them at lawful worlds damages local standing, lowers loyalty, and can push your bounty higher. Contraband runs are strongest when the galaxy enters a smuggling-friendly event window, but that also tends to raise risk."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -229,7 +229,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/QuestChainSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Quest contracts can now be multi-stage chains (Stage 1-3). Completing a stage can immediately assign the next stage with better rewards. Each quest has an issuing faction: success improves that faction reputation, while failed deadlines reduce it."
+text = "Quest contracts can be multi-stage chains (Stage 1-3). Completing a stage can immediately assign the next stage with better rewards. Offers now depend on faction reputation, local loyalty, bounty status, and active world events: good standing improves terms and follow-up chances, while hostile or highly wanted pilots can be denied lawful contracts entirely. Reputation is faction-wide: it mainly rises by completing that faction's quests, and falls through failed deadlines, customs trouble, failed bribery, contraband sales on lawful worlds, and other hostile actions. Event-driven jobs also try to match the current situation, such as relief runs into shortage worlds or riskier smuggling routes during a window."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -277,13 +277,13 @@ mouse_filter = 2
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.5, 0.8, 1.0, 1)
-text = "Travel Events"
+text = "Travel & World Events"
 mouse_filter = 2
 
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TravelEventsSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "During travel between planets, you may encounter random non-combat events. A stranded trader might ask for help, you could discover an abandoned wreck to salvage, or pick up a distress signal. Each event offers two choices with different risks and rewards. Outcomes are not always guaranteed — helping a stranded trader could turn out to be a pirate trap, and salvaging a wreck might cause hull damage. Weigh the risk before choosing!"
+text = "During travel between planets, you may encounter random non-combat events. A stranded trader might ask for help, you could discover an abandoned wreck to salvage, or pick up a distress signal. The wider galaxy can also enter chained world events such as blockades, shortages, smuggling windows, tech theft, and security crackdowns. These chains affect prices, quest quality, route danger, and the warning text shown before travel."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -301,7 +301,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/BountySection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Illegal activities build up a bounty on your head. Getting caught smuggling adds 100 cr to your bounty. Defeating a System Patrol adds 50 cr. Once your bounty reaches 100 cr, you'll face more encounters and bounty hunters will start tracking you. At 300 cr, the heat gets even worse. You can reduce your bounty by defeating bounty hunters (-150 cr each) or pay it off entirely at the Quest Board. Your bounty is shown in the status bar when active."
+text = "Illegal activities build up a bounty on your head. Your status moves through tiers such as Watched, Wanted, and Most Wanted. Higher tiers raise encounter pressure, make bounty hunters more likely, increase local friction and fees on lawful worlds, and can block or worsen contract offers. You can reduce your bounty by defeating bounty hunters or pay it off entirely at the Quest Board."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -319,7 +319,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TradeLoyaltySection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Each trade at a planet increases your local Trade Loyalty (0-100). Higher loyalty gives you better prices: up to -8% on purchases and +6% on sales. Getting caught smuggling at a planet drops your loyalty by 15 points. Build loyalty at your favorite trading hubs for the best deals!"
+text = "Each legal trade at a planet increases your local Trade Loyalty. Loyalty is local to that specific world and tiers progress from Unknown to Known, Regular, Preferred, and Local Hero. Higher loyalty improves prices, reduces some local friction, and can make authorities more lenient. Loyalty mainly goes up through repeated legal buying and selling on the same planet, and larger trades build it faster than tiny ones. It goes down when you sell contraband there, get caught by customs, or fail smuggling and bribery attempts on that world."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -337,7 +337,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CustomsScanSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Landing on non-Outlaw planets with contraband (Spice, Stolen Tech) in your cargo risks a customs inspection (20% chance). If caught, you have three options: Pay a Fine (lose credits + bounty + contraband confiscated), Try to Hide (chance-based, failure means harsher penalties), or Bribe the Official (costs double but no bounty on success). The Cloaking Device upgrade and Smuggle Protection crew reduce scan chances. When caught in a smuggler deal, you now also get bribery options."
+text = "Landing on non-Outlaw planets with contraband (Spice, Stolen Tech) in your cargo risks a customs inspection. Scan chance, fine size, hide chance, and bribe success are now shaped by faction standing, local loyalty, bounty tier, crew bonuses, and cloaking. If caught, you can pay the fine, try to hide the cargo, or bribe the official. Friendly worlds may only warn you, while bad standing or failed tricks can lead to confiscation, harsher penalties, loyalty loss, and extra bounty."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -400,7 +400,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TipsSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Start by trading between nearby safe planets to build credits. Buy upgrades early to make combat easier. Keep some credits in reserve for repairs. Build your deck strategically - too many cards dilute your best ones. Recruit crew early for their passive bonuses."
+text = "Start by learning a few safe routes and building credits before pushing contraband or high-danger travel. Use market tooltips and galaxy-map hints to build your own trade logbook, and keep at least one lawful faction on good terms so you always have a stable route for repairs and contracts. Watch event banners closely: shortages, crackdowns, and smuggling windows can create huge profit spikes, but only if your ship, bounty, and crew can survive the extra heat."
 autowrap_mode = 3
 mouse_filter = 2
 

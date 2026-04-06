@@ -568,6 +568,24 @@ func _make_bar_fill_style(fill_color: Color) -> StyleBoxFlat:
 func _style_info_bar() -> void:
 	$InfoBar.add_theme_stylebox_override("panel", _make_holo_panel_style())
 	header_spacer.visible = true
+	_apply_header_label_style(planet_name_label, 26, Color(0.82, 0.97, 1.0))
+	_apply_header_label_style(news_banner, 12, Color(0.92, 0.96, 1.0))
+	_apply_header_label_style(quest_label, 13, Color(0.88, 0.96, 0.98))
+	_apply_header_label_style(goal_label, 13, Color(1.0, 0.94, 0.62))
+
+
+func _apply_header_label_style(label: Label, font_size: int, font_color: Color) -> void:
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", font_color)
+	label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))
+	label.add_theme_constant_override("outline_size", 6)
+	var settings := LabelSettings.new()
+	settings.font_size = font_size
+	settings.font_color = font_color
+	settings.shadow_size = 6
+	settings.shadow_color = Color(0.0, 0.0, 0.0, 0.9)
+	settings.shadow_offset = Vector2(2, 2)
+	label.label_settings = settings
 
 
 func _style_ship_panel() -> void:
@@ -663,17 +681,36 @@ func _on_event_log_pressed() -> void:
 func _update_header() -> void:
 	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
 	var rep: int = GameManager.get_faction_reputation(faction)
+	var rep_tier: String = GameManager.get_reputation_tier(faction)
 	var loyalty: int = GameManager.get_trade_loyalty(GameManager.current_planet)
-	if loyalty > 0:
-		planet_name_label.text = "%s | %s (%+d) | Loyalty %d" % [GameManager.current_planet, faction, rep, loyalty]
-	else:
-		planet_name_label.text = "%s | %s (%+d)" % [GameManager.current_planet, faction, rep]
+	var loyalty_text: String = _get_loyalty_status_text(GameManager.current_planet)
+	planet_name_label.text = "%s | %s | Reputation %+d %s | Loyalty %d (%s)" % [
+		GameManager.current_planet,
+		faction,
+		rep,
+		rep_tier,
+		loyalty,
+		loyalty_text,
+	]
+
+
+func _get_loyalty_status_text(planet_name: String) -> String:
+	var loyalty_tier: String = GameManager.get_loyalty_tier(planet_name)
+	if loyalty_tier == "Unknown":
+		return "No standing yet"
+	return loyalty_tier
 
 
 func _update_news_banner() -> void:
 	var event_text := EventManager.get_event_display_text()
-	if event_text != "":
-		_news_full_text = "SPACE NEWS: " + _compact_news_text(event_text)
+	var status_notes: Array[String] = _get_local_status_notes()
+	if event_text != "" or not status_notes.is_empty():
+		var parts: Array[String] = []
+		if event_text != "":
+			parts.append("SPACE NEWS: " + _compact_news_text(event_text))
+		for note in status_notes:
+			parts.append(note)
+		_news_full_text = " | ".join(parts)
 		news_banner.visible = true
 	else:
 		_news_full_text = ""
@@ -683,6 +720,7 @@ func _update_news_banner() -> void:
 
 func _update_ui() -> void:
 	_update_header()
+	_update_news_banner()
 	var used: int = GameManager.get_cargo_used()
 	var cap: int = GameManager.cargo_capacity
 	cargo_bar.value = used
@@ -713,7 +751,7 @@ func _update_ui() -> void:
 	if GameManager.has_active_loan():
 		goal_label.text += " | Debt %d (%d)" % [GameManager.outstanding_debt, GameManager.debt_due_in_trips]
 	if GameManager.bounty_amount > 0:
-		goal_label.text += " | Bounty %d cr" % GameManager.bounty_amount
+		goal_label.text += " | %s %d cr" % [GameManager.get_bounty_tier(), GameManager.bounty_amount]
 	_refresh_info_bar_text_layout()
 
 
@@ -876,11 +914,42 @@ func _compact_news_text(text: String) -> String:
 	return compact
 
 
+func _get_local_status_notes() -> Array[String]:
+	var notes: Array[String] = []
+	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
+	var rep_tier: String = GameManager.get_reputation_tier(faction)
+	var loyalty_tier: String = GameManager.get_loyalty_tier(GameManager.current_planet)
+	var bounty_tier: String = GameManager.get_bounty_tier()
+
+	if rep_tier in ["Trusted", "Allied"]:
+		notes.append("Trusted trader discounts active")
+	elif rep_tier == "Hostile":
+		notes.append("Local authorities are openly hostile")
+
+	if loyalty_tier in ["Preferred", "Local Hero"]:
+		notes.append("Local trade network favors you")
+
+	if bounty_tier in ["Wanted", "Most Wanted"] and GameManager.get_planet_faction(GameManager.current_planet) != GameManager.FACTION_BY_PLANET_TYPE.get(EconomyManager.PT_OUTLAW, "Free Cartel"):
+		notes.append("Patrols intensified for wanted traffic")
+
+	return notes
+
+
 func _build_systems_debug_text() -> String:
 	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
 	var rep: int = GameManager.get_faction_reputation(faction)
+	var rep_tier: String = GameManager.get_reputation_tier(faction)
+	var loyalty: int = GameManager.get_trade_loyalty(GameManager.current_planet)
+	var loyalty_tier: String = GameManager.get_loyalty_tier(GameManager.current_planet)
+	var bounty_tier: String = GameManager.get_bounty_tier()
 	var buy_mod: float = GameManager.get_market_buy_modifier(GameManager.current_planet)
 	var sell_mod: float = GameManager.get_market_sell_modifier(GameManager.current_planet)
+	var customs_scan_mod: float = GameManager.get_customs_scan_modifier(GameManager.current_planet)
+	var customs_fine_mod: float = GameManager.get_customs_fine_modifier(GameManager.current_planet)
+	var customs_hide_mod: float = GameManager.get_customs_hide_modifier(GameManager.current_planet)
+	var quest_reward_mod: float = GameManager.get_quest_reward_modifier(faction)
+	var quest_deadline_mod: int = GameManager.get_quest_deadline_modifier(faction)
+	var service_fee_mod: float = GameManager.get_planet_service_fee_modifier(GameManager.current_planet)
 	var chance: float = EncounterManager.estimate_encounter_chance(
 		current_planet_data.danger_level if current_planet_data else 1,
 		GameManager.current_planet
@@ -901,16 +970,28 @@ func _build_systems_debug_text() -> String:
 			q.get("turns_left", 0)
 		]
 
-	return "DEBUG [F10]\nPlanet: %s\nLocal Faction: %s (%+d)\nBuy/Sell Mod: %.2f / %.2f\nEncounter Chance: %.0f%%\nDebt: %s | Risk +%.0f%%\nQuest: %s\nAll Reps: %s" % [
+	return "DEBUG [F10]\nPlanet: %s\nLocal Faction: %s (%+d, %s)\nLoyalty: %d (%s)\nBounty: %d cr (%s)\nBuy/Sell Mod: %.2f / %.2f\nCustoms: Scan %+.0f%% | Fine x%.2f | Hide %+.0f%%\nQuest Terms: Reward %+.0f%% | Deadline %+d\nService Fee: x%.2f\nEncounter Chance: %.0f%%\nDebt: %s | Risk +%.0f%%\nQuest: %s\nTracked Goods: %d\nAll Reps: %s" % [
 		GameManager.current_planet,
 		faction,
 		rep,
+		rep_tier,
+		loyalty,
+		loyalty_tier,
+		GameManager.bounty_amount,
+		bounty_tier,
 		buy_mod,
 		sell_mod,
+		customs_scan_mod * 100.0,
+		customs_fine_mod,
+		customs_hide_mod * 100.0,
+		quest_reward_mod * 100.0,
+		quest_deadline_mod,
+		service_fee_mod,
 		chance * 100.0,
 		GameManager.get_debt_status_text(),
 		GameManager.get_debt_risk_modifier() * 100.0,
 		quest_text,
+		GameManager.trade_route_memory.size(),
 		", ".join(rep_parts)
 	]
 

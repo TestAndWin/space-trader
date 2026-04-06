@@ -41,6 +41,7 @@ func save_game() -> void:
 		"difficulty": GameManager.difficulty,
 		"bounty_amount": GameManager.bounty_amount,
 		"trade_loyalty": GameManager.trade_loyalty.duplicate(),
+		"trade_route_memory": GameManager.trade_route_memory.duplicate(true),
 		"total_smuggler_deals": GameManager.total_smuggler_deals,
 		"total_quests_completed": GameManager.total_quests_completed,
 	}
@@ -111,6 +112,7 @@ func load_game() -> bool:
 	var loaded_loyalty: Dictionary = data.get("trade_loyalty", {})
 	for planet_name in loaded_loyalty:
 		GameManager.trade_loyalty[str(planet_name)] = int(loaded_loyalty[planet_name])
+	GameManager.trade_route_memory = data.get("trade_route_memory", {}).duplicate(true)
 	GameManager.total_smuggler_deals = int(data.get("total_smuggler_deals", 0))
 	GameManager.total_quests_completed = int(data.get("total_quests_completed", 0))
 	return true
