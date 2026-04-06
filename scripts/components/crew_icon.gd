@@ -11,7 +11,8 @@ const CREW_COLORS := {
 	2: Color(0.9, 0.75, 0.2),      # Engineer - Gold
 	3: Color(0.3, 0.8, 0.4),       # Trader - Green
 	4: Color(0.6, 0.3, 0.8),       # Smuggler - Purple
-	5: Color(0.7, 0.85, 0.95),     # Medic - Light Blue
+	5: Color(0.7, 0.85, 0.95),     # Max Hull - Light Blue
+	7: Color(0.95, 0.45, 0.5),     # Medic - Pink/Red
 }
 
 
@@ -54,6 +55,7 @@ func _draw() -> void:
 		3: _draw_credits(cx, cy, r, col)
 		4: _draw_mask(cx, cy, r, col)
 		5: _draw_cross(cx, cy, r, col)
+		7: _draw_heart(cx, cy, r, col)
 
 
 func _hex_points(cx: float, cy: float, r: float) -> PackedVector2Array:
@@ -171,3 +173,20 @@ func _draw_cross(cx: float, cy: float, r: float, col: Color) -> void:
 	# Subtle inner highlight
 	var hi := r * 0.08
 	draw_rect(Rect2(cx - hi, cy - arm * 0.7, hi * 2, arm * 1.4), col.lightened(0.2))
+
+
+func _draw_heart(cx: float, cy: float, r: float, col: Color) -> void:
+	# Heart shape for combat medic
+	var s := r * 0.42
+	var pts := PackedVector2Array()
+	var segments := 32
+	for i in range(segments + 1):
+		var t := float(i) / segments
+		var angle := t * TAU
+		# Heart parametric equation
+		var hx := s * 0.95 * (16.0 * pow(sin(angle), 3)) / 16.0
+		var hy := -s * 0.85 * (13.0 * cos(angle) - 5.0 * cos(2.0 * angle) - 2.0 * cos(3.0 * angle) - cos(4.0 * angle)) / 16.0
+		pts.append(Vector2(cx + hx, cy + hy))
+	draw_colored_polygon(pts, col)
+	# Inner highlight
+	draw_circle(Vector2(cx - s * 0.25, cy - s * 0.1), s * 0.12, col.lightened(0.3))

@@ -233,6 +233,7 @@ func _on_accept() -> void:
 		EventLog.add_entry(
 			"Authorities caught wind of the deal! Fined %d cr." % fine
 		)
+		GameManager.add_bounty(100, "caught smuggling")
 
 	_close()
 

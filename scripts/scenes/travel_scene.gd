@@ -1,6 +1,7 @@
 extends Control
 
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
+const TravelEventScene = preload("res://scenes/components/travel_event.tscn")
 
 var destination_planet: String = ""
 var dot_count: int = 0
@@ -677,6 +678,21 @@ func _ease_out_cubic(value: float) -> float:
 
 func _on_travel_complete() -> void:
 	set_process(false)
+	# Check for non-combat travel event first
+	var travel_event := TravelEventScene.instantiate()
+	add_child(travel_event)
+	if travel_event.try_trigger():
+		travel_event.event_resolved.connect(_on_travel_event_resolved)
+		return
+	travel_event.queue_free()
+	_proceed_to_arrival()
+
+
+func _on_travel_event_resolved() -> void:
+	_proceed_to_arrival()
+
+
+func _proceed_to_arrival() -> void:
 	var danger_level: int = 1
 	var planet_data := EconomyManager.get_planet_data(destination_planet)
 	if planet_data:

@@ -35,6 +35,10 @@ func estimate_encounter_chance(danger_level: int, planet_name: String = "") -> f
 	# Local standing and debt pressure affect inspection intensity.
 	chance += GameManager.get_local_encounter_modifier(planet_name)
 	chance += GameManager.get_debt_risk_modifier()
+	# Difficulty modifier
+	chance += GameManager.get_difficulty_encounter_modifier()
+	# Bounty modifier
+	chance += GameManager.get_bounty_encounter_modifier()
 	return clampf(chance, 0.05, 0.90)
 
 
@@ -57,9 +61,17 @@ func _get_difficulty_bonus() -> int:
 func get_encounter(max_difficulty: int) -> Resource:
 	var effective_max: int = mini(max_difficulty + _get_difficulty_bonus(), MAX_DIFFICULTY)
 	var filtered: Array = []
+	var bounty_hunter: Resource = null
 	for enc in encounter_pool:
 		if enc.difficulty <= effective_max:
 			filtered.append(enc)
+			if enc.encounter_name == "Bounty Hunter":
+				bounty_hunter = enc
 	if filtered.is_empty():
 		return null
+	# Bounty hunters appear more often when player has a bounty
+	if bounty_hunter and GameManager.bounty_amount >= GameManager.BOUNTY_THRESHOLD_LOW:
+		var bounty_chance: float = 0.35 if GameManager.bounty_amount >= GameManager.BOUNTY_THRESHOLD_HIGH else 0.20
+		if randf() < bounty_chance:
+			return bounty_hunter
 	return filtered[randi() % filtered.size()]

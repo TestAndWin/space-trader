@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="TravelEventData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/travel_event_data.gd" id="1_te1"]
+
+[resource]
+script = ExtResource("1_te1")
+event_name = "Stranded Trader"
+description = "You pick up a distress signal from a small freighter. Their engines are dead and they're drifting. They're offering credits for a tow to the nearest station."
+choice_a_text = "Help them (-50 cr)"
+choice_b_text = "Ignore signal"
+choice_a_description = "The grateful trader transfers 120 credits and shares a useful trade tip. A worthwhile detour."
+choice_b_description = "You fly past the drifting ship. Their signal fades into static."
+choice_a_credits = 70
+choice_a_hull = 0
+choice_b_credits = 0
+choice_b_hull = 0
+min_difficulty = 1
+choice_a_success_chance = 0.75
+choice_a_alt_description = "It was a trap! Pirates ambush you during the tow. You fight them off but take hull damage and lose your fuel credits."
+choice_a_alt_credits = -50
+choice_a_alt_hull = -6

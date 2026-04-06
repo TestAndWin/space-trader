@@ -129,6 +129,13 @@ const PLANET_EVENTS: Array[String] = [
 ]
 
 
+const TRAVEL_EVENTS: Array[String] = [
+	"res://data/travel_events/stranded_trader.tres",
+	"res://data/travel_events/abandoned_wreck.tres",
+	"res://data/travel_events/distress_signal.tres",
+]
+
+
 func load_all(paths: Array[String]) -> Array:
 	var results: Array = []
 	for path in paths:

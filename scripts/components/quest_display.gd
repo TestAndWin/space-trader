@@ -45,6 +45,7 @@ func _build_ui() -> void:
 		UIStyles.style_accent_button(next_btn, ACCENT_GREEN)
 		vbox.add_child(next_btn)
 		_add_loan_panel(vbox)
+		_add_bounty_panel(vbox)
 		return
 
 	# Active quest
@@ -93,6 +94,7 @@ func _build_ui() -> void:
 			missing_label.add_theme_color_override("font_color", Color(0.7, 0.4, 0.3))
 			vbox.add_child(missing_label)
 		_add_loan_panel(vbox)
+		_add_bounty_panel(vbox)
 		return
 
 	# No active quest — show local offer
@@ -137,6 +139,7 @@ func _build_ui() -> void:
 	vbox.add_child(accept_btn)
 
 	_add_loan_panel(vbox)
+	_add_bounty_panel(vbox)
 
 
 func _player_has_goods(q: Dictionary) -> bool:
@@ -213,4 +216,32 @@ func _on_repay_chunk() -> void:
 func _on_repay_all() -> void:
 	GameManager.repay_loan(-1)
 	quest_changed.emit()
+	_build_ui()
+
+
+func _add_bounty_panel(vbox: VBoxContainer) -> void:
+	if GameManager.bounty_amount <= 0:
+		return
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	var bounty_label := Label.new()
+	bounty_label.text = "Bounty: %d cr" % GameManager.bounty_amount
+	bounty_label.add_theme_font_size_override("font_size", 11)
+	bounty_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+	vbox.add_child(bounty_label)
+
+	var pay_btn := Button.new()
+	pay_btn.text = "Pay Off Bounty (%d cr)" % GameManager.bounty_amount
+	pay_btn.pressed.connect(_on_pay_bounty)
+	UIStyles.style_accent_button(pay_btn, ACCENT_RED)
+	if GameManager.credits < GameManager.bounty_amount:
+		pay_btn.disabled = true
+	vbox.add_child(pay_btn)
+
+
+func _on_pay_bounty() -> void:
+	if GameManager.pay_off_bounty():
+		quest_changed.emit()
 	_build_ui()

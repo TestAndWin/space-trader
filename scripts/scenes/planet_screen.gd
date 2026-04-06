@@ -700,6 +700,8 @@ func _update_ui() -> void:
 		goal_label.add_theme_color_override("font_color", goal_color)
 	if GameManager.has_active_loan():
 		goal_label.text += " | Debt %d (%d)" % [GameManager.outstanding_debt, GameManager.debt_due_in_trips]
+	if GameManager.bounty_amount > 0:
+		goal_label.text += " | Bounty %d cr" % GameManager.bounty_amount
 	_refresh_info_bar_text_layout()
 
 

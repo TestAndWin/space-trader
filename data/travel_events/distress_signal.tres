@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="TravelEventData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/travel_event_data.gd" id="1_te1"]
+
+[resource]
+script = ExtResource("1_te1")
+event_name = "Distress Signal"
+description = "A weak distress signal crackles through your comms. A passenger liner has suffered a life-support failure. They need emergency supplies — fast."
+choice_a_text = "Send supplies (-30 cr)"
+choice_b_text = "Fly past"
+choice_a_description = "The captain is deeply grateful. They recommend you to local authorities and transfer a generous reward."
+choice_b_description = "You tune out the signal and focus on your destination. Not your problem."
+choice_a_credits = 50
+choice_a_hull = 0
+choice_b_credits = 0
+choice_b_hull = 0
+min_difficulty = 1
+choice_a_success_chance = 0.8
+choice_a_alt_description = "The liner's reactor was leaking radiation. Your supplies help, but your hull takes radiation damage. At least they're grateful."
+choice_a_alt_credits = -30
+choice_a_alt_hull = -4

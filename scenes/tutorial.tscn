@@ -251,6 +251,60 @@ text = "At the Quest building, you can take a loan for quick capital. Debt accru
 autowrap_mode = 3
 mouse_filter = 2
 
+[node name="DifficultySection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/DifficultySection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.3, 0.85, 1.0, 1)
+text = "Difficulty"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/DifficultySection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "When starting a new game, choose your difficulty level. Easy mode gives you more starting credits (1500), extra hull, fewer encounters, and longer quest deadlines. Normal mode is the standard experience (1000 credits). Hard mode starts you with only 600 credits, less hull, more encounters, and shorter deadlines. Your difficulty is saved with your game."
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="TravelEventsSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TravelEventsSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.5, 0.8, 1.0, 1)
+text = "Travel Events"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TravelEventsSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "During travel between planets, you may encounter random non-combat events. A stranded trader might ask for help, you could discover an abandoned wreck to salvage, or pick up a distress signal. Each event offers two choices with different risks and rewards. Outcomes are not always guaranteed — helping a stranded trader could turn out to be a pirate trap, and salvaging a wreck might cause hull damage. Weigh the risk before choosing!"
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="BountySection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/BountySection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1.0, 0.4, 0.3, 1)
+text = "Bounty System"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/BountySection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Illegal activities build up a bounty on your head. Getting caught smuggling adds 100 cr to your bounty. Defeating a System Patrol adds 50 cr. Once your bounty reaches 100 cr, you'll face more encounters and bounty hunters will start tracking you. At 300 cr, the heat gets even worse. You can reduce your bounty by defeating bounty hunters (-150 cr each) or pay it off entirely at the Quest Board. Your bounty is shown in the status bar when active."
+autowrap_mode = 3
+mouse_filter = 2
+
 [node name="HotkeysSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
 layout_mode = 2
 mouse_filter = 2

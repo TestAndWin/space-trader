@@ -69,8 +69,8 @@ func _award_battle_credits() -> int:
 		earned = int(round(GameManager.current_encounter.reward_credits * EventManager.get_reward_modifier()))
 		GameManager.add_credits(earned)
 	# Crew medic bonus: heal hull after combat win
-	if GameManager.has_crew_bonus(CrewData.CrewBonus.HULL_REGEN):
-		var heal: int = int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.HULL_REGEN))
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.COMBAT_HEAL):
+		var heal: int = int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.COMBAT_HEAL))
 		GameManager.current_hull = mini(GameManager.current_hull + heal, GameManager.max_hull)
 	return earned
 

@@ -1,15 +1,14 @@
 extends ColorRect
 
-## Planet arrival event popup — random events triggered when landing on a planet.
-## Call try_trigger(planet_type) from planet_screen. If it returns true the popup
-## is visible; otherwise nothing happens.
+## Travel event popup — random non-combat encounters during space travel.
+## Call try_trigger() from travel_scene. If it returns true the popup is visible
+## and ready for player interaction; otherwise nothing happens.
 
 signal event_resolved
 
-const TRIGGER_CHANCE := 0.25
-# All loaded event resources
+const TRIGGER_CHANCE := 0.20
+
 var _all_events: Array = []
-# Currently displayed event
 var _current_event: Resource = null
 
 var _title_label: Label
@@ -21,17 +20,13 @@ var _choice_b_button: Button
 
 # ── Public API ───────────────────────────────────────────────────────────────
 
-func try_trigger(planet_type: int) -> bool:
+func try_trigger() -> bool:
 	_load_events()
 	if randf() > TRIGGER_CHANCE:
 		return false
-	var matching: Array = []
-	for ev in _all_events:
-		if ev.planet_type == planet_type:
-			matching.append(ev)
-	if matching.is_empty():
+	if _all_events.is_empty():
 		return false
-	_current_event = matching[randi() % matching.size()]
+	_current_event = _all_events[randi() % _all_events.size()]
 	_show_event()
 	visible = true
 	return true
@@ -42,7 +37,7 @@ func try_trigger(planet_type: int) -> bool:
 func _load_events() -> void:
 	if not _all_events.is_empty():
 		return
-	_all_events = ResourceRegistry.load_all(ResourceRegistry.PLANET_EVENTS)
+	_all_events = ResourceRegistry.load_all(ResourceRegistry.TRAVEL_EVENTS)
 
 
 # ── UI construction ──────────────────────────────────────────────────────────
@@ -53,27 +48,26 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	color = Color(0.0, 0.0, 0.0, 0.75)
+	set_anchors_preset(Control.PRESET_FULL_RECT)
 
-	# CenterContainer (full screen)
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_PASS
 	add_child(center)
 
-	# PanelContainer
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(400, 0)
 
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.08, 0.08, 0.12, 0.95)
-	panel_style.border_color = Color(0.3, 0.5, 0.8)
+	panel_style.bg_color = Color(0.06, 0.08, 0.14, 0.95)
+	panel_style.border_color = Color(0.5, 0.7, 1.0)
 	panel_style.set_border_width_all(2)
 	panel_style.set_corner_radius_all(6)
 	panel_style.set_content_margin_all(16)
 	panel.add_theme_stylebox_override("panel", panel_style)
 	center.add_child(panel)
 
-	# VBoxContainer
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
 	panel.add_child(vbox)
@@ -81,7 +75,7 @@ func _build_ui() -> void:
 	# Title
 	_title_label = Label.new()
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title_label.add_theme_color_override("font_color", Color(0.4, 0.7, 1.0))
+	_title_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
 	_title_label.add_theme_font_size_override("font_size", 22)
 	vbox.add_child(_title_label)
 
@@ -94,7 +88,7 @@ func _build_ui() -> void:
 
 	# Separator
 	var sep := HSeparator.new()
-	sep.add_theme_color_override("separator", Color(0.2, 0.35, 0.55))
+	sep.add_theme_color_override("separator", Color(0.25, 0.4, 0.6))
 	vbox.add_child(sep)
 
 	# Outcome label (shown after choice)
@@ -144,54 +138,17 @@ func _show_event() -> void:
 	_choice_b_button.text = _current_event.choice_b_text
 	_outcome_label.visible = false
 
-	# Check if choice A is available
+	# Check if choice A is affordable
 	_choice_a_button.disabled = not _can_choose_a()
-	if _choice_a_button.disabled:
-		_choice_a_button.tooltip_text = _get_requirement_text()
 
 
 func _can_choose_a() -> bool:
 	var ev := _current_event
-	# Check credit cost (negative credits means player pays)
 	if ev.choice_a_credits < 0 and GameManager.credits < abs(ev.choice_a_credits):
 		return false
-	# Check required cargo
-	if ev.choice_a_requires_good != "" and ev.choice_a_requires_qty > 0:
-		var owned := _get_cargo_qty(ev.choice_a_requires_good)
-		if owned < ev.choice_a_requires_qty:
-			return false
-	# Check cargo space for adds
-	if ev.choice_a_cargo_good != "" and ev.choice_a_cargo_qty > 0:
-		if not GameManager.can_add_cargo(ev.choice_a_cargo_good, ev.choice_a_cargo_qty):
-			return false
-	# Check hull damage won't kill the player
 	if ev.choice_a_hull < 0 and GameManager.current_hull <= abs(ev.choice_a_hull):
 		return false
 	return true
-
-
-func _get_requirement_text() -> String:
-	var ev := _current_event
-	var parts: Array = []
-	if ev.choice_a_credits < 0 and GameManager.credits < abs(ev.choice_a_credits):
-		parts.append("Need %d credits" % abs(ev.choice_a_credits))
-	if ev.choice_a_requires_good != "" and ev.choice_a_requires_qty > 0:
-		var owned := _get_cargo_qty(ev.choice_a_requires_good)
-		if owned < ev.choice_a_requires_qty:
-			parts.append("Need %d %s" % [ev.choice_a_requires_qty, ev.choice_a_requires_good])
-	if ev.choice_a_cargo_good != "" and ev.choice_a_cargo_qty > 0:
-		if not GameManager.can_add_cargo(ev.choice_a_cargo_good, ev.choice_a_cargo_qty):
-			parts.append("Not enough cargo space")
-	if ev.choice_a_hull < 0 and GameManager.current_hull <= abs(ev.choice_a_hull):
-		parts.append("Hull too low")
-	return ". ".join(parts)
-
-
-func _get_cargo_qty(good_name: String) -> int:
-	for item in GameManager.cargo:
-		if item["good_name"] == good_name:
-			return item["quantity"]
-	return 0
 
 
 # ── Choice handlers ──────────────────────────────────────────────────────────
@@ -199,56 +156,45 @@ func _get_cargo_qty(good_name: String) -> int:
 func _on_choice_a() -> void:
 	var ev := _current_event
 	if ev.choice_a_success_chance < 1.0 and randf() >= ev.choice_a_success_chance:
-		_apply_outcome(ev.choice_a_alt_credits, ev.choice_a_alt_hull, ev.choice_a_alt_cargo_good, ev.choice_a_alt_cargo_qty)
+		_apply_outcome(ev.choice_a_alt_credits, ev.choice_a_alt_hull)
 		_show_outcome(ev.choice_a_alt_description)
 	else:
-		_apply_outcome(ev.choice_a_credits, ev.choice_a_hull, ev.choice_a_cargo_good, ev.choice_a_cargo_qty)
+		_apply_outcome(ev.choice_a_credits, ev.choice_a_hull)
+		# Distress signal: helping improves reputation with destination faction
+		if ev.event_name == "Distress Signal":
+			var dest_faction: String = GameManager.get_planet_faction(GameManager.travel_destination)
+			GameManager.add_faction_reputation(dest_faction, 5, "helped distress signal")
 		_show_outcome(ev.choice_a_description)
 
 
 func _on_choice_b() -> void:
 	var ev := _current_event
 	if ev.choice_b_success_chance < 1.0 and randf() >= ev.choice_b_success_chance:
-		_apply_outcome(ev.choice_b_alt_credits, ev.choice_b_alt_hull, ev.choice_b_alt_cargo_good, ev.choice_b_alt_cargo_qty)
+		_apply_outcome(ev.choice_b_alt_credits, ev.choice_b_alt_hull)
 		_show_outcome(ev.choice_b_alt_description)
 	else:
-		_apply_outcome(ev.choice_b_credits, ev.choice_b_hull, ev.choice_b_cargo_good, ev.choice_b_cargo_qty)
+		_apply_outcome(ev.choice_b_credits, ev.choice_b_hull)
 		_show_outcome(ev.choice_b_description)
 
 
-func _apply_outcome(credits_delta: int, hull_delta: int, cargo_good: String, cargo_qty: int) -> void:
-	# Credits
+func _apply_outcome(credits_delta: int, hull_delta: int) -> void:
 	if credits_delta > 0:
 		GameManager.add_credits(credits_delta)
 	elif credits_delta < 0:
 		GameManager.remove_credits(abs(credits_delta))
 
-	# Hull
 	if hull_delta > 0:
 		GameManager.current_hull = mini(GameManager.current_hull + hull_delta, GameManager.max_hull)
 	elif hull_delta < 0:
 		GameManager.current_hull = maxi(GameManager.current_hull + hull_delta, 1)
 
-	# Cargo
-	if cargo_good != "" and cargo_qty != 0:
-		if cargo_qty > 0:
-			GameManager.add_cargo(cargo_good, cargo_qty)
-		else:
-			GameManager.remove_cargo(cargo_good, abs(cargo_qty))
-
-	# Log entry
 	var parts: Array = []
 	if credits_delta != 0:
 		parts.append("%+d credits" % credits_delta)
 	if hull_delta != 0:
 		parts.append("%+d hull" % hull_delta)
-	if cargo_good != "" and cargo_qty != 0:
-		if cargo_qty > 0:
-			parts.append("+%d %s" % [cargo_qty, cargo_good])
-		else:
-			parts.append("-%d %s" % [abs(cargo_qty), cargo_good])
 	if not parts.is_empty():
-		EventLog.add_entry("Planet event: " + ", ".join(parts))
+		EventLog.add_entry("Travel event: " + ", ".join(parts))
 
 
 func _show_outcome(text: String) -> void:
@@ -257,7 +203,6 @@ func _show_outcome(text: String) -> void:
 	_choice_a_button.visible = false
 	_choice_b_button.visible = false
 
-	# Replace buttons with a Close button
 	var close_btn := Button.new()
 	close_btn.text = "Continue"
 	close_btn.custom_minimum_size = Vector2(140, 36)

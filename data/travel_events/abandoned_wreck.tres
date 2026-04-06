@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="TravelEventData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/travel_event_data.gd" id="1_te1"]
+
+[resource]
+script = ExtResource("1_te1")
+event_name = "Abandoned Wreck"
+description = "Your sensors detect a derelict ship floating among debris. The hull is breached but cargo bays might still hold valuables. Salvaging could be risky — the structure looks unstable."
+choice_a_text = "Salvage the wreck"
+choice_b_text = "Keep flying"
+choice_a_description = "You find a well-preserved cargo bay full of valuables! The salvage operation goes smoothly."
+choice_b_description = "You mark the coordinates and continue on your way. Better safe than sorry."
+choice_a_credits = 120
+choice_a_hull = 0
+choice_b_credits = 0
+choice_b_hull = 0
+min_difficulty = 1
+choice_a_success_chance = 0.5
+choice_a_alt_description = "A structural collapse catches you mid-salvage! You grab some scraps but your hull takes a beating."
+choice_a_alt_credits = 30
+choice_a_alt_hull = -8

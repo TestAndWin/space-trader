@@ -531,6 +531,11 @@ func _on_battle_won() -> void:
 	GameManager.total_encounters_won += 1
 	GameManager.battle_result = "won"
 	EventLog.add_entry("Won battle vs %s" % encounter.encounter_name)
+	# Bounty system: defeating bounty hunters reduces bounty, defeating patrols increases it
+	if encounter.encounter_name == "Bounty Hunter":
+		GameManager.reduce_bounty(150)
+	elif encounter.encounter_name == "System Patrol":
+		GameManager.add_bounty(50, "defeated patrol")
 	GameManager.change_scene("res://scenes/battle_result.tscn")
 
 

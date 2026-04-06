@@ -38,6 +38,8 @@ func save_game() -> void:
 		"debt_due_in_trips": GameManager.debt_due_in_trips,
 		"debt_interest_rate": GameManager.debt_interest_rate,
 		"missed_debt_payments": GameManager.missed_debt_payments,
+		"difficulty": GameManager.difficulty,
+		"bounty_amount": GameManager.bounty_amount,
 	}
 	var json_string := JSON.stringify(save_data, "\t")
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -100,6 +102,8 @@ func load_game() -> bool:
 	GameManager.debt_due_in_trips = int(data.get("debt_due_in_trips", 0))
 	GameManager.debt_interest_rate = float(data.get("debt_interest_rate", 0.0))
 	GameManager.missed_debt_payments = int(data.get("missed_debt_payments", 0))
+	GameManager.difficulty = int(data.get("difficulty", GameManager.Difficulty.NORMAL))
+	GameManager.bounty_amount = int(data.get("bounty_amount", 0))
 	return true
 
 

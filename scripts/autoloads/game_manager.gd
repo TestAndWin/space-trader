@@ -6,6 +6,15 @@ signal crew_changed
 
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
+# Difficulty
+enum Difficulty { EASY, NORMAL, HARD }
+const DIFFICULTY_SETTINGS := {
+	Difficulty.EASY:   { "credits": 1500, "hull": 35, "encounter_mod": -0.10, "quest_deadline_bonus": 2 },
+	Difficulty.NORMAL: { "credits": 1000, "hull": 30, "encounter_mod":  0.00, "quest_deadline_bonus": 0 },
+	Difficulty.HARD:   { "credits":  600, "hull": 25, "encounter_mod":  0.10, "quest_deadline_bonus": -1 },
+}
+var difficulty: int = Difficulty.NORMAL
+
 # Player identity
 var player_name: String = "Pilot"
 
@@ -78,6 +87,11 @@ const FACTION_BY_PLANET_TYPE := {
 }
 var faction_reputation: Dictionary = {} # { faction_name: int }
 
+# Bounty
+var bounty_amount: int = 0
+const BOUNTY_THRESHOLD_LOW := 100
+const BOUNTY_THRESHOLD_HIGH := 300
+
 # Finance pressure
 const LOAN_DEFAULT_AMOUNT := 1000
 const LOAN_DEFAULT_TERM := 7
@@ -96,9 +110,10 @@ func _ready() -> void:
 
 
 func reset() -> void:
-	credits = 1000
-	max_hull = 30
-	current_hull = 30
+	var settings: Dictionary = DIFFICULTY_SETTINGS.get(difficulty, DIFFICULTY_SETTINGS[Difficulty.NORMAL])
+	credits = settings["credits"]
+	max_hull = settings["hull"]
+	current_hull = settings["hull"]
 	max_shield = 10
 	current_shield = 10
 	cargo_capacity = 10
@@ -125,6 +140,7 @@ func reset() -> void:
 	debt_due_in_trips = 0
 	debt_interest_rate = 0.0
 	missed_debt_payments = 0
+	bounty_amount = 0
 	current_encounter = null
 	battle_result = ""
 	last_cargo_lost_text = ""
@@ -519,3 +535,55 @@ func switch_ship(new_ship_path: String) -> void:
 	add_credits(trade_in)
 	current_ship = new_ship_path
 	credits_changed.emit(credits)
+
+
+# ── Difficulty ──────────────────────────────────────────────────────────────
+
+func get_difficulty_encounter_modifier() -> float:
+	var settings: Dictionary = DIFFICULTY_SETTINGS.get(difficulty, DIFFICULTY_SETTINGS[Difficulty.NORMAL])
+	return settings["encounter_mod"]
+
+
+func get_difficulty_quest_bonus() -> int:
+	var settings: Dictionary = DIFFICULTY_SETTINGS.get(difficulty, DIFFICULTY_SETTINGS[Difficulty.NORMAL])
+	return settings["quest_deadline_bonus"]
+
+
+# ── Bounty ──────────────────────────────────────────────────────────────────
+
+func add_bounty(amount: int, reason: String = "") -> void:
+	if amount <= 0:
+		return
+	bounty_amount += amount
+	if reason != "":
+		EventLog.add_entry("Bounty +%d cr (%s). Total: %d cr" % [amount, reason, bounty_amount])
+	else:
+		EventLog.add_entry("Bounty +%d cr. Total: %d cr" % [amount, bounty_amount])
+
+
+func reduce_bounty(amount: int) -> void:
+	bounty_amount = maxi(bounty_amount - amount, 0)
+	if bounty_amount == 0:
+		EventLog.add_entry("Bounty cleared!")
+	else:
+		EventLog.add_entry("Bounty reduced by %d cr. Remaining: %d cr" % [amount, bounty_amount])
+
+
+func pay_off_bounty() -> bool:
+	if bounty_amount <= 0:
+		return false
+	if credits < bounty_amount:
+		return false
+	var cost: int = bounty_amount
+	remove_credits(cost)
+	bounty_amount = 0
+	EventLog.add_entry("Paid off bounty of %d cr." % cost)
+	return true
+
+
+func get_bounty_encounter_modifier() -> float:
+	if bounty_amount >= BOUNTY_THRESHOLD_HIGH:
+		return 0.20
+	elif bounty_amount >= BOUNTY_THRESHOLD_LOW:
+		return 0.10
+	return 0.0

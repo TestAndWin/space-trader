@@ -53,7 +53,7 @@ func _make_quest(
 	var qty: int = randi_range(1, 3) + (1 if stage >= 3 else 0)
 	var stage_mult: float = pow(STAGE_REWARD_MULT, float(maxi(stage - 1, 0)))
 	var reward: int = int((good.base_price * qty * 1.8 + randi_range(50, 150)) * stage_mult)
-	var deadline: int = randi_range(DEADLINE_MIN, DEADLINE_MAX) + maxi(stage - 1, 0)
+	var deadline: int = randi_range(DEADLINE_MIN, DEADLINE_MAX) + maxi(stage - 1, 0) + GameManager.get_difficulty_quest_bonus()
 	var penalty: int = int(reward * PENALTY_RATIO)
 	var issuer_faction: String = GameManager.get_planet_faction(planet.planet_name)
 	if chain_id < 0:
