@@ -43,6 +43,7 @@ func _style_buttons() -> void:
 		$VBoxContainer/NewGameButton,
 		$VBoxContainer/ContinueButton,
 		$VBoxContainer/HowToPlayButton,
+		$VBoxContainer/AchievementsButton,
 		$VBoxContainer/QuitButton,
 	]
 	for btn: Button in buttons:
@@ -143,6 +144,10 @@ func _on_continue_pressed() -> void:
 
 func _on_how_to_play_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/tutorial.tscn")
+
+
+func _on_achievements_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/achievements_screen.tscn")
 
 
 func _on_quit_pressed() -> void:

@@ -11,6 +11,9 @@ const TRIGGER_CHANCE := 0.25
 var _all_events: Array = []
 # Currently displayed event
 var _current_event: Resource = null
+# Cargo theft tracking
+var _stolen_good: String = ""
+var _stolen_qty: int = 0
 
 var _title_label: Label
 var _description_label: Label
@@ -27,11 +30,17 @@ func try_trigger(planet_type: int) -> bool:
 		return false
 	var matching: Array = []
 	for ev in _all_events:
-		if ev.planet_type == planet_type:
+		if ev.any_planet_type or ev.planet_type == planet_type:
+			# Cargo theft requires player to have cargo
+			if ev.event_name == "Cargo Theft!" and GameManager.cargo.is_empty():
+				continue
 			matching.append(ev)
 	if matching.is_empty():
 		return false
 	_current_event = matching[randi() % matching.size()]
+	# Cargo theft: steal cargo before showing event
+	if _current_event.event_name == "Cargo Theft!":
+		_apply_cargo_theft()
 	_show_event()
 	visible = true
 	return true
@@ -139,7 +148,10 @@ func _show_event() -> void:
 	if _current_event == null:
 		return
 	_title_label.text = _current_event.event_name.to_upper()
-	_description_label.text = _current_event.description
+	var desc: String = _current_event.description
+	if _stolen_good != "":
+		desc = desc.replace("{good}", "%d %s" % [_stolen_qty, _stolen_good])
+	_description_label.text = desc
 	_choice_a_button.text = _current_event.choice_a_text
 	_choice_b_button.text = _current_event.choice_b_text
 	_outcome_label.visible = false
@@ -194,10 +206,32 @@ func _get_cargo_qty(good_name: String) -> int:
 	return 0
 
 
+# ── Cargo theft ─────────────────────────────────────────────────────────────
+
+func _apply_cargo_theft() -> void:
+	if GameManager.cargo.is_empty():
+		return
+	var item: Dictionary = GameManager.cargo[randi() % GameManager.cargo.size()]
+	_stolen_good = item["good_name"]
+	_stolen_qty = clampi(randi_range(1, 3), 1, item["quantity"])
+	GameManager.remove_cargo(_stolen_good, _stolen_qty)
+	EventLog.add_entry("Thieves stole %d %s from your cargo!" % [_stolen_qty, _stolen_good])
+
+
 # ── Choice handlers ──────────────────────────────────────────────────────────
 
 func _on_choice_a() -> void:
 	var ev := _current_event
+	# Cargo theft: success = recover stolen goods
+	if ev.event_name == "Cargo Theft!" and _stolen_good != "":
+		if ev.choice_a_success_chance < 1.0 and randf() >= ev.choice_a_success_chance:
+			_apply_outcome(ev.choice_a_alt_credits, ev.choice_a_alt_hull, "", 0)
+			_show_outcome(ev.choice_a_alt_description.replace("{good}", "%d %s" % [_stolen_qty, _stolen_good]))
+		else:
+			GameManager.add_cargo(_stolen_good, _stolen_qty)
+			_apply_outcome(ev.choice_a_credits, ev.choice_a_hull, "", 0)
+			_show_outcome(ev.choice_a_description.replace("{good}", "%d %s" % [_stolen_qty, _stolen_good]))
+		return
 	if ev.choice_a_success_chance < 1.0 and randf() >= ev.choice_a_success_chance:
 		_apply_outcome(ev.choice_a_alt_credits, ev.choice_a_alt_hull, ev.choice_a_alt_cargo_good, ev.choice_a_alt_cargo_qty)
 		_show_outcome(ev.choice_a_alt_description)

@@ -203,6 +203,7 @@ func _on_battle_won_no_reward() -> void:
 	GameManager.current_planet = destination
 	if destination not in GameManager.visited_planets:
 		GameManager.visited_planets.append(destination)
+	AchievementManager.check_planets(GameManager.visited_planets)
 	GameManager.current_encounter = null
 	GameManager.battle_result = ""
 	GameManager.change_scene("res://scenes/planet_screen.tscn")
@@ -531,6 +532,9 @@ func _on_battle_won() -> void:
 	GameManager.total_encounters_won += 1
 	GameManager.battle_result = "won"
 	EventLog.add_entry("Won battle vs %s" % encounter.encounter_name)
+	AchievementManager.unlock("first_blood")
+	if encounter.encounter_name == "Bounty Hunter":
+		AchievementManager.unlock("bounty_survivor")
 	# Bounty system: defeating bounty hunters reduces bounty, defeating patrols increases it
 	if encounter.encounter_name == "Bounty Hunter":
 		GameManager.reduce_bounty(150)

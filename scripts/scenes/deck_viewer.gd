@@ -192,7 +192,7 @@ func _build_ui() -> void:
 	_card_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_card_grid.add_theme_constant_override("h_separation", 8)
 	_card_grid.add_theme_constant_override("v_separation", 8)
-	_card_grid.columns = 6
+	_card_grid.columns = 8
 	scroll.add_child(_card_grid)
 
 	# Shop section (below deck, trading only)
@@ -311,6 +311,7 @@ func _on_buy_card(_card_data: Resource, entry: Dictionary) -> void:
 		_status_label.text = "Not enough credits!"
 		return
 	GameManager.deck.append(card)
+	AchievementManager.check_deck(GameManager.deck.size())
 	for i in _shop_cards.size():
 		if _shop_cards[i]["card"] == card:
 			_shop_cards.remove_at(i)

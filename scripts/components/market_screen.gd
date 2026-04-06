@@ -317,6 +317,8 @@ func _on_buy(good_name: String, quantity: int) -> void:
 		return
 	GameManager.add_cargo(good_name, quantity)
 	GameManager.total_trades += 1
+	GameManager.add_trade_loyalty(planet_name, 1)
+	AchievementManager.check_trades(GameManager.total_trades)
 	EventLog.add_entry("Bought %d %s for %d cr" % [quantity, good_name, total_cost])
 	_status_label.text = "Bought %d %s for %d cr" % [quantity, good_name, total_cost]
 	_refresh_all()
@@ -331,6 +333,8 @@ func _on_sell(good_name: String, quantity: int) -> void:
 	GameManager.remove_cargo(good_name, quantity)
 	GameManager.add_credits(total_income)
 	GameManager.total_trades += 1
+	GameManager.add_trade_loyalty(planet_name, 1)
+	AchievementManager.check_trades(GameManager.total_trades)
 	if _planet_type != EconomyManager.PT_OUTLAW and _is_contraband(good_name):
 		GameManager.add_faction_reputation(
 			GameManager.get_planet_faction(planet_name),

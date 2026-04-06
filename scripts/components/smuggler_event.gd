@@ -223,19 +223,94 @@ func _on_accept() -> void:
 			"Sold %d %s to a smuggler for %d cr." % [_quantity, _good_name, _total_price]
 		)
 
+	GameManager.total_smuggler_deals += 1
+	AchievementManager.check_smuggler_deals(GameManager.total_smuggler_deals)
+
 	# Risk: chance of getting caught
 	if randf() < CATCH_CHANCE:
-		var fine := randi_range(FINE_MIN, FINE_MAX)
-		# Crew smuggler bonus: reduced fines
-		if GameManager.has_crew_bonus(4):  # SMUGGLE_PROTECTION
-			fine = int(fine * GameManager.get_crew_bonus_value(4))
-		GameManager.remove_credits(fine)
-		EventLog.add_entry(
-			"Authorities caught wind of the deal! Fined %d cr." % fine
-		)
-		GameManager.add_bounty(100, "caught smuggling")
+		_show_caught_options()
+		return
 
 	_close()
+
+
+func _show_caught_options() -> void:
+	var fine := randi_range(FINE_MIN, FINE_MAX)
+	if GameManager.has_crew_bonus(4):  # SMUGGLE_PROTECTION
+		fine = int(fine * GameManager.get_crew_bonus_value(4))
+	var bribe_cost := fine * 2
+
+	# Replace current UI content
+	_description_label.text = "Authorities caught wind of the deal! Choose how to handle it."
+	_accept_button.visible = false
+	_decline_button.visible = false
+
+	var caught_vbox := VBoxContainer.new()
+	caught_vbox.add_theme_constant_override("separation", 8)
+	_description_label.get_parent().add_child(caught_vbox)
+
+	# Option 1: Pay fine (fine + bounty)
+	var fine_btn := Button.new()
+	fine_btn.text = "Pay Fine (%d cr)" % fine
+	fine_btn.custom_minimum_size = Vector2(280, 34)
+	_style_caught_button(fine_btn, Color(0.7, 0.25, 0.1))
+	fine_btn.pressed.connect(func():
+		GameManager.remove_credits(fine)
+		GameManager.add_bounty(100, "caught smuggling")
+		GameManager.add_trade_loyalty(GameManager.current_planet, -15)
+		EventLog.add_entry("Paid smuggling fine: %d cr." % fine)
+		_close()
+	)
+	if GameManager.credits < fine:
+		fine_btn.disabled = true
+	caught_vbox.add_child(fine_btn)
+
+	# Option 2: Bribe (2x fine, no bounty, 80% success)
+	var bribe_btn := Button.new()
+	bribe_btn.text = "Bribe Official (%d cr, no bounty)" % bribe_cost
+	bribe_btn.custom_minimum_size = Vector2(280, 34)
+	_style_caught_button(bribe_btn, Color(0.6, 0.5, 0.1))
+	bribe_btn.pressed.connect(func():
+		if randf() < 0.80:
+			GameManager.remove_credits(bribe_cost)
+			EventLog.add_entry("Bribed official for %d cr. No record." % bribe_cost)
+		else:
+			GameManager.remove_credits(bribe_cost)
+			GameManager.add_bounty(150, "failed bribe attempt")
+			GameManager.add_trade_loyalty(GameManager.current_planet, -20)
+			EventLog.add_entry("Bribe failed! Fined %d cr + bounty." % bribe_cost)
+		_close()
+	)
+	if GameManager.credits < bribe_cost:
+		bribe_btn.disabled = true
+	caught_vbox.add_child(bribe_btn)
+
+	# Option 3: Accept punishment (fine + bounty + reputation hit)
+	var accept_btn := Button.new()
+	accept_btn.text = "Accept Punishment"
+	accept_btn.custom_minimum_size = Vector2(280, 34)
+	_style_caught_button(accept_btn, Color(0.25, 0.25, 0.28))
+	accept_btn.pressed.connect(func():
+		GameManager.remove_credits(mini(fine, GameManager.credits))
+		GameManager.add_bounty(100, "caught smuggling")
+		GameManager.add_trade_loyalty(GameManager.current_planet, -15)
+		EventLog.add_entry("Caught smuggling. Fined %d cr." % fine)
+		_close()
+	)
+	caught_vbox.add_child(accept_btn)
+
+
+func _style_caught_button(btn: Button, bg_color: Color) -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.set_corner_radius_all(4)
+	style.set_content_margin_all(6)
+	btn.add_theme_stylebox_override("normal", style)
+	var hover := StyleBoxFlat.new()
+	hover.bg_color = bg_color.lightened(0.15)
+	hover.set_corner_radius_all(4)
+	hover.set_content_margin_all(6)
+	btn.add_theme_stylebox_override("hover", hover)
 
 
 func _on_decline() -> void:

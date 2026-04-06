@@ -305,6 +305,60 @@ text = "Illegal activities build up a bounty on your head. Getting caught smuggl
 autowrap_mode = 3
 mouse_filter = 2
 
+[node name="TradeLoyaltySection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TradeLoyaltySection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.4, 0.9, 0.6, 1)
+text = "Trade Loyalty"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TradeLoyaltySection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Each trade at a planet increases your local Trade Loyalty (0-100). Higher loyalty gives you better prices: up to -8% on purchases and +6% on sales. Getting caught smuggling at a planet drops your loyalty by 15 points. Build loyalty at your favorite trading hubs for the best deals!"
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="CustomsScanSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CustomsScanSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.9, 0.3, 0.2, 1)
+text = "Customs & Smuggling"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CustomsScanSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Landing on non-Outlaw planets with contraband (Spice, Stolen Tech) in your cargo risks a customs inspection (20% chance). If caught, you have three options: Pay a Fine (lose credits + bounty + contraband confiscated), Try to Hide (chance-based, failure means harsher penalties), or Bribe the Official (costs double but no bounty on success). The Cloaking Device upgrade and Smuggle Protection crew reduce scan chances. When caught in a smuggler deal, you now also get bribery options."
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="AchievementsSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/AchievementsSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1.0, 0.9, 0.25, 1)
+text = "Achievements"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/AchievementsSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "There are 12 achievements to unlock across all your playthroughs. Achievements are global — they persist even when you start a new game. Win battles, complete trades, explore planets, build your crew, and more. Check your progress from the Achievements button on the main menu. A notification pops up when you unlock a new achievement."
+autowrap_mode = 3
+mouse_filter = 2
+
 [node name="HotkeysSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
 layout_mode = 2
 mouse_filter = 2

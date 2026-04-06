@@ -18,6 +18,7 @@ func _ready() -> void:
 			GameManager.current_planet = destination
 			if destination not in GameManager.visited_planets:
 				GameManager.visited_planets.append(destination)
+			AchievementManager.check_planets(GameManager.visited_planets)
 
 			# Roll reward type: 60% credits+card, 25% upgrade, 15% crew
 			var roll: float = randf()
@@ -37,6 +38,7 @@ func _ready() -> void:
 			GameManager.current_planet = destination
 			if destination not in GameManager.visited_planets:
 				GameManager.visited_planets.append(destination)
+			AchievementManager.check_planets(GameManager.visited_planets)
 			%CardRewardPanel.visible = false
 			%RewardPanel.visible = false
 			%ContinueButton.visible = true
@@ -130,6 +132,7 @@ func _on_reward_card_selected(card_data: Resource) -> void:
 		return
 	card_selected = true
 	GameManager.deck.append(card_data)
+	AchievementManager.check_deck(GameManager.deck.size())
 	_on_continue_pressed()
 
 

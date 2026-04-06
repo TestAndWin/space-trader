@@ -4,6 +4,7 @@ extends Resource
 @export var event_name: String = ""
 @export var description: String = ""
 @export var planet_type: int = 0  # PlanetData.PlanetType value
+@export var any_planet_type: bool = false  # If true, triggers on all planet types
 @export var choice_a_text: String = ""
 @export var choice_b_text: String = ""
 @export var choice_a_description: String = ""

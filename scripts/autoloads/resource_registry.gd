@@ -85,6 +85,7 @@ const UPGRADES: Array[String] = [
 	"res://data/upgrades/armor_plating.tres",
 	"res://data/upgrades/combat_scanner.tres",
 	"res://data/upgrades/shield_capacitor.tres",
+	"res://data/upgrades/cloaking_device.tres",
 ]
 
 const COMBAT_UPGRADES: Array[String] = [
@@ -126,6 +127,7 @@ const PLANET_EVENTS: Array[String] = [
 	"res://data/planet_events/black_market.tres",
 	"res://data/planet_events/hired_muscle.tres",
 	"res://data/planet_events/tech_experiment.tres",
+	"res://data/planet_events/cargo_theft.tres",
 ]
 
 

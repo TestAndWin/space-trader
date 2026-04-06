@@ -5,6 +5,7 @@ const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 
 func _ready() -> void:
+	AchievementManager.unlock("winner")
 	%TradesLabel.text = "Total Trades: %d" % GameManager.total_trades
 	%FlightsLabel.text = "Total Flights: %d" % GameManager.total_flights
 	%EncountersLabel.text = "Encounters Won: %d" % GameManager.total_encounters_won

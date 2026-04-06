@@ -763,6 +763,7 @@ func _resolve_slots() -> void:
 			if not cards.is_empty():
 				var random_card: Resource = cards[randi() % cards.size()]
 				GameManager.deck.append(random_card)
+				AchievementManager.check_deck(GameManager.deck.size())
 				msg += " Got %s!" % random_card.card_name
 		else:
 			winnings = _bet * 3

@@ -73,6 +73,8 @@ var arrival_events_done: bool = false
 var total_trades: int = 0
 var total_encounters_won: int = 0
 var total_flights: int = 0
+var total_smuggler_deals: int = 0
+var total_quests_completed: int = 0
 
 # Factions / reputation
 const FACTION_NEUTRAL := 0
@@ -86,6 +88,9 @@ const FACTION_BY_PLANET_TYPE := {
 	4: "Free Cartel", # OUTLAW
 }
 var faction_reputation: Dictionary = {} # { faction_name: int }
+
+# Trade loyalty per planet
+var trade_loyalty: Dictionary = {}  # { planet_name: int } (0–100)
 
 # Bounty
 var bounty_amount: int = 0
@@ -135,12 +140,15 @@ func reset() -> void:
 	total_trades = 0
 	total_encounters_won = 0
 	total_flights = 0
+	total_smuggler_deals = 0
+	total_quests_completed = 0
 	init_faction_reputation()
 	outstanding_debt = 0
 	debt_due_in_trips = 0
 	debt_interest_rate = 0.0
 	missed_debt_payments = 0
 	bounty_amount = 0
+	trade_loyalty.clear()
 	current_encounter = null
 	battle_result = ""
 	last_cargo_lost_text = ""
@@ -189,6 +197,7 @@ func build_starter_deck() -> void:
 func add_credits(amount: int) -> void:
 	credits += amount
 	credits_changed.emit(credits)
+	AchievementManager.check_credits(credits)
 
 
 func remove_credits(amount: int) -> bool:
@@ -268,9 +277,9 @@ func take_loan(
 		return false
 	if amount <= 0 or term_trips <= 0:
 		return false
-	outstanding_debt = amount
-	debt_due_in_trips = term_trips
 	debt_interest_rate = maxf(interest_rate, 0.0)
+	outstanding_debt = int(ceil(float(amount) * (1.0 + debt_interest_rate)))
+	debt_due_in_trips = term_trips
 	missed_debt_payments = 0
 	add_credits(amount)
 	EventLog.add_entry("Loan approved: +%d cr, %d trips, %.0f%% interest/trip" % [
@@ -297,6 +306,7 @@ func repay_loan(amount: int) -> int:
 		debt_interest_rate = 0.0
 		missed_debt_payments = 0
 		EventLog.add_entry("Loan fully repaid.")
+		AchievementManager.unlock("debt_free")
 	else:
 		EventLog.add_entry("Loan repayment: -%d cr (%d cr left)" % [capped_amount, outstanding_debt])
 	return capped_amount
@@ -414,6 +424,7 @@ func apply_upgrade(upgrade: Resource) -> void:
 	for card in upgrade.cards_to_add:
 		deck.append(card)
 	installed_upgrades.append(upgrade.upgrade_name)
+	AchievementManager.check_deck(deck.size())
 
 
 # ── Win condition ─────────────────────────────────────────────────────────────
@@ -446,6 +457,7 @@ func hire_crew(crew_res: Resource) -> bool:
 	crew.append(crew_res.resource_path)
 	crew_changed.emit()
 	credits_changed.emit(credits)
+	AchievementManager.check_crew(crew.size())
 	return true
 
 
@@ -587,3 +599,30 @@ func get_bounty_encounter_modifier() -> float:
 	elif bounty_amount >= BOUNTY_THRESHOLD_LOW:
 		return 0.10
 	return 0.0
+
+
+# ── Trade Loyalty ───────────────────────────────────────────────────────────
+
+func add_trade_loyalty(planet_name: String, amount: int) -> void:
+	var current: int = trade_loyalty.get(planet_name, 0)
+	trade_loyalty[planet_name] = clampi(current + amount, 0, 100)
+
+
+func get_trade_loyalty(planet_name: String) -> int:
+	return int(trade_loyalty.get(planet_name, 0))
+
+
+func get_loyalty_buy_modifier(planet_name: String) -> float:
+	# Max -8% discount at loyalty 100
+	var loyalty: int = get_trade_loyalty(planet_name)
+	return clampf(1.0 - float(loyalty) * 0.0008, 0.92, 1.0)
+
+
+func get_loyalty_sell_modifier(planet_name: String) -> float:
+	# Max +6% premium at loyalty 100
+	var loyalty: int = get_trade_loyalty(planet_name)
+	return clampf(1.0 + float(loyalty) * 0.0006, 1.0, 1.06)
+
+
+func has_cloaking_device() -> bool:
+	return "Cloaking Device" in installed_upgrades

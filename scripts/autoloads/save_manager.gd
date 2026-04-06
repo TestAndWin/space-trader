@@ -40,6 +40,9 @@ func save_game() -> void:
 		"missed_debt_payments": GameManager.missed_debt_payments,
 		"difficulty": GameManager.difficulty,
 		"bounty_amount": GameManager.bounty_amount,
+		"trade_loyalty": GameManager.trade_loyalty.duplicate(),
+		"total_smuggler_deals": GameManager.total_smuggler_deals,
+		"total_quests_completed": GameManager.total_quests_completed,
 	}
 	var json_string := JSON.stringify(save_data, "\t")
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -104,6 +107,12 @@ func load_game() -> bool:
 	GameManager.missed_debt_payments = int(data.get("missed_debt_payments", 0))
 	GameManager.difficulty = int(data.get("difficulty", GameManager.Difficulty.NORMAL))
 	GameManager.bounty_amount = int(data.get("bounty_amount", 0))
+	GameManager.trade_loyalty.clear()
+	var loaded_loyalty: Dictionary = data.get("trade_loyalty", {})
+	for planet_name in loaded_loyalty:
+		GameManager.trade_loyalty[str(planet_name)] = int(loaded_loyalty[planet_name])
+	GameManager.total_smuggler_deals = int(data.get("total_smuggler_deals", 0))
+	GameManager.total_quests_completed = int(data.get("total_quests_completed", 0))
 	return true
 
 

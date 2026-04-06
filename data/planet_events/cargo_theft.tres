@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="PlanetEventData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/planet_event_data.gd" id="1_pe1"]
+
+[resource]
+script = ExtResource("1_pe1")
+event_name = "Cargo Theft!"
+description = "Dockworkers report suspicious activity near your ship. Thieves have pilfered {good} from your cargo hold!"
+planet_type = 0
+any_planet_type = true
+choice_a_text = "Chase the thieves"
+choice_b_text = "Accept the loss"
+choice_a_description = "You catch the thieves in a back alley and recover your {good}! Though you take a few hits in the scuffle."
+choice_b_description = "You report it to local security. They offer a small compensation for the inconvenience."
+choice_a_credits = 0
+choice_a_hull = -4
+choice_a_cargo_good = ""
+choice_a_cargo_qty = 0
+choice_a_requires_good = ""
+choice_a_requires_qty = 0
+choice_b_credits = 40
+choice_b_hull = 0
+choice_b_cargo_good = ""
+choice_b_cargo_qty = 0
+choice_a_success_chance = 0.6
+choice_a_alt_description = "The thieves escape into the crowd with your {good}. You take a beating and get nothing back."
+choice_a_alt_credits = 0
+choice_a_alt_hull = -6
+choice_a_alt_cargo_good = ""
+choice_a_alt_cargo_qty = 0

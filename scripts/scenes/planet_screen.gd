@@ -15,6 +15,7 @@ const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 const GoodIcon = preload("res://scripts/components/good_icon.gd")
 const CrewIcon = preload("res://scripts/components/crew_icon.gd")
+const CustomsScanScene = preload("res://scenes/components/customs_scan.tscn")
 
 
 
@@ -124,6 +125,13 @@ func _ready() -> void:
 					_track_arrival_cargo_gains(cargo_before_event)
 					_update_ui()
 				)
+		# Customs scan (after other events, on non-Outlaw planets with contraband)
+		var customs := CustomsScanScene.instantiate()
+		add_child(customs)
+		if not customs.try_scan():
+			customs.queue_free()
+		else:
+			customs.scan_closed.connect(_update_ui)
 
 
 var _debug_label: Label = null
@@ -655,7 +663,11 @@ func _on_event_log_pressed() -> void:
 func _update_header() -> void:
 	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
 	var rep: int = GameManager.get_faction_reputation(faction)
-	planet_name_label.text = "%s | %s (%+d)" % [GameManager.current_planet, faction, rep]
+	var loyalty: int = GameManager.get_trade_loyalty(GameManager.current_planet)
+	if loyalty > 0:
+		planet_name_label.text = "%s | %s (%+d) | Loyalty %d" % [GameManager.current_planet, faction, rep, loyalty]
+	else:
+		planet_name_label.text = "%s | %s (%+d)" % [GameManager.current_planet, faction, rep]
 
 
 func _update_news_banner() -> void:
@@ -1066,6 +1078,7 @@ func _create_small_header_button(text: String, callback: Callable) -> Button:
 
 
 func _on_menu_pressed() -> void:
+	SaveManager.save_game()
 	GameManager.change_scene("res://scenes/main_menu.tscn")
 
 

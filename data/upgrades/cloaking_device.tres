@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Cloaking Device"
+description = "Reduces contraband detection and customs scan chance"
+slot = 5
+cost = 400

@@ -707,4 +707,5 @@ func _proceed_to_arrival() -> void:
 	GameManager.current_planet = destination_planet
 	if destination_planet not in GameManager.visited_planets:
 		GameManager.visited_planets.append(destination_planet)
+	AchievementManager.check_planets(GameManager.visited_planets)
 	GameManager.change_scene("res://scenes/planet_screen.tscn")

@@ -156,6 +156,8 @@ func try_complete_quest(planet_name: String) -> int:
 		reward = int(round(reward * (1.0 + quest_bonus)))
 	var completed_quest: Dictionary = current_quest.duplicate(true)
 	GameManager.add_credits(reward)
+	GameManager.total_quests_completed += 1
+	AchievementManager.check_quests(GameManager.total_quests_completed)
 	_apply_reputation_on_completion(completed_quest)
 	if _promote_followup_quest(planet_name, completed_quest):
 		EventLog.add_entry("Quest stage %d/%d complete! +%d cr. Follow-up assigned." % [

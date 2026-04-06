@@ -24,7 +24,7 @@ func estimate_encounter_chance(danger_level: int, planet_name: String = "") -> f
 	var chance: float = 0.3 + (danger_level - 1) * 0.1
 	# Carrying contraband increases encounter chance
 	if is_carrying_contraband():
-		chance += 0.15
+		chance += 0.05 if GameManager.has_cloaking_device() else 0.15
 	# Ship encounter reduction
 	chance -= GameManager.get_encounter_reduction()
 	# Crew navigator bonus
