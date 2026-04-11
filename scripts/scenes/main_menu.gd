@@ -9,6 +9,7 @@ const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 func _ready() -> void:
 	$VBoxContainer/ContinueButton.visible = SaveManager.has_save()
+	$VBoxContainer/QuitButton.visible = OS.get_name() != "iOS"
 	_style_buttons()
 	_apply_title_glow()
 	_apply_text_shadow(subtitle_label)

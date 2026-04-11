@@ -48,6 +48,8 @@ var _result_shown: bool = false
 var _result_timer: float = 0.0
 var _particles: Array = []  # Array of { x, y, vx, vy, life, color }
 var _player_flash: float = 0.0  # Screen shake / flash timer on player hit
+var _touch_active: bool = false  # Touch input active
+var _touch_target_x: float = 640.0  # X position finger is pointing at
 
 var _canvas: Control
 var _lives_label: Label
@@ -97,8 +99,9 @@ func _build_ui() -> void:
 	# Game canvas for _draw (fills remaining space)
 	_canvas = Control.new()
 	_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.mouse_filter = Control.MOUSE_FILTER_STOP
 	_canvas.draw.connect(_on_canvas_draw)
+	_canvas.gui_input.connect(_on_canvas_input)
 	main_vbox.add_child(_canvas)
 
 
@@ -159,15 +162,37 @@ func _process(delta: float) -> void:
 
 func _handle_input(delta: float) -> void:
 	_player_shoot_cooldown -= delta
+
+	# Keyboard input
 	if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
 		_player_x -= PLAYER_SPEED * delta
 	if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
 		_player_x += PLAYER_SPEED * delta
+
+	# Touch input: move toward finger position
+	if _touch_active:
+		_player_x = move_toward(_player_x, _touch_target_x, PLAYER_SPEED * delta)
+
 	_player_x = clampf(_player_x, AREA_LEFT + PLAYER_SIZE.x, AREA_RIGHT - PLAYER_SIZE.x)
 
-	if (Input.is_action_just_pressed("ui_accept") or Input.is_key_pressed(KEY_SPACE)) and _player_bullet.is_empty() and _player_shoot_cooldown <= 0:
+	# Keyboard shoot
+	var keyboard_shoot: bool = Input.is_action_just_pressed("ui_accept") or Input.is_key_pressed(KEY_SPACE)
+	# Auto-fire while touching
+	if (keyboard_shoot or _touch_active) and _player_bullet.is_empty() and _player_shoot_cooldown <= 0:
 		_player_bullet = { "x": _player_x, "y": AREA_BOTTOM - 30.0 }
 		_player_shoot_cooldown = _shoot_cooldown_time
+
+
+func _on_canvas_input(event: InputEvent) -> void:
+	if not _game_active:
+		return
+	if event is InputEventScreenTouch:
+		_touch_active = event.pressed
+		if event.pressed:
+			_touch_target_x = event.position.x
+	elif event is InputEventScreenDrag:
+		_touch_active = true
+		_touch_target_x = event.position.x
 
 
 func _update_player_bullet(delta: float) -> void:
