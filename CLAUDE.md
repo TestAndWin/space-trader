@@ -15,6 +15,41 @@ SpaceTrader is a 2D roguelike space trading + deck-building card game built with
 - No automated test suite; testing is manual play-through
 - Export presets in `export_presets.cfg` (Windows, iOS, macOS configured)
 
+## iOS Export (iPad)
+
+### Prerequisites
+- Xcode installed with iOS SDK
+- Apple ID signed in: **Xcode → Settings → Accounts**
+- **Developer Mode** enabled on iPad: Settings → Privacy & Security → Developer Mode
+- iPad connected via USB and trusted
+- Free Apple Developer account is sufficient (7-day limit, max 3 apps, no App Store)
+
+### Export Steps
+
+1. **Export settings** (`export_presets.cfg`):
+   - `app_store_team_id`: Real 10-character Apple Team ID (find via `security find-identity -v -p codesigning`)
+   - `export_project_only=true`: Only generate Xcode project, don't archive
+   - `bundle_identifier`: `net.testandwin.space-trader`
+   - All other fields can be left empty
+
+2. **Godot export**: Project → Export → iOS → export into a **subdirectory** (e.g. `ios-export/`), not into project root
+
+3. **Xcode setup**:
+   - `open <export-dir>/space-trader.xcodeproj`
+   - Target "space-trader" → Signing & Capabilities → enable "Automatically manage signing"
+   - Team: select Personal Team
+   - Top bar next to ▶: select iPad as destination (not a simulator!)
+
+4. **Build & Install**: ⌘R in Xcode
+
+### Known Issues
+- `Undefined symbol: _main`: Occurs when simulator is selected instead of a real device, or when `-ObjC -all_load` is missing from linker flags (OTHER_LDFLAGS in Xcode project)
+- `No profiles found`: Provisioning profile must include the target device — Xcode creates it automatically with "Automatically manage signing"
+- Godot 4.6 also generates empty `libgodot.visionos.*.xcframework` directories — these can be ignored
+
+### Generated Files (not in git)
+Export generates: `*.xcodeproj`, `*.xcframework/`, `*.pck`, `PrivacyInfo.xcprivacy`, `MoltenVK.xcframework/`, `build/`, app source folder. Add to `.gitignore` or delete after build.
+
 ## Architecture
 
 ### Autoload Singletons (`scripts/autoloads/`)
