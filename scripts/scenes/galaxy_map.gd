@@ -664,7 +664,15 @@ func _update_planet_states() -> void:
 			ring_mat.albedo_color = Color(0.7, 0.9, 1.0, 0.0)
 			ring_mat.emission_energy_multiplier = 0.0
 
-		if is_current or is_reachable or is_hovered:
+		var is_quest_dest: bool = QuestManager.has_active_quest() and planet_name == QuestManager.current_quest.get("destination", "")
+		if is_quest_dest:
+			label.text = "[!] " + planet_name
+		else:
+			label.text = planet_name
+
+		if is_quest_dest:
+			label.modulate = Color(1.0, 0.85, 0.2, 1.0) # Gold
+		elif is_current or is_reachable or is_hovered:
 			label.modulate = Color(0.85, 0.93, 1.0, 1.0)
 		else:
 			label.modulate = Color(0.75, 0.82, 0.92, 0.38)
@@ -763,6 +771,10 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 		trades_label.text += "\n" + "\n".join(hint_lines)
 	if warning != "":
 		trades_label.text += "\nWarning: " + warning
+		
+	if QuestManager.has_active_quest() and planet_data.planet_name == QuestManager.current_quest.get("destination", ""):
+		var q := QuestManager.current_quest
+		trades_label.text += "\n[!] Quest Target: Deliver %dx %s" % [q.get("deliver_qty", 0), q.get("deliver_good", "Goods")]
 
 
 func _on_planet_unhovered() -> void:

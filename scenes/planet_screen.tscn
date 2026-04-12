@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://e5dwqm2t36ni" path="res://scripts/scenes/planet_screen.gd" id="1_ps1"]
 [ext_resource type="PackedScene" path="res://scenes/components/ship_display_3d.tscn" id="7_sd1"]
+[ext_resource type="PackedScene" path="res://scenes/components/quest_widget.tscn" id="10_qw1"]
 
 [node name="PlanetScreen" type="Control" unique_id=189487057]
 layout_mode = 3
@@ -192,14 +193,11 @@ theme_override_font_sizes/font_size = 12
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="QuestLabel" type="Label" parent="InfoBar/InfoBarBox" unique_id=678901234]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.95, 0.85, 0.25, 1)
-theme_override_font_sizes/font_size = 12
-
 [node name="GoalLabel" type="Label" parent="InfoBar/InfoBarBox" unique_id=789012345]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 12
 text = "0/8000 cr | 0/7 planets"
+
+[node name="QuestWidget" parent="." unique_id=987654321 instance=ExtResource("10_qw1")]
+layout_mode = 1

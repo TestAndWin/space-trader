@@ -33,15 +33,14 @@ var _mission_done: bool = false
 var _casino_done: bool = false
 var _casino_rounds: int = 0
 var _news_full_text: String = ""
-var _quest_full_text: String = ""
 var _hotspot_pulse_tween: Tween = null
 
 @onready var planet_name_label := $VBoxContainer/PlanetNameLabel
 @onready var info_bar_box: HBoxContainer = $InfoBar/InfoBarBox
 @onready var header_spacer: Control = $InfoBar/InfoBarBox/HeaderSpacer
 @onready var news_banner := $InfoBar/InfoBarBox/NewsBanner
-@onready var quest_label := $InfoBar/InfoBarBox/QuestLabel
 @onready var goal_label := $InfoBar/InfoBarBox/GoalLabel
+@onready var quest_widget := $QuestWidget
 
 @onready var cargo_bar := $ShipStatusPanel/ShipStatusBox/ShipStats/CargoBar
 @onready var capacity_label := $ShipStatusPanel/ShipStatusBox/ShipStats/CargoRow/CapacityLabel
@@ -88,6 +87,11 @@ func _ready() -> void:
 	cargo_items_row.clip_contents = true
 	_update_ui()
 	_add_header_buttons()
+	var current_quest_dest: String = QuestManager.current_quest.get("destination", "") if QuestManager.has_active_quest() else ""
+	if current_quest_dest == GameManager.current_planet and current_planet_data:
+		call_deferred("_show_quest_arrival_toast")
+
+	quest_widget.clicked.connect(_on_quest_pressed)
 	call_deferred("_refresh_info_bar_text_layout")
 	call_deferred("_update_cargo_items")
 	SaveManager.save_game()
@@ -597,7 +601,6 @@ func _style_info_bar() -> void:
 	header_spacer.visible = true
 	_apply_header_label_style(planet_name_label, 26, Color(0.82, 0.97, 1.0))
 	_apply_header_label_style(news_banner, 12, Color(0.92, 0.96, 1.0))
-	_apply_header_label_style(quest_label, 13, Color(0.88, 0.96, 0.98))
 	_apply_header_label_style(goal_label, 13, Color(1.0, 0.94, 0.62))
 
 
@@ -826,25 +829,8 @@ func _update_ship_status() -> void:
 
 
 func _update_quest_label() -> void:
-	if not QuestManager.has_active_quest():
-		_quest_full_text = ""
-		quest_label.visible = false
-		_refresh_info_bar_text_layout()
-		return
-	var q: Dictionary = QuestManager.current_quest
-	var trips_left: int = q.get("turns_left", 0)
-	_quest_full_text = "%dx %s -> %s | %d trips left" % [
-		q["deliver_qty"], q["deliver_good"], q["destination"], trips_left
-	]
-	_quest_full_text += " | Stage %d/%d" % [q.get("stage", 1), q.get("chain_length", 1)]
-	if trips_left <= 1:
-		quest_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
-	elif trips_left == 2:
-		quest_label.add_theme_color_override("font_color", Color(1.0, 0.65, 0.1))
-	else:
-		quest_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.25))
-	quest_label.visible = true
-	_refresh_info_bar_text_layout()
+	if quest_widget:
+		quest_widget.update_widget()
 
 
 func _refresh_info_bar_text_layout() -> void:
@@ -854,7 +840,6 @@ func _refresh_info_bar_text_layout() -> void:
 		return
 
 	news_banner.tooltip_text = _news_full_text
-	quest_label.tooltip_text = _quest_full_text
 
 	var button_width: float = 0.0
 	var button_count: int = 0
@@ -870,36 +855,14 @@ func _refresh_info_bar_text_layout() -> void:
 
 	if available <= 0.0:
 		news_banner.text = ""
-		quest_label.visible = false
 		return
 
 	var show_news: bool = _news_full_text != ""
-	var show_quest: bool = _quest_full_text != ""
 	if not show_news:
 		news_banner.visible = false
-	if not show_quest:
-		quest_label.visible = false
-
-	if show_news and show_quest:
-		var quest_budget: float = clampf(available * 0.38, 100.0, 280.0)
-		var news_budget: float = available - quest_budget - separator
-		if news_budget < 120.0:
-			quest_budget = clampf(available * 0.30, 84.0, 220.0)
-			news_budget = available - quest_budget - separator
-		if news_budget < 100.0:
-			quest_label.visible = false
-			news_budget = available
-		else:
-			quest_label.visible = true
-			quest_label.text = _truncate_label_text(quest_label, _quest_full_text, quest_budget)
-		news_banner.visible = true
-		news_banner.text = _truncate_label_text(news_banner, _news_full_text, news_budget)
-	elif show_news:
+	else:
 		news_banner.visible = true
 		news_banner.text = _truncate_label_text(news_banner, _news_full_text, available)
-	elif show_quest:
-		quest_label.visible = true
-		quest_label.text = _truncate_label_text(quest_label, _quest_full_text, available)
 
 
 func _truncate_label_text(label: Label, text: String, max_width: float) -> String:
@@ -1151,7 +1114,6 @@ func _on_view_deck_pressed() -> void:
 
 
 
-
 func _add_header_buttons() -> void:
 	var header := $InfoBar/InfoBarBox
 	var event_log_btn := _create_small_header_button("Event Log", _on_event_log_pressed)
@@ -1220,3 +1182,24 @@ func _style_primary_button(btn: Button, accent: Color) -> void:
 
 func _style_secondary_button(btn: Button) -> void:
 	UIStyles.style_secondary_button(btn)
+
+func _show_quest_arrival_toast() -> void:
+	var toast := Label.new()
+	toast.text = "Quest Destination Reached!"
+	toast.add_theme_font_size_override("font_size", 24)
+	toast.add_theme_color_override("font_color", Color(1.0, 0.9, 0.2))
+	toast.add_theme_color_override("font_outline_color", Color(0,0,0, 0.8))
+	toast.add_theme_constant_override("outline_size", 8)
+	toast.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	toast.position = Vector2(0, -80)
+	
+	var container = Control.new()
+	container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(container)
+	container.add_child(toast)
+	
+	var tween = create_tween()
+	tween.tween_property(toast, "position:y", -180.0, 4.0).as_relative().set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(toast, "modulate:a", 0.0, 4.0).set_ease(Tween.EASE_IN)
+	tween.tween_callback(container.queue_free)

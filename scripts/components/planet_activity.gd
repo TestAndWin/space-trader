@@ -352,7 +352,7 @@ func _mining_show() -> void:
 func _mining_dig() -> void:
 	var cavein_chance: float = 0.15 + float(_mine_depth) * 0.15
 	if randf() < cavein_chance:
-		_mine_haul = _mine_haul / 2
+		_mine_haul = int(float(_mine_haul) / 2.0)
 		var dmg: int = 6 + _mine_depth * 3
 		GameManager.current_hull = maxi(GameManager.current_hull - dmg, 1)
 		_log("Cave-in at depth %d! Hull -%d, haul halved." % [_mine_depth + 1, dmg])
@@ -553,11 +553,11 @@ func _build_forge_bar() -> void:
 	_forge_marker.add_child(marker_core)
 
 
-func _add_forge_zone(x: float, w: float, color: Color) -> void:
+func _add_forge_zone(x: float, w: float, zone_color: Color) -> void:
 	var r := ColorRect.new()
 	r.position = Vector2(x, 0)
 	r.size = Vector2(w, FORGE_BAR_HEIGHT)
-	r.color = color
+	r.color = zone_color
 	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_forge_bar.add_child(r)
 
