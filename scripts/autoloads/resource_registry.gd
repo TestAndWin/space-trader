@@ -138,6 +138,11 @@ const TRAVEL_EVENTS: Array[String] = [
 ]
 
 
+const RIVALS: Array[String] = [
+	"res://data/rivals/captain_vex.tres",
+]
+
+
 func load_all(paths: Array[String]) -> Array:
 	var results: Array = []
 	for path in paths:

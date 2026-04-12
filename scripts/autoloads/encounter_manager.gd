@@ -90,7 +90,7 @@ func get_encounter_for_planet(max_difficulty: int, planet_name: String) -> Resou
 
 
 func _get_encounter_weight(enc: Resource, planet_name: String) -> float:
-	var name: String = enc.encounter_name
+	var enc_name: String = enc.encounter_name
 	var tags: Array[String] = EventManager.get_active_event_tags(planet_name)
 	var planet: Resource = EconomyManager.get_planet_data(planet_name)
 	var lawful_space: bool = planet == null or planet.planet_type != EconomyManager.PT_OUTLAW
@@ -99,7 +99,7 @@ func _get_encounter_weight(enc: Resource, planet_name: String) -> float:
 	var bounty_tier: String = GameManager.get_bounty_tier()
 
 	var weight: float = 1.0
-	match name:
+	match enc_name:
 		"Bounty Hunter":
 			weight = 0.0
 			match bounty_tier:

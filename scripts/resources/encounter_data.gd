@@ -12,3 +12,8 @@ enum SpecialAbility { NONE, PLUNDER, SHIELD_BOOST, FLASH_GRENADE, ENERGY_DRAIN, 
 @export var difficulty: int = 1
 @export var special_ability: SpecialAbility = SpecialAbility.NONE
 @export var ability_description: String = ""
+
+# Rival encounter fields (Finding #9 — typisierte Properties statt set_meta)
+var is_rival: bool = false
+var taunt_line: String = ""
+var rival_phase: int = -1

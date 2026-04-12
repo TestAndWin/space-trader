@@ -111,6 +111,9 @@ func _init_game() -> void:
 	_player_bullet = {}
 	_player_x = 640.0
 	_player_lives = 3
+	# Navigator gives 4 lives
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.ENCOUNTER_REDUCTION):
+		_player_lives = 4
 	_enemy_direction = 1.0
 	_enemy_fire_timer = 0.0
 	_game_active = true
@@ -302,6 +305,9 @@ func _on_game_lost() -> void:
 	_game_won = false
 	GameManager.mission_done_this_landing = true
 	var hull_damage: int = randi_range(LOSE_HULL_MIN, LOSE_HULL_MAX)
+	# Medic reduces hull damage taken on loss
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.COMBAT_HEAL):
+		hull_damage = maxi(1, hull_damage - 2)
 	GameManager.current_hull = maxi(1, GameManager.current_hull - hull_damage)
 	EventLog.add_entry("Mission failed! Ship took %d hull damage." % hull_damage)
 	_info_label.text = "DEFEATED! -%d hull" % hull_damage

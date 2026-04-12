@@ -81,7 +81,8 @@ func _refresh_crew_ui() -> void:
 		_crew_container.add_child(row)
 
 		var info := Label.new()
-		info.text = crew_res.description
+		var secondary_text: String = _get_secondary_bonus_text(crew_res)
+		info.text = crew_res.description + (("\n+ " + secondary_text) if secondary_text != "" else "")
 		info.tooltip_text = crew_res.crew_name
 		info.add_theme_font_size_override("font_size", 11)
 		info.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
@@ -136,3 +137,19 @@ func _refresh_crew_ui() -> void:
 				crew_action.emit()
 		)
 		_crew_container.add_child(hire_btn)
+
+
+func _get_secondary_bonus_text(crew_res: Resource) -> String:
+	var secondary_type: int = crew_res.secondary_bonus_type
+	var secondary_value: float = crew_res.secondary_bonus_value
+	if secondary_value <= 0.0:
+		return ""
+	match secondary_type:
+		CrewData.CrewBonus.EVENT_SKILL:
+			return "+%.0f%% event success chance" % (secondary_value * 100.0)
+		CrewData.CrewBonus.QUEST_NEGOTIATION:
+			return "+1 quest deadline, +%.0f%% reward" % (secondary_value * 10.0)
+		CrewData.CrewBonus.COMBAT_TACTICAL:
+			return "%.0f%% chance to dodge enemy first attack" % (secondary_value * 100.0)
+		_:
+			return ""

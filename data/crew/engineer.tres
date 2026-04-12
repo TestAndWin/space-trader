@@ -11,3 +11,6 @@ bonus_type = 2
 bonus_value = 1.0
 recruit_cost = 350
 available_planet_types = [0, 2]
+secondary_bonus_type = 8
+secondary_bonus_value = 0.15
+event_flavor_tag = "tech"

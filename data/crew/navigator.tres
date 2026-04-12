@@ -11,3 +11,6 @@ bonus_type = 0
 bonus_value = 0.1
 recruit_cost = 300
 available_planet_types = [3, 0]
+secondary_bonus_type = 8
+secondary_bonus_value = 0.15
+event_flavor_tag = "exploration"

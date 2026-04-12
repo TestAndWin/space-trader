@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="RivalData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/rival_data.gd" id="1_rival"]
+
+[resource]
+script = ExtResource("1_rival")
+rival_name = "Captain Vex"
+title = "Notorious Space Pirate"
+taunt_lines = ["So, a new trader enters my territory.", "You again? This time I'm ready.", "You're becoming a problem.", "One of us ends here. Today."]
+base_health = 25
+health_per_phase = 10
+base_attack_range = Vector2i(4, 8)
+attack_bonus_per_phase = 1
+special_abilities_by_phase = [1, 2, 5, 8]
+phase_descriptions = ["Phase 1: Plunder - steals credits on hit", "Phase 2: Shield Boost - gains shields every 2nd turn", "Phase 3: Adaptation - reduces damage taken over time", "Phase 4: Boarding - steals cargo. No escape!"]
+reward_credits_base = 150
+reward_credits_per_phase = 75

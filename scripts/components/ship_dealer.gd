@@ -344,6 +344,11 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 	var stats := _build_stat_comparison(ship, current_ship)
 	info.add_child(stats)
 
+	# Ship ability description
+	var ability_row := _build_ability_row(ship)
+	if ability_row.get_child_count() > 0:
+		info.add_child(ability_row)
+
 	# Buy button column
 	if not is_current and ship.cost > 0:
 		var btn_col := VBoxContainer.new()
@@ -414,6 +419,21 @@ func _build_stat_comparison(ship: Resource, current: Resource) -> HBoxContainer:
 		spec_lbl.add_theme_color_override("font_color", Color(0.8, 0.7, 0.3))
 		row.add_child(spec_lbl)
 
+	return row
+
+
+func _build_ability_row(ship: Resource) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	# Ability description
+	var ability_desc: String = ship.ability_description
+	if ability_desc != "":
+		var ability_lbl := Label.new()
+		ability_lbl.text = "⚡ " + ability_desc
+		ability_lbl.add_theme_font_size_override("font_size", 10)
+		ability_lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.6))
+		ability_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.add_child(ability_lbl)
 	return row
 
 

@@ -1101,6 +1101,7 @@ func _on_depart_pressed() -> void:
 func _do_depart() -> void:
 	GameManager.arrival_events_done = false
 	GameManager.mission_done_this_landing = false
+	GameManager.reset_ghost_run()
 	QuestManager.tick()
 	EventManager.tick()
 	EconomyManager.tick_economy()

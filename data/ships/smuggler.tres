@@ -18,3 +18,7 @@ quest_reward_bonus = 0.0
 hull_color_primary = Color(0.25, 0.25, 0.35, 1.0)
 hull_shape = 3
 available_planet_types = [4, 0]
+ship_role = 4
+ship_ability = 4
+ability_description = "GHOST RUN: Once per landing, skip one encounter automatically"
+synergy_crew_bonus = 4

@@ -160,6 +160,10 @@ func _show_event() -> void:
 	_choice_a_button.disabled = not _can_choose_a()
 	if _choice_a_button.disabled:
 		_choice_a_button.tooltip_text = _get_requirement_text()
+	# Show crew flavor text if applicable
+	var flavor_text: String = GameManager.get_crew_event_flavor_text(_current_event.event_name)
+	if flavor_text != "":
+		_description_label.text = _description_label.text + "\n\n[Crew] " + flavor_text
 
 
 func _can_choose_a() -> bool:
@@ -224,7 +228,8 @@ func _on_choice_a() -> void:
 	var ev := _current_event
 	# Cargo theft: success = recover stolen goods
 	if ev.event_name == "Cargo Theft!" and _stolen_good != "":
-		if ev.choice_a_success_chance < 1.0 and randf() >= ev.choice_a_success_chance:
+		var raw_a_chance: float = ev.choice_a_success_chance + GameManager.get_event_success_bonus()
+		if raw_a_chance < 1.0 and randf() >= raw_a_chance:
 			_apply_outcome(ev.choice_a_alt_credits, ev.choice_a_alt_hull, "", 0)
 			_show_outcome(ev.choice_a_alt_description.replace("{good}", "%d %s" % [_stolen_qty, _stolen_good]))
 		else:
@@ -232,7 +237,8 @@ func _on_choice_a() -> void:
 			_apply_outcome(ev.choice_a_credits, ev.choice_a_hull, "", 0)
 			_show_outcome(ev.choice_a_description.replace("{good}", "%d %s" % [_stolen_qty, _stolen_good]))
 		return
-	if ev.choice_a_success_chance < 1.0 and randf() >= ev.choice_a_success_chance:
+	var effective_chance: float = ev.choice_a_success_chance + GameManager.get_event_success_bonus()
+	if effective_chance < 1.0 and randf() >= effective_chance:
 		_apply_outcome(ev.choice_a_alt_credits, ev.choice_a_alt_hull, ev.choice_a_alt_cargo_good, ev.choice_a_alt_cargo_qty)
 		_show_outcome(ev.choice_a_alt_description)
 	else:
@@ -242,7 +248,8 @@ func _on_choice_a() -> void:
 
 func _on_choice_b() -> void:
 	var ev := _current_event
-	if ev.choice_b_success_chance < 1.0 and randf() >= ev.choice_b_success_chance:
+	var effective_chance: float = ev.choice_b_success_chance + GameManager.get_event_success_bonus()
+	if effective_chance < 1.0 and randf() >= effective_chance:
 		_apply_outcome(ev.choice_b_alt_credits, ev.choice_b_alt_hull, ev.choice_b_alt_cargo_good, ev.choice_b_alt_cargo_qty)
 		_show_outcome(ev.choice_b_alt_description)
 	else:
@@ -303,3 +310,5 @@ func _show_outcome(text: String) -> void:
 func _close() -> void:
 	event_resolved.emit()
 	queue_free()
+
+

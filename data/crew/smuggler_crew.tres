@@ -11,3 +11,6 @@ bonus_type = 4
 bonus_value = 0.5
 recruit_cost = 250
 available_planet_types = [4]
+secondary_bonus_type = 9
+secondary_bonus_value = 0.5
+event_flavor_tag = "underworld"

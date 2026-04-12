@@ -11,3 +11,6 @@ bonus_type = 3
 bonus_value = 0.85
 recruit_cost = 350
 available_planet_types = [1, 3]
+secondary_bonus_type = 9
+secondary_bonus_value = 1.0
+event_flavor_tag = "trade"

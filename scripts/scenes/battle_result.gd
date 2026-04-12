@@ -20,7 +20,18 @@ func _ready() -> void:
 				GameManager.visited_planets.append(destination)
 			AchievementManager.check_planets(GameManager.visited_planets)
 
-			# Roll reward type: 60% credits+card, 25% upgrade, 15% crew
+			# Check if this was a rival encounter
+			var is_rival: bool = GameManager.current_encounter != null and GameManager.current_encounter.is_rival
+			if is_rival:
+				# Rival always gives upgrade reward + possible phase 4 bonus
+				if GameManager.current_encounter.rival_phase >= RivalManager.FINAL_PHASE:
+					var rival_bonus: int = 500
+					GameManager.add_credits(rival_bonus)
+					EventLog.add_entry("Rival vanquished! Bonus: +%d cr" % rival_bonus)
+				_setup_upgrade_reward(destination)
+				return
+
+			# Normal roll reward type: 60% credits+card, 25% upgrade, 15% crew
 			var roll: float = randf()
 			if roll < 0.15:
 				_setup_crew_reward(destination)

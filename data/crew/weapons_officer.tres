@@ -11,3 +11,6 @@ bonus_type = 1
 bonus_value = 2.0
 recruit_cost = 400
 available_planet_types = [4, 0]
+secondary_bonus_type = 10
+secondary_bonus_value = 0.20
+event_flavor_tag = "combat"

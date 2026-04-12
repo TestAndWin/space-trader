@@ -44,6 +44,8 @@ func save_game() -> void:
 		"trade_route_memory": GameManager.trade_route_memory.duplicate(true),
 		"total_smuggler_deals": GameManager.total_smuggler_deals,
 		"total_quests_completed": GameManager.total_quests_completed,
+		"ghost_run_available": GameManager.ghost_run_available,
+		"rival_data": RivalManager.save_data(),
 	}
 	var json_string := JSON.stringify(save_data, "\t")
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -115,6 +117,8 @@ func load_game() -> bool:
 	GameManager.trade_route_memory = data.get("trade_route_memory", {}).duplicate(true)
 	GameManager.total_smuggler_deals = int(data.get("total_smuggler_deals", 0))
 	GameManager.total_quests_completed = int(data.get("total_quests_completed", 0))
+	GameManager.ghost_run_available = bool(data.get("ghost_run_available", true))
+	RivalManager.load_data(data.get("rival_data", {}))
 	return true
 
 

@@ -18,3 +18,7 @@ quest_reward_bonus = 0.0
 hull_color_primary = Color(0.3, 0.85, 0.3, 1.0)
 hull_shape = 0
 available_planet_types = []
+ship_role = 0
+ship_ability = 5
+ability_description = "ADAPTABLE: All crew bonuses +20%"
+synergy_crew_bonus = -1

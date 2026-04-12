@@ -332,7 +332,13 @@ func _on_buy(good_name: String, quantity: int) -> void:
 	var buy_price: int = EconomyManager.get_buy_price(planet_name, good_name)
 	if buy_price < 0:
 		return
-	var total_cost: int = buy_price * quantity
+	var unit_price: int = buy_price
+	# BULK_DISCOUNT: -8% when buying 3+ units with Freighter
+	if quantity >= 3:
+		var ship: Resource = GameManager.get_ship_data()
+		if ship and ship.ship_ability == ShipData.ShipAbility.BULK_DISCOUNT:
+			unit_price = int(round(float(unit_price) * 0.92))
+	var total_cost: int = unit_price * quantity
 	if not GameManager.can_add_cargo(good_name, quantity):
 		return
 	if not GameManager.remove_credits(total_cost):

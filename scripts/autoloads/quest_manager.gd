@@ -142,7 +142,6 @@ func _make_quest(
 	var qty: int = randi_range(1, 3) + (1 if stage >= 3 else 0)
 	var stage_mult: float = pow(STAGE_REWARD_MULT, float(maxi(stage - 1, 0)))
 	var reward_mult: float = maxf(0.75, 1.0 + float(quality.get("reward_modifier", 0.0)))
-	var reward: int = int((good.base_price * qty * 1.8 + randi_range(50, 150)) * stage_mult * reward_mult)
 	var deadline: int = (
 		randi_range(DEADLINE_MIN, DEADLINE_MAX)
 		+ maxi(stage - 1, 0)
@@ -150,6 +149,15 @@ func _make_quest(
 		+ int(quality.get("deadline_bonus", 0))
 	)
 	deadline = maxi(deadline, maxi(route_hops, 1))
+	# QUEST_NEGOTIATION crew bonus: +1 deadline, +10% reward
+	var negotiation_bonus: float = 0.0
+	for res in GameManager.get_crew_resources():
+		if res.secondary_bonus_type == CrewData.CrewBonus.QUEST_NEGOTIATION:
+			negotiation_bonus += res.secondary_bonus_value
+	if negotiation_bonus > 0.0:
+		deadline += 1
+		reward_mult *= (1.0 + 0.10 * negotiation_bonus)
+	var reward: int = int((good.base_price * qty * 1.8 + randi_range(50, 150)) * stage_mult * reward_mult)
 	var penalty: int = int(reward * PENALTY_RATIO)
 	var issuer_faction: String = str(quality.get("issuer_faction", GameManager.get_planet_faction(planet.planet_name)))
 	if chain_id < 0:

@@ -30,6 +30,7 @@ EventLog="*res://scripts/autoloads/event_log.gd"
 SaveManager="*res://scripts/autoloads/save_manager.gd"
 QuestManager="*res://scripts/autoloads/quest_manager.gd"
 EventManager="*res://scripts/autoloads/event_manager.gd"
+RivalManager="*res://scripts/autoloads/rival_manager.gd"
 AchievementManager="*res://scripts/autoloads/achievement_manager.gd"
 
 [display]

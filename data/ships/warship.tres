@@ -18,3 +18,7 @@ quest_reward_bonus = 0.0
 hull_color_primary = Color(0.5, 0.2, 0.2, 1.0)
 hull_shape = 2
 available_planet_types = [0, 2]
+ship_role = 1
+ship_ability = 1
+ability_description = "RAMMING SPEED: First attack each round deals +3 damage when Hull >70%"
+synergy_crew_bonus = 1

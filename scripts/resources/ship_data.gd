@@ -1,6 +1,9 @@
 class_name ShipData
 extends Resource
 
+enum ShipRole { BALANCED, COMBAT, EXPLORER, TRADER, STEALTH }
+enum ShipAbility { NONE, RAMMING_SPEED, DEEP_SCAN, BULK_DISCOUNT, GHOST_RUN, ADAPTABLE }
+
 @export var ship_name: String = ""
 @export var description: String = ""
 @export var cost: int = 0
@@ -15,3 +18,8 @@ extends Resource
 @export var hull_color_primary: Color = Color(0.3, 0.85, 0.3)
 @export var hull_shape: int = 0
 @export var available_planet_types: Array[int] = []
+
+@export var ship_role: ShipRole = ShipRole.BALANCED
+@export var ship_ability: ShipAbility = ShipAbility.NONE
+@export var ability_description: String = ""
+@export var synergy_crew_bonus: int = -1  # CrewBonus enum value, +50% on this ship

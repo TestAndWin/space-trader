@@ -18,3 +18,7 @@ quest_reward_bonus = 0.25
 hull_color_primary = Color(0.2, 0.5, 0.7, 1.0)
 hull_shape = 4
 available_planet_types = [3]
+ship_role = 2
+ship_ability = 2
+ability_description = "DEEP SCAN: Event success chances +20%"
+synergy_crew_bonus = 2

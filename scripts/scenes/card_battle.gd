@@ -20,6 +20,8 @@ var attacks_played_this_turn: int = 0
 var combo_active: bool = false
 var recycled_this_shuffle: bool = false
 
+const RAMMING_SPEED_HULL_THRESHOLD := 0.70
+
 @onready var ship_display := %ShipDisplay
 
 # Special ability state
@@ -101,6 +103,12 @@ func start_battle(enc: Resource) -> void:
 	focus_fire_bonus = 0
 	effective_energy_per_turn = GameManager.energy_per_turn
 
+	# Show rival taunt if this is a rival encounter
+	if _is_rival_encounter():
+		var taunt: String = enc.taunt_line
+		if taunt != "":
+			_show_battle_message(taunt)
+
 	# ENERGY_DRAIN: reduce energy at battle start
 	if enc.special_ability == EncounterData.SpecialAbility.ENERGY_DRAIN:
 		effective_energy_per_turn = maxi(1, GameManager.energy_per_turn - 1)
@@ -112,6 +120,10 @@ func start_battle(enc: Resource) -> void:
 		return
 
 	_start_player_turn()
+
+
+func _is_rival_encounter() -> bool:
+	return encounter != null and encounter.is_rival
 
 
 func _show_trade_offer() -> void:
@@ -346,6 +358,19 @@ func _apply_attack_card(card_data: Resource) -> void:
 	# Crew weapons officer bonus
 	if GameManager.has_crew_bonus(CrewData.CrewBonus.ATTACK_BONUS):
 		damage += int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.ATTACK_BONUS))
+	# RAMMING_SPEED: First attack each round +3 damage when Hull > 70%
+	if attacks_played_this_turn == 0:
+		var ship: Resource = GameManager.get_ship_data()
+		if ship and ship.ship_ability == ShipData.ShipAbility.RAMMING_SPEED:
+			var hull_pct: float = float(GameManager.current_hull) / float(GameManager.max_hull) if GameManager.max_hull > 0 else 0.0
+			if hull_pct > RAMMING_SPEED_HULL_THRESHOLD:
+				damage += 3
+				_show_battle_message("Ramming Speed! +3 damage")
+	# Rival encounter: crew with 'combat' tag deals +2 damage on first attack (Finding #8)
+	if _is_rival_encounter() and attacks_played_this_turn == 0:
+		if GameManager.has_crew_flavor_tag("combat"):
+			damage += 2
+			_show_battle_message("%s strikes hard! +2 vs Rival" % GameManager.get_crew_name_by_flavor_tag("combat"))
 	# CHARGE: 1.5x damage if 2+ attacks played this turn
 	if card_data.keywords.has(CardData.CardKeyword.CHARGE) and attacks_played_this_turn >= 2:
 		damage = int(damage * 1.5)
@@ -466,6 +491,11 @@ func _on_end_turn_pressed() -> void:
 		skip_enemy_turn = false
 	else:
 		var damage := enemy_intent_damage
+		# COMBAT_TACTICAL: chance that enemy's first attack (round 1 only) misses
+		if turn_count == 1 and GameManager.has_crew_bonus(CrewData.CrewBonus.COMBAT_TACTICAL):
+			if randf() < GameManager.get_crew_bonus_value(CrewData.CrewBonus.COMBAT_TACTICAL):
+				_show_battle_message("Weapons Officer: enemy first attack evaded!")
+				damage = 0
 		var shield_absorb: int = mini(damage, GameManager.current_shield)
 		GameManager.current_shield -= shield_absorb
 		damage -= shield_absorb
@@ -535,6 +565,11 @@ func _on_battle_won() -> void:
 	AchievementManager.unlock("first_blood")
 	if encounter.encounter_name == "Bounty Hunter":
 		AchievementManager.unlock("bounty_survivor")
+	# Rival handling
+	if _is_rival_encounter():
+		RivalManager.on_rival_defeated()
+		GameManager.change_scene("res://scenes/battle_result.tscn")
+		return
 	# Bounty system: defeating bounty hunters reduces bounty, defeating patrols increases it
 	if encounter.encounter_name == "Bounty Hunter":
 		GameManager.reduce_bounty(150)
@@ -568,6 +603,9 @@ func _on_battle_lost() -> void:
 	GameManager.remove_credits(lost_credits)
 	GameManager.battle_result = "lost"
 	EventLog.add_entry("Lost battle vs %s" % encounter.encounter_name)
+	# Rival handling
+	if _is_rival_encounter():
+		RivalManager.on_rival_won()
 	if GameManager.current_hull <= 0:
 		GameManager.change_scene("res://scenes/game_over.tscn")
 		return

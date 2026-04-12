@@ -18,3 +18,7 @@ quest_reward_bonus = 0.0
 hull_color_primary = Color(0.6, 0.5, 0.3, 1.0)
 hull_shape = 1
 available_planet_types = [0, 1]
+ship_role = 3
+ship_ability = 3
+ability_description = "BULK DISCOUNT: -8% buy price when purchasing 3+ units"
+synergy_crew_bonus = 3

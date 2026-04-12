@@ -700,16 +700,40 @@ func _on_travel_event_resolved() -> void:
 
 
 func _proceed_to_arrival() -> void:
+	# Ghost Run is reset on departure (see planet_screen._do_depart()),
+	# so it remains a once-per-landing ability rather than 100% encounter immunity.
+	# Decrement rival cooldown before checking (pure query after this).
+	RivalManager.on_flight_completed()
+
 	var danger_level: int = 1
 	var planet_data := EconomyManager.get_planet_data(destination_planet)
 	if planet_data:
 		danger_level = planet_data.danger_level
-	if EncounterManager.should_encounter_happen(danger_level):
-		var enc: Resource = EncounterManager.get_encounter(danger_level)
-		if enc:
-			GameManager.current_encounter = enc
+
+	# Rival takes priority over all other encounters (Ghost Run cannot avoid rival)
+	if RivalManager.should_rival_appear(GameManager.total_flights):
+		var rival_enc := RivalManager.get_rival_encounter()
+		if rival_enc:
+			GameManager.current_encounter = rival_enc
 			get_tree().change_scene_to_file("res://scenes/card_battle.tscn")
 			return
+
+	# Normal encounter roll; Ghost Run only consumed if an encounter would actually trigger.
+	if EncounterManager.should_encounter_happen(danger_level):
+		if GameManager.use_ghost_run():
+			EventLog.add_entry("Ghost Run active — slipped past undetected.")
+		else:
+			var enc: Resource = EncounterManager.get_encounter(danger_level)
+			if enc:
+				GameManager.current_encounter = enc
+				get_tree().change_scene_to_file("res://scenes/card_battle.tscn")
+				return
+
+	_complete_arrival()
+
+
+## Finding #5: DRY — single place to finalise a clean planet arrival.
+func _complete_arrival() -> void:
 	EventLog.add_entry("Arrived at %s" % destination_planet)
 	GameManager.current_planet = destination_planet
 	if destination_planet not in GameManager.visited_planets:

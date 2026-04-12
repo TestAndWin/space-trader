@@ -62,6 +62,9 @@ var hull_upgrades_bought: int = 0
 var shield_upgrades_bought: int = 0
 var cargo_upgrades_bought: int = 0
 
+# Ghost Run (Smuggler ability)
+var ghost_run_available: bool = true
+
 # Mission
 var mission_return_planet: String = ""
 var mission_done_this_landing: bool = false
@@ -168,6 +171,7 @@ func reset() -> void:
 	hull_upgrades_bought = 0
 	shield_upgrades_bought = 0
 	cargo_upgrades_bought = 0
+	ghost_run_available = true
 	build_starter_deck()
 	EventLog.clear()
 	EventLog.add_entry("Welcome to Starport Alpha. Your journey begins.")
@@ -175,6 +179,7 @@ func reset() -> void:
 	QuestManager.current_quest.clear()
 	QuestManager.next_chain_id = 1
 	QuestManager.generate_quests()
+	RivalManager.reset()
 
 
 func init_faction_reputation() -> void:
@@ -572,11 +577,35 @@ func has_crew_bonus(bonus_type: int) -> bool:
 
 func get_crew_bonus_value(bonus_type: int) -> float:
 	var total: float = 0.0
+	var ship: Resource = get_ship_data()
 	for path in crew:
 		var res: Resource = load(path)
 		if res and res.bonus_type == bonus_type:
-			total += res.bonus_value
+			var value: float = res.bonus_value
+			# Ship synergy: +50% if ship synergy matches this crew bonus
+			if ship and ship.ship_ability == ShipData.ShipAbility.ADAPTABLE:
+				value *= 1.2
+			elif ship and ship.synergy_crew_bonus == bonus_type:
+				value *= 1.5
+			total += value
 	return total
+
+
+# ── Ghost Run (Smuggler Ship Ability) ────────────────────────────────────────
+
+func use_ghost_run() -> bool:
+	if not ghost_run_available:
+		return false
+	var ship: Resource = get_ship_data()
+	if ship and ship.ship_ability == ShipData.ShipAbility.GHOST_RUN:
+		ghost_run_available = false
+		EventLog.add_entry("Ghost Run activated! Encounter avoided.")
+		return true
+	return false
+
+
+func reset_ghost_run() -> void:
+	ghost_run_available = true
 
 
 func get_crew_resources() -> Array:
@@ -586,6 +615,68 @@ func get_crew_resources() -> Array:
 		if res:
 			result.append(res)
 	return result
+
+
+## Sum of secondary_bonus_value for all crew matching bonus_type (Finding #3/#4).
+func get_crew_secondary_bonus_value(bonus_type: int) -> float:
+	var total: float = 0.0
+	for res in get_crew_resources():
+		if res.secondary_bonus_type == bonus_type:
+			total += res.secondary_bonus_value
+	return total
+
+
+## True if any hired crew has the given event_flavor_tag (Finding #8).
+func has_crew_flavor_tag(tag: String) -> bool:
+	for res in get_crew_resources():
+		if res.event_flavor_tag == tag:
+			return true
+	return false
+
+
+## Name of the first crew member matching the event_flavor_tag, or "" (Finding #8).
+func get_crew_name_by_flavor_tag(tag: String) -> String:
+	for res in get_crew_resources():
+		if res.event_flavor_tag == tag:
+			return res.crew_name
+	return ""
+
+
+## Combined event success bonus from crew EVENT_SKILL + ship DEEP_SCAN.
+## Used by planet events and travel events to modify choice success chances.
+func get_event_success_bonus() -> float:
+	var bonus: float = get_crew_secondary_bonus_value(CrewData.CrewBonus.EVENT_SKILL)
+	var ship: Resource = get_ship_data()
+	if ship and ship.ship_ability == ShipData.ShipAbility.DEEP_SCAN:
+		bonus += 0.20
+	return bonus
+
+
+## Returns a one-line crew flavor remark for the given event name, or "" if no
+## crew member's event_flavor_tag matches the event. Shared by planet and travel events.
+func get_crew_event_flavor_text(event_name: String) -> String:
+	var event_lower: String = event_name.to_lower()
+	for res in get_crew_resources():
+		var tag: String = res.event_flavor_tag
+		if tag == "":
+			continue
+		var match_tag: bool = false
+		match tag:
+			"tech":
+				match_tag = ("tech" in event_lower or "ai" in event_lower or "data" in event_lower or "robot" in event_lower)
+			"combat":
+				match_tag = ("fight" in event_lower or "attack" in event_lower or "rampage" in event_lower or "muscle" in event_lower or "pirate" in event_lower or "distress" in event_lower)
+			"trade":
+				match_tag = ("trade" in event_lower or "market" in event_lower or "deal" in event_lower or "cargo" in event_lower or "merchant" in event_lower)
+			"medical":
+				match_tag = ("medic" in event_lower or "health" in event_lower or "pestilence" in event_lower or "hunger" in event_lower or "distress" in event_lower)
+			"exploration":
+				match_tag = ("mineral" in event_lower or "cache" in event_lower or "find" in event_lower or "cave" in event_lower or "anomaly" in event_lower or "debris" in event_lower)
+			"underworld":
+				match_tag = ("black" in event_lower or "bounty" in event_lower or "smug" in event_lower or "theft" in event_lower)
+		if match_tag:
+			return "%s assists with this situation." % res.crew_name
+	return ""
 
 
 # ── Ship ────────────────────────────────────────────────────────────────────
