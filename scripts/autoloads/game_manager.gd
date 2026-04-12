@@ -55,6 +55,8 @@ var last_cargo_lost_text: String = ""
 
 # Ship
 var current_ship: String = "res://data/ships/scout.tres"
+var owned_ships: Array[String] = ["res://data/ships/scout.tres"]
+const SHIP_TRANSFER_FEE: int = 250
 
 # Shipyard upgrade counters (max 3 each)
 const MAX_STAT_UPGRADES: int = 3
@@ -148,6 +150,7 @@ func reset() -> void:
 	visited_planets.clear()
 	visited_planets.append("Starport Alpha")
 	current_ship = "res://data/ships/scout.tres"
+	owned_ships = [current_ship]
 	mission_return_planet = ""
 	mission_done_this_landing = false
 	arrival_events_done = false
@@ -706,11 +709,16 @@ func get_quest_reward_bonus() -> float:
 	return 0.0
 
 
-func switch_ship(new_ship_path: String) -> void:
+func owns_ship(path: String) -> bool:
+	return path in owned_ships
+
+
+func switch_ship(new_ship_path: String, keep_old: bool = false) -> void:
 	var old_ship: Resource = get_ship_data()
 	var new_ship: Resource = load(new_ship_path)
 	if not old_ship or not new_ship:
 		return
+	var old_path: String = current_ship
 	# Calculate stat deltas (new base - old base) and apply to current upgraded stats
 	max_hull += new_ship.base_max_hull - old_ship.base_max_hull
 	current_hull = mini(current_hull, max_hull)
@@ -728,10 +736,14 @@ func switch_ship(new_ship_path: String) -> void:
 		if last_item["quantity"] <= 0:
 			cargo.remove_at(cargo.size() - 1)
 		cargo_changed.emit()
-	# Trade-in: 50% of old ship price
-	var trade_in: int = int(old_ship.cost * 0.5)
-	add_credits(trade_in)
+	# Hangar bookkeeping
+	if not keep_old:
+		owned_ships.erase(old_path)
+	if not (new_ship_path in owned_ships):
+		owned_ships.append(new_ship_path)
 	current_ship = new_ship_path
+	# Ghost Run: available only on Smuggler-class ships, resets on every switch
+	ghost_run_available = new_ship.ship_ability == ShipData.ShipAbility.GHOST_RUN
 	credits_changed.emit(credits)
 
 

@@ -191,6 +191,8 @@ func _build_current_ship_panel() -> PanelContainer:
 	# Large ship display
 	_current_ship_display = ShipDisplayScene.instantiate()
 	_current_ship_display.custom_minimum_size = Vector2(140, 140)
+	_current_ship_display.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_current_ship_display.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	vbox.add_child(_current_ship_display)
 
 	var ship: Resource = GameManager.get_ship_data()
@@ -264,11 +266,13 @@ func _refresh_ui() -> void:
 	var all_ships: Array = ResourceRegistry.load_all(ResourceRegistry.SHIPS)
 
 	for ship in all_ships:
-		# Only show ships available at this planet type
-		if ship.available_planet_types.size() > 0 and not (_planet_type in ship.available_planet_types):
+		var is_owned: bool = GameManager.owns_ship(ship.resource_path)
+		# Only restrict planet availability for ships the player doesn't already own —
+		# owned ships can always be swapped in from the hangar.
+		if not is_owned and ship.available_planet_types.size() > 0 and not (_planet_type in ship.available_planet_types):
 			continue
-		# Don't show the starter ship for purchase
-		if ship.cost == 0 and ship.resource_path != GameManager.current_ship:
+		# Don't show the starter ship for purchase — unless it's still in the hangar
+		if ship.cost == 0 and ship.resource_path != GameManager.current_ship and not is_owned:
 			continue
 
 		var card := _create_ship_card(ship, current_ship)
@@ -318,6 +322,8 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 
 	var ship_preview := ShipDisplayScene.instantiate()
 	ship_preview.custom_minimum_size = Vector2(70, 70)
+	ship_preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	ship_preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	preview_container.add_child(ship_preview)
 	ship_preview.update_ship(1.0, 0.5, 0, ship.base_cargo_capacity, ship.hull_shape)
 
@@ -349,38 +355,65 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 	if ability_row.get_child_count() > 0:
 		info.add_child(ability_row)
 
-	# Buy button column
-	if not is_current and ship.cost > 0:
+	# Action button column
+	if not is_current and (ship.cost > 0 or GameManager.owns_ship(ship.resource_path)):
 		var btn_col := VBoxContainer.new()
 		btn_col.add_theme_constant_override("separation", 4)
 		btn_col.alignment = BoxContainer.ALIGNMENT_CENTER
 		hbox.add_child(btn_col)
 
-		var trade_in: int = int(current_ship.cost * 0.5)
-		var net_cost: int = ship.cost - trade_in
+		if GameManager.owns_ship(ship.resource_path):
+			# Owned but not active → switch for transfer fee
+			var fee: int = GameManager.SHIP_TRANSFER_FEE
+			var price_lbl := Label.new()
+			price_lbl.text = "%d cr" % fee
+			price_lbl.add_theme_font_size_override("font_size", 16)
+			price_lbl.add_theme_color_override("font_color", UIStyles.GOLD if GameManager.credits >= fee else Color(0.5, 0.3, 0.3))
+			price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			btn_col.add_child(price_lbl)
 
-		var price_lbl := Label.new()
-		price_lbl.text = "%d cr" % net_cost
-		price_lbl.add_theme_font_size_override("font_size", 16)
-		price_lbl.add_theme_color_override("font_color", UIStyles.GOLD if GameManager.credits >= net_cost else Color(0.5, 0.3, 0.3))
-		price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		btn_col.add_child(price_lbl)
+			var fee_note := Label.new()
+			fee_note.text = "(transfer fee)"
+			fee_note.add_theme_font_size_override("font_size", 10)
+			fee_note.add_theme_color_override("font_color", Color(0.5, 0.65, 0.45))
+			fee_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			btn_col.add_child(fee_note)
 
-		if trade_in > 0:
-			var trade_lbl := Label.new()
-			trade_lbl.text = "(-%d trade-in)" % trade_in
-			trade_lbl.add_theme_font_size_override("font_size", 10)
-			trade_lbl.add_theme_color_override("font_color", Color(0.5, 0.65, 0.45))
-			trade_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			btn_col.add_child(trade_lbl)
+			var switch_btn := Button.new()
+			switch_btn.text = "SWITCH"
+			switch_btn.custom_minimum_size = Vector2(100, 38)
+			switch_btn.disabled = GameManager.credits < fee
+			_style_buy_button(switch_btn)
+			switch_btn.pressed.connect(_on_switch_owned.bind(ship))
+			btn_col.add_child(switch_btn)
+		else:
+			# Not owned → buy. Two flavors: keep old (full price) vs trade-in (-50% of old)
+			var trade_in: int = int(current_ship.cost * 0.5)
+			var net_cost: int = ship.cost - trade_in
 
-		var btn := Button.new()
-		btn.text = "BUY"
-		btn.custom_minimum_size = Vector2(100, 38)
-		btn.disabled = GameManager.credits < net_cost
-		_style_buy_button(btn)
-		btn.pressed.connect(_on_buy_ship.bind(ship, net_cost))
-		btn_col.add_child(btn)
+			var price_lbl := Label.new()
+			price_lbl.text = "%d cr" % ship.cost
+			price_lbl.add_theme_font_size_override("font_size", 16)
+			price_lbl.add_theme_color_override("font_color", UIStyles.GOLD if GameManager.credits >= ship.cost else Color(0.5, 0.3, 0.3))
+			price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			btn_col.add_child(price_lbl)
+
+			var buy_keep_btn := Button.new()
+			buy_keep_btn.text = "BUY & KEEP OLD"
+			buy_keep_btn.custom_minimum_size = Vector2(140, 32)
+			buy_keep_btn.disabled = GameManager.credits < ship.cost
+			_style_buy_button(buy_keep_btn)
+			buy_keep_btn.pressed.connect(_on_buy_ship.bind(ship, ship.cost, true))
+			btn_col.add_child(buy_keep_btn)
+
+			if trade_in > 0:
+				var buy_trade_btn := Button.new()
+				buy_trade_btn.text = "BUY & TRADE-IN (%d cr)" % net_cost
+				buy_trade_btn.custom_minimum_size = Vector2(140, 32)
+				buy_trade_btn.disabled = GameManager.credits < net_cost
+				_style_buy_button(buy_trade_btn)
+				buy_trade_btn.pressed.connect(_on_buy_ship.bind(ship, net_cost, false))
+				btn_col.add_child(buy_trade_btn)
 
 	return card
 
@@ -424,6 +457,7 @@ func _build_stat_comparison(ship: Resource, current: Resource) -> HBoxContainer:
 
 func _build_ability_row(ship: Resource) -> HBoxContainer:
 	var row := HBoxContainer.new()
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_theme_constant_override("separation", 8)
 	# Ability description
 	var ability_desc: String = ship.ability_description
@@ -433,6 +467,7 @@ func _build_ability_row(ship: Resource) -> HBoxContainer:
 		ability_lbl.add_theme_font_size_override("font_size", 10)
 		ability_lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.6))
 		ability_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		ability_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(ability_lbl)
 	return row
 
@@ -455,16 +490,31 @@ func _add_stat_chip(container: HBoxContainer, stat_name: String, value: int, dif
 	container.add_child(chip)
 
 
-func _on_buy_ship(ship: Resource, net_cost: int) -> void:
-	if not GameManager.remove_credits(net_cost):
+func _on_buy_ship(ship: Resource, cost: int, keep_old: bool) -> void:
+	if not GameManager.remove_credits(cost):
 		_status_label.text = "Not enough credits!"
 		return
 	var old_ship: Resource = GameManager.get_ship_data()
-	var trade_in: int = int(old_ship.cost * 0.5)
-	GameManager.switch_ship(ship.resource_path)
-	GameManager.remove_credits(trade_in)
+	var old_name: String = old_ship.ship_name if old_ship else ""
+	GameManager.switch_ship(ship.resource_path, keep_old)
 
-	EventLog.add_entry("Bought %s for %d cr (trade-in: %d cr)" % [ship.ship_name, net_cost, trade_in])
+	if keep_old:
+		EventLog.add_entry("Bought %s for %d cr (kept %s in hangar)" % [ship.ship_name, cost, old_name])
+		_status_label.text = "Switched to %s (old ship stored in hangar)" % ship.ship_name
+	else:
+		var trade_in: int = int(old_ship.cost * 0.5) if old_ship else 0
+		EventLog.add_entry("Bought %s for %d cr (trade-in: %d cr)" % [ship.ship_name, cost, trade_in])
+		_status_label.text = "Switched to %s!" % ship.ship_name
+	_refresh_ui()
+
+
+func _on_switch_owned(ship: Resource) -> void:
+	var fee: int = GameManager.SHIP_TRANSFER_FEE
+	if not GameManager.remove_credits(fee):
+		_status_label.text = "Not enough credits!"
+		return
+	GameManager.switch_ship(ship.resource_path, true)
+	EventLog.add_entry("Switched to %s (transfer fee: %d cr)" % [ship.ship_name, fee])
 	_status_label.text = "Switched to %s!" % ship.ship_name
 	_refresh_ui()
 

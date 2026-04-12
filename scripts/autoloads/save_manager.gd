@@ -22,6 +22,7 @@ func save_game() -> void:
 		"total_flights": GameManager.total_flights,
 		"faction_reputation": GameManager.faction_reputation.duplicate(),
 		"current_ship": GameManager.current_ship,
+		"owned_ships": GameManager.owned_ships.duplicate(),
 		"installed_upgrades": GameManager.installed_upgrades.duplicate(),
 		"removed_cards": GameManager.removed_cards.duplicate(),
 		"hull_upgrades_bought": GameManager.hull_upgrades_bought,
@@ -87,6 +88,13 @@ func load_game() -> bool:
 	for faction in loaded_rep:
 		GameManager.faction_reputation[str(faction)] = int(loaded_rep[faction])
 	GameManager.current_ship = data.get("current_ship", "res://data/ships/scout.tres")
+	var saved_ships: Array = data.get("owned_ships", [])
+	var hangar: Array[String] = []
+	for p in saved_ships:
+		hangar.append(str(p))
+	if hangar.is_empty():
+		hangar.append(GameManager.current_ship)
+	GameManager.owned_ships = hangar
 	GameManager.installed_upgrades = data.get("installed_upgrades", [])
 	GameManager.removed_cards = data.get("removed_cards", [])
 	GameManager.hull_upgrades_bought = int(data.get("hull_upgrades_bought", 0))
