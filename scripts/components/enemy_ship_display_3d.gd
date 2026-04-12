@@ -1,320 +1,129 @@
 extends Control
 
-## 3D low-poly enemy ship display using SubViewport.
-## Public API is identical to enemy_ship_display.gd.
-## Ship is rotated 180° so the tip points downward (toward the player).
-
 var hull_pct: float = 1.0
 var shield_pct: float = 0.0
-var _ship_type: int = 0  # 0=fighter … 6=hunter
+var _ship_type: int = 0 
+var crack_positions: Array = []
+var crack_seed_generated: bool = false
 
-var _base_emissive: float = 0.0
+const TEX_ENEMY_FIGHTER = preload("res://assets/sprites/enemies/fighter_ship.png")
+const TEX_ENEMY_PATROL = preload("res://assets/sprites/enemies/patrol_ship.png")
+const TEX_ENEMY_PIRATE = preload("res://assets/sprites/enemies/pirate_ship.png")
+const TEX_ENEMY_AI_DRONE = preload("res://assets/sprites/enemies/rogue_ai_ship.png")
+const TEX_ENEMY_ANOMALY = preload("res://assets/sprites/enemies/anomaly_ship.png")
+const TEX_ENEMY_HUNTER = preload("res://assets/sprites/enemies/hunter_ship.png")
+const TEX_FREIGHTER = preload("res://assets/sprites/ships/freighter.png")
 
-var _viewport: SubViewport
-var _ship_root: Node3D
-var _hull_mi: MeshInstance3D
-var _shield_mi: MeshInstance3D
-var _engine_mis: Array = []
-var _hull_mat: ShaderMaterial
-var _shield_mat: ShaderMaterial
-
-const HULL_SHADER = preload("res://shaders/ship_hull.gdshader")
-const SHIELD_SHADER = preload("res://shaders/ship_shield.gdshader")
-const ENGINE_SHADER = preload("res://shaders/engine_glow.gdshader")
-
-# Enemy hull polygons (Y-up, ×2 scale).
-# Derived from enemy_ship_display.gd polygon offsets with Y-axis inversion.
-# Ship root is rotated 180° around Z so the tip points down (toward the player).
-const ENEMY_HULL_POLYGONS: Array = [
-	# 0: Fighter — angular (default)
-	[Vector2(0.0, 0.84), Vector2(0.24, 0.50), Vector2(0.60, -0.20),
-	 Vector2(0.36, -0.30), Vector2(0.20, -0.70), Vector2(-0.20, -0.70),
-	 Vector2(-0.36, -0.30), Vector2(-0.60, -0.20), Vector2(-0.24, 0.50)],
-	# 1: Freighter — wide boxy
-	[Vector2(0.0, 0.60), Vector2(0.50, 0.40), Vector2(0.60, 0.0),
-	 Vector2(0.60, -0.30), Vector2(0.30, -0.60), Vector2(-0.30, -0.60),
-	 Vector2(-0.60, -0.30), Vector2(-0.60, 0.0), Vector2(-0.50, 0.40)],
-	# 2: Patrol — winged
-	[Vector2(0.0, 0.80), Vector2(0.20, 0.50), Vector2(0.70, 0.10),
-	 Vector2(0.50, -0.20), Vector2(0.24, -0.70), Vector2(-0.24, -0.70),
-	 Vector2(-0.50, -0.20), Vector2(-0.70, 0.10), Vector2(-0.20, 0.50)],
-	# 3: Battleship — massive
-	[Vector2(0.0, 0.70), Vector2(0.40, 0.56), Vector2(0.70, 0.10),
-	 Vector2(0.64, -0.30), Vector2(0.36, -0.70), Vector2(-0.36, -0.70),
-	 Vector2(-0.64, -0.30), Vector2(-0.70, 0.10), Vector2(-0.40, 0.56)],
-	# 4: Drone — hexagonal
-	[Vector2(0.0, 0.76), Vector2(0.66, 0.38), Vector2(0.66, -0.38),
-	 Vector2(0.0, -0.76), Vector2(-0.66, -0.38), Vector2(-0.66, 0.38)],
-	# 5: Anomaly — irregular crystal
-	[Vector2(0.10, 0.70), Vector2(0.50, 0.30), Vector2(0.60, -0.10),
-	 Vector2(0.30, -0.64), Vector2(-0.20, -0.70), Vector2(-0.60, -0.20),
-	 Vector2(-0.50, 0.30), Vector2(-0.16, 0.60)],
-	# 6: Hunter — sleek needle
-	[Vector2(0.0, 0.88), Vector2(0.16, 0.60), Vector2(0.40, -0.10),
-	 Vector2(0.30, -0.30), Vector2(0.16, -0.76), Vector2(-0.16, -0.76),
-	 Vector2(-0.30, -0.30), Vector2(-0.40, -0.10), Vector2(-0.16, 0.60)],
-]
-
-const ENEMY_ENGINE_POSITIONS: Array = [
-	[Vector2(-0.12, -0.68), Vector2(0.12, -0.68)],  # Fighter
-	[Vector2(-0.20, -0.58), Vector2(0.20, -0.58)],  # Freighter
-	[Vector2(-0.14, -0.68), Vector2(0.14, -0.68)],  # Patrol
-	[Vector2(0.0, -0.68), Vector2(-0.24, -0.60), Vector2(0.24, -0.60)],  # Battleship
-	[Vector2(-0.20, -0.60), Vector2(0.20, -0.60)],  # Drone
-	[Vector2(-0.12, -0.60), Vector2(0.12, -0.60)],  # Anomaly
-	[Vector2(-0.10, -0.74), Vector2(0.10, -0.74)],  # Hunter
-]
-
+var _hit_offset: Vector2 = Vector2.ZERO
+var _hit_flash: float = 0.0
 
 func update_enemy(p_hull_pct: float, p_shield_pct: float, encounter_name: String) -> void:
 	hull_pct = clampf(p_hull_pct, 0.0, 1.0)
 	shield_pct = clampf(p_shield_pct, 0.0, 1.0)
-	var new_type: int = _type_from_name(encounter_name)
-	if new_type != _ship_type:
-		_ship_type = new_type
-		if _hull_mi:
-			_build_ship(_ship_type)
-	if _hull_mat:
-		_update_hull_visual()
-	if _shield_mat:
-		_shield_mat.set_shader_parameter("shield_strength", shield_pct)
-		_shield_mi.visible = shield_pct > 0.001
-
+	_ship_type = _type_from_name(encounter_name)
+	if hull_pct < 0.6 and not crack_seed_generated:
+		_generate_cracks()
+	elif hull_pct >= 0.6:
+		crack_positions.clear()
+		crack_seed_generated = false
+	queue_redraw()
 
 func play_hit() -> void:
-	if not _hull_mat:
-		return
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_method(_set_emissive, 0.0, 1.2, 0.06)
-	tween.tween_method(_set_emissive, 1.2, _base_emissive, 0.25).set_delay(0.06)
-	tween.tween_method(_set_ship_x, 0.0, 0.14, 0.04)
-	tween.tween_method(_set_ship_x, 0.14, -0.12, 0.06).set_delay(0.04)
-	tween.tween_method(_set_ship_x, -0.12, 0.08, 0.05).set_delay(0.10)
-	tween.tween_method(_set_ship_x, 0.08, -0.06, 0.04).set_delay(0.15)
-	tween.tween_method(_set_ship_x, -0.06, 0.0, 0.06).set_delay(0.19)
+	tween.tween_method(_set_hit_offset_x, 0.0, 5.0, 0.04)
+	tween.tween_method(_set_hit_offset_x, 5.0, -4.0, 0.06).set_delay(0.04)
+	tween.tween_method(_set_hit_offset_x, -4.0, 3.0, 0.05).set_delay(0.10)
+	tween.tween_method(_set_hit_offset_x, 3.0, -2.0, 0.04).set_delay(0.15)
+	tween.tween_method(_set_hit_offset_x, -2.0, 0.0, 0.06).set_delay(0.19)
+	tween.tween_method(_set_hit_flash, 0.0, 1.0, 0.06)
+	tween.tween_method(_set_hit_flash, 1.0, 0.0, 0.25).set_delay(0.06)
 
+func _set_hit_offset_x(val: float) -> void:
+	_hit_offset.x = val
+	queue_redraw()
+
+func _set_hit_flash(val: float) -> void:
+	_hit_flash = val
+	queue_redraw()
 
 func _type_from_name(encounter_name: String) -> int:
 	match encounter_name:
-		"Wandering Trader":
-			return 1
-		"System Patrol", "Smuggler Ambush":
-			return 2
-		"Pirate Captain":
-			return 3
-		"Rogue AI":
-			return 4
-		"Space Anomaly":
-			return 5
-		"Bounty Hunter":
-			return 6
-		_:
-			return 0
+		"Wandering Trader": return 1     # Freighter
+		"System Patrol", "Smuggler Ambush": return 2  # Scout
+		"Pirate Captain": return 3       # Warship
+		"Rogue AI": return 4             # Explorer
+		"Space Anomaly": return 5        # Smuggler
+		"Bounty Hunter": return 6        # Warship/Smuggler
+		_: return 0                      # Scout
 
+func _generate_cracks() -> void:
+	crack_positions.clear()
+	var count: int = int((1.0 - hull_pct) * 8) + 1
+	for i in count:
+		var start := Vector2(randf_range(-0.3, 0.3), randf_range(-0.3, 0.3))
+		var end_pt := start + Vector2(randf_range(-0.15, 0.15), randf_range(-0.15, 0.15))
+		crack_positions.append([start, end_pt])
+	crack_seed_generated = true
 
-func _set_emissive(val: float) -> void:
-	if _hull_mat:
-		_hull_mat.set_shader_parameter("emissive_strength", val)
+func _draw() -> void:
+	var s: float = minf(size.x, size.y)
+	var w: float = s
+	var h: float = s
+	var cx: float = size.x * 0.5 + _hit_offset.x
+	var cy: float = size.y * 0.5
 
-
-func _set_ship_x(val: float) -> void:
-	if _ship_root:
-		_ship_root.position.x = val
-
-
-func _ready() -> void:
-	_setup_viewport()
-	_setup_scene()
-
-
-func _setup_viewport() -> void:
-	var container := SubViewportContainer.new()
-	container.set_anchors_preset(Control.PRESET_FULL_RECT)
-	container.stretch = true
-	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(container)
-	_viewport = SubViewport.new()
-	_viewport.own_world_3d = true
-	_viewport.transparent_bg = true
-	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	_viewport.msaa_3d = SubViewport.MSAA_2X
-	container.add_child(_viewport)
-
-
-func _setup_scene() -> void:
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color.TRANSPARENT
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.18, 0.12, 0.10)
-	env.ambient_light_energy = 0.7
-	var world_env := WorldEnvironment.new()
-	world_env.environment = env
-	_viewport.add_child(world_env)
-
-	var key_light := DirectionalLight3D.new()
-	key_light.light_color = Color(1.0, 0.85, 0.7)
-	key_light.light_energy = 1.4
-	key_light.rotation = Vector3(-35.0, -30.0, 0.0) * (PI / 180.0)
-	_viewport.add_child(key_light)
-
-	var fill_light := DirectionalLight3D.new()
-	fill_light.light_color = Color(0.5, 0.3, 0.2)
-	fill_light.light_energy = 0.35
-	fill_light.rotation = Vector3(30.0, 150.0, 0.0) * (PI / 180.0)
-	_viewport.add_child(fill_light)
-
-	var camera := Camera3D.new()
-	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 2.2
-	camera.position = Vector3(0.0, 0.0, 5.0)
-	_viewport.add_child(camera)
-
-	_ship_root = Node3D.new()
-	# Rotate 180° around Z so the ship's tip points downward (toward the player).
-	_ship_root.rotation.z = PI
-	_viewport.add_child(_ship_root)
-
-	_hull_mat = ShaderMaterial.new()
-	_hull_mat.shader = HULL_SHADER
-	_hull_mat.set_shader_parameter("hull_color", Color(0.9, 0.55, 0.15))
-	_hull_mat.set_shader_parameter("emissive_strength", 0.0)
-	_hull_mat.set_shader_parameter("emissive_color", Color(1.0, 0.4, 0.1))
-
-	_shield_mat = ShaderMaterial.new()
-	_shield_mat.shader = SHIELD_SHADER
-	_shield_mat.set_shader_parameter("shield_color", Color(0.8, 0.3, 0.3, 0.7))
-	_shield_mat.set_shader_parameter("shield_strength", 0.0)
-	_shield_mat.set_shader_parameter("hit_flash", 0.0)
-	_shield_mat.set_shader_parameter("hit_color", Color(1.0, 0.6, 0.4, 1.0))
-
-	_hull_mi = MeshInstance3D.new()
-	_hull_mi.material_override = _hull_mat
-	_ship_root.add_child(_hull_mi)
-
-	var sphere_mesh := SphereMesh.new()
-	sphere_mesh.radius = 1.05
-	sphere_mesh.height = 2.1
-	sphere_mesh.rings = 16
-	sphere_mesh.radial_segments = 32
-	_shield_mi = MeshInstance3D.new()
-	_shield_mi.mesh = sphere_mesh
-	_shield_mi.material_override = _shield_mat
-	_shield_mi.visible = false
-	_ship_root.add_child(_shield_mi)
-
-	_build_ship(_ship_type)
-
-
-func _build_ship(shape: int) -> void:
-	for mi: MeshInstance3D in _engine_mis:
-		mi.queue_free()
-	_engine_mis.clear()
-
-	var idx: int = clampi(shape, 0, ENEMY_HULL_POLYGONS.size() - 1)
-	var poly := PackedVector2Array(ENEMY_HULL_POLYGONS[idx])
-	_hull_mi.mesh = _build_hull_mesh(poly)
-
-	var positions: Array = ENEMY_ENGINE_POSITIONS[idx]
-	var base_mat := ShaderMaterial.new()
-	base_mat.shader = ENGINE_SHADER
-	base_mat.set_shader_parameter("glow_color", Color(1.0, 0.45, 0.1, 1.0))
-	base_mat.set_shader_parameter("pulse_speed", 2.0)
-
-	for i in positions.size():
-		var pos: Vector2 = positions[i]
-		var mi := MeshInstance3D.new()
-		var quad := QuadMesh.new()
-		quad.size = Vector2(0.28, 0.28)
-		mi.mesh = quad
-		var mat: ShaderMaterial = base_mat.duplicate()
-		mat.set_shader_parameter("pulse_phase", float(i) * 1.4)
-		mi.material_override = mat
-		mi.position = Vector3(pos.x, pos.y, 0.14)
-		_ship_root.add_child(mi)
-		_engine_mis.append(mi)
-
-
-func _build_hull_mesh(poly: PackedVector2Array) -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var n: int = poly.size()
-	const depth: float = 0.125
-
-	var cx: float = 0.0
-	var cy: float = 0.0
-	for v: Vector2 in poly:
-		cx += v.x
-		cy += v.y
-	cx /= float(n)
-	cy /= float(n)
-
-	for i in n:
-		var v0: Vector2 = poly[i]
-		var v1: Vector2 = poly[(i + 1) % n]
-		st.set_normal(Vector3(0.0, 0.0, 1.0))
-		st.set_uv(Vector2(cx * 0.5 + 0.5, -cy * 0.5 + 0.5))
-		st.add_vertex(Vector3(cx, cy, depth))
-		st.set_normal(Vector3(0.0, 0.0, 1.0))
-		st.set_uv(Vector2(v1.x * 0.5 + 0.5, -v1.y * 0.5 + 0.5))
-		st.add_vertex(Vector3(v1.x, v1.y, depth))
-		st.set_normal(Vector3(0.0, 0.0, 1.0))
-		st.set_uv(Vector2(v0.x * 0.5 + 0.5, -v0.y * 0.5 + 0.5))
-		st.add_vertex(Vector3(v0.x, v0.y, depth))
-
-	for i in n:
-		var v0: Vector2 = poly[i]
-		var v1: Vector2 = poly[(i + 1) % n]
-		st.set_normal(Vector3(0.0, 0.0, -1.0))
-		st.set_uv(Vector2(cx * 0.5 + 0.5, -cy * 0.5 + 0.5))
-		st.add_vertex(Vector3(cx, cy, -depth))
-		st.set_normal(Vector3(0.0, 0.0, -1.0))
-		st.set_uv(Vector2(v0.x * 0.5 + 0.5, -v0.y * 0.5 + 0.5))
-		st.add_vertex(Vector3(v0.x, v0.y, -depth))
-		st.set_normal(Vector3(0.0, 0.0, -1.0))
-		st.set_uv(Vector2(v1.x * 0.5 + 0.5, -v1.y * 0.5 + 0.5))
-		st.add_vertex(Vector3(v1.x, v1.y, -depth))
-
-	for i in n:
-		var v0: Vector2 = poly[i]
-		var v1: Vector2 = poly[(i + 1) % n]
-		var d: Vector2 = v1 - v0
-		var normal := Vector3(-d.y, d.x, 0.0).normalized()
-		var v0f := Vector3(v0.x, v0.y, depth)
-		var v1f := Vector3(v1.x, v1.y, depth)
-		var v0b := Vector3(v0.x, v0.y, -depth)
-		var v1b := Vector3(v1.x, v1.y, -depth)
-		st.set_normal(normal)
-		st.add_vertex(v0f)
-		st.set_normal(normal)
-		st.add_vertex(v1f)
-		st.set_normal(normal)
-		st.add_vertex(v1b)
-		st.set_normal(normal)
-		st.add_vertex(v0f)
-		st.set_normal(normal)
-		st.add_vertex(v1b)
-		st.set_normal(normal)
-		st.add_vertex(v0b)
-
-	return st.commit()
-
-
-func _update_hull_visual() -> void:
-	var color: Color
+	var hull_color: Color
 	if hull_pct > 0.6:
-		color = Color(0.9, 0.55, 0.15)
+		hull_color = Color(0.9, 0.55, 0.15)
 	elif hull_pct > 0.3:
 		var t: float = (hull_pct - 0.3) / 0.3
-		color = Color(0.9, 0.3, 0.15).lerp(Color(0.9, 0.55, 0.15), t)
+		hull_color = Color(0.9, 0.3, 0.15).lerp(Color(0.9, 0.55, 0.15), t)
 	else:
 		var t: float = hull_pct / 0.3
-		color = Color(0.35, 0.08, 0.08).lerp(Color(0.9, 0.3, 0.15), t)
-	_hull_mat.set_shader_parameter("hull_color", color)
-	if hull_pct < 0.3:
-		_base_emissive = (0.3 - hull_pct) / 0.3 * 0.35
-	else:
-		_base_emissive = 0.0
-	_hull_mat.set_shader_parameter("emissive_strength", _base_emissive)
+		hull_color = Color(0.35, 0.08, 0.08).lerp(Color(0.9, 0.3, 0.15), t)
 
+	if _hit_flash > 0.01:
+		hull_color = hull_color.lerp(Color(1.0, 0.85, 0.7), _hit_flash * 0.7)
+
+	if shield_pct > 0.0:
+		var shield_alpha: float = 0.1 + shield_pct * 0.25
+		var shield_color := Color(0.8, 0.3, 0.3, shield_alpha)
+		_draw_ellipse(Vector2(cx, cy), w * 0.48, h * 0.46, shield_color)
+
+	var tex: Texture2D
+	match _ship_type:
+		1: tex = TEX_FREIGHTER
+		2: tex = TEX_ENEMY_PATROL
+		3: tex = TEX_ENEMY_PIRATE
+		4: tex = TEX_ENEMY_AI_DRONE
+		5: tex = TEX_ENEMY_ANOMALY
+		6: tex = TEX_ENEMY_HUNTER
+		_: tex = TEX_ENEMY_FIGHTER
+
+	if tex:
+		var rect_width = w
+		var rect_height = h
+		var rect = Rect2(cx - rect_width / 2.0, cy - rect_height / 2.0, rect_width, rect_height)
+		draw_texture_rect(tex, rect, false, hull_color)
+
+	# Draw outline
+	# Skipping outline for sprites as they already have internal cel shading
+
+	if hull_pct < 0.6:
+		var crack_color := Color(0.15, 0.1, 0.05, 0.6 + (1.0 - hull_pct) * 0.4)
+		for crack in crack_positions:
+			var p1 := Vector2(cx + crack[0].x * w, cy + crack[0].y * h)
+			var p2 := Vector2(cx + crack[1].x * w, cy + crack[1].y * h)
+			draw_line(p1, p2, crack_color, 1.5)
+
+	if _hit_flash > 0.05:
+		draw_circle(Vector2(cx, cy), w * 0.35, Color(1.0, 0.5, 0.2, _hit_flash * 0.3))
+
+func _draw_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:
+	var points := PackedVector2Array()
+	var segments: int = 32
+	for i in segments:
+		var angle: float = TAU * float(i) / float(segments)
+		points.append(Vector2(center.x + cos(angle) * rx, center.y + sin(angle) * ry))
+	draw_colored_polygon(points, color)

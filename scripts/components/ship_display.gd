@@ -8,14 +8,18 @@ var ship_shape: int = 0
 var crack_positions: Array = []
 var crack_seed_generated: bool = false
 
-# Hit animation state
+const TEX_SCOUT = preload("res://assets/sprites/ships/scout.png")
+const TEX_FREIGHTER = preload("res://assets/sprites/ships/freighter.png")
+const TEX_WARSHIP = preload("res://assets/sprites/ships/warship.png")
+const TEX_SMUGGLER = preload("res://assets/sprites/ships/smuggler.png")
+const TEX_EXPLORER = preload("res://assets/sprites/ships/explorer.png")
+
 var _hit_offset: Vector2 = Vector2.ZERO
 var _hit_flash_color: Color = Color.TRANSPARENT
 var _hit_flash: float = 0.0
 
-
 func play_shield_hit() -> void:
-	_hit_flash_color = Color(0.3, 0.6, 1.0)  # blue
+	_hit_flash_color = Color(0.3, 0.6, 1.0)
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_method(_set_hit_offset_x, 0.0, 3.0, 0.04)
@@ -25,9 +29,8 @@ func play_shield_hit() -> void:
 	tween.tween_method(_set_hit_flash, 0.0, 0.8, 0.05)
 	tween.tween_method(_set_hit_flash, 0.8, 0.0, 0.30).set_delay(0.05)
 
-
 func play_hull_hit() -> void:
-	_hit_flash_color = Color(1.0, 0.3, 0.2)  # red
+	_hit_flash_color = Color(1.0, 0.3, 0.2)
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_method(_set_hit_offset_x, 0.0, 5.0, 0.03)
@@ -38,16 +41,13 @@ func play_hull_hit() -> void:
 	tween.tween_method(_set_hit_flash, 0.0, 1.0, 0.04)
 	tween.tween_method(_set_hit_flash, 1.0, 0.0, 0.35).set_delay(0.04)
 
-
 func _set_hit_offset_x(val: float) -> void:
 	_hit_offset.x = val
 	queue_redraw()
 
-
 func _set_hit_flash(val: float) -> void:
 	_hit_flash = val
 	queue_redraw()
-
 
 func update_ship(p_hull_pct: float, p_shield_pct: float, p_cargo_used: int, p_cargo_max: int, p_ship_shape: int = -1) -> void:
 	hull_pct = clampf(p_hull_pct, 0.0, 1.0)
@@ -63,7 +63,6 @@ func update_ship(p_hull_pct: float, p_shield_pct: float, p_cargo_used: int, p_ca
 		crack_seed_generated = false
 	queue_redraw()
 
-
 func _generate_cracks() -> void:
 	crack_positions.clear()
 	var count: int = int((1.0 - hull_pct) * 8) + 1
@@ -73,75 +72,6 @@ func _generate_cracks() -> void:
 		crack_positions.append([start, end])
 	crack_seed_generated = true
 
-
-func _get_hull_polygon(cx: float, cy: float, w: float, h: float) -> PackedVector2Array:
-	match ship_shape:
-		1:  # Freighter — wide, boxy
-			return PackedVector2Array([
-				Vector2(cx, cy - h * 0.32),
-				Vector2(cx + w * 0.2, cy - h * 0.25),
-				Vector2(cx + w * 0.28, cy - h * 0.05),
-				Vector2(cx + w * 0.28, cy + h * 0.2),
-				Vector2(cx + w * 0.15, cy + h * 0.35),
-				Vector2(cx - w * 0.15, cy + h * 0.35),
-				Vector2(cx - w * 0.28, cy + h * 0.2),
-				Vector2(cx - w * 0.28, cy - h * 0.05),
-				Vector2(cx - w * 0.2, cy - h * 0.25),
-			])
-		2:  # Warship — angular, aggressive
-			return PackedVector2Array([
-				Vector2(cx, cy - h * 0.44),
-				Vector2(cx + w * 0.08, cy - h * 0.3),
-				Vector2(cx + w * 0.35, cy + h * 0.0),
-				Vector2(cx + w * 0.3, cy + h * 0.15),
-				Vector2(cx + w * 0.15, cy + h * 0.2),
-				Vector2(cx + w * 0.12, cy + h * 0.38),
-				Vector2(cx - w * 0.12, cy + h * 0.38),
-				Vector2(cx - w * 0.15, cy + h * 0.2),
-				Vector2(cx - w * 0.3, cy + h * 0.15),
-				Vector2(cx - w * 0.35, cy + h * 0.0),
-				Vector2(cx - w * 0.08, cy - h * 0.3),
-			])
-		3:  # Smuggler — slim, fast
-			return PackedVector2Array([
-				Vector2(cx, cy - h * 0.45),
-				Vector2(cx + w * 0.08, cy - h * 0.3),
-				Vector2(cx + w * 0.18, cy + h * 0.0),
-				Vector2(cx + w * 0.22, cy + h * 0.15),
-				Vector2(cx + w * 0.12, cy + h * 0.35),
-				Vector2(cx - w * 0.12, cy + h * 0.35),
-				Vector2(cx - w * 0.22, cy + h * 0.15),
-				Vector2(cx - w * 0.18, cy + h * 0.0),
-				Vector2(cx - w * 0.08, cy - h * 0.3),
-			])
-		4:  # Explorer — rounded
-			return PackedVector2Array([
-				Vector2(cx, cy - h * 0.38),
-				Vector2(cx + w * 0.15, cy - h * 0.28),
-				Vector2(cx + w * 0.25, cy - h * 0.1),
-				Vector2(cx + w * 0.25, cy + h * 0.1),
-				Vector2(cx + w * 0.18, cy + h * 0.25),
-				Vector2(cx + w * 0.1, cy + h * 0.35),
-				Vector2(cx - w * 0.1, cy + h * 0.35),
-				Vector2(cx - w * 0.18, cy + h * 0.25),
-				Vector2(cx - w * 0.25, cy + h * 0.1),
-				Vector2(cx - w * 0.25, cy - h * 0.1),
-				Vector2(cx - w * 0.15, cy - h * 0.28),
-			])
-		_:  # Scout (default) — original shape
-			return PackedVector2Array([
-				Vector2(cx, cy - h * 0.42),
-				Vector2(cx + w * 0.12, cy - h * 0.25),
-				Vector2(cx + w * 0.32, cy + h * 0.1),
-				Vector2(cx + w * 0.18, cy + h * 0.15),
-				Vector2(cx + w * 0.1, cy + h * 0.35),
-				Vector2(cx - w * 0.1, cy + h * 0.35),
-				Vector2(cx - w * 0.18, cy + h * 0.15),
-				Vector2(cx - w * 0.32, cy + h * 0.1),
-				Vector2(cx - w * 0.12, cy - h * 0.25),
-			])
-
-
 func _draw() -> void:
 	var s: float = minf(size.x, size.y)
 	var w: float = s
@@ -149,18 +79,13 @@ func _draw() -> void:
 	var cx: float = size.x * 0.5 + _hit_offset.x
 	var cy: float = size.y * 0.5
 
-	# 1. Shield bubble
 	if shield_pct > 0.0:
 		var shield_alpha: float = 0.1 + shield_pct * 0.25
 		var shield_col := Color(0.3, 0.5, 1.0, shield_alpha)
-		# Shield flash on hit
 		if _hit_flash > 0.01 and _hit_flash_color.b > 0.5:
 			shield_col = shield_col.lerp(Color(0.5, 0.8, 1.0, 0.7), _hit_flash * 0.6)
-		var shield_rx: float = w * 0.48
-		var shield_ry: float = h * 0.46
-		_draw_ellipse(Vector2(cx, cy), shield_rx, shield_ry, shield_col)
+		_draw_ellipse(Vector2(cx, cy), w * 0.48, h * 0.46, shield_col)
 
-	# 2. Ship hull polygon
 	var hull_color: Color
 	if hull_pct > 0.6:
 		hull_color = Color(0.3, 0.85, 0.3)
@@ -171,38 +96,29 @@ func _draw() -> void:
 		var t: float = hull_pct / 0.3
 		hull_color = Color(0.9, 0.2, 0.2).lerp(Color(0.9, 0.85, 0.2), t)
 
-	# Hit flash overlay
 	if _hit_flash > 0.01:
 		hull_color = hull_color.lerp(_hit_flash_color, _hit_flash * 0.5)
 
-	var body := _get_hull_polygon(cx, cy, w, h)
-	draw_colored_polygon(body, hull_color)
+	var tex: Texture2D
+	match ship_shape:
+		1: tex = TEX_FREIGHTER
+		2: tex = TEX_WARSHIP
+		3: tex = TEX_SMUGGLER
+		4: tex = TEX_EXPLORER
+		_: tex = TEX_SCOUT
 
-	# 3. Cockpit
-	var cockpit := PackedVector2Array([
-		Vector2(cx, cy - h * 0.35),
-		Vector2(cx + w * 0.06, cy - h * 0.18),
-		Vector2(cx, cy - h * 0.1),
-		Vector2(cx - w * 0.06, cy - h * 0.18),
-	])
-	var cockpit_color := Color(hull_color.r + 0.3, hull_color.g + 0.3, hull_color.b + 0.4, 0.8)
-	draw_colored_polygon(cockpit, cockpit_color)
+	if tex:
+		var rect_width = w
+		var rect_height = h
+		var rect = Rect2(cx - rect_width / 2.0, cy - rect_height / 2.0, rect_width, rect_height)
+		draw_texture_rect(tex, rect, false, hull_color)
 
-	# 4. Engine glow
-	var engine_color := Color(1.0, 0.7, 0.2, 0.9)
-	draw_circle(Vector2(cx - w * 0.06, cy + h * 0.34), w * 0.04, engine_color)
-	draw_circle(Vector2(cx + w * 0.06, cy + h * 0.34), w * 0.04, engine_color)
-
-	# 5. Damage cracks
 	if hull_pct < 0.6:
 		var crack_color := Color(0.15, 0.1, 0.05, 0.6 + (1.0 - hull_pct) * 0.4)
 		for crack in crack_positions:
-			var start: Vector2 = crack[0]
-			var end: Vector2 = crack[1]
-			var p1 := Vector2(cx + start.x * w, cy + start.y * h)
-			var p2 := Vector2(cx + end.x * w, cy + end.y * h)
+			var p1 := Vector2(cx + crack[0].x * w, cy + crack[0].y * h)
+			var p2 := Vector2(cx + crack[1].x * w, cy + crack[1].y * h)
 			draw_line(p1, p2, crack_color, 1.5)
-
 
 func _draw_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:
 	var points := PackedVector2Array()

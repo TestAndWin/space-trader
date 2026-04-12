@@ -1,10 +1,5 @@
 extends Control
 
-## 3D combat backdrop for card_battle.tscn.
-## Keeps all gameplay/UI in 2D while rendering animated 3D ships, starfield,
-## laser fire, shield flashes and explosion bursts behind the card UI.
-
-const HULL_SHADER := preload("res://shaders/ship_hull.gdshader")
 const ENGINE_SHADER := preload("res://shaders/engine_glow.gdshader")
 
 const STAR_COUNT: int = 260
@@ -13,25 +8,18 @@ const STAR_FAR_Z: float = -92.0
 const STAR_BOUNDS_X: float = 26.0
 const STAR_BOUNDS_Y: float = 15.0
 
-const PLAYER_HULL_POLYGONS: Array = [
-	[Vector2(0.0, 0.84), Vector2(0.24, 0.50), Vector2(0.64, -0.20),
-	 Vector2(0.36, -0.30), Vector2(0.20, -0.70), Vector2(-0.20, -0.70),
-	 Vector2(-0.36, -0.30), Vector2(-0.64, -0.20), Vector2(-0.24, 0.50)],
-	[Vector2(0.0, 0.64), Vector2(0.40, 0.50), Vector2(0.56, 0.10),
-	 Vector2(0.56, -0.40), Vector2(0.30, -0.70), Vector2(-0.30, -0.70),
-	 Vector2(-0.56, -0.40), Vector2(-0.56, 0.10), Vector2(-0.40, 0.50)],
-	[Vector2(0.0, 0.88), Vector2(0.16, 0.60), Vector2(0.70, 0.0),
-	 Vector2(0.60, -0.30), Vector2(0.30, -0.40), Vector2(0.24, -0.76),
-	 Vector2(-0.24, -0.76), Vector2(-0.30, -0.40), Vector2(-0.60, -0.30),
-	 Vector2(-0.70, 0.0), Vector2(-0.16, 0.60)],
-	[Vector2(0.0, 0.90), Vector2(0.16, 0.60), Vector2(0.36, 0.0),
-	 Vector2(0.44, -0.30), Vector2(0.24, -0.70), Vector2(-0.24, -0.70),
-	 Vector2(-0.44, -0.30), Vector2(-0.36, 0.0), Vector2(-0.16, 0.60)],
-	[Vector2(0.0, 0.76), Vector2(0.30, 0.56), Vector2(0.50, 0.20),
-	 Vector2(0.50, -0.20), Vector2(0.36, -0.50), Vector2(0.20, -0.70),
-	 Vector2(-0.20, -0.70), Vector2(-0.36, -0.50), Vector2(-0.50, -0.20),
-	 Vector2(-0.50, 0.20), Vector2(-0.30, 0.56)],
-]
+const TEX_SCOUT = preload("res://assets/sprites/ships/scout.png")
+const TEX_FREIGHTER = preload("res://assets/sprites/ships/freighter.png")
+const TEX_WARSHIP = preload("res://assets/sprites/ships/warship.png")
+const TEX_SMUGGLER = preload("res://assets/sprites/ships/smuggler.png")
+const TEX_EXPLORER = preload("res://assets/sprites/ships/explorer.png")
+
+const TEX_ENEMY_FIGHTER = preload("res://assets/sprites/enemies/fighter_ship.png")
+const TEX_ENEMY_PATROL = preload("res://assets/sprites/enemies/patrol_ship.png")
+const TEX_ENEMY_PIRATE = preload("res://assets/sprites/enemies/pirate_ship.png")
+const TEX_ENEMY_AI_DRONE = preload("res://assets/sprites/enemies/rogue_ai_ship.png")
+const TEX_ENEMY_ANOMALY = preload("res://assets/sprites/enemies/anomaly_ship.png")
+const TEX_ENEMY_HUNTER = preload("res://assets/sprites/enemies/hunter_ship.png")
 
 const PLAYER_ENGINE_POSITIONS: Array = [
 	[Vector2(-0.12, -0.68), Vector2(0.12, -0.68)],
@@ -39,29 +27,6 @@ const PLAYER_ENGINE_POSITIONS: Array = [
 	[Vector2(0.0, -0.74), Vector2(-0.24, -0.64), Vector2(0.24, -0.64)],
 	[Vector2(-0.12, -0.68), Vector2(0.12, -0.68)],
 	[Vector2(-0.16, -0.68), Vector2(0.16, -0.68)],
-]
-
-const ENEMY_HULL_POLYGONS: Array = [
-	[Vector2(0.0, 0.84), Vector2(0.24, 0.50), Vector2(0.60, -0.20),
-	 Vector2(0.36, -0.30), Vector2(0.20, -0.70), Vector2(-0.20, -0.70),
-	 Vector2(-0.36, -0.30), Vector2(-0.60, -0.20), Vector2(-0.24, 0.50)],
-	[Vector2(0.0, 0.60), Vector2(0.50, 0.40), Vector2(0.60, 0.0),
-	 Vector2(0.60, -0.30), Vector2(0.30, -0.60), Vector2(-0.30, -0.60),
-	 Vector2(-0.60, -0.30), Vector2(-0.60, 0.0), Vector2(-0.50, 0.40)],
-	[Vector2(0.0, 0.80), Vector2(0.20, 0.50), Vector2(0.70, 0.10),
-	 Vector2(0.50, -0.20), Vector2(0.24, -0.70), Vector2(-0.24, -0.70),
-	 Vector2(-0.50, -0.20), Vector2(-0.70, 0.10), Vector2(-0.20, 0.50)],
-	[Vector2(0.0, 0.70), Vector2(0.40, 0.56), Vector2(0.70, 0.10),
-	 Vector2(0.64, -0.30), Vector2(0.36, -0.70), Vector2(-0.36, -0.70),
-	 Vector2(-0.64, -0.30), Vector2(-0.70, 0.10), Vector2(-0.40, 0.56)],
-	[Vector2(0.0, 0.76), Vector2(0.66, 0.38), Vector2(0.66, -0.38),
-	 Vector2(0.0, -0.76), Vector2(-0.66, -0.38), Vector2(-0.66, 0.38)],
-	[Vector2(0.10, 0.70), Vector2(0.50, 0.30), Vector2(0.60, -0.10),
-	 Vector2(0.30, -0.64), Vector2(-0.20, -0.70), Vector2(-0.60, -0.20),
-	 Vector2(-0.50, 0.30), Vector2(-0.16, 0.60)],
-	[Vector2(0.0, 0.88), Vector2(0.16, 0.60), Vector2(0.40, -0.10),
-	 Vector2(0.30, -0.30), Vector2(0.16, -0.76), Vector2(-0.16, -0.76),
-	 Vector2(-0.30, -0.30), Vector2(-0.40, -0.10), Vector2(-0.16, 0.60)],
 ]
 
 const ENEMY_ENGINE_POSITIONS: Array = [
@@ -84,8 +49,10 @@ var _effects_root: Node3D
 
 var _player_ship_root: Node3D
 var _enemy_ship_root: Node3D
-var _player_hull_mat: ShaderMaterial
-var _enemy_hull_mat: ShaderMaterial
+var _player_hull: Sprite3D
+var _enemy_hull: Sprite3D
+var _player_base_color: Color
+var _enemy_base_color: Color
 var _player_shield: MeshInstance3D
 var _enemy_shield: MeshInstance3D
 var _player_shield_mat: StandardMaterial3D
@@ -305,21 +272,49 @@ func _spawn_nebulae() -> void:
 
 		_world_root.add_child(cloud)
 
+func _get_tex_for_shape(shape: int) -> Texture2D:
+	match shape:
+		1: return TEX_FREIGHTER
+		2: return TEX_WARSHIP
+		3: return TEX_SMUGGLER
+		4: return TEX_EXPLORER
+		_: return TEX_SCOUT
+
+func _get_enemy_tex(encounter: String) -> Texture2D:
+	var type := 0
+	match encounter:
+		"Wandering Trader": type = 1
+		"System Patrol", "Smuggler Ambush": type = 2
+		"Pirate Captain": type = 3
+		"Rogue AI": type = 4
+		"Space Anomaly": type = 5
+		"Bounty Hunter": type = 6
+		_: type = 0
+
+	match type:
+		1: return TEX_FREIGHTER
+		2: return TEX_ENEMY_PATROL
+		3: return TEX_ENEMY_PIRATE
+		4: return TEX_ENEMY_AI_DRONE
+		5: return TEX_ENEMY_ANOMALY
+		6: return TEX_ENEMY_HUNTER
+		_: return TEX_ENEMY_FIGHTER
 
 func _build_ships() -> void:
 	var ship_data: Resource = GameManager.get_ship_data()
 	var player_shape: int = ship_data.hull_shape if ship_data else 0
 	var player_color: Color = ship_data.hull_color_primary if ship_data else Color(0.3, 0.85, 0.3)
-
+	
+	_player_base_color = player_color
+	
 	var player_info := _create_ship(
-		PLAYER_HULL_POLYGONS[clampi(player_shape, 0, PLAYER_HULL_POLYGONS.size() - 1)],
+		_get_tex_for_shape(player_shape),
 		PLAYER_ENGINE_POSITIONS[clampi(player_shape, 0, PLAYER_ENGINE_POSITIONS.size() - 1)],
 		player_color,
-		Color(0.25, 0.7, 1.0),
 		Color(1.0, 0.45, 0.2)
 	)
 	_player_ship_root = player_info["root"]
-	_player_hull_mat = player_info["hull_mat"]
+	_player_hull = player_info["hull"]
 	_player_ship_root.position = _player_base_position
 	_player_ship_root.rotation = _player_base_rotation
 	_world_root.add_child(_player_ship_root)
@@ -329,16 +324,19 @@ func _build_ships() -> void:
 	_player_shield_mat = player_shield_info["mat"]
 	_player_ship_root.add_child(_player_shield)
 
+	var enc_name = GameManager.current_encounter.encounter_name if GameManager.current_encounter else ""
+	var enemy_color = Color(0.92, 0.54, 0.16)
+	_enemy_base_color = enemy_color
+	
 	var enemy_type: int = _enemy_type_from_encounter()
 	var enemy_info := _create_ship(
-		ENEMY_HULL_POLYGONS[clampi(enemy_type, 0, ENEMY_HULL_POLYGONS.size() - 1)],
+		_get_enemy_tex(enc_name),
 		ENEMY_ENGINE_POSITIONS[clampi(enemy_type, 0, ENEMY_ENGINE_POSITIONS.size() - 1)],
-		Color(0.92, 0.54, 0.16),
-		Color(1.0, 0.32, 0.25),
+		enemy_color,
 		Color(1.0, 0.5, 0.1)
 	)
 	_enemy_ship_root = enemy_info["root"]
-	_enemy_hull_mat = enemy_info["hull_mat"]
+	_enemy_hull = enemy_info["hull"]
 	_enemy_ship_root.position = _enemy_base_position
 	_enemy_ship_root.rotation = _enemy_base_rotation
 	_world_root.add_child(_enemy_ship_root)
@@ -349,36 +347,20 @@ func _build_ships() -> void:
 	_enemy_ship_root.add_child(_enemy_shield)
 
 
-func _create_ship(polygons: Array, engines: Array, hull_color: Color, canopy_color: Color, engine_color: Color) -> Dictionary:
+func _create_ship(tex: Texture2D, engines: Array, hull_color: Color, engine_color: Color) -> Dictionary:
 	var root := Node3D.new()
 	root.scale = Vector3.ONE * 2.15
 
-	var hull_mat := ShaderMaterial.new()
-	hull_mat.shader = HULL_SHADER
-	hull_mat.set_shader_parameter("hull_color", hull_color)
-	hull_mat.set_shader_parameter("emissive_strength", 0.08)
-	hull_mat.set_shader_parameter("emissive_color", Color(1.0, 0.40, 0.24))
-
-	var hull := MeshInstance3D.new()
-	hull.mesh = _build_hull_mesh(PackedVector2Array(polygons))
-	hull.material_override = hull_mat
+	var hull := Sprite3D.new()
+	hull.texture = tex
+	# Match the scale of the old 2-unit meshes (256px texture * 0.015 ~ 3.8 units wide)
+	hull.pixel_size = 0.009
+	hull.modulate = hull_color
+	hull.alpha_cut = Sprite3D.ALPHA_CUT_DISABLED
+	hull.transparent = true
+	# Give the Sprite3D a tiny bit of depth offset so it fits perfectly with trails
+	hull.position = Vector3(0, 0, 0.0)
 	root.add_child(hull)
-
-	var canopy := MeshInstance3D.new()
-	var canopy_mesh := SphereMesh.new()
-	canopy_mesh.radius = 0.16
-	canopy_mesh.height = 0.32
-	canopy.mesh = canopy_mesh
-	canopy.position = Vector3(0.0, 0.74, 0.18)
-	var canopy_mat := StandardMaterial3D.new()
-	canopy_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	canopy_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	canopy_mat.albedo_color = Color(canopy_color.r, canopy_color.g, canopy_color.b, 0.45)
-	canopy_mat.emission_enabled = true
-	canopy_mat.emission = canopy_color
-	canopy_mat.emission_energy_multiplier = 0.5
-	canopy.material_override = canopy_mat
-	root.add_child(canopy)
 
 	var base_engine_mat := ShaderMaterial.new()
 	base_engine_mat.shader = ENGINE_SHADER
@@ -399,7 +381,7 @@ func _create_ship(polygons: Array, engines: Array, hull_color: Color, canopy_col
 
 	return {
 		"root": root,
-		"hull_mat": hull_mat,
+		"hull": hull,
 	}
 
 
@@ -591,24 +573,16 @@ func _flash_shield(shield: MeshInstance3D, mat: StandardMaterial3D, color: Color
 func _pulse_ship_hit(on_player: bool) -> void:
 	if on_player:
 		_player_hit_offset += Vector3(_rng.randf_range(-0.22, 0.22), _rng.randf_range(-0.14, 0.14), 0.0)
-		if _player_hull_mat:
+		if _player_hull:
 			var tween_p := create_tween()
-			tween_p.tween_method(func(v: float) -> void:
-				_player_hull_mat.set_shader_parameter("emissive_strength", v)
-			, 0.08, 1.2, 0.05)
-			tween_p.chain().tween_method(func(v: float) -> void:
-				_player_hull_mat.set_shader_parameter("emissive_strength", v)
-			, 1.2, 0.08, 0.22)
+			tween_p.tween_property(_player_hull, "modulate", Color(1.0, 0.6, 0.4), 0.05)
+			tween_p.chain().tween_property(_player_hull, "modulate", _player_base_color, 0.22)
 	else:
 		_enemy_hit_offset += Vector3(_rng.randf_range(-0.22, 0.22), _rng.randf_range(-0.14, 0.14), 0.0)
-		if _enemy_hull_mat:
+		if _enemy_hull:
 			var tween_e := create_tween()
-			tween_e.tween_method(func(v: float) -> void:
-				_enemy_hull_mat.set_shader_parameter("emissive_strength", v)
-			, 0.08, 1.2, 0.05)
-			tween_e.chain().tween_method(func(v: float) -> void:
-				_enemy_hull_mat.set_shader_parameter("emissive_strength", v)
-			, 1.2, 0.08, 0.22)
+			tween_e.tween_property(_enemy_hull, "modulate", Color(1.0, 0.6, 0.4), 0.05)
+			tween_e.chain().tween_property(_enemy_hull, "modulate", _enemy_base_color, 0.22)
 
 
 func _spawn_explosion(position_3d: Vector3, color: Color, intensity: float) -> void:
@@ -743,69 +717,3 @@ func _set_material_alpha(mat: StandardMaterial3D, color: Color, alpha: float) ->
 func _set_shield_alpha(mat: StandardMaterial3D, color: Color, alpha: float) -> void:
 	mat.albedo_color = Color(color.r, color.g, color.b, alpha * 0.8)
 	mat.emission = Color(color.r, color.g, color.b, 1.0)
-
-
-# Builds an extruded low-poly hull mesh from a 2D polygon (CW winding, Y-up).
-func _build_hull_mesh(poly: PackedVector2Array) -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var n: int = poly.size()
-	const DEPTH: float = 0.125
-
-	var cx: float = 0.0
-	var cy: float = 0.0
-	for v: Vector2 in poly:
-		cx += v.x
-		cy += v.y
-	cx /= float(n)
-	cy /= float(n)
-
-	for i in n:
-		var v0: Vector2 = poly[i]
-		var v1: Vector2 = poly[(i + 1) % n]
-		st.set_normal(Vector3(0.0, 0.0, 1.0))
-		st.set_uv(Vector2(cx * 0.5 + 0.5, -cy * 0.5 + 0.5))
-		st.add_vertex(Vector3(cx, cy, DEPTH))
-		st.set_normal(Vector3(0.0, 0.0, 1.0))
-		st.set_uv(Vector2(v1.x * 0.5 + 0.5, -v1.y * 0.5 + 0.5))
-		st.add_vertex(Vector3(v1.x, v1.y, DEPTH))
-		st.set_normal(Vector3(0.0, 0.0, 1.0))
-		st.set_uv(Vector2(v0.x * 0.5 + 0.5, -v0.y * 0.5 + 0.5))
-		st.add_vertex(Vector3(v0.x, v0.y, DEPTH))
-
-	for i in n:
-		var v0: Vector2 = poly[i]
-		var v1: Vector2 = poly[(i + 1) % n]
-		st.set_normal(Vector3(0.0, 0.0, -1.0))
-		st.set_uv(Vector2(cx * 0.5 + 0.5, -cy * 0.5 + 0.5))
-		st.add_vertex(Vector3(cx, cy, -DEPTH))
-		st.set_normal(Vector3(0.0, 0.0, -1.0))
-		st.set_uv(Vector2(v0.x * 0.5 + 0.5, -v0.y * 0.5 + 0.5))
-		st.add_vertex(Vector3(v0.x, v0.y, -DEPTH))
-		st.set_normal(Vector3(0.0, 0.0, -1.0))
-		st.set_uv(Vector2(v1.x * 0.5 + 0.5, -v1.y * 0.5 + 0.5))
-		st.add_vertex(Vector3(v1.x, v1.y, -DEPTH))
-
-	for i in n:
-		var v0: Vector2 = poly[i]
-		var v1: Vector2 = poly[(i + 1) % n]
-		var d: Vector2 = v1 - v0
-		var normal := Vector3(-d.y, d.x, 0.0).normalized()
-		var v0f := Vector3(v0.x, v0.y, DEPTH)
-		var v1f := Vector3(v1.x, v1.y, DEPTH)
-		var v0b := Vector3(v0.x, v0.y, -DEPTH)
-		var v1b := Vector3(v1.x, v1.y, -DEPTH)
-		st.set_normal(normal)
-		st.add_vertex(v0f)
-		st.set_normal(normal)
-		st.add_vertex(v1f)
-		st.set_normal(normal)
-		st.add_vertex(v1b)
-		st.set_normal(normal)
-		st.add_vertex(v0f)
-		st.set_normal(normal)
-		st.add_vertex(v1b)
-		st.set_normal(normal)
-		st.add_vertex(v0b)
-
-	return st.commit()
