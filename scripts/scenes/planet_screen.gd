@@ -36,6 +36,7 @@ var _news_full_text: String = ""
 var _hotspot_pulse_tween: Tween = null
 
 @onready var planet_name_label := $VBoxContainer/PlanetNameLabel
+@onready var info_bar: Control = $InfoBar
 @onready var info_bar_box: HBoxContainer = $InfoBar/InfoBarBox
 @onready var header_spacer: Control = $InfoBar/InfoBarBox/HeaderSpacer
 @onready var news_banner := $InfoBar/InfoBarBox/NewsBanner
@@ -831,6 +832,11 @@ func _update_ship_status() -> void:
 func _update_quest_label() -> void:
 	if quest_widget:
 		quest_widget.update_widget()
+		if quest_widget.visible:
+			info_bar.offset_right = -264.0
+		else:
+			info_bar.offset_right = -8.0
+		_refresh_info_bar_text_layout()
 
 
 func _refresh_info_bar_text_layout() -> void:
@@ -851,7 +857,10 @@ func _refresh_info_bar_text_layout() -> void:
 	var separator: float = float(info_bar_box.get_theme_constant("separation"))
 	var goal_width: float = _measure_label_text(goal_label, goal_label.text)
 	var reserved: float = button_width + goal_width + separator * float(button_count + 3) + 24.0
-	var available: float = float(info_bar_box.size.x) - reserved
+	
+	var right_offset: float = 264.0 if (quest_widget and quest_widget.visible) else 8.0
+	var expected_width: float = size.x - 228.0 - right_offset - 16.0 # 16.0 for left+right container margin
+	var available: float = expected_width - reserved
 
 	if available <= 0.0:
 		news_banner.text = ""

@@ -282,7 +282,9 @@ func _populate_deck() -> void:
 				count_label.add_theme_font_size_override("font_size", 16)
 				count_label.add_theme_color_override("font_color", UIStyles.GOLD)
 				count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				card_display.get_node("VBoxContainer").add_child(count_label)
+				var vbox = card_display.get_node("VBoxContainer")
+				vbox.add_child(count_label)
+				vbox.move_child(count_label, card_display.get_node("%PlayButton").get_index())
 		else:
 			var card_display := CardDisplayScene.instantiate()
 			card_display.custom_minimum_size = Vector2(130, 160)
@@ -295,7 +297,9 @@ func _populate_deck() -> void:
 				count_label.add_theme_font_size_override("font_size", 16)
 				count_label.add_theme_color_override("font_color", UIStyles.GOLD)
 				count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				card_display.get_node("VBoxContainer").add_child(count_label)
+				var vbox = card_display.get_node("VBoxContainer")
+				vbox.add_child(count_label)
+				vbox.move_child(count_label, card_display.get_node("%PlayButton").get_index())
 
 
 func _get_sell_price(card: Resource) -> int:
