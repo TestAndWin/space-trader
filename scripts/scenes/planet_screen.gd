@@ -16,6 +16,7 @@ const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 const GoodIcon = preload("res://scripts/components/good_icon.gd")
 const CrewIcon = preload("res://scripts/components/crew_icon.gd")
 const CustomsScanScene = preload("res://scenes/components/customs_scan.tscn")
+const PlanetActivityScene = preload("res://scenes/components/planet_activity.tscn")
 
 
 
@@ -220,6 +221,7 @@ func _get_top_overlay() -> Node:
 		"DepartOverlay",
 		"SmugglerEvent",
 		"PlanetEvent",
+		"PlanetActivity",
 	]
 	for path in overlay_paths:
 		var node := get_node_or_null(path)
@@ -376,14 +378,34 @@ func _on_quest_pressed() -> void:
 func _on_mission_pressed() -> void:
 	if _mission_done:
 		return
-	if GameManager.credits < 100:
-		EventLog.add_entry("Not enough credits for mission (100cr required).")
+	var pt: int = current_planet_data.planet_type if current_planet_data else 0
+	# Starport Alpha keeps the Space Invaders mini-game as the mission.
+	# All other planets open the type-specific activity modal.
+	if GameManager.current_planet == "Starport Alpha":
+		if GameManager.credits < 100:
+			EventLog.add_entry("Not enough credits for mission (100cr required).")
+			_update_ui()
+			return
+		GameManager.remove_credits(100)
+		GameManager.mission_return_planet = GameManager.current_planet
+		EventLog.add_entry("Entered Space Invaders mission (-100cr).")
+		GameManager.change_scene("res://scenes/space_invaders.tscn")
+		return
+	# Other planet types: open the type-specific activity modal.
+	if has_node("PlanetActivity"):
+		return
+	var activity := PlanetActivityScene.instantiate()
+	activity.name = "PlanetActivity"
+	add_child(activity)
+	if not activity.try_open(pt):
+		activity.queue_free()
 		_update_ui()
 		return
-	GameManager.remove_credits(100)
-	GameManager.mission_return_planet = GameManager.current_planet
-	EventLog.add_entry("Entered Space Invaders mission (-100cr).")
-	GameManager.change_scene("res://scenes/space_invaders.tscn")
+	activity.activity_closed.connect(func() -> void:
+		_mission_done = true
+		_rebuild_hub_buildings()
+		_update_ui()
+	)
 
 
 func _rebuild_hub_buildings() -> void:
@@ -443,7 +465,7 @@ func _create_image_hotspots(states: Dictionary) -> void:
 		# Pulsing dot indicator
 		var dot := ColorRect.new()
 		dot.size = Vector2(8, 8)
-		dot.color = Color(0.0, 0.8, 1.0, 0.7)
+		dot.color = Color(1.0, 0.95, 0.15, 0.9)
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		dot.position = Vector2(rect.position.x + rect.size.x * 0.5 - 4, rect.position.y + rect.size.y * 0.5 - 4)
 		container.add_child(dot)
@@ -451,7 +473,7 @@ func _create_image_hotspots(states: Dictionary) -> void:
 		# Glow ring around dot
 		var glow := ColorRect.new()
 		glow.size = Vector2(16, 16)
-		glow.color = Color(0.0, 0.8, 1.0, 0.2)
+		glow.color = Color(1.0, 0.25, 0.85, 0.35)
 		glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		glow.position = Vector2(rect.position.x + rect.size.x * 0.5 - 8, rect.position.y + rect.size.y * 0.5 - 8)
 		container.add_child(glow)
@@ -477,8 +499,8 @@ func _animate_hotspot_dots(container: Control) -> void:
 		var dot: ColorRect = dots[i]
 		var glow: ColorRect = glows[i]
 		# Flash bright
-		dot.color = Color(0.2, 1.0, 1.0, 1.0)
-		glow.color = Color(0.0, 0.8, 1.0, 0.5)
+		dot.color = Color(1.0, 1.0, 0.3, 1.0)
+		glow.color = Color(1.0, 0.3, 0.9, 0.75)
 		glow.size = Vector2(24, 24)
 		glow.position -= Vector2(4, 4)
 
@@ -506,17 +528,22 @@ func _start_pulse_loop(container: Control, dots: Array[ColorRect], glows: Array[
 		if not is_instance_valid(container):
 			tween.kill()
 			return
-		var alpha: float = 0.3 + sin(t * TAU) * 0.3
-		var glow_alpha: float = 0.1 + sin(t * TAU) * 0.15
-		var glow_scale: float = 1.0 + sin(t * TAU) * 0.3
+		var pulse: float = sin(t * TAU)
+		var alpha: float = 0.55 + pulse * 0.4
+		var glow_alpha: float = 0.25 + pulse * 0.25
+		var glow_scale: float = 1.0 + pulse * 0.35
+		# Lerp between neon yellow and hot magenta in sync with the pulse.
+		var mix: float = 0.5 + pulse * 0.5
+		var dot_color: Color = Color(1.0, 0.95, 0.15).lerp(Color(1.0, 0.3, 0.9), mix)
+		var glow_color: Color = Color(1.0, 0.3, 0.9).lerp(Color(1.0, 0.95, 0.15), mix)
 		var has_live_nodes: bool = false
 		for dot: ColorRect in dots:
 			if is_instance_valid(dot):
-				dot.color = Color(0.0, 0.8, 1.0, alpha)
+				dot.color = Color(dot_color.r, dot_color.g, dot_color.b, alpha)
 				has_live_nodes = true
 		for glow: ColorRect in glows:
 			if is_instance_valid(glow):
-				glow.color = Color(0.0, 0.8, 1.0, glow_alpha)
+				glow.color = Color(glow_color.r, glow_color.g, glow_color.b, glow_alpha)
 				var center: Vector2 = glow.position + glow.size * 0.5
 				var new_size: float = 16.0 * glow_scale
 				glow.size = Vector2(new_size, new_size)

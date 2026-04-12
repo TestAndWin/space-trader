@@ -15,6 +15,7 @@ image_hotspots = {
 "deck": Rect2(990, 470, 150, 60),
 "depart": Rect2(1100, 70, 140, 50),
 "market": Rect2(560, 240, 205, 65),
+"mission": Rect2(500, 510, 120, 80),
 "quest": Rect2(640, 80, 180, 90),
 "shipyard": Rect2(30, 330, 160, 70)
 }
