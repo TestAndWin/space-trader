@@ -188,12 +188,20 @@ func _build_ui() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_main_vbox.add_child(scroll)
 
+	var _deck_margin := MarginContainer.new()
+	_deck_margin.add_theme_constant_override("margin_top", 16)
+	_deck_margin.add_theme_constant_override("margin_bottom", 16)
+	_deck_margin.add_theme_constant_override("margin_left", 8)
+	_deck_margin.add_theme_constant_override("margin_right", 8)
+	_deck_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_deck_margin)
+
 	_card_grid = GridContainer.new()
 	_card_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_card_grid.add_theme_constant_override("h_separation", 8)
 	_card_grid.add_theme_constant_override("v_separation", 8)
 	_card_grid.columns = 8
-	scroll.add_child(_card_grid)
+	_deck_margin.add_child(_card_grid)
 
 	# Shop section (below deck, trading only)
 	if _trading_enabled and _shop_cards.size() > 0:
@@ -214,16 +222,24 @@ func _build_ui() -> void:
 		_shop_section.add_child(shop_label)
 
 		var shop_scroll := ScrollContainer.new()
-		shop_scroll.custom_minimum_size = Vector2(0, 180)
+		shop_scroll.custom_minimum_size = Vector2(0, 270)
 		shop_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 		shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 		_shop_section.add_child(shop_scroll)
+
+		var _shop_margin := MarginContainer.new()
+		_shop_margin.add_theme_constant_override("margin_top", 16)
+		_shop_margin.add_theme_constant_override("margin_bottom", 16)
+		_shop_margin.add_theme_constant_override("margin_left", 8)
+		_shop_margin.add_theme_constant_override("margin_right", 8)
+		_shop_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		shop_scroll.add_child(_shop_margin)
 
 		_shop_grid = GridContainer.new()
 		_shop_grid.columns = 10
 		_shop_grid.add_theme_constant_override("h_separation", 10)
 		_shop_grid.add_theme_constant_override("v_separation", 10)
-		shop_scroll.add_child(_shop_grid)
+		_shop_margin.add_child(_shop_grid)
 
 		_populate_shop()
 
@@ -238,7 +254,6 @@ func _populate_shop() -> void:
 		var price: int = entry["price"]
 		var can_buy: bool = GameManager.credits >= price
 		var card_display := CardDisplayScene.instantiate()
-		card_display.custom_minimum_size = Vector2(130, 160)
 		_shop_grid.add_child(card_display)
 		card_display.setup(card, can_buy, "Buy (%dcr)" % price, true)
 		if not can_buy:
@@ -271,7 +286,6 @@ func _populate_deck() -> void:
 			var sell_price: int = _get_sell_price(card)
 			var can_sell: bool = GameManager.deck.size() > MIN_DECK_SIZE
 			var card_display := CardDisplayScene.instantiate()
-			card_display.custom_minimum_size = Vector2(130, 160)
 			_card_grid.add_child(card_display)
 			card_display.setup(card, can_sell, "Sell (%dcr)" % sell_price, true)
 			card_display.modulate.a = 1.0
@@ -282,12 +296,11 @@ func _populate_deck() -> void:
 				count_label.add_theme_font_size_override("font_size", 16)
 				count_label.add_theme_color_override("font_color", UIStyles.GOLD)
 				count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				var vbox = card_display.get_node("VBoxContainer")
+				var vbox = card_display.get_node("%PlayButton").get_parent()
 				vbox.add_child(count_label)
 				vbox.move_child(count_label, card_display.get_node("%PlayButton").get_index())
 		else:
 			var card_display := CardDisplayScene.instantiate()
-			card_display.custom_minimum_size = Vector2(130, 160)
 			_card_grid.add_child(card_display)
 			card_display.setup(card, false, "", false)
 			card_display.modulate.a = 1.0
@@ -297,7 +310,7 @@ func _populate_deck() -> void:
 				count_label.add_theme_font_size_override("font_size", 16)
 				count_label.add_theme_color_override("font_color", UIStyles.GOLD)
 				count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				var vbox = card_display.get_node("VBoxContainer")
+				var vbox = card_display.get_node("%PlayButton").get_parent()
 				vbox.add_child(count_label)
 				vbox.move_child(count_label, card_display.get_node("%PlayButton").get_index())
 

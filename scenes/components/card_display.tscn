@@ -3,9 +3,10 @@
 [ext_resource type="Script" path="res://scripts/components/card_display.gd" id="1_cd1"]
 
 [node name="CardDisplay" type="PanelContainer"]
-custom_minimum_size = Vector2(160, 200)
-offset_right = 160.0
-offset_bottom = 200.0
+custom_minimum_size = Vector2(140, 220)
+offset_right = 140.0
+offset_bottom = 220.0
+mouse_filter = 0
 script = ExtResource("1_cd1")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
@@ -22,24 +23,34 @@ unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 size_flags_horizontal = 3
+text_overrun_behavior = 3
 theme_override_font_sizes/font_size = 14
 text = "Card Name"
 
-[node name="EnergyCostLabel" type="Label" parent="VBoxContainer/TopRow"]
+[node name="CostBadge" type="PanelContainer" parent="VBoxContainer/TopRow"]
 unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+
+[node name="EnergyCostLabel" type="Label" parent="VBoxContainer/TopRow/CostBadge"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 mouse_filter = 2
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 text = "1"
-horizontal_alignment = 2
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="TypeIndicator" type="ColorRect" parent="VBoxContainer"]
+[node name="TypeIndicator" type="Label" parent="VBoxContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 4)
 layout_mode = 2
 mouse_filter = 2
-color = Color(0.9, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "[⚔️ ATTACK]"
+horizontal_alignment = 1
 
 [node name="KeywordsLabel" type="RichTextLabel" parent="VBoxContainer"]
 unique_name_in_owner = true
@@ -67,4 +78,6 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Play"
 
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]
 [connection signal="pressed" from="VBoxContainer/PlayButton" to="." method="_on_play_button_pressed"]
