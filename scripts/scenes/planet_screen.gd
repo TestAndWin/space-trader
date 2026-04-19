@@ -70,12 +70,13 @@ const BUILDING_MISSION = "mission"
 
 func _ready() -> void:
 	_find_planet_data()
+	var is_fresh_arrival: bool = not GameManager.arrival_events_done
 	# Check quest penalty after battle credits have been awarded
 	if QuestManager.check_expired_quest():
 		get_tree().change_scene_to_file("res://scenes/game_over.tscn")
 		return
-	# Crew engineer bonus: hull regen on planet visit
-	if GameManager.has_crew_bonus(CrewData.CrewBonus.HULL_REGEN):
+	# Only real arrivals should trigger "on planet visit" effects.
+	if is_fresh_arrival and GameManager.has_crew_bonus(CrewData.CrewBonus.HULL_REGEN):
 		var regen: int = int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.HULL_REGEN))
 		GameManager.current_hull = min(GameManager.current_hull + regen, GameManager.max_hull)
 	_update_header()
@@ -104,7 +105,7 @@ func _ready() -> void:
 	if GameManager.mission_done_this_landing:
 		_mission_done = true
 	# Arrival events only on first visit (not when returning from sub-screens)
-	if not GameManager.arrival_events_done:
+	if is_fresh_arrival:
 		GameManager.arrival_events_done = true
 		# Smuggler event
 		var smuggler := SmugglerEventScene.instantiate()
