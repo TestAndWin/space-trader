@@ -54,7 +54,7 @@ Export generates: `*.xcodeproj`, `*.xcframework/`, `*.pck`, `PrivacyInfo.xcpriva
 
 ### Autoload Singletons (`scripts/autoloads/`)
 
-Nine global managers registered in `project.godot` provide centralized game state:
+Eleven global managers registered in `project.godot` provide centralized game state:
 
 - **GameManager** -- Player state: credits, hull/shields, cargo inventory, deck, upgrades, crew (max 3), current planet, visited planets, current ship. Emits signals on state changes (credits, cargo) for UI binding. `reset()` method centralizes all game state reset -- always use `GameManager.reset()` for new games, never duplicate reset logic in scene scripts.
 - **EconomyManager** -- Dynamic pricing with planet-type modifiers (5 types: Tech, Industrial, Agricultural, Mining, Outlaw). Prices drift +/-5% on departure, +/-10% variance. Contraband goods (Spice, Stolen Tech) have special pricing. Sell ratio is 75% of buy price.
@@ -63,13 +63,15 @@ Nine global managers registered in `project.godot` provide centralized game stat
 - **SaveManager** -- JSON serialization to `user://savegame.json`. Cards saved by resource path. Also saves/restores quest state (`current_quest`, `available_quests`) and event manager state.
 - **EventLog** -- 50-entry ring buffer of game events.
 - **EventManager** -- Dynamic world events (blockades, harvests, tech booms). 30% trigger chance on departure, 3-5 turn duration. Modifies prices, encounter chance, sell ratio, combat rewards. API: `get_price_modifier()`, `get_encounter_modifier()`, `get_sell_ratio_override()`, `get_reward_modifier()`, `get_event_display_text()`. Shown as news banner on planet screen.
-- **ResourceRegistry** -- Centralized `.tres` resource path registry. `DirAccess` cannot list files in exported PCK archives, so all resource paths are hardcoded here. Helper: `load_all(paths) -> Array`. Constants: `PLANETS`, `GOODS`, `CARDS`, `ENCOUNTERS`, `UPGRADES`, `COMBAT_UPGRADES`, `CREW`, `SHIPS`, `PLANET_EVENTS`.
+- **ResourceRegistry** -- Centralized `.tres` resource path registry. `DirAccess` cannot list files in exported PCK archives, so all resource paths are hardcoded here. Helper: `load_all(paths) -> Array`. Constants: `PLANETS`, `GOODS`, `CARDS`, `ENCOUNTERS`, `UPGRADES`, `COMBAT_UPGRADES`, `CREW`, `SHIPS`, `PLANET_EVENTS`, `TRAVEL_EVENTS`, `RIVALS`.
 - **ScreenFade** -- Global scene transition fade effects.
+- **RivalManager** -- Captain Vex rival questline. 4 phases triggered at flight thresholds (3, 6, 9, 12). Cooldowns between reappearances. API: `on_flight_completed()`, `should_rival_appear(total_flights)`, `get_rival_encounter()`. Data in `data/rivals/captain_vex.tres`.
+- **AchievementManager** -- 12 global achievements, persisted independently of savegames in `user://achievements.json`. API: `unlock(id)`, `is_unlocked(id)`, `get_unlocked_count()`. Emits `achievement_unlocked(id)`.
 
 ### Static Utilities
 
 - **UIStyles** (`scripts/autoloads/ui_styles.gd`) -- Centralized UI styling utility with static methods. NOT an autoload -- loaded via `preload()`. Provides color constants (`GOLD`, `ACCENT`, `PANEL_BG`, `PANEL_BORDER`, etc.) and button styling methods (`style_accent_button()`, `style_secondary_button()`, etc.).
-- **BackgroundUtils** (`scripts/tools/background_utils.gd`) -- Shared background rendering helpers, loaded via `preload()`.
+- **BackgroundUtils** (`scripts/tools/background_utils.gd`) -- Shared helpers for scene and building backgrounds, loaded via `preload()`. Constants: `SCENE_BACKGROUND_PATHS`, `BUILDING_BACKGROUND_KEYS`. API: `load_texture(path, strict)`, `add_fullscreen_background(parent, image_path, dim_alpha)`. Use this when adding new screens -- do not `preload()` background PNGs ad-hoc.
 
 ### Resource Data Pattern (`scripts/resources/` + `data/`)
 
@@ -103,9 +105,9 @@ Signal-based: managers emit signals, UI components subscribe. Scene transitions 
 
 **Ship Dealer** (`ship_dealer.gd`): Full-screen showroom for buying new ships. Shows 3D ship preview with stats comparison. Ships available based on planet type. Data in `data/ships/`. 5 ship types: Scout, Freighter, Warship, Smuggler, Explorer.
 
-**3D Ship Display** (`ship_display_3d.gd/tscn`): 3D ship rendering via SubViewport with extruded hull meshes, shaders for hull/shield/engine glow. API: `update_ship(hull_pct, shield_pct, cargo_used, cargo_max, ship_shape)`. 5 player shapes, camera with idle hover animation. MSAA 2x, transparent background. Used in planet screen, battle screen, ship dealer.
+**3D Ship Display** (`ship_display_3d.gd/tscn`): 3D ship rendering via SubViewport. Extruded hull meshes from polygon profiles, **textured with the ship PNGs from `assets/sprites/ships/`**, plus shaders for shield bubble and engine glow. API: `update_ship(hull_pct, shield_pct, cargo_used, cargo_max, ship_shape)`. 5 player shapes, camera with idle hover animation. MSAA 2x, transparent background. Used in planet screen, battle screen, ship dealer.
 
-**3D Enemy Ship Display** (`enemy_ship_display_3d.gd/tscn`): Same SubViewport pattern, rotated 180 degrees. API: `update_enemy(hull_pct, shield_pct, encounter_name)`. 7 enemy shapes matched by name.
+**3D Enemy Ship Display** (`enemy_ship_display_3d.gd/tscn`): Same SubViewport pattern, rotated 180 degrees. Textured with enemy PNGs from `assets/sprites/enemies/`. API: `update_enemy(hull_pct, shield_pct, encounter_name)`. 7 enemy shapes matched by name.
 
 **Shaders** (`shaders/`):
 - `ship_hull.gdshader` -- spatial, diffuse_burley, uniforms: hull_color, metallic, roughness, emissive_strength/color
@@ -124,13 +126,23 @@ Signal-based: managers emit signals, UI components subscribe. Scene transitions 
 
 **Planet Events** (`planet_event.gd`): 25% chance on planet arrival. Modal popup with two choices and consequences (credits/hull/cargo gains or losses). Data in `data/planet_events/`.
 
-**Quest System** (`quest_manager.gd`): One active quest at a time. Each planet offers a random delivery quest (1-3 items, 3-5 turn deadline). `tick()` called on departure decrements `turns_left`. `check_expired_quest()` called on planet arrival (after battle credits) -- if expired and player can't pay penalty -> Game Over. This ordering ensures battle rewards count before penalty check. Manual delivery via button at target planet. UI in `quest_display.gd`.
+**Customs Scan** (`customs_scan.gd`): 20% base scan chance on arrival at **non-Outlaw** planets while carrying Spice or Stolen Tech. Options: hide cargo, pay bribe, or submit to fine. Modified by Smuggler crew bonus and Cloaking Device upgrade.
+
+**Planet Activity** (`planet_activity.gd`): Mission-building mini-game, one kind per planet type: HACKING (Tech), MINING (Mining), HARVEST (Agricultural), SMUGGLER_RACE (Outlaw), FACTORY (Industrial). Entry fee 100cr. Used on all planets except Starport Alpha (which keeps Space Invaders). Each activity has its own risk/reward loop.
+
+**Travel Events** (`travel_event.gd`): 20% chance during travel of a non-combat encounter (stranded trader, abandoned wreck, distress signal). Modal two-choice popup with credit/hull/cargo consequences. Data in `data/travel_events/`, loaded via `ResourceRegistry.TRAVEL_EVENTS`.
+
+**Rival Questline** (`rival_manager.gd` + `data/rivals/captain_vex.tres`): Recurring rival encounter at 3/6/9/12 total flights. Each phase scales HP/damage/reward and adds special abilities. Cooldowns prevent consecutive appearances.
+
+**Achievements** (`achievement_manager.gd` + `achievements_screen.gd`): 12 achievements unlocked via gameplay events, persisted across all playthroughs in `user://achievements.json` (separate from savegame). Viewable from main menu.
+
+**Quest System** (`quest_manager.gd`): One active quest at a time. Each planet offers a random delivery quest (1-3 items, 3-5 turn deadline). `tick()` called on departure decrements `turns_left`. `check_expired_quest()` called on planet arrival (after battle credits) -- if expired and player can't pay penalty -> Game Over. This ordering ensures battle rewards count before penalty check. Manual delivery via button at target planet. Full UI in `quest_display.gd` (inside Quest Screen overlay); a compact `quest_widget.gd` badge shows active-quest status on the planet hub.
 
 **Navigation**: 7 planets in a connection graph. Travel triggers encounter chance based on destination danger level. Galaxy map info panel shows available trade goods per planet on hover (`galaxy_map.gd` -> `_on_planet_hovered()`).
 
 **Tutorial** (`tutorial.gd`): Tutorial scene accessible from main menu.
 
-**Space Invaders** (`space_invaders.gd`): Mini-game mission scene, available on Tech + Outlaw planets.
+**Space Invaders** (`space_invaders.gd`): Mini-game mission scene, used as the "Mission" building **on Starport Alpha only**. All other planets use `planet_activity.gd` instead.
 
 ### Planet Screen Layout (Hub)
 
@@ -146,7 +158,7 @@ Building buttons vary by planet type (different names, icons, colors). Buildings
 - **Crew** -> `crew_screen.gd` (fullscreen overlay wrapping CrewPanel)
 - **Quest** -> `quest_screen.gd` (fullscreen overlay for quest management)
 - **Deck** -> `deck_viewer.gd` (view/manage card deck)
-- **Mission** -> Space Invaders (separate scene, only Tech + Outlaw planets)
+- **Mission** -> `planet_activity.gd` (planet-type-specific mini-game), except on Starport Alpha which launches `space_invaders.gd`
 - **Depart** -> Galaxy Map
 
 ## Adding Game Content
@@ -174,6 +186,21 @@ Building buttons vary by planet type (different names, icons, colors). Buildings
 2. **Galaxy Map** -> player picks destination -> `travel_scene.tscn`
 3. **Travel** -> possible encounter -> `card_battle.tscn` -> battle credits awarded -> `battle_result.tscn`
 4. **Arrival** (`planet_screen._ready()`) -> `QuestManager.check_expired_quest()` (penalty/game over) -> UI setup
+
+## Visual Assets
+
+The game uses a **hybrid art pipeline**: pre-rendered PNG illustrations (consistent Sci-Fi style) for primary backgrounds and ship sprites, with procedural overlays (`_draw()`, shaders, 3D SubViewports) layered on top.
+
+**PNG asset locations** (`assets/sprites/`):
+- **Planet backgrounds** (`bg_{planet_name}.png`): full-screen background per planet, referenced by `PlanetData.background_path`
+- **Building backgrounds** (`bg_building_{market,shipyard,casino,crew,quest,deck,mission}.png`): full-screen for each building overlay
+- **Screen backgrounds** (`bg_{battle,travel,galaxy_map,battle_result,game_over,victory,start}.png`): one per major scene
+- **Ship sprites** (`assets/sprites/ships/{scout,freighter,warship,smuggler,explorer}.png`): used as **texture on the extruded 3D hulls** in `ship_display_3d.gd`
+- **Enemy sprites** (`assets/sprites/enemies/{fighter,patrol,pirate,hunter,anomaly,rogue_ai}_ship.png`): enemy textures for `enemy_ship_display_3d.gd`
+
+Procedural systems (starfields, small planet disc on planet screen, city map, shield/engine shaders) render **on top of or alongside** these PNGs -- not as replacements.
+
+**Adding new screen art**: use `BackgroundUtils.add_fullscreen_background()` rather than preloading PNGs ad-hoc.
 
 ## UI Style Notes
 
