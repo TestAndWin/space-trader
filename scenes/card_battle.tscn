@@ -196,11 +196,20 @@ text = "Energy: 3 / 3"
 
 [node name="HandScroll" type="ScrollContainer" parent="MainLayout/PlayerPanel/PlayerVBox"]
 layout_mode = 2
-size_flags_vertical = 3
-custom_minimum_size = Vector2(0, 220)
+custom_minimum_size = Vector2(0, 240)
 vertical_scroll_mode = 0
 
-[node name="HandContainer" type="HBoxContainer" parent="MainLayout/PlayerPanel/PlayerVBox/HandScroll"]
+[node name="HandMargin" type="MarginContainer" parent="MainLayout/PlayerPanel/PlayerVBox/HandScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HandContainer" type="HBoxContainer" parent="MainLayout/PlayerPanel/PlayerVBox/HandScroll/HandMargin"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2

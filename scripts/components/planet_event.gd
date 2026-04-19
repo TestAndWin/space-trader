@@ -176,10 +176,6 @@ func _can_choose_a() -> bool:
 		var owned := _get_cargo_qty(ev.choice_a_requires_good)
 		if owned < ev.choice_a_requires_qty:
 			return false
-	# Check cargo space for adds
-	if ev.choice_a_cargo_good != "" and ev.choice_a_cargo_qty > 0:
-		if not GameManager.can_add_cargo(ev.choice_a_cargo_good, ev.choice_a_cargo_qty):
-			return false
 	# Check hull damage won't kill the player
 	if ev.choice_a_hull < 0 and GameManager.current_hull <= abs(ev.choice_a_hull):
 		return false
@@ -195,9 +191,6 @@ func _get_requirement_text() -> String:
 		var owned := _get_cargo_qty(ev.choice_a_requires_good)
 		if owned < ev.choice_a_requires_qty:
 			parts.append("Need %d %s" % [ev.choice_a_requires_qty, ev.choice_a_requires_good])
-	if ev.choice_a_cargo_good != "" and ev.choice_a_cargo_qty > 0:
-		if not GameManager.can_add_cargo(ev.choice_a_cargo_good, ev.choice_a_cargo_qty):
-			parts.append("Not enough cargo space")
 	if ev.choice_a_hull < 0 and GameManager.current_hull <= abs(ev.choice_a_hull):
 		parts.append("Hull too low")
 	return ". ".join(parts)
@@ -239,25 +232,36 @@ func _on_choice_a() -> void:
 		return
 	var effective_chance: float = ev.choice_a_success_chance + GameManager.get_event_success_bonus()
 	if effective_chance < 1.0 and randf() >= effective_chance:
-		_apply_outcome(ev.choice_a_alt_credits, ev.choice_a_alt_hull, ev.choice_a_alt_cargo_good, ev.choice_a_alt_cargo_qty)
-		_show_outcome(ev.choice_a_alt_description)
+		var alt_info := _apply_outcome(ev.choice_a_alt_credits, ev.choice_a_alt_hull, ev.choice_a_alt_cargo_good, ev.choice_a_alt_cargo_qty)
+		_show_outcome(_append_partial_note(ev.choice_a_alt_description, alt_info))
 	else:
-		_apply_outcome(ev.choice_a_credits, ev.choice_a_hull, ev.choice_a_cargo_good, ev.choice_a_cargo_qty)
-		_show_outcome(ev.choice_a_description)
+		var info := _apply_outcome(ev.choice_a_credits, ev.choice_a_hull, ev.choice_a_cargo_good, ev.choice_a_cargo_qty)
+		_show_outcome(_append_partial_note(ev.choice_a_description, info))
 
 
 func _on_choice_b() -> void:
 	var ev := _current_event
 	var effective_chance: float = ev.choice_b_success_chance + GameManager.get_event_success_bonus()
 	if effective_chance < 1.0 and randf() >= effective_chance:
-		_apply_outcome(ev.choice_b_alt_credits, ev.choice_b_alt_hull, ev.choice_b_alt_cargo_good, ev.choice_b_alt_cargo_qty)
-		_show_outcome(ev.choice_b_alt_description)
+		var alt_info := _apply_outcome(ev.choice_b_alt_credits, ev.choice_b_alt_hull, ev.choice_b_alt_cargo_good, ev.choice_b_alt_cargo_qty)
+		_show_outcome(_append_partial_note(ev.choice_b_alt_description, alt_info))
 	else:
-		_apply_outcome(ev.choice_b_credits, ev.choice_b_hull, ev.choice_b_cargo_good, ev.choice_b_cargo_qty)
-		_show_outcome(ev.choice_b_description)
+		var info := _apply_outcome(ev.choice_b_credits, ev.choice_b_hull, ev.choice_b_cargo_good, ev.choice_b_cargo_qty)
+		_show_outcome(_append_partial_note(ev.choice_b_description, info))
 
 
-func _apply_outcome(credits_delta: int, hull_delta: int, cargo_good: String, cargo_qty: int) -> void:
+func _append_partial_note(base: String, info: Dictionary) -> String:
+	var requested: int = info.get("requested", 0)
+	var actual: int = info.get("actual", 0)
+	var good: String = info.get("good", "")
+	if good != "" and requested > 0 and actual < requested:
+		if actual == 0:
+			return base + "\n\nCargo hold is full — no %s could be taken." % good
+		return base + "\n\nCargo hold nearly full — only %d of %d %s fit." % [actual, requested, good]
+	return base
+
+
+func _apply_outcome(credits_delta: int, hull_delta: int, cargo_good: String, cargo_qty: int) -> Dictionary:
 	# Credits
 	if credits_delta > 0:
 		GameManager.add_credits(credits_delta)
@@ -270,10 +274,14 @@ func _apply_outcome(credits_delta: int, hull_delta: int, cargo_good: String, car
 	elif hull_delta < 0:
 		GameManager.current_hull = maxi(GameManager.current_hull + hull_delta, 1)
 
-	# Cargo
+	# Cargo — clamp positive adds to available space so the choice is never wasted
+	var actual_cargo_qty: int = cargo_qty
 	if cargo_good != "" and cargo_qty != 0:
 		if cargo_qty > 0:
-			GameManager.add_cargo(cargo_good, cargo_qty)
+			var free_space: int = GameManager.cargo_capacity - GameManager.get_cargo_used()
+			actual_cargo_qty = mini(cargo_qty, maxi(0, free_space))
+			if actual_cargo_qty > 0:
+				GameManager.add_cargo(cargo_good, actual_cargo_qty)
 		else:
 			GameManager.remove_cargo(cargo_good, abs(cargo_qty))
 
@@ -283,13 +291,15 @@ func _apply_outcome(credits_delta: int, hull_delta: int, cargo_good: String, car
 		parts.append("%+d credits" % credits_delta)
 	if hull_delta != 0:
 		parts.append("%+d hull" % hull_delta)
-	if cargo_good != "" and cargo_qty != 0:
-		if cargo_qty > 0:
-			parts.append("+%d %s" % [cargo_qty, cargo_good])
+	if cargo_good != "" and actual_cargo_qty != 0:
+		if actual_cargo_qty > 0:
+			parts.append("+%d %s" % [actual_cargo_qty, cargo_good])
 		else:
-			parts.append("-%d %s" % [abs(cargo_qty), cargo_good])
+			parts.append("-%d %s" % [abs(actual_cargo_qty), cargo_good])
 	if not parts.is_empty():
 		EventLog.add_entry("Planet event: " + ", ".join(parts))
+
+	return {"requested": cargo_qty, "actual": actual_cargo_qty, "good": cargo_good}
 
 
 func _show_outcome(text: String) -> void:

@@ -6,6 +6,8 @@
 custom_minimum_size = Vector2(140, 220)
 offset_right = 140.0
 offset_bottom = 220.0
+size_flags_horizontal = 4
+size_flags_vertical = 4
 mouse_filter = 0
 script = ExtResource("1_cd1")
 
