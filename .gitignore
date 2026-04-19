@@ -3,6 +3,9 @@ SpaceTrader.exe
 TODO.md
 PLAN.md
 
+# Throwaway test scripts (game-tester agent)
+tests/tmp/
+
 # OS
 .DS_Store
 
