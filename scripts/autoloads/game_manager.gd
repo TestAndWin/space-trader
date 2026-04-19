@@ -477,6 +477,10 @@ func get_cargo_used() -> int:
 	return total
 
 
+func get_free_cargo_space() -> int:
+	return maxi(0, cargo_capacity - get_cargo_used())
+
+
 func can_add_cargo(_good_name: String, quantity: int) -> bool:
 	return get_cargo_used() + quantity <= cargo_capacity
 

@@ -232,36 +232,34 @@ func _on_choice_a() -> void:
 		return
 	var effective_chance: float = ev.choice_a_success_chance + GameManager.get_event_success_bonus()
 	if effective_chance < 1.0 and randf() >= effective_chance:
-		var alt_info := _apply_outcome(ev.choice_a_alt_credits, ev.choice_a_alt_hull, ev.choice_a_alt_cargo_good, ev.choice_a_alt_cargo_qty)
-		_show_outcome(_append_partial_note(ev.choice_a_alt_description, alt_info))
+		_resolve_and_show(ev.choice_a_alt_credits, ev.choice_a_alt_hull, ev.choice_a_alt_cargo_good, ev.choice_a_alt_cargo_qty, ev.choice_a_alt_description)
 	else:
-		var info := _apply_outcome(ev.choice_a_credits, ev.choice_a_hull, ev.choice_a_cargo_good, ev.choice_a_cargo_qty)
-		_show_outcome(_append_partial_note(ev.choice_a_description, info))
+		_resolve_and_show(ev.choice_a_credits, ev.choice_a_hull, ev.choice_a_cargo_good, ev.choice_a_cargo_qty, ev.choice_a_description)
 
 
 func _on_choice_b() -> void:
 	var ev := _current_event
 	var effective_chance: float = ev.choice_b_success_chance + GameManager.get_event_success_bonus()
 	if effective_chance < 1.0 and randf() >= effective_chance:
-		var alt_info := _apply_outcome(ev.choice_b_alt_credits, ev.choice_b_alt_hull, ev.choice_b_alt_cargo_good, ev.choice_b_alt_cargo_qty)
-		_show_outcome(_append_partial_note(ev.choice_b_alt_description, alt_info))
+		_resolve_and_show(ev.choice_b_alt_credits, ev.choice_b_alt_hull, ev.choice_b_alt_cargo_good, ev.choice_b_alt_cargo_qty, ev.choice_b_alt_description)
 	else:
-		var info := _apply_outcome(ev.choice_b_credits, ev.choice_b_hull, ev.choice_b_cargo_good, ev.choice_b_cargo_qty)
-		_show_outcome(_append_partial_note(ev.choice_b_description, info))
+		_resolve_and_show(ev.choice_b_credits, ev.choice_b_hull, ev.choice_b_cargo_good, ev.choice_b_cargo_qty, ev.choice_b_description)
 
 
-func _append_partial_note(base: String, info: Dictionary) -> String:
-	var requested: int = info.get("requested", 0)
-	var actual: int = info.get("actual", 0)
-	var good: String = info.get("good", "")
-	if good != "" and requested > 0 and actual < requested:
-		if actual == 0:
-			return base + "\n\nCargo hold is full — no %s could be taken." % good
-		return base + "\n\nCargo hold nearly full — only %d of %d %s fit." % [actual, requested, good]
-	return base
+func _resolve_and_show(credits_delta: int, hull_delta: int, cargo_good: String, cargo_qty: int, description: String) -> void:
+	var actual_qty: int = _apply_outcome(credits_delta, hull_delta, cargo_good, cargo_qty)
+	_show_outcome(_append_partial_note(description, cargo_good, cargo_qty, actual_qty))
 
 
-func _apply_outcome(credits_delta: int, hull_delta: int, cargo_good: String, cargo_qty: int) -> Dictionary:
+func _append_partial_note(base: String, good: String, requested: int, actual: int) -> String:
+	if good == "" or requested <= 0 or actual >= requested:
+		return base
+	if actual == 0:
+		return base + "\n\nCargo hold is full — no %s could be taken." % good
+	return base + "\n\nCargo hold nearly full — only %d of %d %s fit." % [actual, requested, good]
+
+
+func _apply_outcome(credits_delta: int, hull_delta: int, cargo_good: String, cargo_qty: int) -> int:
 	# Credits
 	if credits_delta > 0:
 		GameManager.add_credits(credits_delta)
@@ -274,18 +272,16 @@ func _apply_outcome(credits_delta: int, hull_delta: int, cargo_good: String, car
 	elif hull_delta < 0:
 		GameManager.current_hull = maxi(GameManager.current_hull + hull_delta, 1)
 
-	# Cargo — clamp positive adds to available space so the choice is never wasted
+	# Positive cargo adds are clamped to free space so the choice is never wasted.
 	var actual_cargo_qty: int = cargo_qty
 	if cargo_good != "" and cargo_qty != 0:
 		if cargo_qty > 0:
-			var free_space: int = GameManager.cargo_capacity - GameManager.get_cargo_used()
-			actual_cargo_qty = mini(cargo_qty, maxi(0, free_space))
+			actual_cargo_qty = mini(cargo_qty, GameManager.get_free_cargo_space())
 			if actual_cargo_qty > 0:
 				GameManager.add_cargo(cargo_good, actual_cargo_qty)
 		else:
 			GameManager.remove_cargo(cargo_good, abs(cargo_qty))
 
-	# Log entry
 	var parts: Array = []
 	if credits_delta != 0:
 		parts.append("%+d credits" % credits_delta)
@@ -299,7 +295,7 @@ func _apply_outcome(credits_delta: int, hull_delta: int, cargo_good: String, car
 	if not parts.is_empty():
 		EventLog.add_entry("Planet event: " + ", ".join(parts))
 
-	return {"requested": cargo_qty, "actual": actual_cargo_qty, "good": cargo_good}
+	return actual_cargo_qty
 
 
 func _show_outcome(text: String) -> void:
