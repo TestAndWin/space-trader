@@ -753,9 +753,12 @@ func _resolve_slots() -> void:
 			winnings = _bet * 10
 			msg = "\u2605 JACKPOT! 3x Star! +%d cr! \u2605" % winnings
 		elif sym == "Skull":
-			var loss: int = _bet
+			var loss_mult: float = GameManager.get_casino_loss_mult()
+			var loss: int = maxi(1, int(round(float(_bet) * loss_mult)))
 			GameManager.remove_credits(mini(loss, GameManager.credits))
 			msg = "\u2620 3x Skull! Lost an extra %d cr! \u2620" % loss
+			if loss_mult < 1.0:
+				msg += " (Trader cushioned the loss)"
 		elif sym == "Card":
 			winnings = _bet * 3
 			msg = "3x Card! +%d cr + random card!" % winnings

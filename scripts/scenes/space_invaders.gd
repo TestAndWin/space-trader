@@ -40,12 +40,14 @@ var _shoot_cooldown_time: float = 0.4
 var _enemies: Array = []  # Array of { x, y, alive, col, row }
 var _enemy_direction: float = 1.0  # 1=right, -1=left
 var _enemy_bullets: Array = []  # Array of { x, y }
+var _enemy_bullet_speed: float = ENEMY_BULLET_SPEED
 var _enemy_fire_timer: float = 0.0
 
 var _game_active: bool = false
 var _game_won: bool = false
 var _result_shown: bool = false
 var _result_timer: float = 0.0
+var _crew_intro_timer: float = 0.0  # While > 0, _info_label shows the crew bonus summary
 var _particles: Array = []  # Array of { x, y, vx, vy, life, color }
 var _player_flash: float = 0.0  # Screen shake / flash timer on player hit
 var _touch_active: bool = false  # Touch input active
@@ -114,6 +116,7 @@ func _init_game() -> void:
 	# Navigator gives 4 lives
 	if GameManager.has_crew_bonus(CrewData.CrewBonus.ENCOUNTER_REDUCTION):
 		_player_lives = 4
+	_enemy_bullet_speed = ENEMY_BULLET_SPEED * GameManager.get_mission_enemy_bullet_speed_mult()
 	_enemy_direction = 1.0
 	_enemy_fire_timer = 0.0
 	_game_active = true
@@ -135,13 +138,31 @@ func _init_game() -> void:
 				"row": row,
 			})
 
+	_show_crew_intro()
 	_update_hud()
+
+
+func _show_crew_intro() -> void:
+	var notes: Array = []
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.ATTACK_BONUS):
+		notes.append("Weapons Officer: faster fire")
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.ENCOUNTER_REDUCTION):
+		notes.append("Navigator: +1 life, slower enemies")
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.COMBAT_HEAL):
+		notes.append("Medic: cushioned defeat")
+	if notes.is_empty():
+		_crew_intro_timer = 0.0
+		return
+	_info_label.text = "Crew active: " + " | ".join(notes)
+	_crew_intro_timer = 2.5
 
 
 func _process(delta: float) -> void:
 	_update_particles(delta)
 	if _player_flash > 0.0:
 		_player_flash -= delta
+	if _crew_intro_timer > 0.0:
+		_crew_intro_timer -= delta
 
 	if _result_shown:
 		_result_timer -= delta
@@ -241,7 +262,7 @@ func _update_enemies(delta: float) -> void:
 func _update_enemy_bullets(delta: float) -> void:
 	var i: int = _enemy_bullets.size() - 1
 	while i >= 0:
-		_enemy_bullets[i]["y"] += ENEMY_BULLET_SPEED * delta
+		_enemy_bullets[i]["y"] += _enemy_bullet_speed * delta
 		if _enemy_bullets[i]["y"] > AREA_BOTTOM + 20:
 			_enemy_bullets.remove_at(i)
 		i -= 1
@@ -338,7 +359,7 @@ func _update_hud() -> void:
 	for i in _player_lives:
 		hearts += "♥ "
 	_lives_label.text = hearts
-	if not _result_shown:
+	if not _result_shown and _crew_intro_timer <= 0.0:
 		var alive_count: int = 0
 		for enemy in _enemies:
 			if enemy["alive"]:

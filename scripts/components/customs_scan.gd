@@ -132,7 +132,8 @@ func _build_ui() -> void:
 	_options_container.add_child(hide_btn)
 
 	var bribe_btn := Button.new()
-	bribe_btn.text = "Bribe Official (%d cr, %d%% success)" % [_bribe_cost, int(round(_bribe_success_chance * 100.0))]
+	var smuggler_note: String = " — Smuggler edge" if GameManager.get_customs_bribe_bonus() > 0.0 else ""
+	bribe_btn.text = "Bribe Official (%d cr, %d%% success%s)" % [_bribe_cost, int(round(_bribe_success_chance * 100.0)), smuggler_note]
 	bribe_btn.custom_minimum_size = Vector2(380, 36)
 	_apply_button_style(bribe_btn, Color(0.6, 0.5, 0.1), Color(0.75, 0.6, 0.15), Color(0.45, 0.35, 0.08))
 	bribe_btn.pressed.connect(_on_bribe)
@@ -169,6 +170,7 @@ func _get_bribe_success_chance() -> float:
 			chance -= 0.20
 	if GameManager.has_crew_bonus(4):
 		chance += 0.08
+	chance += GameManager.get_customs_bribe_bonus()
 	return clampf(chance, 0.20, 0.95)
 
 

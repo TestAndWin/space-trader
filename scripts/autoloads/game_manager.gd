@@ -659,6 +659,36 @@ func get_event_success_bonus() -> float:
 	return bonus
 
 
+## Per-turn HP regen from Medic primary bonus (COMBAT_HEAL acts as turn heal of 1).
+func get_combat_heal_per_turn() -> int:
+	return 1 if has_crew_bonus(CrewData.CrewBonus.COMBAT_HEAL) else 0
+
+
+## Per-turn shield regen from Engineer primary bonus (HULL_REGEN doubles as in-combat shield reroute).
+func get_combat_shield_regen_per_turn() -> int:
+	return 1 if has_crew_bonus(CrewData.CrewBonus.HULL_REGEN) else 0
+
+
+## Sum of secondary COMBAT_TACTICAL values across crew, capped to keep dodge sane.
+func get_combat_tactical_dodge_chance() -> float:
+	return clampf(get_crew_secondary_bonus_value(CrewData.CrewBonus.COMBAT_TACTICAL), 0.0, 0.6)
+
+
+## Mission bullet speed multiplier — Navigator slows enemy fire (0.85 with Navigator, else 1.0).
+func get_mission_enemy_bullet_speed_mult() -> float:
+	return 0.85 if has_crew_bonus(CrewData.CrewBonus.ENCOUNTER_REDUCTION) else 1.0
+
+
+## Casino loss multiplier — Trader cushions punitive losses (0.8 with Trader, else 1.0).
+func get_casino_loss_mult() -> float:
+	return 0.8 if has_crew_bonus(CrewData.CrewBonus.SELL_BONUS) else 1.0
+
+
+## Customs bribe bonus — Smuggler gives small extra success on top of SMUGGLE_PROTECTION wiring.
+func get_customs_bribe_bonus() -> float:
+	return 0.05 if has_crew_bonus(CrewData.CrewBonus.SMUGGLE_PROTECTION) else 0.0
+
+
 ## Returns a one-line crew flavor remark for the given event name, or "" if no
 ## crew member's event_flavor_tag matches the event. Shared by planet and travel events.
 func get_crew_event_flavor_text(event_name: String) -> String:

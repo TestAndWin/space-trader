@@ -228,6 +228,17 @@ func _start_player_turn() -> void:
 	combo_active = false
 	recycled_this_shuffle = false
 
+	# Crew per-turn regen (Medic / Engineer) — kicks in from turn 2 to avoid free start-of-fight buffs.
+	if turn_count >= 2:
+		var heal: int = GameManager.get_combat_heal_per_turn()
+		if heal > 0 and GameManager.current_hull < GameManager.max_hull:
+			GameManager.current_hull = mini(GameManager.max_hull, GameManager.current_hull + heal)
+			_show_battle_message("Medic patches +%d HP" % heal)
+		var shield_regen: int = GameManager.get_combat_shield_regen_per_turn()
+		if shield_regen > 0 and GameManager.current_shield < GameManager.max_shield:
+			GameManager.current_shield = mini(GameManager.max_shield, GameManager.current_shield + shield_regen)
+			_show_battle_message("Engineer reroutes power +%d shield" % shield_regen)
+
 	# SHIELD_BOOST: enemy gains shield every 2nd turn
 	if encounter.special_ability == EncounterData.SpecialAbility.SHIELD_BOOST and turn_count % 2 == 0:
 		enemy_shield += 3
@@ -492,9 +503,10 @@ func _on_end_turn_pressed() -> void:
 	else:
 		var damage := enemy_intent_damage
 		# COMBAT_TACTICAL: chance that enemy's first attack (round 1 only) misses
-		if turn_count == 1 and GameManager.has_crew_bonus(CrewData.CrewBonus.COMBAT_TACTICAL):
-			if randf() < GameManager.get_crew_bonus_value(CrewData.CrewBonus.COMBAT_TACTICAL):
-				_show_battle_message("Weapons Officer: enemy first attack evaded!")
+		if turn_count == 1:
+			var dodge_chance: float = GameManager.get_combat_tactical_dodge_chance()
+			if dodge_chance > 0.0 and randf() < dodge_chance:
+				_show_battle_message("Tactical Dodge! Enemy first attack misses.")
 				damage = 0
 		var shield_absorb: int = mini(damage, GameManager.current_shield)
 		GameManager.current_shield -= shield_absorb
