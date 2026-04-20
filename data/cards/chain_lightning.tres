@@ -13,6 +13,6 @@ defense_value = 0
 heal_value = 0
 draw_cards = 0
 credits_gain = 0
-description = "Deal 6 damage. Next card costs 1 less energy."
+description = "Deal 6. Next card -1 energy."
 special_effect = ""
 keywords = [1]

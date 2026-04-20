@@ -5,13 +5,13 @@ extends RefCounted
 ## All methods are static.
 
 const SCENE_BACKGROUND_PATHS: PackedStringArray = [
-	"res://assets/sprites/bg_start.png",
-	"res://assets/sprites/bg_battle.png",
-	"res://assets/sprites/bg_battle_result.png",
-	"res://assets/sprites/bg_galaxy_map.png",
-	"res://assets/sprites/bg_travel.png",
-	"res://assets/sprites/bg_game_over.png",
-	"res://assets/sprites/bg_victory.png",
+	"res://assets/sprites/scenes/bg_start.png",
+	"res://assets/sprites/scenes/bg_battle.png",
+	"res://assets/sprites/scenes/bg_battle_result.png",
+	"res://assets/sprites/scenes/bg_galaxy_map.png",
+	"res://assets/sprites/scenes/bg_travel.png",
+	"res://assets/sprites/scenes/bg_game_over.png",
+	"res://assets/sprites/scenes/bg_victory.png",
 ]
 
 const BUILDING_BACKGROUND_KEYS: PackedStringArray = [
@@ -70,7 +70,7 @@ static func add_fullscreen_background(
 
 
 static func add_building_background(parent: Control, building_key: String, dim_alpha: float = 0.4, strict: bool = true) -> bool:
-	var path := "res://assets/sprites/bg_building_%s.png" % building_key
+	var path := "res://assets/sprites/scenes/bg_building_%s.png" % building_key
 	return add_fullscreen_background(parent, path, dim_alpha, -1, strict)
 
 
@@ -101,13 +101,13 @@ static func collect_required_background_paths(planet_data_dir: String = "res://d
 		required.append(path)
 
 	for key in BUILDING_BACKGROUND_KEYS:
-		required.append("res://assets/sprites/bg_building_%s.png" % key)
+		required.append("res://assets/sprites/scenes/bg_building_%s.png" % key)
 
 	var planet_dir := DirAccess.open(planet_data_dir)
 	if planet_dir:
 		for file_name in planet_dir.get_files():
 			if file_name.get_extension() == "tres":
-				required.append("res://assets/sprites/bg_%s.png" % file_name.get_basename().to_lower())
+				required.append("res://assets/sprites/scenes/bg_%s.png" % file_name.get_basename().to_lower())
 	else:
 		push_warning("BackgroundUtils: cannot open planet directory: %s" % planet_data_dir)
 

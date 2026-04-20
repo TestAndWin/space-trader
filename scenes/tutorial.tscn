@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dtut0r1alhelp"]
 
 [ext_resource type="Script" path="res://scripts/scenes/tutorial.gd" id="1_tut"]
-[ext_resource type="Texture2D" path="res://assets/sprites/bg_start.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/scenes/bg_start.png" id="2_bg"]
 
 [node name="Tutorial" type="Control"]
 layout_mode = 3

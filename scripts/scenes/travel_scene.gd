@@ -111,7 +111,7 @@ func _ready() -> void:
 	var flash_tween := create_tween()
 	flash_tween.tween_property(flash, "modulate:a", 0.0, 0.6).set_ease(Tween.EASE_OUT)
 	flash_tween.tween_callback(flash.queue_free)
-	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/bg_travel.png", 0.4, 0)
+	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/scenes/bg_travel.png", 0.4, 0)
 	_style_bottom_panel()
 
 

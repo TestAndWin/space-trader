@@ -855,7 +855,7 @@ func _style_nav_button(btn: Button, accent: Color) -> void:
 func _add_galaxy_background() -> void:
 	BackgroundUtils.add_3d_quad_background(
 		starfield_container,
-		"res://assets/sprites/bg_galaxy_map.png",
+		"res://assets/sprites/scenes/bg_galaxy_map.png",
 		Vector2(320.0, 180.0),
 		-80.0,
 		0.35

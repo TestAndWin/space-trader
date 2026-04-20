@@ -19,3 +19,8 @@ SpaceTrader.dmg
 ROADMAP.md
 /ios-export
 /ipad
+
+# Brainstorming companion (mockups, not source of truth)
+.superpowers/
+docs/superpowers/notes/card-artwork-brainstorm-status.md
+.env

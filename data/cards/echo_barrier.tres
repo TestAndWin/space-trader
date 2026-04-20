@@ -13,6 +13,6 @@ defense_value = 8
 heal_value = 0
 draw_cards = 0
 credits_gain = 0
-description = "Gain 8 shield. Deal half your shield as damage."
+description = "Gain 8 shield. Deal half as damage."
 special_effect = ""
 keywords = [2]

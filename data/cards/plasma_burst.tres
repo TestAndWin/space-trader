@@ -13,5 +13,5 @@ defense_value = 0
 heal_value = 0
 draw_cards = 0
 credits_gain = 0
-description = "Devastating blast, damages your hull too"
+description = "Massive blast. Damages own hull."
 special_effect = "self_damage_5"

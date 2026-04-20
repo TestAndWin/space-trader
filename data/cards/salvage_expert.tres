@@ -13,6 +13,6 @@ defense_value = 0
 heal_value = 0
 draw_cards = 2
 credits_gain = 0
-description = "Draw 2. Extra draw on deck reshuffle."
+description = "Draw 2 (+1 on reshuffle)."
 special_effect = ""
 keywords = [3]

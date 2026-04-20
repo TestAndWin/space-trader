@@ -37,7 +37,7 @@ func _ready() -> void:
 	_style_battle_buttons()
 	BackgroundUtils.add_fullscreen_background(
 		self,
-		"res://assets/sprites/bg_battle.png",
+		"res://assets/sprites/scenes/bg_battle.png",
 		0.5,
 		1,
 		true,

@@ -192,9 +192,9 @@ Building buttons vary by planet type (different names, icons, colors). Buildings
 The game uses a **hybrid art pipeline**: pre-rendered PNG illustrations (consistent Sci-Fi style) for primary backgrounds and ship sprites, with procedural overlays (`_draw()`, shaders, 3D SubViewports) layered on top.
 
 **PNG asset locations** (`assets/sprites/`):
-- **Planet backgrounds** (`bg_{planet_name}.png`): full-screen background per planet, referenced by `PlanetData.background_path`
-- **Building backgrounds** (`bg_building_{market,shipyard,casino,crew,quest,deck,mission}.png`): full-screen for each building overlay
-- **Screen backgrounds** (`bg_{battle,travel,galaxy_map,battle_result,game_over,victory,start}.png`): one per major scene
+- **Planet backgrounds** (`assets/sprites/scenes/bg_{planet_name}.png`): full-screen background per planet
+- **Building backgrounds** (`assets/sprites/scenes/bg_building_{market,shipyard,casino,crew,quest,deck,mission}.png`): full-screen for each building overlay
+- **Screen backgrounds** (`assets/sprites/scenes/bg_{battle,travel,galaxy_map,battle_result,game_over,victory,start}.png`): one per major scene
 - **Ship sprites** (`assets/sprites/ships/{scout,freighter,warship,smuggler,explorer}.png`): used as **texture on the extruded 3D hulls** in `ship_display_3d.gd`
 - **Enemy sprites** (`assets/sprites/enemies/{fighter,patrol,pirate,hunter,anomaly,rogue_ai}_ship.png`): enemy textures for `enemy_ship_display_3d.gd`
 

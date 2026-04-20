@@ -13,5 +13,5 @@ defense_value = 0
 heal_value = 0
 draw_cards = 0
 credits_gain = 0
-description = "Search the area for valuables. Random reward."
+description = "Search the area for valuables."
 special_effect = "scavenge"

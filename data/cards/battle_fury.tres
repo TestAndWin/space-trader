@@ -13,6 +13,6 @@ defense_value = 0
 heal_value = 0
 draw_cards = 0
 credits_gain = 0
-description = "Deal 3 damage. If 2+ attacks this turn, deal 5 instead."
+description = "Deal 3 (5 if 2+ attacks this turn)."
 special_effect = ""
 keywords = [0]

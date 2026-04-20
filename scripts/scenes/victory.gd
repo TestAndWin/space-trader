@@ -14,7 +14,7 @@ func _ready() -> void:
 	%UpgradesLabel.text = "Upgrades Installed: %d" % GameManager.installed_upgrades.size()
 	%MainMenuButton.pressed.connect(_on_main_menu_pressed)
 	UIStyles.style_secondary_button(%MainMenuButton, 18)
-	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/bg_victory.png", 0.5, 1)
+	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/scenes/bg_victory.png", 0.5, 1)
 
 
 func _on_main_menu_pressed() -> void:

@@ -13,6 +13,6 @@ defense_value = 0
 heal_value = 0
 draw_cards = 2
 credits_gain = 0
-description = "Draw 2 cards. Next card costs 1 less energy."
+description = "Draw 2. Next card -1 energy."
 special_effect = ""
 keywords = [1]

@@ -13,6 +13,6 @@ defense_value = 0
 heal_value = 0
 draw_cards = 0
 credits_gain = 0
-description = "Deal 4 damage plus half your shield as bonus."
+description = "Deal 4 + half your shield."
 special_effect = ""
 keywords = [2]

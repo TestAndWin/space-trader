@@ -289,7 +289,7 @@ func _track_arrival_cargo_gains(cargo_before: Dictionary) -> void:
 
 func _load_background_image() -> void:
 	var planet_name: String = current_planet_data.planet_name.to_lower().replace(" ", "_")
-	var path := "res://assets/sprites/bg_%s.png" % planet_name
+	var path := "res://assets/sprites/scenes/bg_%s.png" % planet_name
 	var tex := BackgroundUtils.load_texture(path)
 	if tex:
 		bg_image.texture = tex
