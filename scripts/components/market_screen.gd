@@ -110,6 +110,7 @@ func _build_ui() -> void:
 
 	var title := Label.new()
 	title.text = MARKET_NAMES.get(_planet_type, "MARKET")
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", UIStyles.TYPE_COLORS.get(_planet_type, UIStyles.ACCENT))
 	title_row.add_child(title)
@@ -136,11 +137,13 @@ func _build_ui() -> void:
 	header.add_child(header_spacer)
 
 	_credits_label = Label.new()
+	_credits_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	_credits_label.add_theme_font_size_override("font_size", 20)
 	_credits_label.add_theme_color_override("font_color", Color(1.0, 0.90, 0.25))
 	header.add_child(_credits_label)
 
 	_cargo_label = Label.new()
+	_cargo_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	_cargo_label.add_theme_font_size_override("font_size", 16)
 	_cargo_label.add_theme_color_override("font_color", Color(0.65, 0.88, 1.0))
 	header.add_child(_cargo_label)
@@ -204,6 +207,7 @@ func _build_ui() -> void:
 
 	var market_header := Label.new()
 	market_header.text = "\u25C6 BUY GOODS \u25C6"
+	market_header.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	market_header.add_theme_font_size_override("font_size", 16)
 	market_header.add_theme_color_override("font_color", UIStyles.TYPE_COLORS.get(_planet_type, UIStyles.ACCENT))
 	market_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -232,6 +236,7 @@ func _build_ui() -> void:
 
 	var cargo_header := Label.new()
 	cargo_header.text = "\u25C6 SELL CARGO \u25C6"
+	cargo_header.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	cargo_header.add_theme_font_size_override("font_size", 16)
 	cargo_header.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
 	cargo_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

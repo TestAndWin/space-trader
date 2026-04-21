@@ -127,6 +127,7 @@ func _build_ui() -> void:
 	title_row.add_child(left_deco)
 
 	_title_label = Label.new()
+	_title_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	_title_label.add_theme_font_size_override("font_size", 26)
 	_title_label.add_theme_color_override("font_color", UIStyles.ACCENT)
 	title_row.add_child(_title_label)
@@ -157,6 +158,7 @@ func _build_ui() -> void:
 
 	if _trading_enabled:
 		_credits_label = Label.new()
+		_credits_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 		_credits_label.add_theme_font_size_override("font_size", 20)
 		_credits_label.add_theme_color_override("font_color", UIStyles.GOLD)
 		header.add_child(_credits_label)
@@ -216,6 +218,7 @@ func _build_ui() -> void:
 
 		var shop_label := Label.new()
 		shop_label.text = "\u25C6 FOR SALE \u25C6"
+		shop_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 		shop_label.add_theme_font_size_override("font_size", 16)
 		shop_label.add_theme_color_override("font_color", UIStyles.ACCENT)
 		shop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

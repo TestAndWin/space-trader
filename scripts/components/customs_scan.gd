@@ -5,6 +5,7 @@ extends ColorRect
 
 signal scan_closed
 
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BASE_SCAN_CHANCE := 0.20
 const FINE_MIN := 100
 const FINE_MAX := 200
@@ -80,6 +81,7 @@ func _build_ui() -> void:
 	var title := Label.new()
 	title.text = "CUSTOMS INSPECTION"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))
 	title.add_theme_font_size_override("font_size", 22)
 	vbox.add_child(title)

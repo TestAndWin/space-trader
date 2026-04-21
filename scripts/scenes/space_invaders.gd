@@ -87,12 +87,14 @@ func _build_ui() -> void:
 	credits_lbl.visible = false
 
 	_lives_label = Label.new()
+	_lives_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	_lives_label.add_theme_font_size_override("font_size", 18)
 	_lives_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
 	header.add_child(_lives_label)
 	header.move_child(_lives_label, header.get_child_count() - 2)
 
 	_info_label = Label.new()
+	_info_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	_info_label.add_theme_font_size_override("font_size", 16)
 	_info_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.4))
 	header.add_child(_info_label)

@@ -12,6 +12,15 @@ func _ready() -> void:
 	%CreditsLabel.text = "Final Credits: %d" % GameManager.credits
 	%PlanetsLabel.text = "Planets Visited: %d / %d" % [GameManager.visited_planets.size(), GameManager.WIN_PLANETS]
 	%UpgradesLabel.text = "Upgrades Installed: %d" % GameManager.installed_upgrades.size()
+	var title_label: Label = $CenterContainer/VBoxContainer/VictoryLabel
+	if title_label:
+		UIStyles.apply_display_font(title_label)
+	UIStyles.apply_mono_font(%TradesLabel)
+	UIStyles.apply_mono_font(%FlightsLabel)
+	UIStyles.apply_mono_font(%EncountersLabel)
+	UIStyles.apply_mono_font(%CreditsLabel)
+	UIStyles.apply_mono_font(%PlanetsLabel)
+	UIStyles.apply_mono_font(%UpgradesLabel)
 	%MainMenuButton.pressed.connect(_on_main_menu_pressed)
 	UIStyles.style_secondary_button(%MainMenuButton, 18)
 	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/scenes/bg_victory.png", 0.5, 1)

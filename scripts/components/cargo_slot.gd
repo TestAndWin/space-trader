@@ -3,6 +3,7 @@ extends HBoxContainer
 signal action_pressed(good_name: String, quantity: int)
 
 const GoodIconScript = preload("res://scripts/components/good_icon.gd")
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 const BUY_COLOR := Color(0.0, 0.75, 0.35)
 const SELL_COLOR := Color(0.85, 0.10, 0.38)
@@ -171,6 +172,8 @@ func _update_display() -> void:
 		display_name += " [%s]" % price_note
 		$GoodNameLabel.add_theme_color_override("font_color", Color(1.0, 0.88, 0.35))
 	$GoodNameLabel.text = display_name
+	$PriceLabel.add_theme_font_override("font", UIStyles.FONT_MONO)
+	$QuantityLabel.add_theme_font_override("font", UIStyles.FONT_MONO)
 	$PriceLabel.text = str(price) + " cr"
 	if mode == "buy":
 		$ActionButton.text = "BUY"

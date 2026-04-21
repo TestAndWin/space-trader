@@ -68,6 +68,8 @@ func _ready() -> void:
 			%RewardPanel.visible = false
 			%ContinueButton.visible = true
 
+	UIStyles.apply_display_font(%ResultTitle)
+	UIStyles.apply_display_font(%RewardTitle)
 	%ContinueButton.pressed.connect(_on_continue_pressed)
 	%SkipButton.pressed.connect(_on_skip_pressed)
 	_style_buttons()

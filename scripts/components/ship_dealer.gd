@@ -75,6 +75,7 @@ func _build_ui() -> void:
 
 	var title := Label.new()
 	title.text = "STARSHIP SHOWROOM"
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", UIStyles.ACCENT)
 	title_row.add_child(title)
@@ -101,6 +102,7 @@ func _build_ui() -> void:
 	header.add_child(header_spacer)
 
 	_credits_label = Label.new()
+	_credits_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	_credits_label.add_theme_font_size_override("font_size", 20)
 	_credits_label.add_theme_color_override("font_color", UIStyles.GOLD)
 	header.add_child(_credits_label)
@@ -149,6 +151,7 @@ func _build_ui() -> void:
 
 	var avail_header := Label.new()
 	avail_header.text = "\u25C6 AVAILABLE SHIPS \u25C6"
+	avail_header.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	avail_header.add_theme_font_size_override("font_size", 16)
 	avail_header.add_theme_color_override("font_color", UIStyles.ACCENT)
 	avail_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -203,6 +206,7 @@ func _build_current_ship_panel() -> PanelContainer:
 
 		var name_lbl := Label.new()
 		name_lbl.text = ship.ship_name
+		name_lbl.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 		name_lbl.add_theme_font_size_override("font_size", 20)
 		name_lbl.add_theme_color_override("font_color", UIStyles.ACCENT)
 		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -226,6 +230,7 @@ func _build_current_ship_panel() -> PanelContainer:
 			var trade_in: int = int(ship.cost * 0.5)
 			var trade_lbl := Label.new()
 			trade_lbl.text = "Trade-in value: %d cr" % trade_in
+			trade_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
 			trade_lbl.add_theme_font_size_override("font_size", 12)
 			trade_lbl.add_theme_color_override("font_color", UIStyles.GOLD)
 			trade_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -243,6 +248,7 @@ func _add_stat_pair(grid: GridContainer, stat_name: String, stat_value: String) 
 
 	var val_lbl := Label.new()
 	val_lbl.text = stat_value
+	val_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
 	val_lbl.add_theme_font_size_override("font_size", 12)
 	val_lbl.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
 	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -335,6 +341,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 
 	var name_lbl := Label.new()
 	name_lbl.text = ship.ship_name + ("  \u2605 EQUIPPED" if is_current else "")
+	name_lbl.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	name_lbl.add_theme_font_size_override("font_size", 17)
 	name_lbl.add_theme_color_override("font_color", UIStyles.ACCENT if is_current else Color(0.75, 0.88, 1.0))
 	info.add_child(name_lbl)
@@ -367,6 +374,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 			var fee: int = GameManager.SHIP_TRANSFER_FEE
 			var price_lbl := Label.new()
 			price_lbl.text = "%d cr" % fee
+			price_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
 			price_lbl.add_theme_font_size_override("font_size", 16)
 			price_lbl.add_theme_color_override("font_color", UIStyles.GOLD if GameManager.credits >= fee else Color(0.5, 0.3, 0.3))
 			price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -393,6 +401,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 
 			var price_lbl := Label.new()
 			price_lbl.text = "%d cr" % ship.cost
+			price_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
 			price_lbl.add_theme_font_size_override("font_size", 16)
 			price_lbl.add_theme_color_override("font_color", UIStyles.GOLD if GameManager.credits >= ship.cost else Color(0.5, 0.3, 0.3))
 			price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

@@ -31,7 +31,9 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 	_apply_content_layout()
 
 	%CardNameLabel.text = card_data.card_name
+	UIStyles.apply_display_font(%CardNameLabel)
 	%EnergyCostLabel.text = str(card_data.energy_cost)
+	UIStyles.apply_mono_font(%EnergyCostLabel)
 	%DescriptionLabel.text = card_data.description
 
 	var type_int := int(card_data.card_type)

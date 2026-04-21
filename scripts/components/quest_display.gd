@@ -28,6 +28,7 @@ func _build_ui() -> void:
 
 	var title := Label.new()
 	title.text = "QUEST"
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_font_size_override("font_size", 14)
 	title.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
 	vbox.add_child(title)
@@ -82,6 +83,7 @@ func _build_ui() -> void:
 		var penalty: int = q.get("penalty", 0)
 		var route_hops: int = q.get("route_hops", 0)
 		var deadline_label := Label.new()
+		deadline_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 		deadline_label.add_theme_font_size_override("font_size", 11)
 		if turns <= 1:
 			deadline_label.text = "LAST CHANCE! Route: %d jumps | Penalty: %d cr" % [route_hops, penalty]
@@ -158,6 +160,7 @@ func _build_ui() -> void:
 	var offer_route_hops: int = offer.get("route_hops", 0)
 	var info_label := Label.new()
 	info_label.text = "Deadline: %d trips | Route: %d jumps | Penalty: %d cr" % [offer_turns, offer_route_hops, offer_penalty]
+	info_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	info_label.add_theme_font_size_override("font_size", 11)
 	info_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	vbox.add_child(info_label)
@@ -207,6 +210,7 @@ func _add_loan_panel(vbox: VBoxContainer) -> void:
 
 	var debt_label := Label.new()
 	debt_label.text = GameManager.get_debt_status_text()
+	debt_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	debt_label.add_theme_font_size_override("font_size", 11)
 	debt_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
 	vbox.add_child(debt_label)

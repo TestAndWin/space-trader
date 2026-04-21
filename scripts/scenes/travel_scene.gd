@@ -2,6 +2,7 @@ extends Control
 
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 const TravelEventScene = preload("res://scenes/components/travel_event.tscn")
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 var destination_planet: String = ""
 var dot_count: int = 0
@@ -83,6 +84,8 @@ func _ready() -> void:
 	_rng.seed = randi()
 	destination_planet = GameManager.travel_destination if GameManager.travel_destination != "" else "Unknown"
 	GameManager.total_flights += 1
+	travel_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
+	warning_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	warning_label.text = _build_warning_text()
 	travel_label.text = "Traveling to " + destination_planet + "..."
 

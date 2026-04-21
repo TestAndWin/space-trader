@@ -139,6 +139,7 @@ func _build_ui() -> void:
 
 	var title := Label.new()
 	title.text = "SPACE CASINO"
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", GOLD)
 	title_row.add_child(title)
@@ -165,6 +166,7 @@ func _build_ui() -> void:
 	header.add_child(header_spacer)
 
 	_credits_label = Label.new()
+	_credits_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	_credits_label.add_theme_font_size_override("font_size", 20)
 	_credits_label.add_theme_color_override("font_color", GOLD)
 	header.add_child(_credits_label)
@@ -476,6 +478,7 @@ func _build_blackjack_ui() -> void:
 	# Dealer section
 	var dealer_header := Label.new()
 	dealer_header.text = "DEALER"
+	dealer_header.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	dealer_header.add_theme_font_size_override("font_size", 16)
 	dealer_header.add_theme_color_override("font_color", Color(0.85, 0.35, 0.35))
 	dealer_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -509,6 +512,7 @@ func _build_blackjack_ui() -> void:
 	# Player section
 	var player_header := Label.new()
 	player_header.text = "YOUR HAND"
+	player_header.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	player_header.add_theme_font_size_override("font_size", 16)
 	player_header.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
 	player_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

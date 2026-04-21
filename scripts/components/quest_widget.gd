@@ -31,11 +31,13 @@ func _ready() -> void:
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
 	title_label.text = "[!] ACTIVE QUEST"
+	title_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title_label.add_theme_font_size_override("font_size", 13)
 	title_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.25))
 	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(title_label)
-	
+
+	desc_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	desc_label.add_theme_font_size_override("font_size", 11)
 	desc_label.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0))
 	desc_label.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -601,17 +601,19 @@ func _make_bar_fill_style(fill_color: Color) -> StyleBoxFlat:
 func _style_info_bar() -> void:
 	$InfoBar.add_theme_stylebox_override("panel", _make_holo_panel_style())
 	header_spacer.visible = true
-	_apply_header_label_style(planet_name_label, 26, Color(0.82, 0.97, 1.0))
+	_apply_header_label_style(planet_name_label, 26, Color(0.82, 0.97, 1.0), UIStyles.FONT_DISPLAY)
 	_apply_header_label_style(news_banner, 12, Color(0.92, 0.96, 1.0))
-	_apply_header_label_style(goal_label, 13, Color(1.0, 0.94, 0.62))
+	_apply_header_label_style(goal_label, 13, Color(1.0, 0.94, 0.62), UIStyles.FONT_MONO)
 
 
-func _apply_header_label_style(label: Label, font_size: int, font_color: Color) -> void:
+func _apply_header_label_style(label: Label, font_size: int, font_color: Color, font_override: FontFile = null) -> void:
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", font_color)
 	label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))
 	label.add_theme_constant_override("outline_size", 6)
 	var settings := LabelSettings.new()
+	if font_override != null:
+		settings.font = font_override
 	settings.font_size = font_size
 	settings.font_color = font_color
 	settings.shadow_size = 6
@@ -622,6 +624,15 @@ func _apply_header_label_style(label: Label, font_size: int, font_color: Color) 
 
 func _style_ship_panel() -> void:
 	ship_status_panel.add_theme_stylebox_override("panel", _make_holo_panel_style())
+	UIStyles.apply_mono_font(hull_label)
+	UIStyles.apply_mono_font(shield_label)
+	UIStyles.apply_mono_font(capacity_label)
+	var ship_title: Label = $ShipStatusPanel/ShipStatusBox/ShipStats/ShipTitle
+	if ship_title:
+		UIStyles.apply_display_font(ship_title)
+	var cargo_label_node: Label = $ShipStatusPanel/ShipStatusBox/ShipStats/CargoRow/CargoLabel
+	if cargo_label_node:
+		UIStyles.apply_mono_font(cargo_label_node)
 
 	# Hull bar colors
 	var bar_bg := _make_bar_background_style(Color(0.08, 0.04, 0.04), Color(0.3, 0.1, 0.1))
@@ -672,6 +683,7 @@ func _on_event_log_pressed() -> void:
 
 	var title := Label.new()
 	title.text = "EVENT LOG"
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
 	header.add_child(title)
@@ -1079,6 +1091,7 @@ func _on_depart_pressed() -> void:
 	var title := Label.new()
 	title.text = "Ready to depart?"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_font_size_override("font_size", 22)
 	title.add_theme_color_override("font_color", ACCENT_DEPART)
 	vbox.add_child(title)

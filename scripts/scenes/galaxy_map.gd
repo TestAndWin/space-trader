@@ -72,6 +72,19 @@ func _ready() -> void:
 	map_camera.look_at(Vector3(0.0, -0.1, 0.0), Vector3.UP)
 	_add_galaxy_background()
 	_style_bottom_bar()
+	_apply_fonts()
+
+
+func _apply_fonts() -> void:
+	UIStyles.apply_display_font(planet_name_label)
+	UIStyles.apply_mono_font(credits_label)
+	UIStyles.apply_mono_font(cargo_label)
+	UIStyles.apply_mono_font(current_planet_label)
+	UIStyles.apply_mono_font(hull_label)
+	UIStyles.apply_mono_font(shield_label)
+	UIStyles.apply_mono_font(trades_label)
+	UIStyles.apply_mono_font(danger_label)
+	UIStyles.apply_mono_font(planet_type_label)
 
 
 func _style_bottom_bar() -> void:

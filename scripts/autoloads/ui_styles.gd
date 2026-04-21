@@ -2,6 +2,30 @@
 ## Usage: const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 ## All methods are static — no autoload needed.
 
+# ── Font constants ───────────────────────────────────────────────────────────
+# Default body font (Exo 2) is configured as project-wide default via
+# resources/default_theme.tres. These overrides are for accent usage:
+# FONT_DISPLAY → Orbitron, geometric sci-fi display (headlines, titles, buttons)
+# FONT_MONO    → Share Tech Mono, terminal feel (credits, cargo counts, stats)
+
+const FONT_DISPLAY: FontFile = preload("res://assets/fonts/Orbitron.ttf")
+const FONT_MONO: FontFile = preload("res://assets/fonts/ShareTechMono.ttf")
+
+
+static func apply_display_font(ctrl: Control) -> void:
+	if ctrl is Label:
+		ctrl.add_theme_font_override("font", FONT_DISPLAY)
+	elif ctrl is Button:
+		ctrl.add_theme_font_override("font", FONT_DISPLAY)
+
+
+static func apply_mono_font(ctrl: Control) -> void:
+	if ctrl is Label:
+		ctrl.add_theme_font_override("font", FONT_MONO)
+	elif ctrl is Button:
+		ctrl.add_theme_font_override("font", FONT_MONO)
+
+
 # ── Color constants ──────────────────────────────────────────────────────────
 
 const GOLD := Color(1.0, 0.90, 0.25)
@@ -299,6 +323,7 @@ static func create_overlay_scaffold(
 
 	var title := Label.new()
 	title.text = title_text
+	title.add_theme_font_override("font", FONT_DISPLAY)
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", title_color)
 	title_row.add_child(title)
@@ -325,6 +350,7 @@ static func create_overlay_scaffold(
 	header.add_child(header_spacer)
 
 	var credits_label := Label.new()
+	credits_label.add_theme_font_override("font", FONT_MONO)
 	credits_label.add_theme_font_size_override("font_size", 20)
 	credits_label.add_theme_color_override("font_color", GOLD)
 	header.add_child(credits_label)

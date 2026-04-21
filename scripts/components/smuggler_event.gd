@@ -6,6 +6,7 @@ extends ColorRect
 
 signal deal_closed
 
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const SPAWN_CHANCE := 0.15
 const CATCH_CHANCE := 0.25
 const FINE_MIN := 50
@@ -135,6 +136,7 @@ func _build_ui() -> void:
 	var title := Label.new()
 	title.text = "SHADY DEAL"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_color_override("font_color", Color(1.0, 0.6, 0.15))
 	title.add_theme_font_size_override("font_size", 22)
 	vbox.add_child(title)

@@ -32,6 +32,7 @@ func _ready() -> void:
 	var title := Label.new()
 	title.text = "SHIPYARD"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_font_size_override("font_size", 16)
 	title.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
 	vbox.add_child(title)
@@ -137,6 +138,7 @@ func _create_stat_bar(label_text: String, bg_color: Color, fill_color: Color) ->
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
 	lbl.add_theme_font_size_override("font_size", 10)
 	lbl.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9, 0.95))
 	container.add_child(lbl)

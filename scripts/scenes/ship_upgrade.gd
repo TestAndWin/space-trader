@@ -96,6 +96,7 @@ func _build_ui() -> void:
 		type_str = " \u2014 " + EconomyManager.PLANET_TYPE_NAMES.get(planet_data.planet_type, "Unknown")
 	var title := Label.new()
 	title.text = "SHIP UPGRADES" + type_str
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", UIStyles.ACCENT)
 	title_row.add_child(title)
@@ -122,6 +123,7 @@ func _build_ui() -> void:
 	header.add_child(header_spacer)
 
 	_credits_label = Label.new()
+	_credits_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	_credits_label.add_theme_font_size_override("font_size", 20)
 	_credits_label.add_theme_color_override("font_color", UIStyles.GOLD)
 	header.add_child(_credits_label)
@@ -170,6 +172,7 @@ func _build_ui() -> void:
 
 	var avail_header := Label.new()
 	avail_header.text = "\u25C6 AVAILABLE UPGRADES \u25C6"
+	avail_header.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	avail_header.add_theme_font_size_override("font_size", 16)
 	avail_header.add_theme_color_override("font_color", UIStyles.ACCENT)
 	avail_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -223,6 +226,7 @@ func _build_ship_stats_panel() -> PanelContainer:
 	if ship:
 		var ship_name_lbl := Label.new()
 		ship_name_lbl.text = ship.ship_name
+		ship_name_lbl.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 		ship_name_lbl.add_theme_font_size_override("font_size", 20)
 		ship_name_lbl.add_theme_color_override("font_color", UIStyles.ACCENT)
 		ship_name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -368,6 +372,7 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 
 	var price_lbl := Label.new()
 	price_lbl.text = "%d cr" % upgrade.cost
+	price_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
 	price_lbl.add_theme_font_size_override("font_size", 15)
 	price_lbl.add_theme_color_override("font_color", UIStyles.GOLD if GameManager.credits >= upgrade.cost else Color(0.5, 0.3, 0.3))
 	price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -438,6 +443,7 @@ func _add_stat_row(stat_name: String, stat_value: String) -> void:
 	var val_lbl := Label.new()
 	val_lbl.text = stat_value
 	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	val_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
 	val_lbl.add_theme_font_size_override("font_size", 13)
 	val_lbl.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
 	row.add_child(val_lbl)

@@ -2,6 +2,7 @@ extends Control
 
 const CardDisplayScene = preload("res://scenes/components/card_display.tscn")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 const FLEE_COST := 150
 const FLEE_CHANCE := 0.5
@@ -35,6 +36,14 @@ var effective_energy_per_turn: int = 0
 func _ready() -> void:
 	encounter = GameManager.current_encounter
 	_style_battle_buttons()
+	UIStyles.apply_display_font(%EnemyNameLabel)
+	UIStyles.apply_mono_font(%EnemyHealthLabel)
+	UIStyles.apply_mono_font(%EnergyLabel)
+	UIStyles.apply_mono_font(%IntentLabel)
+	UIStyles.apply_mono_font(%HullLabel)
+	UIStyles.apply_mono_font(%ShieldLabel)
+	UIStyles.apply_mono_font(%DeckCountLabel)
+	UIStyles.apply_mono_font(%DiscardCountLabel)
 	BackgroundUtils.add_fullscreen_background(
 		self,
 		"res://assets/sprites/scenes/bg_battle.png",

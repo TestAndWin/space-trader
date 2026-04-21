@@ -141,6 +141,7 @@ func _build_ui() -> void:
 
 	_title_label = Label.new()
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_title_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	_title_label.add_theme_font_size_override("font_size", 22)
 	_title_label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
 	vbox.add_child(_title_label)
@@ -159,6 +160,7 @@ func _build_ui() -> void:
 
 	_status_label = Label.new()
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_status_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	_status_label.add_theme_font_size_override("font_size", 13)
 	_status_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
 	vbox.add_child(_status_label)
@@ -186,6 +188,7 @@ func _build_ui() -> void:
 
 	_log_label = Label.new()
 	_log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_log_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	_log_label.add_theme_font_size_override("font_size", 11)
 	_log_label.add_theme_color_override("font_color", Color(0.55, 0.75, 0.9))
 	_log_label.custom_minimum_size = Vector2(420, 72)

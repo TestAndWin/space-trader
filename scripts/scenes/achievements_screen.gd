@@ -35,12 +35,14 @@ func _build_ui() -> void:
 
 	var title := Label.new()
 	title.text = "ACHIEVEMENTS"
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", UIStyles.GOLD)
 	header.add_child(title)
 
 	var count_label := Label.new()
 	count_label.text = "%d / %d" % [AchievementManager.get_unlocked_count(), AchievementManager.get_total_count()]
+	count_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	count_label.add_theme_font_size_override("font_size", 20)
 	count_label.add_theme_color_override("font_color", Color(0.6, 0.8, 1.0))
 	count_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -125,6 +127,7 @@ func _create_card(info: Dictionary, unlocked: bool) -> PanelContainer:
 	else:
 		name_label.text = "???"
 		name_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.45))
+	name_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	name_label.add_theme_font_size_override("font_size", 18)
 	text_vbox.add_child(name_label)
 

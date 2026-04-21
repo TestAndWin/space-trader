@@ -6,6 +6,7 @@ extends ColorRect
 
 signal event_resolved
 
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const TRIGGER_CHANCE := 0.20
 
 var _all_events: Array = []
@@ -75,6 +76,7 @@ func _build_ui() -> void:
 	# Title
 	_title_label = Label.new()
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_title_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	_title_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
 	_title_label.add_theme_font_size_override("font_size", 22)
 	vbox.add_child(_title_label)

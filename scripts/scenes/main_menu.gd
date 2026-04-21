@@ -19,6 +19,7 @@ func _ready() -> void:
 func _apply_title_glow() -> void:
 	# Add golden glow via outline and shadow
 	var settings := LabelSettings.new()
+	settings.font = UIStyles.FONT_DISPLAY
 	settings.font_size = 52
 	settings.font_color = Color(1.0, 0.88, 0.25, 1.0)
 	settings.outline_size = 6

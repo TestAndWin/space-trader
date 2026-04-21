@@ -41,6 +41,10 @@ window/size/window_width_override=2560
 window/size/window_height_override=1440
 window/stretch/mode="canvas_items"
 
+[gui]
+
+theme/custom="res://resources/default_theme.tres"
+
 [rendering]
 
 renderer/rendering_method.mobile="gl_compatibility"
