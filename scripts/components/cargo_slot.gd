@@ -43,6 +43,8 @@ func setup(
 	_setup_row_bg()
 	_setup_icon()
 	_style_buttons()
+	$PriceLabel.add_theme_font_override("font", UIStyles.FONT_MONO)
+	$QuantityLabel.add_theme_font_override("font", UIStyles.FONT_MONO)
 	_update_display()
 	_update_trade_controls()
 	_update_price_indicator(avg_price)
@@ -172,8 +174,6 @@ func _update_display() -> void:
 		display_name += " [%s]" % price_note
 		$GoodNameLabel.add_theme_color_override("font_color", Color(1.0, 0.88, 0.35))
 	$GoodNameLabel.text = display_name
-	$PriceLabel.add_theme_font_override("font", UIStyles.FONT_MONO)
-	$QuantityLabel.add_theme_font_override("font", UIStyles.FONT_MONO)
 	$PriceLabel.text = str(price) + " cr"
 	if mode == "buy":
 		$ActionButton.text = "BUY"
