@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CraftingRecipeData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/crafting_recipe_data.gd" id="1_script"]
+[ext_resource type="Resource" path="res://data/goods/crafted/combat_module.tres" id="2_out"]
+[ext_resource type="Resource" path="res://data/goods/crafted/circuit_board.tres" id="3_in1"]
+[ext_resource type="Resource" path="res://data/goods/crafted/targeting_chip.tres" id="4_in2"]
+[ext_resource type="Resource" path="res://data/goods/weapons.tres" id="5_in3"]
+
+[resource]
+script = ExtResource("1_script")
+recipe_id = "combat_module"
+output_good = ExtResource("2_out")
+output_amount = 1
+inputs = [{
+"good": ExtResource("3_in1"),
+"amount": 1
+}, {
+"good": ExtResource("4_in2"),
+"amount": 1
+}, {
+"good": ExtResource("5_in3"),
+"amount": 1
+}]
+tier = 2
+build_trips = 4
+available_at_planets = ["Nexus Prime"]
