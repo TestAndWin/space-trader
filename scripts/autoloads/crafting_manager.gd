@@ -34,7 +34,7 @@ func reset() -> void:
 	production_facilities.clear()
 
 
-func get_recipe(recipe_id: String) -> CraftingRecipeData:
+func get_recipe(recipe_id: String) -> Resource:
 	return _recipes_by_id.get(recipe_id, null)
 
 
@@ -140,7 +140,7 @@ func get_free_slot_index(planet_name: String) -> int:
 	return -1
 
 
-func can_start_job(planet_name: String, recipe: CraftingRecipeData) -> bool:
+func can_start_job(planet_name: String, recipe: Resource) -> bool:
 	var f: Dictionary = _ensure_facility(planet_name)
 	if not f.unlocked:
 		return false
@@ -149,13 +149,17 @@ func can_start_job(planet_name: String, recipe: CraftingRecipeData) -> bool:
 	for entry in recipe.inputs:
 		var good: GoodData = entry.good
 		var needed: int = int(entry.amount)
-		var have: int = int(GameManager.cargo.get(good.good_name, 0))
+		var have: int = 0
+		for item in GameManager.cargo:
+			if item.get("good_name") == good.good_name:
+				have = item.get("quantity", 0)
+				break
 		if have < needed:
 			return false
 	return true
 
 
-func start_job(planet_name: String, recipe: CraftingRecipeData) -> bool:
+func start_job(planet_name: String, recipe: Resource) -> bool:
 	if not can_start_job(planet_name, recipe):
 		return false
 	var slot: int = get_free_slot_index(planet_name)
@@ -182,7 +186,7 @@ func tick() -> void:
 		for job in f.active_jobs:
 			job.trips_remaining -= 1
 			if job.trips_remaining <= 0:
-				var recipe: CraftingRecipeData = get_recipe(job.recipe_id)
+				var recipe: Resource = get_recipe(job.recipe_id)
 				if recipe and recipe.output_good:
 					f.finished_items.append({
 						"good_path": recipe.output_good.resource_path,

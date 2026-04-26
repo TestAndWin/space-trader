@@ -135,7 +135,7 @@ func _build_unlocked_body() -> void:
 				break
 
 		if not job_in_slot.is_empty():
-			var recipe: CraftingRecipeData = CraftingManager.get_recipe(job_in_slot.recipe_id)
+			var recipe: Resource = CraftingManager.get_recipe(job_in_slot.recipe_id)
 			var status_lbl := Label.new()
 			status_lbl.text = "%s — building %d/%d trips" % [
 				recipe.output_good.good_name,
@@ -218,7 +218,7 @@ func _build_unlocked_body() -> void:
 		_build_recipe_row(recipe)
 
 
-func _build_recipe_row(recipe: CraftingRecipeData) -> void:
+func _build_recipe_row(recipe: Resource) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	_root_vbox.add_child(row)
@@ -271,6 +271,6 @@ func _on_sell_pressed(finished_index: int) -> void:
 		_refresh()
 
 
-func _on_build_pressed(recipe: CraftingRecipeData) -> void:
+func _on_build_pressed(recipe: Resource) -> void:
 	if CraftingManager.start_job(_planet_name, recipe):
 		_refresh()
