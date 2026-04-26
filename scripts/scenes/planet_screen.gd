@@ -1117,6 +1117,7 @@ func _do_depart() -> void:
 	GameManager.reset_ghost_run()
 	QuestManager.tick()
 	EventManager.tick()
+	CraftingManager.tick()
 	EconomyManager.tick_economy()
 	GameManager.process_loan_tick()
 	SaveManager.save_game()
