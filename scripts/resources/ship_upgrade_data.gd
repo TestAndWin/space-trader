@@ -13,3 +13,5 @@ enum UpgradeSlot { ENGINE, HULL, SHIELDS, CARGO, WEAPONS, SPECIAL }
 @export var cards_to_add: Array[Resource] = []
 @export var hand_size_bonus: int = 0
 @export var energy_bonus: int = 0
+@export var required_crafted_items: Array[Dictionary] = []  # [{ "good": GoodData, "amount": int }]
+@export var crafted_only: bool = false
