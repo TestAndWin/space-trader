@@ -183,6 +183,7 @@ func reset() -> void:
 	QuestManager.next_chain_id = 1
 	QuestManager.generate_quests()
 	RivalManager.reset()
+	CraftingManager.reset()
 
 
 func init_faction_reputation() -> void:
