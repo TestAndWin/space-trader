@@ -28,7 +28,7 @@ var _planet_type: int = 0
 var _credits_label: Label
 var _crew_panel: Control  # CrewPanel instance
 
-var CrewPanelScene := preload("res://scenes/components/crew_panel.tscn")
+const CrewPanelScene: PackedScene = preload("res://scenes/components/crew_panel.tscn")
 
 
 func setup(planet_type: int) -> void:

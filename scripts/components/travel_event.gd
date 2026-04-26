@@ -169,8 +169,8 @@ func _on_choice_a() -> void:
 		_apply_outcome(ev.choice_a_credits, ev.choice_a_hull)
 		# Distress signal: helping improves reputation with destination faction
 		if ev.event_name == "Distress Signal":
-			var dest_faction: String = GameManager.get_planet_faction(GameManager.travel_destination)
-			GameManager.add_faction_reputation(dest_faction, 5, "helped distress signal")
+			var dest_faction: String = StandingManager.get_planet_faction(GameManager.travel_destination)
+			StandingManager.add_faction_reputation(dest_faction, 5, "helped distress signal")
 		_show_outcome(ev.choice_a_description)
 
 

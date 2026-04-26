@@ -3,12 +3,11 @@ extends PanelContainer
 signal shipyard_action
 signal ships_requested
 
-const AGRICULTURAL_TYPE := 1
 signal upgrades_requested
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
-var ShipDisplayScene := preload("res://scenes/components/ship_display_3d.tscn")
+const ShipDisplayScene: PackedScene = preload("res://scenes/components/ship_display_3d.tscn")
 var ship_display_node: Control
 var _planet_type: int = 0
 
@@ -32,9 +31,7 @@ func _ready() -> void:
 	var title := Label.new()
 	title.text = "SHIPYARD"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	title.add_theme_font_size_override("font_size", 16)
-	title.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
+	UIStyles.apply_section_title(title)
 	vbox.add_child(title)
 
 	# Ship display + Hull/Shield bars side by side
@@ -148,7 +145,7 @@ func _create_stat_bar(label_text: String, bg_color: Color, fill_color: Color) ->
 
 func setup(planet_type: int = 0) -> void:
 	_planet_type = planet_type
-	var is_agricultural := (_planet_type == AGRICULTURAL_TYPE)
+	var is_agricultural := (_planet_type == EconomyManager.PT_AGRICULTURAL)
 	_bottom_row.visible = not is_agricultural
 	_refresh_display()
 
@@ -181,26 +178,36 @@ func _refresh_display() -> void:
 		shield_bar.value = GameManager.current_shield
 		shield_bar_label.text = "SHIELD: %d/%d" % [GameManager.current_shield, GameManager.max_shield]
 
-	var missing_hull := GameManager.max_hull - GameManager.current_hull
-	var repair_cost := missing_hull * GameManager.REPAIR_COST_PER_HP
+	var missing_hull: int = GameManager.max_hull - GameManager.current_hull
+	var per_hp: int = GameManager.REPAIR_COST_PER_HP
+	var affordable_hp: int = mini(missing_hull, int(GameManager.credits / per_hp))
 	if missing_hull <= 0:
 		repair_button.text = "Repair Hull (Full)"
 		repair_button.disabled = true
+	elif affordable_hp <= 0:
+		repair_button.text = "Repair Hull (need %dcr)" % per_hp
+		repair_button.disabled = true
+	elif affordable_hp >= missing_hull:
+		repair_button.text = "Repair Hull (%dcr)" % (missing_hull * per_hp)
+		repair_button.disabled = false
 	else:
-		repair_button.text = "Repair Hull (%dcr)" % repair_cost
-		repair_button.disabled = GameManager.credits < repair_cost
+		repair_button.text = "Repair +%d HP (%dcr)" % [affordable_hp, affordable_hp * per_hp]
+		repair_button.disabled = false
 
 func _on_repair_pressed() -> void:
-	var missing_hull := GameManager.max_hull - GameManager.current_hull
+	var missing_hull: int = GameManager.max_hull - GameManager.current_hull
 	if missing_hull <= 0:
 		return
-	var repair_cost := missing_hull * GameManager.REPAIR_COST_PER_HP
-	if not GameManager.remove_credits(repair_cost):
-		status_label.text = "Not enough credits!"
+	var per_hp: int = GameManager.REPAIR_COST_PER_HP
+	var hp_to_repair: int = mini(missing_hull, int(GameManager.credits / per_hp))
+	if hp_to_repair <= 0:
+		status_label.text = "Not enough credits to repair even 1 hull!"
 		return
-	GameManager.current_hull = GameManager.max_hull
-	EventLog.add_entry("Repaired %d hull for %dcr." % [missing_hull, repair_cost])
-	status_label.text = "Repaired %d hull for %dcr" % [missing_hull, repair_cost]
+	var cost: int = hp_to_repair * per_hp
+	GameManager.remove_credits(cost)
+	GameManager.current_hull += hp_to_repair
+	EventLog.add_entry("Repaired %d hull for %dcr." % [hp_to_repair, cost])
+	status_label.text = "Repaired %d hull for %dcr" % [hp_to_repair, cost]
 	_refresh_display()
 	shipyard_action.emit()
 

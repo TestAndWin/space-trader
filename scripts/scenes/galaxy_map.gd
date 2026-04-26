@@ -44,6 +44,8 @@ var _systems_debug_label: Label = null
 
 
 func _ready() -> void:
+	StandingManager.reputation_changed.connect(_on_standing_changed)
+	StandingManager.bounty_changed.connect(_on_standing_changed)
 	_load_planets()
 	_setup_environment()
 	_generate_starfield()
@@ -89,7 +91,7 @@ func _apply_fonts() -> void:
 
 func _style_bottom_bar() -> void:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
+	style.bg_color = Color(UIStyles.PANEL_BG, 0.75)
 	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(8)
@@ -127,7 +129,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _configure_info_panel() -> void:
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.02, 0.06, 0.14, 0.92)
+	panel_style.bg_color = Color(UIStyles.PANEL_BG, 0.92)
 	panel_style.border_color = Color(0.0, 0.65, 0.95, 0.85)
 	panel_style.border_width_left = 1
 	panel_style.border_width_top = 1
@@ -750,17 +752,17 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 	info_panel.visible = true
 	planet_name_label.text = planet_data.planet_name
 	var type_text: String = EconomyManager.PLANET_TYPE_NAMES.get(planet_data.planet_type, "Unknown")
-	var faction: String = GameManager.get_planet_faction(planet_data.planet_name)
-	var rep: int = GameManager.get_faction_reputation(faction)
+	var faction: String = StandingManager.get_planet_faction(planet_data.planet_name)
+	var rep: int = StandingManager.get_faction_reputation(faction)
 	planet_type_label.text = "%s | %s %+d %s" % [
 		type_text,
 		faction,
 		rep,
-		GameManager.get_reputation_tier(faction),
+		StandingManager.get_reputation_tier(faction),
 	]
 	danger_label.text = "Danger: %d | Loyalty %s" % [
 		planet_data.danger_level,
-		GameManager.get_loyalty_tier(planet_data.planet_name),
+		StandingManager.get_loyalty_tier(planet_data.planet_name),
 	]
 
 	if planet_data.danger_level >= 3:
@@ -798,6 +800,13 @@ func _on_planet_unhovered() -> void:
 		info_panel.visible = false
 
 
+func _on_standing_changed(_a = null, _b = null, _c = null) -> void:
+	# Re-render hover info panel using current selection.
+	var planet := selected_planet if selected_planet else _find_planet_by_name(GameManager.current_planet)
+	if planet:
+		_on_planet_hovered(planet)
+
+
 func _on_travel_pressed() -> void:
 	if selected_planet == null:
 		return
@@ -817,8 +826,8 @@ func _build_systems_debug_text() -> String:
 		if p:
 			danger = p.danger_level
 
-	var faction: String = GameManager.get_planet_faction(focus_planet)
-	var rep: int = GameManager.get_faction_reputation(faction)
+	var faction: String = StandingManager.get_planet_faction(focus_planet)
+	var rep: int = StandingManager.get_faction_reputation(faction)
 	var chance: float = EncounterManager.estimate_encounter_chance(danger, focus_planet)
 
 	return "DEBUG [F10]\nCurrent: %s\nFocus: %s (Danger %d)\nFaction: %s (%+d, %s)\nLoyalty: %s | Bounty: %s\nBuy/Sell Mod @Focus: %.2f / %.2f\nEncounter Chance to Focus: %.0f%%\nTravel Warning: %s\nDebt: %s" % [
@@ -827,11 +836,11 @@ func _build_systems_debug_text() -> String:
 		danger,
 		faction,
 		rep,
-		GameManager.get_reputation_tier(faction),
-		GameManager.get_loyalty_tier(focus_planet),
-		GameManager.get_bounty_tier(),
-		GameManager.get_market_buy_modifier(focus_planet),
-		GameManager.get_market_sell_modifier(focus_planet),
+		StandingManager.get_reputation_tier(faction),
+		StandingManager.get_loyalty_tier(focus_planet),
+		StandingManager.get_bounty_tier(),
+		StandingManager.get_market_buy_modifier(focus_planet),
+		StandingManager.get_market_sell_modifier(focus_planet),
 		chance * 100.0,
 		EventManager.get_travel_warning_text(focus_planet),
 		GameManager.get_debt_status_text()

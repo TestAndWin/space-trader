@@ -16,7 +16,7 @@ var _ship_list_container: VBoxContainer
 var _credits_label: Label
 var _status_label: Label
 var _current_ship_display: Control
-var ShipDisplayScene := preload("res://scenes/components/ship_display_3d.tscn")
+const ShipDisplayScene: PackedScene = preload("res://scenes/components/ship_display_3d.tscn")
 
 
 func setup(planet_type: int) -> void:
@@ -151,9 +151,7 @@ func _build_ui() -> void:
 
 	var avail_header := Label.new()
 	avail_header.text = "\u25C6 AVAILABLE SHIPS \u25C6"
-	avail_header.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	avail_header.add_theme_font_size_override("font_size", 16)
-	avail_header.add_theme_color_override("font_color", UIStyles.ACCENT)
+	UIStyles.apply_section_title(avail_header)
 	avail_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	right_col.add_child(avail_header)
 

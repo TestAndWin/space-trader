@@ -120,7 +120,7 @@ func _ready() -> void:
 
 func _style_bottom_panel() -> void:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.06, 0.14, 0.75)
+	style.bg_color = Color(UIStyles.PANEL_BG, 0.75)
 	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(8)

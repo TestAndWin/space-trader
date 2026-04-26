@@ -81,37 +81,8 @@ var total_flights: int = 0
 var total_smuggler_deals: int = 0
 var total_quests_completed: int = 0
 
-# Factions / reputation
-const FACTION_NEUTRAL := 0
-const REPUTATION_MIN := -100
-const REPUTATION_MAX := 100
-const REPUTATION_HOSTILE_MAX := -10
-const REPUTATION_COLD_MAX := -3
-const REPUTATION_TRUSTED_MIN := 5
-const REPUTATION_ALLIED_MIN := 10
-const FACTION_BY_PLANET_TYPE := {
-	0: "Consortium", # INDUSTRIAL
-	1: "Agri Union", # AGRICULTURAL
-	2: "Mining Guild", # MINING
-	3: "Helix Directorate", # TECH
-	4: "Free Cartel", # OUTLAW
-}
-var faction_reputation: Dictionary = {} # { faction_name: int }
-
-# Trade loyalty per planet
-var trade_loyalty: Dictionary = {}  # { planet_name: int } (0–100)
-const LOYALTY_KNOWN_MIN := 2
-const LOYALTY_REGULAR_MIN := 5
-const LOYALTY_PREFERRED_MIN := 10
-const LOYALTY_LOCAL_HERO_MIN := 20
-
-# Trade route memory
+# Trade route memory (player notebook — best prices observed per good)
 var trade_route_memory: Dictionary = {}  # { good_name: { best_buy, best_sell, last_seen } }
-
-# Bounty
-var bounty_amount: int = 0
-const BOUNTY_THRESHOLD_LOW := 100
-const BOUNTY_THRESHOLD_HIGH := 300
 
 # Finance pressure
 const LOAN_DEFAULT_AMOUNT := 1000
@@ -126,7 +97,6 @@ var missed_debt_payments: int = 0
 
 func _ready() -> void:
 	BackgroundUtils.validate_required_backgrounds()
-	init_faction_reputation()
 	build_starter_deck()
 
 
@@ -159,13 +129,11 @@ func reset() -> void:
 	total_flights = 0
 	total_smuggler_deals = 0
 	total_quests_completed = 0
-	init_faction_reputation()
+	StandingManager.reset()
 	outstanding_debt = 0
 	debt_due_in_trips = 0
 	debt_interest_rate = 0.0
 	missed_debt_payments = 0
-	bounty_amount = 0
-	trade_loyalty.clear()
 	trade_route_memory.clear()
 	current_encounter = null
 	battle_result = ""
@@ -184,12 +152,6 @@ func reset() -> void:
 	QuestManager.generate_quests()
 	RivalManager.reset()
 	CraftingManager.reset()
-
-
-func init_faction_reputation() -> void:
-	faction_reputation.clear()
-	for faction in FACTION_BY_PLANET_TYPE.values():
-		faction_reputation[faction] = FACTION_NEUTRAL
 
 
 func build_starter_deck() -> void:
@@ -228,138 +190,6 @@ func remove_credits(amount: int) -> bool:
 	credits -= amount
 	credits_changed.emit(credits)
 	return true
-
-
-# ── Reputation ───────────────────────────────────────────────────────────────
-
-func get_planet_faction(planet_name: String) -> String:
-	var planet: Resource = EconomyManager.get_planet_data(planet_name)
-	if planet:
-		return FACTION_BY_PLANET_TYPE.get(planet.planet_type, "Independent")
-	return "Independent"
-
-
-func get_faction_reputation(faction_name: String) -> int:
-	return int(faction_reputation.get(faction_name, FACTION_NEUTRAL))
-
-
-func get_current_planet_reputation() -> int:
-	var faction: String = get_planet_faction(current_planet)
-	return get_faction_reputation(faction)
-
-
-func add_faction_reputation(faction_name: String, amount: int, reason: String = "") -> void:
-	if amount == 0:
-		return
-	var current_rep: int = get_faction_reputation(faction_name)
-	var previous_tier: String = get_reputation_tier(faction_name)
-	var new_rep: int = clampi(current_rep + amount, REPUTATION_MIN, REPUTATION_MAX)
-	faction_reputation[faction_name] = new_rep
-	if current_rep == new_rep:
-		return
-	if reason != "":
-		EventLog.add_entry("%s reputation %+d (%s)" % [faction_name, (new_rep - current_rep), reason])
-	else:
-		EventLog.add_entry("%s reputation %+d" % [faction_name, (new_rep - current_rep)])
-	var new_tier: String = get_reputation_tier(faction_name)
-	if new_tier != previous_tier:
-		EventLog.add_entry("%s standing is now %s." % [faction_name, new_tier])
-
-
-func get_reputation_tier(faction_name: String) -> String:
-	var rep: int = get_faction_reputation(faction_name)
-	if rep <= REPUTATION_HOSTILE_MAX:
-		return "Hostile"
-	if rep <= REPUTATION_COLD_MAX:
-		return "Cold"
-	if rep < REPUTATION_TRUSTED_MIN:
-		return "Neutral"
-	if rep < REPUTATION_ALLIED_MIN:
-		return "Trusted"
-	return "Allied"
-
-
-func get_market_buy_modifier(planet_name: String) -> float:
-	# Positive reputation gives better buy prices.
-	var rep: int = get_faction_reputation(get_planet_faction(planet_name))
-	return clampf(1.0 - float(rep) * 0.0012, 0.90, 1.15)
-
-
-func get_market_sell_modifier(planet_name: String) -> float:
-	# Positive reputation gives better sell prices.
-	var rep: int = get_faction_reputation(get_planet_faction(planet_name))
-	return clampf(1.0 + float(rep) * 0.0009, 0.88, 1.12)
-
-
-func get_local_encounter_modifier(planet_name: String) -> float:
-	# Bad local standing leads to more inspections; good standing lowers friction.
-	var rep: int = get_faction_reputation(get_planet_faction(planet_name))
-	return clampf(-float(rep) * 0.0007, -0.06, 0.07)
-
-
-func get_customs_scan_modifier(planet_name: String) -> float:
-	var faction: String = get_planet_faction(planet_name)
-	var rep: int = get_faction_reputation(faction)
-	var loyalty: int = get_trade_loyalty(planet_name)
-	var modifier: float = 0.0
-	modifier += clampf(-float(rep) * 0.0011, -0.08, 0.12)
-	modifier += clampf(float(bounty_amount) * 0.0004, 0.0, 0.15)
-	modifier -= clampf(float(loyalty) * 0.0008, 0.0, 0.08)
-	return clampf(modifier, -0.12, 0.25)
-
-
-func get_customs_fine_modifier(planet_name: String) -> float:
-	var faction: String = get_planet_faction(planet_name)
-	var rep: int = get_faction_reputation(faction)
-	var loyalty: int = get_trade_loyalty(planet_name)
-	var modifier: float = 1.0
-	modifier += clampf(-float(rep) * 0.0014, -0.08, 0.18)
-	modifier += clampf(float(bounty_amount) * 0.0005, 0.0, 0.20)
-	modifier -= clampf(float(loyalty) * 0.0006, 0.0, 0.06)
-	return clampf(modifier, 0.85, 1.35)
-
-
-func get_customs_hide_modifier(planet_name: String) -> float:
-	var faction: String = get_planet_faction(planet_name)
-	var rep: int = get_faction_reputation(faction)
-	var loyalty: int = get_trade_loyalty(planet_name)
-	var modifier: float = 0.0
-	modifier += clampf(float(rep) * 0.0008, -0.08, 0.08)
-	modifier += clampf(float(loyalty) * 0.0006, 0.0, 0.06)
-	modifier -= clampf(float(bounty_amount) * 0.0004, 0.0, 0.12)
-	return clampf(modifier, -0.15, 0.12)
-
-
-func get_quest_reward_modifier(faction_name: String) -> float:
-	var rep: int = get_faction_reputation(faction_name)
-	return clampf(float(rep) * 0.0015, -0.10, 0.12)
-
-
-func get_quest_deadline_modifier(faction_name: String) -> int:
-	var rep: int = get_faction_reputation(faction_name)
-	if rep <= REPUTATION_HOSTILE_MAX:
-		return -1
-	if rep >= 40:
-		return 1
-	return 0
-
-
-func get_planet_service_fee_modifier(planet_name: String) -> float:
-	var faction: String = get_planet_faction(planet_name)
-	var rep: int = get_faction_reputation(faction)
-	var loyalty: int = get_trade_loyalty(planet_name)
-	var modifier: float = 1.0
-	if rep <= REPUTATION_HOSTILE_MAX:
-		modifier += 0.10
-	elif rep <= REPUTATION_COLD_MAX:
-		modifier += 0.05
-	match get_bounty_tier():
-		"Wanted":
-			modifier += 0.04
-		"Most Wanted":
-			modifier += 0.08
-	modifier -= clampf(float(loyalty) * 0.0005, 0.0, 0.05)
-	return clampf(modifier, 0.95, 1.18)
 
 
 # ── Finance pressure ─────────────────────────────────────────────────────────
@@ -445,9 +275,9 @@ func process_loan_tick() -> void:
 
 	# Missing payments hurts lawful factions.
 	for planet_type in [0, 1, 2, 3]:
-		var faction: String = FACTION_BY_PLANET_TYPE.get(planet_type, "")
+		var faction: String = StandingManager.FACTION_BY_PLANET_TYPE.get(planet_type, "")
 		if faction != "":
-			add_faction_reputation(faction, -1, "debt default")
+			StandingManager.add_faction_reputation(faction, -1, "debt default")
 
 
 func get_debt_status_text() -> String:
@@ -476,6 +306,13 @@ func get_cargo_used() -> int:
 	for item in cargo:
 		total += item.get("quantity", 0)
 	return total
+
+
+func get_cargo_quantity(good_name: String) -> int:
+	for item in cargo:
+		if item.get("good_name") == good_name:
+			return item.get("quantity", 0)
+	return 0
 
 
 func get_free_cargo_space() -> int:
@@ -792,115 +629,6 @@ func get_difficulty_encounter_modifier() -> float:
 func get_difficulty_quest_bonus() -> int:
 	var settings: Dictionary = DIFFICULTY_SETTINGS.get(difficulty, DIFFICULTY_SETTINGS[Difficulty.NORMAL])
 	return settings["quest_deadline_bonus"]
-
-
-# ── Bounty ──────────────────────────────────────────────────────────────────
-
-func add_bounty(amount: int, reason: String = "") -> void:
-	if amount <= 0:
-		return
-	var previous_tier: String = get_bounty_tier()
-	bounty_amount += amount
-	if reason != "":
-		EventLog.add_entry("Bounty +%d cr (%s). Total: %d cr" % [amount, reason, bounty_amount])
-	else:
-		EventLog.add_entry("Bounty +%d cr. Total: %d cr" % [amount, bounty_amount])
-	var new_tier: String = get_bounty_tier()
-	if new_tier != previous_tier:
-		EventLog.add_entry("Bounty status is now %s." % new_tier)
-
-
-func reduce_bounty(amount: int) -> void:
-	var previous_tier: String = get_bounty_tier()
-	bounty_amount = maxi(bounty_amount - amount, 0)
-	if bounty_amount == 0:
-		EventLog.add_entry("Bounty cleared!")
-	else:
-		EventLog.add_entry("Bounty reduced by %d cr. Remaining: %d cr" % [amount, bounty_amount])
-	var new_tier: String = get_bounty_tier()
-	if new_tier != previous_tier and bounty_amount > 0:
-		EventLog.add_entry("Bounty status is now %s." % new_tier)
-
-
-func pay_off_bounty() -> bool:
-	if bounty_amount <= 0:
-		return false
-	if credits < bounty_amount:
-		return false
-	var cost: int = bounty_amount
-	remove_credits(cost)
-	bounty_amount = 0
-	EventLog.add_entry("Paid off bounty of %d cr." % cost)
-	return true
-
-
-func get_bounty_tier() -> String:
-	if bounty_amount <= 0:
-		return "None"
-	if bounty_amount < BOUNTY_THRESHOLD_LOW:
-		return "Watched"
-	if bounty_amount < BOUNTY_THRESHOLD_HIGH:
-		return "Wanted"
-	return "Most Wanted"
-
-
-func get_bounty_encounter_modifier() -> float:
-	if bounty_amount >= BOUNTY_THRESHOLD_HIGH:
-		return 0.20
-	elif bounty_amount >= BOUNTY_THRESHOLD_LOW:
-		return 0.10
-	return 0.0
-
-
-# ── Trade Loyalty ───────────────────────────────────────────────────────────
-
-func add_trade_loyalty(planet_name: String, amount: int) -> void:
-	if amount == 0:
-		return
-	var current: int = trade_loyalty.get(planet_name, 0)
-	var previous_tier: String = get_loyalty_tier(planet_name)
-	trade_loyalty[planet_name] = clampi(current + amount, 0, 100)
-	var updated: int = get_trade_loyalty(planet_name)
-	var new_tier: String = get_loyalty_tier(planet_name)
-	if new_tier != previous_tier:
-		EventLog.add_entry("%s loyalty is now %s (%d)." % [planet_name, new_tier, updated])
-
-
-func get_trade_loyalty_gain(quantity: int, total_value: int) -> int:
-	var gain: int = 1
-	var bulk_bonus: int = mini(int(floor(float(maxi(quantity, 0)) / 4.0)), 2)
-	var value_bonus: int = mini(int(floor(float(maxi(total_value, 0)) / 400.0)), 2)
-	gain += bulk_bonus + value_bonus
-	return clampi(gain, 1, 5)
-
-
-func get_trade_loyalty(planet_name: String) -> int:
-	return int(trade_loyalty.get(planet_name, 0))
-
-
-func get_loyalty_tier(planet_name: String) -> String:
-	var loyalty: int = get_trade_loyalty(planet_name)
-	if loyalty >= LOYALTY_LOCAL_HERO_MIN:
-		return "Local Hero"
-	if loyalty >= LOYALTY_PREFERRED_MIN:
-		return "Preferred"
-	if loyalty >= LOYALTY_REGULAR_MIN:
-		return "Regular"
-	if loyalty >= LOYALTY_KNOWN_MIN:
-		return "Known"
-	return "Unknown"
-
-
-func get_loyalty_buy_modifier(planet_name: String) -> float:
-	# Max -8% discount at loyalty 100
-	var loyalty: int = get_trade_loyalty(planet_name)
-	return clampf(1.0 - float(loyalty) * 0.0008, 0.92, 1.0)
-
-
-func get_loyalty_sell_modifier(planet_name: String) -> float:
-	# Max +6% premium at loyalty 100
-	var loyalty: int = get_trade_loyalty(planet_name)
-	return clampf(1.0 + float(loyalty) * 0.0006, 1.0, 1.06)
 
 
 func record_market_observation(

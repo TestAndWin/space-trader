@@ -177,15 +177,17 @@ func _build_ui() -> void:
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	main_vbox.add_child(_status_label)
 
-	# Spacer to push content to lower half
+	# Spacer to push content to lower half (small share so the lists get more height)
 	var top_spacer := Control.new()
 	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	top_spacer.size_flags_stretch_ratio = 1.0
 	top_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	main_vbox.add_child(top_spacer)
 
-	# ── Content: Market (left) + Cargo (right) ──
+	# ── Content: Market (left) + Cargo (right) — 50% taller via stretch ratio ──
 	var content := HBoxContainer.new()
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.size_flags_stretch_ratio = 3.0
 	content.add_theme_constant_override("separation", 16)
 	main_vbox.add_child(content)
 
@@ -207,9 +209,7 @@ func _build_ui() -> void:
 
 	var market_header := Label.new()
 	market_header.text = "\u25C6 BUY GOODS \u25C6"
-	market_header.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	market_header.add_theme_font_size_override("font_size", 16)
-	market_header.add_theme_color_override("font_color", UIStyles.TYPE_COLORS.get(_planet_type, UIStyles.ACCENT))
+	UIStyles.apply_section_title(market_header, UIStyles.TYPE_COLORS.get(_planet_type, UIStyles.ACCENT))
 	market_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	market_vbox.add_child(market_header)
 
@@ -236,9 +236,7 @@ func _build_ui() -> void:
 
 	var cargo_header := Label.new()
 	cargo_header.text = "\u25C6 SELL CARGO \u25C6"
-	cargo_header.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	cargo_header.add_theme_font_size_override("font_size", 16)
-	cargo_header.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
+	UIStyles.apply_section_title(cargo_header, UIStyles.POSITIVE)
 	cargo_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cargo_vbox.add_child(cargo_header)
 
@@ -350,7 +348,7 @@ func _on_buy(good_name: String, quantity: int) -> void:
 		return
 	GameManager.add_cargo(good_name, quantity)
 	GameManager.total_trades += 1
-	GameManager.add_trade_loyalty(planet_name, GameManager.get_trade_loyalty_gain(quantity, total_cost))
+	StandingManager.add_trade_loyalty(planet_name, StandingManager.get_trade_loyalty_gain(quantity, total_cost))
 	GameManager.record_market_observation(planet_name, good_name, buy_price, EconomyManager.get_sell_price(planet_name, good_name))
 	AchievementManager.check_trades(GameManager.total_trades)
 	EventLog.add_entry("Bought %d %s for %d cr" % [quantity, good_name, total_cost])
@@ -367,25 +365,25 @@ func _on_sell(good_name: String, quantity: int) -> void:
 	GameManager.remove_cargo(good_name, quantity)
 	GameManager.add_credits(total_income)
 	GameManager.total_trades += 1
-	GameManager.add_trade_loyalty(planet_name, GameManager.get_trade_loyalty_gain(quantity, total_income))
+	StandingManager.add_trade_loyalty(planet_name, StandingManager.get_trade_loyalty_gain(quantity, total_income))
 	GameManager.record_market_observation(planet_name, good_name, EconomyManager.get_buy_price(planet_name, good_name), sell_price)
 	AchievementManager.check_trades(GameManager.total_trades)
 	if _planet_type != EconomyManager.PT_OUTLAW and _is_contraband(good_name):
-		var faction: String = GameManager.get_planet_faction(planet_name)
+		var faction: String = StandingManager.get_planet_faction(planet_name)
 		var rep_loss: int = maxi(1, quantity)
-		match GameManager.get_reputation_tier(faction):
+		match StandingManager.get_reputation_tier(faction):
 			"Trusted":
 				rep_loss += 1
 			"Allied":
 				rep_loss += 2
-		GameManager.add_faction_reputation(
+		StandingManager.add_faction_reputation(
 			faction,
 			-rep_loss,
 			"contraband sale"
 		)
-		GameManager.add_trade_loyalty(planet_name, -mini(quantity * 2, 6))
-		GameManager.add_faction_reputation(
-			GameManager.FACTION_BY_PLANET_TYPE.get(EconomyManager.PT_OUTLAW, "Free Cartel"),
+		StandingManager.add_trade_loyalty(planet_name, -mini(quantity * 2, 6))
+		StandingManager.add_faction_reputation(
+			StandingManager.FACTION_BY_PLANET_TYPE.get(EconomyManager.PT_OUTLAW, "Free Cartel"),
 			maxi(1, quantity),
 			"contraband network"
 		)
@@ -421,15 +419,15 @@ func _record_market_snapshot() -> void:
 
 func _build_market_context_text() -> String:
 	var planet_name: String = GameManager.current_planet
-	var faction: String = GameManager.get_planet_faction(planet_name)
-	var rep: int = GameManager.get_faction_reputation(faction)
-	var loyalty: int = GameManager.get_trade_loyalty(planet_name)
+	var faction: String = StandingManager.get_planet_faction(planet_name)
+	var rep: int = StandingManager.get_faction_reputation(faction)
+	var loyalty: int = StandingManager.get_trade_loyalty(planet_name)
 	var loyalty_text: String = _get_loyalty_status_text(planet_name)
 	var notes: Array[String] = [
 		"%s | Reputation %+d (%s) | Loyalty %d (%s)" % [
 			faction,
 			rep,
-			GameManager.get_reputation_tier(faction),
+			StandingManager.get_reputation_tier(faction),
 			loyalty,
 			loyalty_text,
 		],
@@ -442,23 +440,23 @@ func _build_market_context_text() -> String:
 
 
 func _get_loyalty_status_text(planet_name: String) -> String:
-	var loyalty_tier: String = GameManager.get_loyalty_tier(planet_name)
+	var loyalty_tier: String = StandingManager.get_loyalty_tier(planet_name)
 	if loyalty_tier == "Unknown":
 		return "No standing yet"
 	return loyalty_tier
 
 
 func _get_service_fee_text(planet_name: String) -> String:
-	var fee_modifier: float = GameManager.get_planet_service_fee_modifier(planet_name)
+	var fee_modifier: float = StandingManager.get_planet_service_fee_modifier(planet_name)
 	var fee_percent: float = (fee_modifier - 1.0) * 100.0
-	var faction: String = GameManager.get_planet_faction(planet_name)
-	var rep: int = GameManager.get_faction_reputation(faction)
-	var bounty_tier: String = GameManager.get_bounty_tier()
-	var loyalty: int = GameManager.get_trade_loyalty(planet_name)
+	var faction: String = StandingManager.get_planet_faction(planet_name)
+	var rep: int = StandingManager.get_faction_reputation(faction)
+	var bounty_tier: String = StandingManager.get_bounty_tier()
+	var loyalty: int = StandingManager.get_trade_loyalty(planet_name)
 	var rep_fee: float = 0.0
-	if rep <= GameManager.REPUTATION_HOSTILE_MAX:
+	if rep <= StandingManager.REPUTATION_HOSTILE_MAX:
 		rep_fee = 10.0
-	elif rep <= GameManager.REPUTATION_COLD_MAX:
+	elif rep <= StandingManager.REPUTATION_COLD_MAX:
 		rep_fee = 5.0
 
 	var bounty_fee: float = 0.0

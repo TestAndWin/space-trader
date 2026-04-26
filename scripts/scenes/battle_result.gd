@@ -1,6 +1,6 @@
 extends Control
 
-var card_display_scene: PackedScene = preload("res://scenes/components/card_display.tscn")
+const CardDisplayScene: PackedScene = preload("res://scenes/components/card_display.tscn")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 var card_selected: bool = false
@@ -134,7 +134,7 @@ func _setup_card_rewards() -> void:
 		reward_cards.append(pool[i])
 
 	for card in reward_cards:
-		var display := card_display_scene.instantiate()
+		var display := CardDisplayScene.instantiate()
 		%CardChoices.add_child(display)
 		display.setup(card, true, "Choose")
 		display.card_played.connect(_on_reward_card_selected)

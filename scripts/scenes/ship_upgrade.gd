@@ -26,7 +26,7 @@ var _status_label: Label
 var _upgrade_list: VBoxContainer
 var _stats_list: VBoxContainer
 var _ship_display: Control
-var ShipDisplayScene := preload("res://scenes/components/ship_display_3d.tscn")
+const ShipDisplayScene: PackedScene = preload("res://scenes/components/ship_display_3d.tscn")
 
 
 func setup(planet_type: int) -> void:
@@ -44,6 +44,9 @@ func _ready() -> void:
 func _load_all_upgrades() -> void:
 	var loaded := ResourceRegistry.load_all(ResourceRegistry.UPGRADES)
 	for res in loaded:
+		all_upgrades.append(res)
+	var crafted := ResourceRegistry.load_all(ResourceRegistry.CRAFTED_UPGRADES)
+	for res in crafted:
 		all_upgrades.append(res)
 
 
@@ -172,9 +175,7 @@ func _build_ui() -> void:
 
 	var avail_header := Label.new()
 	avail_header.text = "\u25C6 AVAILABLE UPGRADES \u25C6"
-	avail_header.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	avail_header.add_theme_font_size_override("font_size", 16)
-	avail_header.add_theme_color_override("font_color", UIStyles.ACCENT)
+	UIStyles.apply_section_title(avail_header)
 	avail_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	right_col.add_child(avail_header)
 
@@ -364,6 +365,13 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_child(desc_label)
 
+	if upgrade.crafted_only and not upgrade.required_crafted_items.is_empty():
+		var req_label := Label.new()
+		req_label.text = "Requires: " + _format_required_items(upgrade)
+		req_label.add_theme_font_size_override("font_size", 11)
+		req_label.add_theme_color_override("font_color", UIStyles.GOLD if _has_required_crafted_items(upgrade) else Color(0.7, 0.45, 0.25))
+		info.add_child(req_label)
+
 	# Price + buy button column
 	var btn_col := VBoxContainer.new()
 	btn_col.add_theme_constant_override("separation", 3)
@@ -381,7 +389,9 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 	var buy_button := Button.new()
 	buy_button.text = "INSTALL"
 	buy_button.custom_minimum_size = Vector2(100, 36)
-	buy_button.disabled = GameManager.credits < upgrade.cost
+	var can_afford: bool = GameManager.credits >= upgrade.cost
+	var has_items: bool = _has_required_crafted_items(upgrade)
+	buy_button.disabled = not can_afford or not has_items
 	_style_buy_button(buy_button)
 	buy_button.pressed.connect(_on_buy_upgrade.bind(upgrade))
 	btn_col.add_child(buy_button)
@@ -390,13 +400,44 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 
 
 func _on_buy_upgrade(upgrade: Resource) -> void:
+	if not _has_required_crafted_items(upgrade):
+		_status_label.text = "Missing required components: " + _format_required_items(upgrade)
+		return
 	if not GameManager.remove_credits(upgrade.cost):
 		_status_label.text = "Not enough credits!"
 		return
+	_consume_required_crafted_items(upgrade)
 	GameManager.apply_upgrade(upgrade)
 	EventLog.add_entry("Installed %s for %d cr" % [upgrade.upgrade_name, upgrade.cost])
 	_status_label.text = "Installed %s!" % upgrade.upgrade_name
 	_refresh_all()
+
+
+func _has_required_crafted_items(upgrade: Resource) -> bool:
+	if not upgrade.crafted_only:
+		return true
+	for entry in upgrade.required_crafted_items:
+		var good: GoodData = entry.good
+		var need: int = int(entry.amount)
+		if GameManager.get_cargo_quantity(good.good_name) < need:
+			return false
+	return true
+
+
+func _consume_required_crafted_items(upgrade: Resource) -> void:
+	if not upgrade.crafted_only:
+		return
+	for entry in upgrade.required_crafted_items:
+		var good: GoodData = entry.good
+		GameManager.remove_cargo(good.good_name, int(entry.amount))
+
+
+func _format_required_items(upgrade: Resource) -> String:
+	var parts: Array[String] = []
+	for entry in upgrade.required_crafted_items:
+		var good: GoodData = entry.good
+		parts.append("%dx %s" % [int(entry.amount), good.good_name])
+	return ", ".join(parts)
 
 
 func _update_stats() -> void:

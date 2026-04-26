@@ -320,7 +320,7 @@ func _hacking_extract() -> void:
 	if traces > 0:
 		var bounty_gain: int = traces * 15
 		var hull_loss: int = traces * 2
-		GameManager.add_bounty(bounty_gain, "Corporate data heist traced")
+		StandingManager.add_bounty(bounty_gain, "Corporate data heist traced")
 		GameManager.current_hull = maxi(GameManager.current_hull - hull_loss, 1)
 		_hack_hull_loss += hull_loss
 		var plural: String = "s" if traces > 1 else ""
@@ -444,7 +444,7 @@ func _race_choice(boosted: bool, prize: int, patrol_pct: float) -> void:
 	if randf() < patrol_pct:
 		var dmg: int = 5
 		GameManager.current_hull = maxi(GameManager.current_hull - dmg, 1)
-		GameManager.add_bounty(30, "Smuggler race patrol clip")
+		StandingManager.add_bounty(30, "Smuggler race patrol clip")
 		_race_heat += 1
 		_race_hull_loss += dmg
 		_race_bounty_gain += 30

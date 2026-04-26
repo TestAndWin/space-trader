@@ -41,15 +41,15 @@ func can_offer_quest(planet_name: String) -> bool:
 
 
 func get_offer_quality_for_planet(planet_name: String) -> Dictionary:
-	var faction: String = GameManager.get_planet_faction(planet_name)
-	var rep_tier: String = GameManager.get_reputation_tier(faction)
-	var loyalty_tier: String = GameManager.get_loyalty_tier(planet_name)
-	var bounty_tier: String = GameManager.get_bounty_tier()
+	var faction: String = StandingManager.get_planet_faction(planet_name)
+	var rep_tier: String = StandingManager.get_reputation_tier(faction)
+	var loyalty_tier: String = StandingManager.get_loyalty_tier(planet_name)
+	var bounty_tier: String = StandingManager.get_bounty_tier()
 	var planet: Resource = EconomyManager.get_planet_data(planet_name)
 	var is_outlaw: bool = planet != null and planet.planet_type == EconomyManager.PT_OUTLAW
 
-	var reward_modifier: float = GameManager.get_quest_reward_modifier(faction)
-	var deadline_bonus: int = GameManager.get_quest_deadline_modifier(faction)
+	var reward_modifier: float = StandingManager.get_quest_reward_modifier(faction)
+	var deadline_bonus: int = StandingManager.get_quest_deadline_modifier(faction)
 	var chain_bonus: float = 0.0
 	var notes: Array[String] = []
 	var blocked: bool = false
@@ -159,7 +159,7 @@ func _make_quest(
 		reward_mult *= (1.0 + 0.10 * negotiation_bonus)
 	var reward: int = int((good.base_price * qty * 1.8 + randi_range(50, 150)) * stage_mult * reward_mult)
 	var penalty: int = int(reward * PENALTY_RATIO)
-	var issuer_faction: String = str(quality.get("issuer_faction", GameManager.get_planet_faction(planet.planet_name)))
+	var issuer_faction: String = str(quality.get("issuer_faction", StandingManager.get_planet_faction(planet.planet_name)))
 	if chain_id < 0:
 		chain_id = _next_chain_id()
 
@@ -246,7 +246,7 @@ func check_expired_quest() -> bool:
 	var issuer_faction: String = current_quest.get("issuer_faction", "")
 	if issuer_faction != "":
 		var stage: int = int(current_quest.get("stage", 1))
-		GameManager.add_faction_reputation(
+		StandingManager.add_faction_reputation(
 			issuer_faction,
 			REPUTATION_FAIL_PENALTY - maxi(stage - 1, 0),
 			"quest failure"
@@ -266,12 +266,7 @@ func try_complete_quest(planet_name: String) -> int:
 		return 0
 	if current_quest["destination"] != planet_name:
 		return 0
-	var has_goods := false
-	for item in GameManager.cargo:
-		if item["good_name"] == current_quest["deliver_good"] and item["quantity"] >= current_quest["deliver_qty"]:
-			has_goods = true
-			break
-	if not has_goods:
+	if GameManager.get_cargo_quantity(current_quest["deliver_good"]) < current_quest["deliver_qty"]:
 		return 0
 	GameManager.remove_cargo(current_quest["deliver_good"], current_quest["deliver_qty"])
 	var reward: int = current_quest["reward_credits"]
@@ -303,7 +298,7 @@ func _apply_reputation_on_completion(completed_quest: Dictionary) -> void:
 		return
 	var stage: int = int(completed_quest.get("stage", 1))
 	var rep_gain: int = REPUTATION_REWARD_BASE + stage
-	GameManager.add_faction_reputation(issuer_faction, rep_gain, "quest completion")
+	StandingManager.add_faction_reputation(issuer_faction, rep_gain, "quest completion")
 
 
 func _promote_followup_quest(current_planet_name: String, completed_quest: Dictionary) -> bool:
@@ -332,7 +327,7 @@ func _pick_quest_good(planet_name: String, quality: Dictionary) -> Resource:
 			if preferred_res != null:
 				candidates.append(preferred_res)
 	if candidates.is_empty():
-		var outlaw_faction: bool = GameManager.get_planet_faction(planet_name) == GameManager.FACTION_BY_PLANET_TYPE.get(EconomyManager.PT_OUTLAW, "Free Cartel")
+		var outlaw_faction: bool = StandingManager.get_planet_faction(planet_name) == StandingManager.FACTION_BY_PLANET_TYPE.get(EconomyManager.PT_OUTLAW, "Free Cartel")
 		for good in EconomyManager.goods:
 			if good == null:
 				continue

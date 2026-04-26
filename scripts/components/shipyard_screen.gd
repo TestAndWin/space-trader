@@ -29,9 +29,9 @@ var _planet_type: int = 0
 var _credits_label: Label
 var _shipyard_panel: Control  # ShipyardPanel instance
 
-var ShipyardPanelScene := preload("res://scenes/components/shipyard_panel.tscn")
-var ShipDealerScene: PackedScene = preload("res://scenes/components/ship_dealer.tscn")
-var ShipUpgradeScene: PackedScene = preload("res://scenes/ship_upgrade.tscn")
+const ShipyardPanelScene: PackedScene = preload("res://scenes/components/shipyard_panel.tscn")
+const ShipDealerScene: PackedScene = preload("res://scenes/components/ship_dealer.tscn")
+const ShipUpgradeScene: PackedScene = preload("res://scenes/ship_upgrade.tscn")
 
 
 func setup(planet_type: int) -> void:

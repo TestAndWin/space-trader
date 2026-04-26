@@ -23,9 +23,7 @@ func _ready() -> void:
 	var title := Label.new()
 	title.text = "CREW"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	title.add_theme_font_size_override("font_size", 16)
-	title.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
+	UIStyles.apply_section_title(title)
 	vbox.add_child(title)
 
 	_icon_container = HBoxContainer.new()

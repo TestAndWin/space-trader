@@ -34,21 +34,18 @@ func estimate_encounter_chance(danger_level: int, planet_name: String = "") -> f
 	# Galaxy event modifier
 	chance += EventManager.get_encounter_modifier(planet_name)
 	# Local standing and debt pressure affect inspection intensity.
-	chance += GameManager.get_local_encounter_modifier(planet_name)
+	chance += StandingManager.get_local_encounter_modifier(planet_name)
 	chance += GameManager.get_debt_risk_modifier()
 	# Difficulty modifier
 	chance += GameManager.get_difficulty_encounter_modifier()
 	# Bounty modifier
-	chance += GameManager.get_bounty_encounter_modifier()
+	chance += StandingManager.get_bounty_encounter_modifier()
 	return clampf(chance, 0.05, 0.90)
 
 
 func is_carrying_contraband() -> bool:
-	for item in GameManager.cargo:
-		var gname: String = item.get("good_name", "")
-		if gname == "Spice" or gname == "Stolen Tech":
-			return true
-	return false
+	return GameManager.get_cargo_quantity("Spice") > 0 \
+		or GameManager.get_cargo_quantity("Stolen Tech") > 0
 
 
 func _get_difficulty_bonus() -> int:
@@ -94,9 +91,9 @@ func _get_encounter_weight(enc: Resource, planet_name: String) -> float:
 	var tags: Array[String] = EventManager.get_active_event_tags(planet_name)
 	var planet: Resource = EconomyManager.get_planet_data(planet_name)
 	var lawful_space: bool = planet == null or planet.planet_type != EconomyManager.PT_OUTLAW
-	var faction: String = GameManager.get_planet_faction(planet_name)
-	var rep_tier: String = GameManager.get_reputation_tier(faction)
-	var bounty_tier: String = GameManager.get_bounty_tier()
+	var faction: String = StandingManager.get_planet_faction(planet_name)
+	var rep_tier: String = StandingManager.get_reputation_tier(faction)
+	var bounty_tier: String = StandingManager.get_bounty_tier()
 
 	var weight: float = 1.0
 	match enc_name:

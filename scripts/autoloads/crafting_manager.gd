@@ -71,8 +71,7 @@ func unlock_facility(planet_name: String) -> bool:
 	var f: Dictionary = _ensure_facility(planet_name)
 	if f.unlocked:
 		return false
-	GameManager.credits -= FACILITY_COST
-	GameManager.emit_signal("credits_changed", GameManager.credits)
+	GameManager.remove_credits(FACILITY_COST)
 	f.unlocked = true
 	f.slots = 1
 	EventLog.add_entry("Production Facility unlocked at %s." % planet_name)
@@ -89,8 +88,7 @@ func expand_slots(planet_name: String) -> bool:
 	var cost: int = SLOT_COSTS.get(next_slot, 0)
 	if GameManager.credits < cost:
 		return false
-	GameManager.credits -= cost
-	GameManager.emit_signal("credits_changed", GameManager.credits)
+	GameManager.remove_credits(cost)
 	f.slots = next_slot
 	EventLog.add_entry("Factory slot %d unlocked at %s." % [next_slot, planet_name])
 	return true
@@ -149,11 +147,7 @@ func can_start_job(planet_name: String, recipe: Resource) -> bool:
 	for entry in recipe.inputs:
 		var good: GoodData = entry.good
 		var needed: int = int(entry.amount)
-		var have: int = 0
-		for item in GameManager.cargo:
-			if item.get("good_name") == good.good_name:
-				have = item.get("quantity", 0)
-				break
+		var have: int = GameManager.get_cargo_quantity(good.good_name)
 		if have < needed:
 			return false
 	return true
@@ -202,6 +196,14 @@ func tick() -> void:
 
 # ── Collect / Sell ──────────────────────────────────────────────────────────
 
+# Crafted goods aren't in the planet price table, so fall back to base_price * SELL_RATIO.
+func get_finished_item_sell_price(planet_name: String, good: GoodData) -> int:
+	var price: int = EconomyManager.get_sell_price(planet_name, good.good_name)
+	if price < 0:
+		price = int(round(good.base_price * EconomyManager.SELL_RATIO))
+	return price
+
+
 func collect_finished_item(planet_name: String, finished_index: int) -> bool:
 	var f: Dictionary = _ensure_facility(planet_name)
 	if finished_index < 0 or finished_index >= f.finished_items.size():
@@ -229,10 +231,9 @@ func sell_finished_item(planet_name: String, finished_index: int) -> int:
 	if good == null:
 		return 0
 	var amount: int = int(entry.amount)
-	var price: int = EconomyManager.get_sell_price(planet_name, good.good_name)
+	var price: int = get_finished_item_sell_price(planet_name, good)
 	var total: int = price * amount
-	GameManager.credits += total
-	GameManager.emit_signal("credits_changed", GameManager.credits)
+	GameManager.add_credits(total)
 	f.finished_items.remove_at(finished_index)
 	EventLog.add_entry("Sold %d x %s for %d cr." % [amount, good.good_name, total])
 	return total

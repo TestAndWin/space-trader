@@ -38,8 +38,7 @@ const SUIT_SYMBOLS: Dictionary = {
 	"Spades": "\u2660",
 }
 
-# Casino colors — premium gold + dark blue
-const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
+# Casino colors — premium gold + dark blue (PANEL_COLOR comes from UIStyles)
 const BORDER_COLOR := Color(0.65, 0.52, 0.08, 0.35)
 const GOLD := Color(1.0, 0.90, 0.25)
 const GOLD_DIM := Color(0.65, 0.52, 0.08)
@@ -102,7 +101,7 @@ func _build_ui() -> void:
 
 	var panel := PanelContainer.new()
 	var style := StyleBoxFlat.new()
-	style.bg_color = PANEL_COLOR
+	style.bg_color = UIStyles.PANEL_COLOR
 	style.border_color = BORDER_COLOR
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(16)
@@ -478,9 +477,7 @@ func _build_blackjack_ui() -> void:
 	# Dealer section
 	var dealer_header := Label.new()
 	dealer_header.text = "DEALER"
-	dealer_header.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	dealer_header.add_theme_font_size_override("font_size", 16)
-	dealer_header.add_theme_color_override("font_color", Color(0.85, 0.35, 0.35))
+	UIStyles.apply_section_title(dealer_header, Color(0.85, 0.35, 0.35))
 	dealer_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_content_area.add_child(dealer_header)
 
@@ -512,9 +509,7 @@ func _build_blackjack_ui() -> void:
 	# Player section
 	var player_header := Label.new()
 	player_header.text = "YOUR HAND"
-	player_header.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	player_header.add_theme_font_size_override("font_size", 16)
-	player_header.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
+	UIStyles.apply_section_title(player_header, UIStyles.POSITIVE)
 	player_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_content_area.add_child(player_header)
 

@@ -25,7 +25,7 @@ const PLANET_TYPE_NAMES := {
 
 # Per-planet-type buy-price modifiers.
 # Goods not listed for a type default to 1.0.
-var _type_modifiers: Dictionary = {
+const _type_modifiers: Dictionary = {
 	"Industrial": {
 		"Food Rations": 1.2, "Raw Ore": 0.7, "Electronics": 0.9,
 		"Luxury Goods": 1.0, "Weapons": 0.6, "Medicine": 1.0,
@@ -56,7 +56,7 @@ var _type_modifiers: Dictionary = {
 
 # Per-planet-type available goods for purchase.
 # Goods NOT listed here cannot be bought at that planet type.
-var _type_available_goods: Dictionary = {
+const _type_available_goods: Dictionary = {
 	"Industrial": ["Electronics", "Weapons", "Raw Ore", "Medicine", "Luxury Goods", "Plasma Coils"],
 	"Agricultural": ["Food Rations", "Medicine", "Luxury Goods", "Raw Ore"],
 	"Mining": ["Raw Ore", "Weapons", "Food Rations", "Electronics", "Rare Crystals"],
@@ -65,10 +65,10 @@ var _type_available_goods: Dictionary = {
 }
 
 # Contraband goods: names that count as contraband.
-var _contraband_goods: Array = ["Spice", "Stolen Tech"]
+const _contraband_goods: Array = ["Spice", "Stolen Tech"]
 
 # Contraband price modifiers for non-Outlaw planets (high prices = good sell target).
-var _contraband_non_outlaw_modifiers: Dictionary = {
+const _contraband_non_outlaw_modifiers: Dictionary = {
 	"Spice": 1.6,
 	"Stolen Tech": 1.8,
 }
@@ -84,6 +84,9 @@ func _ready() -> void:
 func _load_data() -> void:
 	planets = ResourceRegistry.load_all(ResourceRegistry.PLANETS)
 	goods = ResourceRegistry.load_all(ResourceRegistry.GOODS)
+	# Crafted goods need prices for sell_finished_item() but are not buyable
+	# (they are not listed in _type_available_goods).
+	goods.append_array(ResourceRegistry.load_all(ResourceRegistry.CRAFTED_GOODS))
 
 
 # ── Price generation ─────────────────────────────────────────────────────────
@@ -130,9 +133,9 @@ func get_buy_price_breakdown(planet_name: String, good_name: String) -> Dictiona
 		return {}
 	var event_entries: Array = EventManager.get_price_modifiers_for(planet_name, good_name)
 	var event_modifier: float = _multiply_event_entries(event_entries)
-	var rep_modifier: float = GameManager.get_market_buy_modifier(planet_name)
-	var loyalty_modifier: float = GameManager.get_loyalty_buy_modifier(planet_name)
-	var service_fee_modifier: float = GameManager.get_planet_service_fee_modifier(planet_name)
+	var rep_modifier: float = StandingManager.get_market_buy_modifier(planet_name)
+	var loyalty_modifier: float = StandingManager.get_loyalty_buy_modifier(planet_name)
+	var service_fee_modifier: float = StandingManager.get_planet_service_fee_modifier(planet_name)
 	var final_price: int = max(
 		1,
 		int(round(float(base_price) * event_modifier * rep_modifier * loyalty_modifier * service_fee_modifier))
@@ -158,14 +161,14 @@ func get_sell_price_breakdown(planet_name: String, good_name: String) -> Diction
 	var override_ratio: float = EventManager.get_sell_ratio_override(planet_name)
 	if override_ratio > 0.0:
 		sell_ratio = override_ratio
-	if GameManager.has_crew_bonus(3):  # SELL_BONUS
-		sell_ratio = maxf(sell_ratio, GameManager.get_crew_bonus_value(3))
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.SELL_BONUS):
+		sell_ratio = maxf(sell_ratio, GameManager.get_crew_bonus_value(CrewData.CrewBonus.SELL_BONUS))
 	var contraband_modifier: float = 1.0
 	if _is_contraband_good(good_name):
 		contraband_modifier += GameManager.get_contraband_bonus()
-	var rep_modifier: float = GameManager.get_market_sell_modifier(planet_name)
-	var loyalty_modifier: float = GameManager.get_loyalty_sell_modifier(planet_name)
-	var service_fee_modifier: float = 1.0 / GameManager.get_planet_service_fee_modifier(planet_name)
+	var rep_modifier: float = StandingManager.get_market_sell_modifier(planet_name)
+	var loyalty_modifier: float = StandingManager.get_loyalty_sell_modifier(planet_name)
+	var service_fee_modifier: float = 1.0 / StandingManager.get_planet_service_fee_modifier(planet_name)
 	var final_price: int = max(
 		1,
 		int(round(

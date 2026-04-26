@@ -258,8 +258,8 @@ func _show_caught_options() -> void:
 	_style_caught_button(fine_btn, Color(0.7, 0.25, 0.1))
 	fine_btn.pressed.connect(func():
 		GameManager.remove_credits(fine)
-		GameManager.add_bounty(100, "caught smuggling")
-		GameManager.add_trade_loyalty(GameManager.current_planet, -15)
+		StandingManager.add_bounty(100, "caught smuggling")
+		StandingManager.add_trade_loyalty(GameManager.current_planet, -15)
 		EventLog.add_entry("Paid smuggling fine: %d cr." % fine)
 		_close()
 	)
@@ -278,8 +278,8 @@ func _show_caught_options() -> void:
 			EventLog.add_entry("Bribed official for %d cr. No record." % bribe_cost)
 		else:
 			GameManager.remove_credits(bribe_cost)
-			GameManager.add_bounty(150, "failed bribe attempt")
-			GameManager.add_trade_loyalty(GameManager.current_planet, -20)
+			StandingManager.add_bounty(150, "failed bribe attempt")
+			StandingManager.add_trade_loyalty(GameManager.current_planet, -20)
 			EventLog.add_entry("Bribe failed! Fined %d cr + bounty." % bribe_cost)
 		_close()
 	)
@@ -294,8 +294,8 @@ func _show_caught_options() -> void:
 	_style_caught_button(accept_btn, Color(0.25, 0.25, 0.28))
 	accept_btn.pressed.connect(func():
 		GameManager.remove_credits(mini(fine, GameManager.credits))
-		GameManager.add_bounty(100, "caught smuggling")
-		GameManager.add_trade_loyalty(GameManager.current_planet, -15)
+		StandingManager.add_bounty(100, "caught smuggling")
+		StandingManager.add_trade_loyalty(GameManager.current_planet, -15)
 		EventLog.add_entry("Caught smuggling. Fined %d cr." % fine)
 		_close()
 	)

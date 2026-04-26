@@ -30,7 +30,7 @@ var _credits_label: Label
 var _status_label: Label
 var _quest_display: Control  # QuestDisplay instance
 
-var QuestDisplayScene := preload("res://scenes/components/quest_display.tscn")
+const QuestDisplayScene: PackedScene = preload("res://scenes/components/quest_display.tscn")
 
 
 func setup(planet_type: int, planet_name: String) -> void:
@@ -56,7 +56,7 @@ func _build_ui() -> void:
 		QUEST_NAMES.get(_planet_type, "QUEST BOARD"),
 		"Accept and deliver cargo contracts",
 		QUEST_ICONS.get(_planet_type, "\u2709"),
-		"Leave",
+		"Leave Office",
 		_close,
 	)
 	var main_vbox: VBoxContainer = scaffold["main_vbox"]
@@ -101,17 +101,17 @@ func _refresh_ui() -> void:
 		return
 	_credits_label.text = "%d cr" % GameManager.credits
 	if _status_label:
-		var faction: String = GameManager.get_planet_faction(_planet_name)
+		var faction: String = StandingManager.get_planet_faction(_planet_name)
 		_status_label.text = "%s | Reputation %s | Loyalty %s | Bounty %s" % [
 			faction,
-			GameManager.get_reputation_tier(faction),
+			StandingManager.get_reputation_tier(faction),
 			_get_loyalty_status_text(_planet_name),
-			GameManager.get_bounty_tier(),
+			StandingManager.get_bounty_tier(),
 		]
 
 
 func _get_loyalty_status_text(planet_name: String) -> String:
-	var loyalty_tier: String = GameManager.get_loyalty_tier(planet_name)
+	var loyalty_tier: String = StandingManager.get_loyalty_tier(planet_name)
 	if loyalty_tier == "Unknown":
 		return "No standing yet"
 	return loyalty_tier

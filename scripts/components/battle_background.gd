@@ -324,8 +324,8 @@ func _build_ships() -> void:
 	_player_shield_mat = player_shield_info["mat"]
 	_player_ship_root.add_child(_player_shield)
 
-	var enc_name = GameManager.current_encounter.encounter_name if GameManager.current_encounter else ""
-	var enemy_color = Color(0.92, 0.54, 0.16)
+	var enc_name: String = GameManager.current_encounter.encounter_name if GameManager.current_encounter else ""
+	var enemy_color: Color = Color(0.92, 0.54, 0.16)
 	_enemy_base_color = enemy_color
 	
 	var enemy_type: int = _enemy_type_from_encounter()

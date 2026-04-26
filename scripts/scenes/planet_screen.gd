@@ -59,18 +59,13 @@ var _hotspot_pulse_tween: Tween = null
 
 # ── Building IDs ─────────────────────────────────────────────────────────────
 
-const BUILDING_MARKET = "market"
-const BUILDING_SHIPYARD = "shipyard"
-const BUILDING_CASINO = "casino"
-const BUILDING_CREW = "crew"
-const BUILDING_QUEST = "quest"
-const BUILDING_DECK = "deck"
-const BUILDING_DEPART = "depart"
-const BUILDING_MISSION = "mission"
-const BUILDING_FACTORY = "factory"
+# Building IDs are defined in CityMap and referenced here as CityMap.BUILDING_*.
 
 
 func _ready() -> void:
+	StandingManager.reputation_changed.connect(_on_standing_changed)
+	StandingManager.loyalty_changed.connect(_on_standing_changed)
+	StandingManager.bounty_changed.connect(_on_standing_changed)
 	_find_planet_data()
 	var is_fresh_arrival: bool = not GameManager.arrival_events_done
 	# Check quest penalty after battle credits have been awarded
@@ -81,6 +76,9 @@ func _ready() -> void:
 	if is_fresh_arrival and GameManager.has_crew_bonus(CrewData.CrewBonus.HULL_REGEN):
 		var regen: int = int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.HULL_REGEN))
 		GameManager.current_hull = min(GameManager.current_hull + regen, GameManager.max_hull)
+	# Adaptive Shields (crafted upgrade): +3 shield regen per arrival.
+	if is_fresh_arrival and "Adaptive Shields" in GameManager.installed_upgrades:
+		GameManager.current_shield = min(GameManager.current_shield + 3, GameManager.max_shield)
 	_update_header()
 	_update_news_banner()
 
@@ -203,6 +201,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_D: _on_view_deck_pressed()    # Deck
 		KEY_K: _on_casino_pressed()       # Casino
 		KEY_I: _on_mission_pressed()      # Mission
+		KEY_F: _on_factory_pressed()      # Factory (Tech planets only)
 		KEY_G: _on_depart_pressed()       # Depart / Galaxy
 		KEY_L: _on_event_log_pressed()    # Event log
 		_: handled = false
@@ -301,22 +300,22 @@ func _load_background_image() -> void:
 
 func _get_building_states() -> Dictionary:
 	return {
-		BUILDING_CASINO: _casino_done,
-		BUILDING_MISSION: _mission_done,
+		CityMap.BUILDING_CASINO: _casino_done,
+		CityMap.BUILDING_MISSION: _mission_done,
 	}
 
 
 func _on_building_clicked(building_id: String) -> void:
 	match building_id:
-		BUILDING_MARKET:   _on_market_pressed()
-		BUILDING_SHIPYARD: _on_shipyard_pressed()
-		BUILDING_CASINO:   _on_casino_pressed()
-		BUILDING_CREW:     _on_crew_pressed()
-		BUILDING_QUEST:    _on_quest_pressed()
-		BUILDING_DECK:     _on_view_deck_pressed()
-		BUILDING_DEPART:   _on_depart_pressed()
-		BUILDING_MISSION:  _on_mission_pressed()
-		BUILDING_FACTORY:  _on_factory_pressed()
+		CityMap.BUILDING_MARKET:   _on_market_pressed()
+		CityMap.BUILDING_SHIPYARD: _on_shipyard_pressed()
+		CityMap.BUILDING_CASINO:   _on_casino_pressed()
+		CityMap.BUILDING_CREW:     _on_crew_pressed()
+		CityMap.BUILDING_QUEST:    _on_quest_pressed()
+		CityMap.BUILDING_DECK:     _on_view_deck_pressed()
+		CityMap.BUILDING_DEPART:   _on_depart_pressed()
+		CityMap.BUILDING_MISSION:  _on_mission_pressed()
+		CityMap.BUILDING_FACTORY:  _on_factory_pressed()
 
 
 # ── Building callbacks ───────────────────────────────────────────────────────
@@ -574,7 +573,7 @@ func _make_holo_panel_style(
 	with_shadow: bool = true
 ) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.06, 0.14, bg_alpha)
+	style.bg_color = Color(UIStyles.PANEL_BG, bg_alpha)
 	style.border_color = border_color
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(corner_radius)
@@ -726,21 +725,27 @@ func _on_event_log_pressed() -> void:
 
 
 func _on_factory_pressed() -> void:
+	if current_planet_data == null or current_planet_data.planet_type != EconomyManager.PT_TECH:
+		return
 	if has_node("FactoryScreen"):
 		return
 	var factory := FactoryScreenScene.instantiate()
 	factory.name = "FactoryScreen"
-	add_child(factory)
 	factory.setup(GameManager.current_planet)
+	add_child(factory)
 	factory.tree_exited.connect(func(): _update_ui())
 
 
 
+func _on_standing_changed(_a = null, _b = null, _c = null) -> void:
+	_update_header()
+
+
 func _update_header() -> void:
-	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
-	var rep: int = GameManager.get_faction_reputation(faction)
-	var rep_tier: String = GameManager.get_reputation_tier(faction)
-	var loyalty: int = GameManager.get_trade_loyalty(GameManager.current_planet)
+	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
+	var rep: int = StandingManager.get_faction_reputation(faction)
+	var rep_tier: String = StandingManager.get_reputation_tier(faction)
+	var loyalty: int = StandingManager.get_trade_loyalty(GameManager.current_planet)
 	var loyalty_text: String = _get_loyalty_status_text(GameManager.current_planet)
 	planet_name_label.text = "%s | %s | Reputation %+d %s | Loyalty %d (%s)" % [
 		GameManager.current_planet,
@@ -753,7 +758,7 @@ func _update_header() -> void:
 
 
 func _get_loyalty_status_text(planet_name: String) -> String:
-	var loyalty_tier: String = GameManager.get_loyalty_tier(planet_name)
+	var loyalty_tier: String = StandingManager.get_loyalty_tier(planet_name)
 	if loyalty_tier == "Unknown":
 		return "No standing yet"
 	return loyalty_tier
@@ -808,8 +813,8 @@ func _update_ui() -> void:
 		goal_label.add_theme_color_override("font_color", goal_color)
 	if GameManager.has_active_loan():
 		goal_label.text += " | Debt %d (%d)" % [GameManager.outstanding_debt, GameManager.debt_due_in_trips]
-	if GameManager.bounty_amount > 0:
-		goal_label.text += " | %s %d cr" % [GameManager.get_bounty_tier(), GameManager.bounty_amount]
+	if StandingManager.bounty_amount > 0:
+		goal_label.text += " | %s %d cr" % [StandingManager.get_bounty_tier(), StandingManager.bounty_amount]
 	_refresh_info_bar_text_layout()
 
 
@@ -942,10 +947,10 @@ func _compact_news_text(text: String) -> String:
 
 func _get_local_status_notes() -> Array[String]:
 	var notes: Array[String] = []
-	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
-	var rep_tier: String = GameManager.get_reputation_tier(faction)
-	var loyalty_tier: String = GameManager.get_loyalty_tier(GameManager.current_planet)
-	var bounty_tier: String = GameManager.get_bounty_tier()
+	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
+	var rep_tier: String = StandingManager.get_reputation_tier(faction)
+	var loyalty_tier: String = StandingManager.get_loyalty_tier(GameManager.current_planet)
+	var bounty_tier: String = StandingManager.get_bounty_tier()
 
 	if rep_tier in ["Trusted", "Allied"]:
 		notes.append("Trusted trader discounts active")
@@ -955,35 +960,35 @@ func _get_local_status_notes() -> Array[String]:
 	if loyalty_tier in ["Preferred", "Local Hero"]:
 		notes.append("Local trade network favors you")
 
-	if bounty_tier in ["Wanted", "Most Wanted"] and GameManager.get_planet_faction(GameManager.current_planet) != GameManager.FACTION_BY_PLANET_TYPE.get(EconomyManager.PT_OUTLAW, "Free Cartel"):
+	if bounty_tier in ["Wanted", "Most Wanted"] and StandingManager.get_planet_faction(GameManager.current_planet) != StandingManager.FACTION_BY_PLANET_TYPE.get(EconomyManager.PT_OUTLAW, "Free Cartel"):
 		notes.append("Patrols intensified for wanted traffic")
 
 	return notes
 
 
 func _build_systems_debug_text() -> String:
-	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
-	var rep: int = GameManager.get_faction_reputation(faction)
-	var rep_tier: String = GameManager.get_reputation_tier(faction)
-	var loyalty: int = GameManager.get_trade_loyalty(GameManager.current_planet)
-	var loyalty_tier: String = GameManager.get_loyalty_tier(GameManager.current_planet)
-	var bounty_tier: String = GameManager.get_bounty_tier()
-	var buy_mod: float = GameManager.get_market_buy_modifier(GameManager.current_planet)
-	var sell_mod: float = GameManager.get_market_sell_modifier(GameManager.current_planet)
-	var customs_scan_mod: float = GameManager.get_customs_scan_modifier(GameManager.current_planet)
-	var customs_fine_mod: float = GameManager.get_customs_fine_modifier(GameManager.current_planet)
-	var customs_hide_mod: float = GameManager.get_customs_hide_modifier(GameManager.current_planet)
-	var quest_reward_mod: float = GameManager.get_quest_reward_modifier(faction)
-	var quest_deadline_mod: int = GameManager.get_quest_deadline_modifier(faction)
-	var service_fee_mod: float = GameManager.get_planet_service_fee_modifier(GameManager.current_planet)
+	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
+	var rep: int = StandingManager.get_faction_reputation(faction)
+	var rep_tier: String = StandingManager.get_reputation_tier(faction)
+	var loyalty: int = StandingManager.get_trade_loyalty(GameManager.current_planet)
+	var loyalty_tier: String = StandingManager.get_loyalty_tier(GameManager.current_planet)
+	var bounty_tier: String = StandingManager.get_bounty_tier()
+	var buy_mod: float = StandingManager.get_market_buy_modifier(GameManager.current_planet)
+	var sell_mod: float = StandingManager.get_market_sell_modifier(GameManager.current_planet)
+	var customs_scan_mod: float = StandingManager.get_customs_scan_modifier(GameManager.current_planet)
+	var customs_fine_mod: float = StandingManager.get_customs_fine_modifier(GameManager.current_planet)
+	var customs_hide_mod: float = StandingManager.get_customs_hide_modifier(GameManager.current_planet)
+	var quest_reward_mod: float = StandingManager.get_quest_reward_modifier(faction)
+	var quest_deadline_mod: int = StandingManager.get_quest_deadline_modifier(faction)
+	var service_fee_mod: float = StandingManager.get_planet_service_fee_modifier(GameManager.current_planet)
 	var chance: float = EncounterManager.estimate_encounter_chance(
 		current_planet_data.danger_level if current_planet_data else 1,
 		GameManager.current_planet
 	)
 
 	var rep_parts: Array[String] = []
-	for f in GameManager.faction_reputation.keys():
-		rep_parts.append("%s:%d" % [str(f), int(GameManager.faction_reputation[f])])
+	for f in StandingManager.faction_reputation.keys():
+		rep_parts.append("%s:%d" % [str(f), int(StandingManager.faction_reputation[f])])
 	rep_parts.sort()
 
 	var quest_text := "none"
@@ -1003,7 +1008,7 @@ func _build_systems_debug_text() -> String:
 		rep_tier,
 		loyalty,
 		loyalty_tier,
-		GameManager.bounty_amount,
+		StandingManager.bounty_amount,
 		bounty_tier,
 		buy_mod,
 		sell_mod,
@@ -1120,7 +1125,7 @@ func _on_depart_pressed() -> void:
 	var btn_stay := Button.new()
 	btn_stay.text = "Stay on Planet"
 	btn_stay.add_theme_font_size_override("font_size", 14)
-	_style_secondary_button(btn_stay)
+	UIStyles.style_secondary_button(btn_stay)
 	btn_stay.pressed.connect(func(): overlay.queue_free())
 	vbox.add_child(btn_stay)
 
@@ -1218,9 +1223,6 @@ func _style_primary_button(btn: Button, accent: Color) -> void:
 	btn.add_theme_color_override("font_pressed_color", Color(0.0, 0.05, 0.02))
 
 
-func _style_secondary_button(btn: Button) -> void:
-	UIStyles.style_secondary_button(btn)
-
 func _show_quest_arrival_toast() -> void:
 	var toast := Label.new()
 	toast.text = "Quest Destination Reached!"
@@ -1231,13 +1233,13 @@ func _show_quest_arrival_toast() -> void:
 	toast.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	toast.position = Vector2(0, -80)
 	
-	var container = Control.new()
+	var container := Control.new()
 	container.set_anchors_preset(Control.PRESET_FULL_RECT)
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(container)
 	container.add_child(toast)
 	
-	var tween = create_tween()
+	var tween := create_tween()
 	tween.tween_property(toast, "position:y", -180.0, 4.0).as_relative().set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_property(toast, "modulate:a", 0.0, 4.0).set_ease(Tween.EASE_IN)
 	tween.tween_callback(container.queue_free)

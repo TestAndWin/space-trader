@@ -22,6 +22,7 @@ const BUILDING_BACKGROUND_KEYS: PackedStringArray = [
 	"quest",
 	"deck",
 	"mission",
+	"factory",
 ]
 
 

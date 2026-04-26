@@ -164,7 +164,7 @@ func _build_ui() -> void:
 		header.add_child(_credits_label)
 
 	var close_btn := Button.new()
-	close_btn.text = "Close"
+	close_btn.text = "Leave Arsenal"
 	close_btn.custom_minimum_size = Vector2(90, 36)
 	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
 	close_btn.pressed.connect(_on_close_pressed)
@@ -218,9 +218,7 @@ func _build_ui() -> void:
 
 		var shop_label := Label.new()
 		shop_label.text = "\u25C6 FOR SALE \u25C6"
-		shop_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-		shop_label.add_theme_font_size_override("font_size", 16)
-		shop_label.add_theme_color_override("font_color", UIStyles.ACCENT)
+		UIStyles.apply_section_title(shop_label)
 		shop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_shop_section.add_child(shop_label)
 

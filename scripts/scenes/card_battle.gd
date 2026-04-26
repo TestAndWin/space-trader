@@ -77,7 +77,7 @@ func _style_battle_buttons() -> void:
 	end_btn.add_theme_color_override("font_hover_color", Color(0.0, 1.0, 0.55))
 	# Flee: dim cyan/grey
 	var normal_flee := StyleBoxFlat.new()
-	normal_flee.bg_color = Color(0.02, 0.06, 0.14, 0.85)
+	normal_flee.bg_color = Color(UIStyles.PANEL_BG, 0.85)
 	normal_flee.border_color = Color(0.0, 0.35, 0.55, 0.6)
 	normal_flee.set_border_width_all(1)
 	normal_flee.set_corner_radius_all(6)
@@ -148,7 +148,7 @@ func _show_trade_offer() -> void:
 	var panel := PanelContainer.new()
 	panel.name = "TradeOfferPanel"
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.06, 0.14, 0.95)
+	style.bg_color = Color(UIStyles.PANEL_BG, 0.95)
 	style.border_width_left = 2
 	style.border_width_top = 2
 	style.border_width_right = 2
@@ -397,6 +397,9 @@ func _apply_attack_card(card_data: Resource) -> void:
 	# SHIELD_ECHO: bonus damage = current_shield / 2
 	if card_data.keywords.has(CardData.CardKeyword.SHIELD_ECHO) and GameManager.current_shield > 0:
 		damage += int(GameManager.current_shield / 2.0)
+	# Targeting Computer (crafted upgrade): +20% damage
+	if "Targeting Computer" in GameManager.installed_upgrades:
+		damage = int(round(damage * 1.2))
 	_apply_damage_to_enemy(damage)
 	attacks_played_this_turn += 1
 
@@ -593,9 +596,9 @@ func _on_battle_won() -> void:
 		return
 	# Bounty system: defeating bounty hunters reduces bounty, defeating patrols increases it
 	if encounter.encounter_name == "Bounty Hunter":
-		GameManager.reduce_bounty(150)
+		StandingManager.reduce_bounty(150)
 	elif encounter.encounter_name == "System Patrol":
-		GameManager.add_bounty(50, "defeated patrol")
+		StandingManager.add_bounty(50, "defeated patrol")
 	GameManager.change_scene("res://scenes/battle_result.tscn")
 
 

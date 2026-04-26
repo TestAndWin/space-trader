@@ -19,6 +19,26 @@ static func apply_mono_font(ctrl: Control) -> void:
 		ctrl.add_theme_font_override("font", FONT_MONO)
 
 
+# ── Title helpers ────────────────────────────────────────────────────────────
+# Use these for consistent overlay-screen titles. Default color is ACCENT.
+# Reserve GOLD for highlight/reward emphasis (e.g. "READY TO COLLECT", credits).
+
+const TITLE_FONT_SIZE: int = 26
+const SECTION_FONT_SIZE: int = 16
+
+
+static func apply_screen_title(label: Label, color: Color = ACCENT) -> void:
+	apply_display_font(label)
+	label.add_theme_font_size_override("font_size", TITLE_FONT_SIZE)
+	label.add_theme_color_override("font_color", color)
+
+
+static func apply_section_title(label: Label, color: Color = ACCENT) -> void:
+	apply_display_font(label)
+	label.add_theme_font_size_override("font_size", SECTION_FONT_SIZE)
+	label.add_theme_color_override("font_color", color)
+
+
 # ── Color constants ──────────────────────────────────────────────────────────
 
 const GOLD := Color(1.0, 0.90, 0.25)

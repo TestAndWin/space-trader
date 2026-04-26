@@ -20,7 +20,7 @@ func save_game() -> void:
 		"total_trades": GameManager.total_trades,
 		"total_encounters_won": GameManager.total_encounters_won,
 		"total_flights": GameManager.total_flights,
-		"faction_reputation": GameManager.faction_reputation.duplicate(),
+		"standing": StandingManager.save_state(),
 		"current_ship": GameManager.current_ship,
 		"owned_ships": GameManager.owned_ships.duplicate(),
 		"installed_upgrades": GameManager.installed_upgrades.duplicate(),
@@ -40,8 +40,6 @@ func save_game() -> void:
 		"debt_interest_rate": GameManager.debt_interest_rate,
 		"missed_debt_payments": GameManager.missed_debt_payments,
 		"difficulty": GameManager.difficulty,
-		"bounty_amount": GameManager.bounty_amount,
-		"trade_loyalty": GameManager.trade_loyalty.duplicate(),
 		"trade_route_memory": GameManager.trade_route_memory.duplicate(true),
 		"total_smuggler_deals": GameManager.total_smuggler_deals,
 		"total_quests_completed": GameManager.total_quests_completed,
@@ -84,10 +82,7 @@ func load_game() -> bool:
 	GameManager.total_trades = int(data.get("total_trades", 0))
 	GameManager.total_encounters_won = int(data.get("total_encounters_won", 0))
 	GameManager.total_flights = int(data.get("total_flights", 0))
-	GameManager.init_faction_reputation()
-	var loaded_rep: Dictionary = data.get("faction_reputation", {})
-	for faction in loaded_rep:
-		GameManager.faction_reputation[str(faction)] = int(loaded_rep[faction])
+	StandingManager.load_state(data.get("standing", {}))
 	GameManager.current_ship = data.get("current_ship", "res://data/ships/scout.tres")
 	var saved_ships: Array = data.get("owned_ships", [])
 	var hangar: Array[String] = []
@@ -118,11 +113,6 @@ func load_game() -> bool:
 	GameManager.debt_interest_rate = float(data.get("debt_interest_rate", 0.0))
 	GameManager.missed_debt_payments = int(data.get("missed_debt_payments", 0))
 	GameManager.difficulty = int(data.get("difficulty", GameManager.Difficulty.NORMAL))
-	GameManager.bounty_amount = int(data.get("bounty_amount", 0))
-	GameManager.trade_loyalty.clear()
-	var loaded_loyalty: Dictionary = data.get("trade_loyalty", {})
-	for planet_name in loaded_loyalty:
-		GameManager.trade_loyalty[str(planet_name)] = int(loaded_loyalty[planet_name])
 	GameManager.trade_route_memory = data.get("trade_route_memory", {}).duplicate(true)
 	GameManager.total_smuggler_deals = int(data.get("total_smuggler_deals", 0))
 	GameManager.total_quests_completed = int(data.get("total_quests_completed", 0))

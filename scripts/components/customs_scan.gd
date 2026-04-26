@@ -34,7 +34,12 @@ func try_scan() -> bool:
 	if _contraband_items.is_empty():
 		return false
 
-	var scan_chance: float = BASE_SCAN_CHANCE + GameManager.get_customs_scan_modifier(GameManager.current_planet)
+	# Phase Cloak (crafted upgrade): 50% chance to bypass customs scans entirely.
+	if "Phase Cloak" in GameManager.installed_upgrades and randf() < 0.5:
+		EventLog.add_entry("Phase Cloak masked your cargo from customs.")
+		return false
+
+	var scan_chance: float = BASE_SCAN_CHANCE + StandingManager.get_customs_scan_modifier(GameManager.current_planet)
 	if GameManager.has_crew_bonus(4):  # SMUGGLE_PROTECTION
 		scan_chance *= GameManager.get_crew_bonus_value(4)
 	if GameManager.has_cloaking_device():
@@ -44,7 +49,7 @@ func try_scan() -> bool:
 		return false
 
 	var base_fine: int = randi_range(FINE_MIN, FINE_MAX)
-	_fine_amount = int(round(float(base_fine) * GameManager.get_customs_fine_modifier(GameManager.current_planet)))
+	_fine_amount = int(round(float(base_fine) * StandingManager.get_customs_fine_modifier(GameManager.current_planet)))
 	_hide_chance = _get_hide_chance()
 	_bribe_success_chance = _get_bribe_success_chance()
 	_bribe_cost = int(round(float(_fine_amount) * 1.6))
@@ -145,17 +150,17 @@ func _build_ui() -> void:
 
 
 func _build_context_text() -> String:
-	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
+	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
 	return "%s | Rep %s | Loyalty %s | Bounty %s" % [
 		faction,
-		GameManager.get_reputation_tier(faction),
-		GameManager.get_loyalty_tier(GameManager.current_planet),
-		GameManager.get_bounty_tier(),
+		StandingManager.get_reputation_tier(faction),
+		StandingManager.get_loyalty_tier(GameManager.current_planet),
+		StandingManager.get_bounty_tier(),
 	]
 
 
 func _get_hide_chance() -> float:
-	var chance: float = HIDE_BASE_CHANCE + GameManager.get_customs_hide_modifier(GameManager.current_planet)
+	var chance: float = HIDE_BASE_CHANCE + StandingManager.get_customs_hide_modifier(GameManager.current_planet)
 	if GameManager.has_crew_bonus(4):  # SMUGGLE_PROTECTION
 		chance += 0.20
 	if GameManager.has_cloaking_device():
@@ -164,8 +169,8 @@ func _get_hide_chance() -> float:
 
 
 func _get_bribe_success_chance() -> float:
-	var chance: float = BRIBE_BASE_CHANCE + GameManager.get_customs_hide_modifier(GameManager.current_planet) * 0.6
-	match GameManager.get_bounty_tier():
+	var chance: float = BRIBE_BASE_CHANCE + StandingManager.get_customs_hide_modifier(GameManager.current_planet) * 0.6
+	match StandingManager.get_bounty_tier():
 		"Wanted":
 			chance -= 0.10
 		"Most Wanted":
@@ -180,19 +185,19 @@ func _on_pay_fine() -> void:
 	GameManager.remove_credits(_fine_amount)
 	_confiscate_contraband()
 
-	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
-	var rep_tier: String = GameManager.get_reputation_tier(faction)
-	var loyalty: int = GameManager.get_trade_loyalty(GameManager.current_planet)
-	var lenient: bool = rep_tier in ["Trusted", "Allied"] and loyalty >= 30 and GameManager.get_bounty_tier() in ["None", "Watched"]
+	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
+	var rep_tier: String = StandingManager.get_reputation_tier(faction)
+	var loyalty: int = StandingManager.get_trade_loyalty(GameManager.current_planet)
+	var lenient: bool = rep_tier in ["Trusted", "Allied"] and loyalty >= 30 and StandingManager.get_bounty_tier() in ["None", "Watched"]
 
-	GameManager.add_faction_reputation(faction, -1, "contraband warning")
-	GameManager.add_trade_loyalty(GameManager.current_planet, -2)
+	StandingManager.add_faction_reputation(faction, -1, "contraband warning")
+	StandingManager.add_trade_loyalty(GameManager.current_planet, -2)
 	if lenient:
 		EventLog.add_entry("Customs warning: paid %d cr, contraband confiscated." % _fine_amount)
 		_show_result("The inspector notes your history and keeps it to a warning. You lose the cargo and pay the fine, but no new bounty is filed.")
 		return
 
-	GameManager.add_bounty(75, "contraband found")
+	StandingManager.add_bounty(75, "contraband found")
 	EventLog.add_entry("Customs fine: -%d cr. Contraband confiscated." % _fine_amount)
 	_show_result("You pay the fine and hand over the cargo. The authorities log the incident and update your file.")
 
@@ -206,10 +211,10 @@ func _on_try_hide() -> void:
 	var penalty: int = int(round(float(_fine_amount) * 1.5))
 	GameManager.remove_credits(mini(penalty, GameManager.credits))
 	_confiscate_contraband()
-	GameManager.add_bounty(125, "resisted customs inspection")
-	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
-	GameManager.add_faction_reputation(faction, -2, "failed customs deception")
-	GameManager.add_trade_loyalty(GameManager.current_planet, -4)
+	StandingManager.add_bounty(125, "resisted customs inspection")
+	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
+	StandingManager.add_faction_reputation(faction, -2, "failed customs deception")
+	StandingManager.add_trade_loyalty(GameManager.current_planet, -4)
 	EventLog.add_entry("Failed to hide contraband! Fined %d cr." % penalty)
 	_show_result("They find the hidden stash. The penalty escalates: heavier fine, confiscation, and a larger bounty.")
 
@@ -222,10 +227,10 @@ func _on_bribe() -> void:
 		return
 
 	_confiscate_contraband()
-	GameManager.add_bounty(150, "attempted bribery")
-	var faction: String = GameManager.get_planet_faction(GameManager.current_planet)
-	GameManager.add_faction_reputation(faction, -3, "attempted bribery")
-	GameManager.add_trade_loyalty(GameManager.current_planet, -5)
+	StandingManager.add_bounty(150, "attempted bribery")
+	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
+	StandingManager.add_faction_reputation(faction, -3, "attempted bribery")
+	StandingManager.add_trade_loyalty(GameManager.current_planet, -5)
 	EventLog.add_entry("Bribe failed! Contraband confiscated and bounty increased.")
 	_show_result("The bribe backfires. Your cargo is confiscated, the incident is reported, and your reputation takes a hit.")
 

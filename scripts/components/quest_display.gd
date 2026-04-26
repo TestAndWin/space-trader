@@ -28,9 +28,7 @@ func _build_ui() -> void:
 
 	var title := Label.new()
 	title.text = "QUEST"
-	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	title.add_theme_font_size_override("font_size", 14)
-	title.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
+	UIStyles.apply_section_title(title)
 	vbox.add_child(title)
 
 	var quality: Dictionary = QuestManager.get_offer_quality_for_planet(planet_name)
@@ -254,29 +252,29 @@ func _on_repay_all() -> void:
 
 
 func _add_bounty_panel(vbox: VBoxContainer) -> void:
-	if GameManager.bounty_amount <= 0:
+	if StandingManager.bounty_amount <= 0:
 		return
 
 	var sep := HSeparator.new()
 	vbox.add_child(sep)
 
 	var bounty_label := Label.new()
-	bounty_label.text = "Bounty: %d cr (%s)" % [GameManager.bounty_amount, GameManager.get_bounty_tier()]
+	bounty_label.text = "Bounty: %d cr (%s)" % [StandingManager.bounty_amount, StandingManager.get_bounty_tier()]
 	bounty_label.add_theme_font_size_override("font_size", 11)
 	bounty_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 	vbox.add_child(bounty_label)
 
 	var pay_btn := Button.new()
-	pay_btn.text = "Pay Off Bounty (%d cr)" % GameManager.bounty_amount
+	pay_btn.text = "Pay Off Bounty (%d cr)" % StandingManager.bounty_amount
 	pay_btn.pressed.connect(_on_pay_bounty)
 	UIStyles.style_accent_button(pay_btn, ACCENT_RED)
-	if GameManager.credits < GameManager.bounty_amount:
+	if GameManager.credits < StandingManager.bounty_amount:
 		pay_btn.disabled = true
 	vbox.add_child(pay_btn)
 
 
 func _on_pay_bounty() -> void:
-	if GameManager.pay_off_bounty():
+	if StandingManager.pay_off_bounty():
 		quest_changed.emit()
 	_build_ui()
 

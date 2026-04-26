@@ -92,6 +92,8 @@ Interior view, first-person perspective looking into the room, detailed environm
 
 - **Mission Center**: A military-grade mission command center interior, wall of screens showing live tactical feeds, a central holographic galaxy map, mission briefing podium, encrypted communication terminals, red and blue status lights, urgent professional atmosphere. [Style-Suffix]
 
+- **Fabrication Plant**: A high-tech sci-fi fabrication plant interior, automated assembly lines with multi-jointed robotic manipulator arms soldering glowing circuit boards on a conveyor belt, illuminated power cells charging in vertical cradles, targeting chips on a precision laser engraving station emitting fine beams, larger module assembly bays in the background working on combat modules and shield matrices, holographic blueprints projected in mid-air showing exploded views of components, plasma coils stored in transparent glass cylinders glowing electric blue, rare crystal samples in protective magnetic containers casting soft purple light, polished white-and-chrome floors with embedded LED guide strips, floor-to-ceiling glass partitions separating clean-room work cells, blue and white ambient lighting with cool cyan accent highlights, clean and clinical high-tech production atmosphere. [Style-Suffix]
+
 
 ### Industrial Planet Buildings (Forge World)
 
@@ -172,4 +174,6 @@ Interior view, first-person perspective looking into the room, detailed environm
   │ Abflug    │ Starport          │ Landing Pad       │ Launch Bay        │ Spaceport       │ Smuggler's Dock   │
   ├───────────┼───────────────────┼───────────────────┼───────────────────┼─────────────────┼───────────────────┤
   │ Mission   │ (not available)   │ (not available)   │ (not available)   │ Mission Center  │ Contract Board    │
+  ├───────────┼───────────────────┼───────────────────┼───────────────────┼─────────────────┼───────────────────┤
+  │ Crafting  │ (not available)   │ (not available)   │ (not available)   │ Fabrication     │ (not available)   │
   └───────────┴───────────────────┴───────────────────┴───────────────────┴─────────────────┴───────────────────┘

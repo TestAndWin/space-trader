@@ -9,7 +9,7 @@ const BUY_COLOR := Color(0.0, 0.75, 0.35)
 const SELL_COLOR := Color(0.85, 0.10, 0.38)
 const PM_BG := Color(0.02, 0.10, 0.22)
 const PM_BORDER := Color(0.0, 0.50, 0.80)
-const ROW_BG := Color(0.02, 0.06, 0.14, 0.75)
+var ROW_BG: Color = Color(UIStyles.PANEL_BG, 0.75)
 const ROW_BORDER := Color(0.0, 0.40, 0.65, 0.60)
 
 var good_name: String = ""

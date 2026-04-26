@@ -1,3 +1,4 @@
+class_name CityMap
 extends Control
 
 ## Isometric procedural city map drawn via _draw().
@@ -85,9 +86,10 @@ const LAYOUT_TECH: Array = [
 	["casino",   0, 3,  4, 2, 3],
 	["crew",     7, 3,  4, 2, 2],
 	["quest",    0, 6,  4, 2, 2],
-	["factory",  4, 6,  3, 2, 3],
+	["mission",  4, 6,  3, 2, 2],
 	["deck",     7, 6,  4, 2, 2],
-	["depart",   0, 9, 11, 2, 1],
+	["factory",  0, 9,  5, 2, 3],
+	["depart",   6, 9,  5, 2, 1],
 ]
 
 # Grid bounding box (used for scaling)
