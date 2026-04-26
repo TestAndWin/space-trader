@@ -23,6 +23,8 @@ const GOODS: Array[String] = [
 	"res://data/goods/spice.tres",
 	"res://data/goods/stolen_tech.tres",
 	"res://data/goods/weapons.tres",
+	"res://data/goods/rare_crystals.tres",
+	"res://data/goods/plasma_coils.tres",
 ]
 
 const CARDS: Array[String] = [
@@ -142,6 +144,32 @@ const RIVALS: Array[String] = [
 	"res://data/rivals/captain_vex.tres",
 ]
 
+const CRAFTED_GOODS: Array[String] = [
+	"res://data/goods/crafted/circuit_board.tres",
+	"res://data/goods/crafted/power_cell.tres",
+	"res://data/goods/crafted/targeting_chip.tres",
+	"res://data/goods/crafted/combat_module.tres",
+	"res://data/goods/crafted/cloaking_array.tres",
+	"res://data/goods/crafted/cargo_optimizer.tres",
+	"res://data/goods/crafted/shield_matrix.tres",
+]
+
+const RECIPES: Array[String] = [
+	"res://data/crafting_recipes/recipe_circuit_board.tres",
+	"res://data/crafting_recipes/recipe_power_cell.tres",
+	"res://data/crafting_recipes/recipe_targeting_chip.tres",
+	"res://data/crafting_recipes/recipe_combat_module.tres",
+	"res://data/crafting_recipes/recipe_cloaking_array.tres",
+	"res://data/crafting_recipes/recipe_cargo_optimizer.tres",
+	"res://data/crafting_recipes/recipe_shield_matrix.tres",
+]
+
+const CRAFTED_UPGRADES: Array[String] = [
+	"res://data/upgrades/crafted/targeting_computer.tres",
+	"res://data/upgrades/crafted/phase_cloak.tres",
+	"res://data/upgrades/crafted/hyper_cargo_bay.tres",
+	"res://data/upgrades/crafted/adaptive_shields.tres",
+]
 
 func load_all(paths: Array[String]) -> Array:
 	var results: Array = []
