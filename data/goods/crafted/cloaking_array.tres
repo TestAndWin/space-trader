@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="GoodData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/good_data.gd" id="1_ca"]
+
+[resource]
+script = ExtResource("1_ca")
+good_name = "Cloaking Array"
+base_price = 1100
+is_contraband = false
+is_crafted = true
+is_raw_material = false
