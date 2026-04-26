@@ -11,6 +11,7 @@ const MarketScreenScene: PackedScene = preload("res://scenes/components/market_s
 const CrewScreenScene: PackedScene = preload("res://scenes/components/crew_screen.tscn")
 const ShipyardScreenScene: PackedScene = preload("res://scenes/components/shipyard_screen.tscn")
 const QuestScreenScene: PackedScene = preload("res://scenes/components/quest_screen.tscn")
+const FactoryScreenScene: PackedScene = preload("res://scenes/factory_screen.tscn")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 const GoodIcon = preload("res://scripts/components/good_icon.gd")
@@ -66,6 +67,7 @@ const BUILDING_QUEST = "quest"
 const BUILDING_DECK = "deck"
 const BUILDING_DEPART = "depart"
 const BUILDING_MISSION = "mission"
+const BUILDING_FACTORY = "factory"
 
 
 func _ready() -> void:
@@ -314,6 +316,7 @@ func _on_building_clicked(building_id: String) -> void:
 		BUILDING_DECK:     _on_view_deck_pressed()
 		BUILDING_DEPART:   _on_depart_pressed()
 		BUILDING_MISSION:  _on_mission_pressed()
+		BUILDING_FACTORY:  _on_factory_pressed()
 
 
 # ── Building callbacks ───────────────────────────────────────────────────────
@@ -720,6 +723,17 @@ func _on_event_log_pressed() -> void:
 		lbl.add_theme_font_size_override("font_size", 12)
 		lbl.add_theme_color_override("font_color", Color(0.35, 0.65, 0.85))
 		list.add_child(lbl)
+
+
+func _on_factory_pressed() -> void:
+	if has_node("FactoryScreen"):
+		return
+	var factory := FactoryScreenScene.instantiate()
+	factory.name = "FactoryScreen"
+	add_child(factory)
+	factory.setup(GameManager.current_planet)
+	factory.tree_exited.connect(func(): _update_ui())
+
 
 
 func _update_header() -> void:

@@ -15,6 +15,7 @@ const BUILDING_QUEST    = "quest"
 const BUILDING_DECK     = "deck"
 const BUILDING_DEPART   = "depart"
 const BUILDING_MISSION  = "mission"
+const BUILDING_FACTORY  = "factory"
 
 # ── Visual data ───────────────────────────────────────────────────────────────
 const BUILDING_NAMES: Dictionary = {
@@ -26,6 +27,7 @@ const BUILDING_NAMES: Dictionary = {
 	"deck":     {0: "Armory",       1: "Barn Vault",      2: "Gear Locker",     3: "Arsenal",        4: "Stash"},
 	"depart":   {0: "Starport",     1: "Landing Pad",     2: "Launch Bay",      3: "Spaceport",      4: "Smuggler's Dock"},
 	"mission":  {0: "Bounty Board", 1: "Bounty Board",    2: "Bounty Board",    3: "Bounty Board",   4: "Contract Board"},
+	"factory":  {3: "Fabrication Plant"},
 }
 
 const BUILDING_ACCENTS: Dictionary = {
@@ -37,6 +39,7 @@ const BUILDING_ACCENTS: Dictionary = {
 	"deck":     Color(0.7, 0.5,  1.0),
 	"depart":   Color(0.0, 0.85, 0.45),
 	"mission":  Color(0.3, 0.85, 1.0),
+	"factory":  Color(0.8, 0.7,  0.2),
 }
 
 const BUILDING_BGS: Dictionary = {
@@ -48,6 +51,7 @@ const BUILDING_BGS: Dictionary = {
 	"deck":     Color(0.12, 0.06, 0.22),
 	"depart":   Color(0.02, 0.16, 0.08),
 	"mission":  Color(0.04, 0.12, 0.28),
+	"factory":  Color(0.16, 0.12, 0.04),
 }
 
 # ── Iso-grid layouts ──────────────────────────────────────────────────────────
@@ -71,6 +75,17 @@ const LAYOUT_MISSION: Array = [
 	["crew",     7, 3,  4, 2, 2],
 	["quest",    0, 6,  4, 2, 2],
 	["mission",  4, 6,  3, 2, 2],
+	["deck",     7, 6,  4, 2, 2],
+	["depart",   0, 9, 11, 2, 1],
+]
+
+const LAYOUT_TECH: Array = [
+	["market",   0, 0,  4, 2, 4],
+	["shipyard", 7, 0,  4, 2, 3],
+	["casino",   0, 3,  4, 2, 3],
+	["crew",     7, 3,  4, 2, 2],
+	["quest",    0, 6,  4, 2, 2],
+	["factory",  4, 6,  3, 2, 3],
 	["deck",     7, 6,  4, 2, 2],
 	["depart",   0, 9, 11, 2, 1],
 ]
@@ -114,7 +129,13 @@ func _build_buildings() -> void:
 	_buildings = []
 	var pt := _planet_type
 	var has_mission := (pt == 3 or pt == 4)
-	var layout: Array = LAYOUT_MISSION if has_mission else LAYOUT_STANDARD
+	var layout: Array
+	if pt == 3:
+		layout = LAYOUT_TECH
+	elif has_mission:
+		layout = LAYOUT_MISSION
+	else:
+		layout = LAYOUT_STANDARD
 
 	for entry: Array in layout:
 		var bid: String = entry[0]
