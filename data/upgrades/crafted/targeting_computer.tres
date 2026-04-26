@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=3 format=3 uid="uid://upgrade_targeting_computer"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+[ext_resource type="Resource" path="res://data/goods/crafted/combat_module.tres" id="2_item"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Targeting Computer"
+description = "Cards deal 20% more damage. Requires 1x Combat Module."
+slot = 4
+cost = 600
+crafted_only = true
+required_crafted_items = [{
+"good": ExtResource("2_item"),
+"amount": 1
+}]

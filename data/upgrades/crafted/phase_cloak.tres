@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=3 format=3 uid="uid://upgrade_phase_cloak"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+[ext_resource type="Resource" path="res://data/goods/crafted/cloaking_array.tres" id="2_item"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Phase Cloak"
+description = "50% chance to bypass customs scans. Requires 1x Cloaking Array."
+slot = 5
+cost = 800
+crafted_only = true
+required_crafted_items = [{
+"good": ExtResource("2_item"),
+"amount": 1
+}]

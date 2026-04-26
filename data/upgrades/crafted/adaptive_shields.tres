@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=3 format=3 uid="uid://upgrade_adaptive_shields"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+[ext_resource type="Resource" path="res://data/goods/crafted/shield_matrix.tres" id="2_item"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Adaptive Shields"
+description = "Shields regenerate +3 per trip. Requires 1x Shield Matrix."
+slot = 2
+cost = 800
+shield_bonus = 0
+crafted_only = true
+required_crafted_items = [{
+"good": ExtResource("2_item"),
+"amount": 1
+}]
