@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="GoodData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/good_data.gd" id="1_pc"]
+
+[resource]
+script = ExtResource("1_pc")
+good_name = "Plasma Coils"
+base_price = 100
+is_contraband = false
+is_crafted = false
+is_raw_material = true

@@ -29,32 +29,37 @@ var _type_modifiers: Dictionary = {
 	"Industrial": {
 		"Food Rations": 1.2, "Raw Ore": 0.7, "Electronics": 0.9,
 		"Luxury Goods": 1.0, "Weapons": 0.6, "Medicine": 1.0,
+		"Rare Crystals": 1.2, "Plasma Coils": 0.6,
 	},
 	"Agricultural": {
 		"Food Rations": 0.5, "Raw Ore": 1.3, "Electronics": 1.5,
 		"Luxury Goods": 1.2, "Weapons": 1.0, "Medicine": 1.2,
+		"Rare Crystals": 1.3, "Plasma Coils": 1.3,
 	},
 	"Mining": {
 		"Food Rations": 1.4, "Raw Ore": 0.5, "Electronics": 1.3,
 		"Luxury Goods": 1.1, "Weapons": 0.8, "Medicine": 1.4,
+		"Rare Crystals": 0.6, "Plasma Coils": 1.2,
 	},
 	"Tech": {
 		"Food Rations": 1.1, "Raw Ore": 1.2, "Electronics": 0.5,
 		"Luxury Goods": 0.7, "Weapons": 1.2, "Medicine": 0.6,
+		"Rare Crystals": 1.4, "Plasma Coils": 1.4,
 	},
 	"Outlaw": {
 		"Food Rations": 1.0, "Raw Ore": 1.0, "Electronics": 1.0,
 		"Luxury Goods": 0.8, "Weapons": 0.7, "Medicine": 1.0,
 		"Spice": 0.6, "Stolen Tech": 0.5,
+		"Rare Crystals": 1.1, "Plasma Coils": 1.1,
 	},
 }
 
 # Per-planet-type available goods for purchase.
 # Goods NOT listed here cannot be bought at that planet type.
 var _type_available_goods: Dictionary = {
-	"Industrial": ["Electronics", "Weapons", "Raw Ore", "Medicine", "Luxury Goods"],
+	"Industrial": ["Electronics", "Weapons", "Raw Ore", "Medicine", "Luxury Goods", "Plasma Coils"],
 	"Agricultural": ["Food Rations", "Medicine", "Luxury Goods", "Raw Ore"],
-	"Mining": ["Raw Ore", "Weapons", "Food Rations", "Electronics"],
+	"Mining": ["Raw Ore", "Weapons", "Food Rations", "Electronics", "Rare Crystals"],
 	"Tech": ["Electronics", "Medicine", "Luxury Goods", "Weapons"],
 	"Outlaw": ["Weapons", "Spice", "Stolen Tech", "Electronics", "Luxury Goods"],
 }
