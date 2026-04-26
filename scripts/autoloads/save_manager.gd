@@ -47,6 +47,7 @@ func save_game() -> void:
 		"total_quests_completed": GameManager.total_quests_completed,
 		"ghost_run_available": GameManager.ghost_run_available,
 		"rival_data": RivalManager.save_data(),
+		"crafting": CraftingManager.save_state(),
 	}
 	var json_string := JSON.stringify(save_data, "\t")
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -127,6 +128,10 @@ func load_game() -> bool:
 	GameManager.total_quests_completed = int(data.get("total_quests_completed", 0))
 	GameManager.ghost_run_available = bool(data.get("ghost_run_available", true))
 	RivalManager.load_data(data.get("rival_data", {}))
+	if data.has("crafting"):
+		CraftingManager.load_state(data["crafting"])
+	else:
+		CraftingManager.load_state({})
 	return true
 
 
