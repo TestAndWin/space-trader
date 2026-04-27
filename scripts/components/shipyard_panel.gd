@@ -180,7 +180,8 @@ func _refresh_display() -> void:
 
 	var missing_hull: int = GameManager.max_hull - GameManager.current_hull
 	var per_hp: int = GameManager.REPAIR_COST_PER_HP
-	var affordable_hp: int = mini(missing_hull, int(GameManager.credits / per_hp))
+	@warning_ignore("integer_division")
+	var affordable_hp: int = mini(missing_hull, GameManager.credits / per_hp)
 	if missing_hull <= 0:
 		repair_button.text = "Repair Hull (Full)"
 		repair_button.disabled = true
@@ -199,7 +200,8 @@ func _on_repair_pressed() -> void:
 	if missing_hull <= 0:
 		return
 	var per_hp: int = GameManager.REPAIR_COST_PER_HP
-	var hp_to_repair: int = mini(missing_hull, int(GameManager.credits / per_hp))
+	@warning_ignore("integer_division")
+	var hp_to_repair: int = mini(missing_hull, GameManager.credits / per_hp)
 	if hp_to_repair <= 0:
 		status_label.text = "Not enough credits to repair even 1 hull!"
 		return

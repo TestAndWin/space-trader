@@ -252,13 +252,60 @@ func check_expired_quest() -> bool:
 			"quest failure"
 		)
 	if GameManager.credits < penalty:
+		# Confiscate cargo (highest-value first) to cover the shortfall.
+		var credits_taken: int = GameManager.credits
 		GameManager.credits = 0
 		GameManager.credits_changed.emit(GameManager.credits)
+		var remaining: int = penalty - credits_taken
+		var confiscated_summary: Array[String] = []
+		var cargo_paid: int = 0
+
+		while remaining > 0:
+			var best_idx: int = -1
+			var best_value: int = 0
+			for i in GameManager.cargo.size():
+				var entry: Dictionary = GameManager.cargo[i]
+				var val: int = _get_good_base_price(entry["good_name"])
+				if val > best_value:
+					best_value = val
+					best_idx = i
+			if best_idx == -1:
+				break
+			var item: Dictionary = GameManager.cargo[best_idx]
+			var qty_needed: int = int(ceil(float(remaining) / float(best_value)))
+			var qty_take: int = mini(qty_needed, int(item["quantity"]))
+			var value_taken: int = qty_take * best_value
+			confiscated_summary.append("%dx %s" % [qty_take, item["good_name"]])
+			GameManager.remove_cargo(item["good_name"], qty_take)
+			cargo_paid += value_taken
+			remaining -= value_taken
+
+		if remaining > 0:
+			EventLog.add_entry("Quest failure: assets liquidated, %d cr still owed. Bankruptcy." % remaining)
+			current_quest.clear()
+			return true
+
+		EventLog.add_entry("Quest failure: paid %d cr + confiscated %s (worth %d cr)." % [
+			credits_taken, ", ".join(confiscated_summary), cargo_paid,
+		])
 		current_quest.clear()
-		return true
+		return false
+
 	GameManager.remove_credits(penalty)
 	current_quest.clear()
 	return false
+
+
+func _get_good_base_price(good_name: String) -> int:
+	for good in EconomyManager.goods:
+		if good.good_name == good_name:
+			return int(good.base_price)
+	# Crafted goods aren't in EconomyManager.goods; load from CRAFTED_GOODS registry.
+	for path in ResourceRegistry.CRAFTED_GOODS:
+		var res: Resource = load(path)
+		if res and res.good_name == good_name:
+			return int(res.base_price)
+	return 0
 
 
 func try_complete_quest(planet_name: String) -> int:
