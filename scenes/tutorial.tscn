@@ -215,6 +215,24 @@ text = "Visit the Shipyard to repair your hull, improve your ship stats, or buy 
 autowrap_mode = 3
 mouse_filter = 2
 
+[node name="CraftingSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CraftingSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1.0, 0.9, 0.25, 1)
+text = "Crafting"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CraftingSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Tech planets (Starport Alpha, Nexus Prime) host a Fabrication Plant. Pay 2500 cr to establish production, then process raw materials (Rare Crystals from Mining planets, Plasma Coils from Industrial) into Tier-1 components (Circuit Board, Power Cell, Targeting Chip). Combine those with other goods into Tier-2 modules — Nexus Prime specializes in combat (Combat Module, Cloaking Array), Starport Alpha in utility (Cargo Optimizer, Shield Matrix). Crafting takes 2-4 trips per item; finished items wait in the factory until you collect them. Sell crafted goods for high profit, or keep Tier-2 modules to install exclusive Advanced Upgrades at the Shipyard that aren't available for credits alone (Targeting Computer, Phase Cloak, Hyper Cargo Bay, Adaptive Shields). Press F on a Tech planet to open the factory."
+autowrap_mode = 3
+mouse_filter = 2
+
 [node name="ContrabandSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
 layout_mode = 2
 mouse_filter = 2
