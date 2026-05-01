@@ -63,30 +63,30 @@ func _build_ui() -> void:
 	_credits_label = scaffold["credits_label"]
 
 	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", 12)
+	_status_label.add_theme_font_size_override("font_size", 16)
 	_status_label.add_theme_color_override("font_color", Color(0.9, 0.82, 0.55))
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	main_vbox.add_child(_status_label)
 
-	# Spacer to push content to lower third
+	# Spacer to push content slightly down from header
 	var top_spacer := Control.new()
 	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	top_spacer.size_flags_stretch_ratio = 4.0
+	top_spacer.size_flags_stretch_ratio = 1.0
 	top_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	main_vbox.add_child(top_spacer)
 
-	# ── Content: Quest display (centered, compact) ──
+	# ── Content: Quest display (centered, large) ──
 	var content_hbox := HBoxContainer.new()
 	content_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_hbox.size_flags_stretch_ratio = 0.7
+	content_hbox.size_flags_stretch_ratio = 5.0
 	content_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	main_vbox.add_child(content_hbox)
 
 	_quest_display = QuestDisplayScene.instantiate()
 	_quest_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_quest_display.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
-	_quest_display.custom_minimum_size = Vector2(350, 0)
+	_quest_display.custom_minimum_size = Vector2(720, 0)
 	content_hbox.add_child(_quest_display)
 	_quest_display.setup(_planet_name)
 	_quest_display.quest_changed.connect(_on_quest_changed)

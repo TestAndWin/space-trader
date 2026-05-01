@@ -59,20 +59,20 @@ func update_widget() -> void:
 	visible = true
 	var q: Dictionary = QuestManager.current_quest
 	
-	var turns: int = q.get("turns_left", 0)
-	desc_label.text = "%dx %s -> %s\n%d trips left | Stage %d/%d" % [
+	var days_left: int = q.get("days_left", 0)
+	desc_label.text = "%dx %s -> %s\n%d days left | Stage %d/%d" % [
 		q.get("deliver_qty", 0),
 		q.get("deliver_good", "unknown"),
 		q.get("destination", "unknown"),
-		turns,
+		days_left,
 		q.get("stage", 1),
 		q.get("chain_length", 1)
 	]
 	
-	if turns <= 1:
+	if days_left <= 1:
 		_style.bg_color = warning_bg_color
 		title_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
-	elif turns <= 3:
+	elif days_left <= 3:
 		_style.bg_color = normal_bg_color
 		title_label.add_theme_color_override("font_color", Color(1.0, 0.65, 0.1))
 	else:
@@ -83,8 +83,8 @@ func update_widget() -> void:
 
 
 func _update_style() -> void:
-	var turns: int = int(QuestManager.current_quest.get("turns_left", 99)) if QuestManager.has_active_quest() else 99
-	var base_bg: Color = warning_bg_color if turns <= 1 else normal_bg_color
+	var days_left: int = int(QuestManager.current_quest.get("days_left", 99)) if QuestManager.has_active_quest() else 99
+	var base_bg: Color = warning_bg_color if days_left <= 1 else normal_bg_color
 	if _is_hovered:
 		_style.bg_color = base_bg.lightened(0.2)
 	else:

@@ -23,7 +23,7 @@ func _build_ui() -> void:
 	UIStyles.style_panel(self)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 2)
+	vbox.add_theme_constant_override("separation", 8)
 	add_child(vbox)
 
 	var title := Label.new()
@@ -38,13 +38,13 @@ func _build_ui() -> void:
 	if just_completed:
 		var done_label := Label.new()
 		done_label.text = "Quest completed!"
-		done_label.add_theme_font_size_override("font_size", 13)
+		done_label.add_theme_font_size_override("font_size", 17)
 		done_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
 		vbox.add_child(done_label)
 		var next_btn := Button.new()
 		next_btn.text = "New Quest"
 		next_btn.pressed.connect(func(): just_completed = false; _build_ui())
-		UIStyles.style_accent_button(next_btn, ACCENT_GREEN)
+		UIStyles.style_accent_button(next_btn, ACCENT_GREEN, 16)
 		vbox.add_child(next_btn)
 		_add_loan_panel(vbox)
 		_add_bounty_panel(vbox)
@@ -59,7 +59,7 @@ func _build_ui() -> void:
 			q.get("flavor", "Contract"),
 			q["deliver_qty"], q["deliver_good"], q["destination"], q["reward_credits"]
 		]
-		desc.add_theme_font_size_override("font_size", 12)
+		desc.add_theme_font_size_override("font_size", 16)
 		desc.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
 		vbox.add_child(desc)
 
@@ -70,24 +70,24 @@ func _build_ui() -> void:
 			q.get("stage", 1),
 			q.get("chain_length", 1)
 		]
-		chain_label.add_theme_font_size_override("font_size", 11)
+		chain_label.add_theme_font_size_override("font_size", 15)
 		chain_label.add_theme_color_override("font_color", Color(0.6, 0.78, 1.0))
 		vbox.add_child(chain_label)
 
 		_add_offer_modifiers(vbox, q)
 		_add_quality_notes(vbox, q.get("quality_notes", []), Color(0.75, 0.75, 0.95))
 
-		var turns: int = q.get("turns_left", 0)
+		var days_left: int = q.get("days_left", 0)
 		var penalty: int = q.get("penalty", 0)
-		var route_hops: int = q.get("route_hops", 0)
+		var route_days: int = q.get("route_days", 0)
 		var deadline_label := Label.new()
 		deadline_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-		deadline_label.add_theme_font_size_override("font_size", 11)
-		if turns <= 1:
-			deadline_label.text = "LAST CHANCE! Route: %d jumps | Penalty: %d cr" % [route_hops, penalty]
+		deadline_label.add_theme_font_size_override("font_size", 15)
+		if days_left <= 1:
+			deadline_label.text = "LAST CHANCE! Travel: %d days | Penalty: %d cr" % [route_days, penalty]
 			deadline_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 		else:
-			deadline_label.text = "%d trips left | Route: %d jumps | Penalty: %d cr" % [turns, route_hops, penalty]
+			deadline_label.text = "%d days left | Travel: %d days | Penalty: %d cr" % [days_left, route_days, penalty]
 			deadline_label.add_theme_color_override("font_color", Color(0.8, 0.6, 0.2))
 		vbox.add_child(deadline_label)
 
@@ -96,12 +96,12 @@ func _build_ui() -> void:
 			var deliver_btn := Button.new()
 			deliver_btn.text = "Deliver (%d %s)" % [q["deliver_qty"], q["deliver_good"]]
 			deliver_btn.pressed.connect(_on_deliver)
-			UIStyles.style_accent_button(deliver_btn, ACCENT_GREEN)
+			UIStyles.style_accent_button(deliver_btn, ACCENT_GREEN, 16)
 			vbox.add_child(deliver_btn)
 		elif q["destination"] == planet_name:
 			var missing_label := Label.new()
 			missing_label.text = "Need %d %s to deliver" % [q["deliver_qty"], q["deliver_good"]]
-			missing_label.add_theme_font_size_override("font_size", 11)
+			missing_label.add_theme_font_size_override("font_size", 15)
 			missing_label.add_theme_color_override("font_color", Color(0.7, 0.4, 0.3))
 			vbox.add_child(missing_label)
 		_add_loan_panel(vbox)
@@ -113,7 +113,7 @@ func _build_ui() -> void:
 	if offer.is_empty():
 		var none_label := Label.new()
 		none_label.text = "No quests available"
-		none_label.add_theme_font_size_override("font_size", 12)
+		none_label.add_theme_font_size_override("font_size", 16)
 		none_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.5))
 		vbox.add_child(none_label)
 		return
@@ -121,7 +121,7 @@ func _build_ui() -> void:
 		var blocked_label := Label.new()
 		blocked_label.text = str(offer.get("blocked_reason", "No quests available"))
 		blocked_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-		blocked_label.add_theme_font_size_override("font_size", 12)
+		blocked_label.add_theme_font_size_override("font_size", 16)
 		blocked_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.35))
 		vbox.add_child(blocked_label)
 		_add_quality_notes(vbox, offer.get("quality_notes", []), Color(0.9, 0.72, 0.45))
@@ -135,7 +135,7 @@ func _build_ui() -> void:
 		offer.get("flavor", "Contract"),
 		offer["deliver_qty"], offer["deliver_good"], offer["destination"], offer["reward_credits"]
 	]
-	offer_desc.add_theme_font_size_override("font_size", 12)
+	offer_desc.add_theme_font_size_override("font_size", 16)
 	offer_desc.add_theme_color_override("font_color", Color(0.55, 0.78, 1.0))
 	vbox.add_child(offer_desc)
 
@@ -146,27 +146,27 @@ func _build_ui() -> void:
 		offer.get("stage", 1),
 		offer.get("chain_length", 1)
 	]
-	offer_chain.add_theme_font_size_override("font_size", 11)
+	offer_chain.add_theme_font_size_override("font_size", 15)
 	offer_chain.add_theme_color_override("font_color", Color(0.55, 0.72, 0.95))
 	vbox.add_child(offer_chain)
 
 	_add_offer_modifiers(vbox, offer)
 	_add_quality_notes(vbox, offer.get("quality_notes", []), Color(0.78, 0.78, 0.95))
 
-	var offer_turns: int = offer.get("turns_left", 0)
+	var offer_days_left: int = offer.get("days_left", 0)
 	var offer_penalty: int = offer.get("penalty", 0)
-	var offer_route_hops: int = offer.get("route_hops", 0)
+	var offer_route_days: int = offer.get("route_days", 0)
 	var info_label := Label.new()
-	info_label.text = "Deadline: %d trips | Route: %d jumps | Penalty: %d cr" % [offer_turns, offer_route_hops, offer_penalty]
+	info_label.text = "Deadline: %d days | Travel: %d days | Penalty: %d cr" % [offer_days_left, offer_route_days, offer_penalty]
 	info_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	info_label.add_theme_font_size_override("font_size", 11)
+	info_label.add_theme_font_size_override("font_size", 15)
 	info_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	vbox.add_child(info_label)
 
 	var accept_btn := Button.new()
 	accept_btn.text = "Accept Quest"
 	accept_btn.pressed.connect(_on_accept)
-	UIStyles.style_accent_button(accept_btn, ACCENT_GREEN)
+	UIStyles.style_accent_button(accept_btn, ACCENT_GREEN, 16)
 	vbox.add_child(accept_btn)
 
 	_add_loan_panel(vbox)
@@ -209,7 +209,7 @@ func _add_loan_panel(vbox: VBoxContainer) -> void:
 	var debt_label := Label.new()
 	debt_label.text = GameManager.get_debt_status_text()
 	debt_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	debt_label.add_theme_font_size_override("font_size", 11)
+	debt_label.add_theme_font_size_override("font_size", 15)
 	debt_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
 	vbox.add_child(debt_label)
 
@@ -217,19 +217,19 @@ func _add_loan_panel(vbox: VBoxContainer) -> void:
 		var repay_chunk := Button.new()
 		repay_chunk.text = "Repay %d cr" % GameManager.get_loan_repay_chunk()
 		repay_chunk.pressed.connect(_on_repay_chunk)
-		UIStyles.style_accent_button(repay_chunk, ACCENT_GREEN)
+		UIStyles.style_accent_button(repay_chunk, ACCENT_GREEN, 16)
 		vbox.add_child(repay_chunk)
 
 		var repay_all := Button.new()
 		repay_all.text = "Repay All (%d cr)" % GameManager.outstanding_debt
 		repay_all.pressed.connect(_on_repay_all)
-		UIStyles.style_accent_button(repay_all, ACCENT_RED)
+		UIStyles.style_accent_button(repay_all, ACCENT_RED, 16)
 		vbox.add_child(repay_all)
 	else:
 		var loan_btn := Button.new()
 		loan_btn.text = "Take Loan (+%d cr)" % GameManager.LOAN_DEFAULT_AMOUNT
 		loan_btn.pressed.connect(_on_take_loan)
-		UIStyles.style_accent_button(loan_btn, ACCENT_RED)
+		UIStyles.style_accent_button(loan_btn, ACCENT_RED, 16)
 		vbox.add_child(loan_btn)
 
 
@@ -260,14 +260,14 @@ func _add_bounty_panel(vbox: VBoxContainer) -> void:
 
 	var bounty_label := Label.new()
 	bounty_label.text = "Bounty: %d cr (%s)" % [StandingManager.bounty_amount, StandingManager.get_bounty_tier()]
-	bounty_label.add_theme_font_size_override("font_size", 11)
+	bounty_label.add_theme_font_size_override("font_size", 15)
 	bounty_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 	vbox.add_child(bounty_label)
 
 	var pay_btn := Button.new()
 	pay_btn.text = "Pay Off Bounty (%d cr)" % StandingManager.bounty_amount
 	pay_btn.pressed.connect(_on_pay_bounty)
-	UIStyles.style_accent_button(pay_btn, ACCENT_RED)
+	UIStyles.style_accent_button(pay_btn, ACCENT_RED, 16)
 	if GameManager.credits < StandingManager.bounty_amount:
 		pay_btn.disabled = true
 	vbox.add_child(pay_btn)
@@ -287,7 +287,7 @@ func _add_quality_summary(vbox: VBoxContainer, quality: Dictionary) -> void:
 		quality.get("issuer_rep_tier", "Neutral"),
 		quality.get("loyalty_tier", "Unknown"),
 	]
-	summary.add_theme_font_size_override("font_size", 11)
+	summary.add_theme_font_size_override("font_size", 15)
 	summary.add_theme_color_override("font_color", Color(0.82, 0.84, 0.6))
 	vbox.add_child(summary)
 
@@ -297,7 +297,7 @@ func _add_offer_modifiers(vbox: VBoxContainer, offer: Dictionary) -> void:
 	var deadline_bonus: int = int(offer.get("offer_deadline_modifier", 0))
 	var label := Label.new()
 	label.text = "Terms: reward %+d%% | deadline %+d" % [reward_pct, deadline_bonus]
-	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_font_size_override("font_size", 15)
 	label.add_theme_color_override("font_color", Color(0.7, 0.85, 0.95))
 	vbox.add_child(label)
 
@@ -311,6 +311,6 @@ func _add_quality_notes(vbox: VBoxContainer, notes: Array, color: Color) -> void
 	var note_label := Label.new()
 	note_label.text = "Notes: " + " | ".join(note_parts)
 	note_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	note_label.add_theme_font_size_override("font_size", 10)
+	note_label.add_theme_font_size_override("font_size", 14)
 	note_label.add_theme_color_override("font_color", color)
 	vbox.add_child(note_label)

@@ -18,5 +18,5 @@ inputs = [{
 "amount": 1
 }]
 tier = 1
-build_trips = 2
+build_days = 2
 available_at_planets = []

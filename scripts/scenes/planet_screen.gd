@@ -765,7 +765,7 @@ func _get_loyalty_status_text(planet_name: String) -> String:
 
 
 func _update_news_banner() -> void:
-	var event_text := EventManager.get_event_display_text()
+	var event_text: String = EventManager.get_event_display_text()
 	var status_notes: Array[String] = _get_local_status_notes()
 	if event_text != "" or not status_notes.is_empty():
 		var parts: Array[String] = []
@@ -802,17 +802,17 @@ func _update_ui() -> void:
 	var credits_ok := GameManager.credits >= GameManager.WIN_CREDITS
 	var planets_ok := planets_visited >= GameManager.WIN_PLANETS
 	if credits_ok and planets_ok:
-		goal_label.text = "GOAL REACHED!"
+		goal_label.text = "Day %d | GOAL REACHED!" % GameManager.current_day
 		goal_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
 	else:
-		goal_label.text = "%d/%d cr | %d/%d planets" % [mini(GameManager.credits, GameManager.WIN_CREDITS), GameManager.WIN_CREDITS, planets_visited, GameManager.WIN_PLANETS]
+		goal_label.text = "Day %d | %d/%d cr | %d/%d planets" % [GameManager.current_day, mini(GameManager.credits, GameManager.WIN_CREDITS), GameManager.WIN_CREDITS, planets_visited, GameManager.WIN_PLANETS]
 		var credit_progress: float = clampf(float(GameManager.credits) / float(GameManager.WIN_CREDITS), 0.0, 1.0)
 		var planet_progress: float = clampf(float(planets_visited) / float(GameManager.WIN_PLANETS), 0.0, 1.0)
 		var progress: float = (credit_progress + planet_progress) / 2.0
 		var goal_color := Color(0.5 + progress * 0.5, 0.4 + progress * 0.6, 0.1 + progress * 0.2)
 		goal_label.add_theme_color_override("font_color", goal_color)
 	if GameManager.has_active_loan():
-		goal_label.text += " | Debt %d (%d)" % [GameManager.outstanding_debt, GameManager.debt_due_in_trips]
+		goal_label.text += " | Debt %d (%d days)" % [GameManager.outstanding_debt, GameManager.debt_due_in_days]
 	if StandingManager.bounty_amount > 0:
 		goal_label.text += " | %s %d cr" % [StandingManager.get_bounty_tier(), StandingManager.bounty_amount]
 	_refresh_info_bar_text_layout()
@@ -994,11 +994,11 @@ func _build_systems_debug_text() -> String:
 	var quest_text := "none"
 	if QuestManager.has_active_quest():
 		var q: Dictionary = QuestManager.current_quest
-		quest_text = "%s %d/%d | %d trips" % [
+		quest_text = "%s %d/%d | %d days" % [
 			q.get("issuer_faction", "Independent"),
 			q.get("stage", 1),
 			q.get("chain_length", 1),
-			q.get("turns_left", 0)
+			q.get("days_left", 0)
 		]
 
 	return "DEBUG [F10]\nPlanet: %s\nLocal Faction: %s (%+d, %s)\nLoyalty: %d (%s)\nBounty: %d cr (%s)\nBuy/Sell Mod: %.2f / %.2f\nCustoms: Scan %+.0f%% | Fine x%.2f | Hide %+.0f%%\nQuest Terms: Reward %+.0f%% | Deadline %+d\nService Fee: x%.2f\nEncounter Chance: %.0f%%\nDebt: %s | Risk +%.0f%%\nQuest: %s\nTracked Goods: %d\nAll Reps: %s" % [
@@ -1131,14 +1131,6 @@ func _on_depart_pressed() -> void:
 
 
 func _do_depart() -> void:
-	GameManager.arrival_events_done = false
-	GameManager.mission_done_this_landing = false
-	GameManager.reset_ghost_run()
-	QuestManager.tick()
-	EventManager.tick()
-	CraftingManager.tick()
-	EconomyManager.tick_economy()
-	GameManager.process_loan_tick()
 	SaveManager.save_game()
 	GameManager.change_scene("res://scenes/galaxy_map.tscn")
 

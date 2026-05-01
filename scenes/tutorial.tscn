@@ -139,7 +139,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/NavigationSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Click on connected planets in the Galaxy Map to travel. Each journey may trigger a random encounter based on the route's danger level, but bounty, contraband, debt pressure, local standing, and active world events can push the risk higher or lower. Planet hover info and travel warnings help you spot dangerous patrol routes, shortages, or smuggling opportunities before you launch."
+text = "Click any planet in the Galaxy Map to fly there directly. Longer distances cost more fuel and days, and each travel day advances quests, debt, crafting, markets, world events, and rival pressure. Encounter risk scales with route danger and travel time, while bounty, contraband, debt pressure, local standing, and active world events can push that risk higher or lower. Refuel at shipyards before long journeys."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -175,7 +175,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/RivalSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "After enough flights, the notorious pirate Captain Vex will intercept you. He grows stronger with each encounter — four phases in total, triggered roughly every three flights. Defeating him always awards a ship upgrade. Survive all four phases and the rivalry ends for good, with a large credit bonus. Losing a fight only delays his return briefly, so be prepared before departing if your hull is low. A crew member with combat experience deals bonus damage against him."
+text = "After enough travel days, the notorious pirate Captain Vex will intercept you. He grows stronger with each encounter — four phases in total, triggered roughly every three travel days. Defeating him always awards a ship upgrade. Survive all four phases and the rivalry ends for good, with a large credit bonus. Losing a fight only delays his return briefly, so be prepared before departing if your hull is low. A crew member with combat experience deals bonus damage against him."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -211,7 +211,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/UpgradesSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Visit the Shipyard to repair your hull, improve your ship stats, or buy a new ship entirely. Upgrades can increase hull, shields, cargo capacity, energy, or add new cards to your deck. Every ship also has a unique active ability shown with a ⚡ symbol in the Ship Dealer — for example the Warship deals bonus damage on the first attack of each turn when hull is high, the Smuggler can slip past one encounter per flight, the Freighter gets a bulk discount when buying large quantities, and the Explorer improves your odds in non-combat events. Match your ship with the right crew for a synergy bonus."
+text = "Visit the Shipyard to repair your hull, buy fuel, improve your ship stats, or buy a new ship entirely. Upgrades can increase hull, shields, cargo capacity, energy, fuel systems, or add new cards to your deck. Every ship also has a unique active ability shown with a ⚡ symbol in the Ship Dealer — for example the Warship deals bonus damage on the first attack of each turn when hull is high, the Smuggler can slip past one encounter per journey, the Freighter gets a bulk discount when buying large quantities, and the Explorer improves your odds in non-combat events. Match your ship with the right crew for a synergy bonus."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -229,7 +229,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CraftingSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Tech planets (Starport Alpha, Nexus Prime) host a Fabrication Plant. Pay 2500 cr to establish production, then process raw materials (Rare Crystals from Mining planets, Plasma Coils from Industrial) into Tier-1 components (Circuit Board, Power Cell, Targeting Chip). Combine those with other goods into Tier-2 modules — Nexus Prime specializes in combat (Combat Module, Cloaking Array), Starport Alpha in utility (Cargo Optimizer, Shield Matrix). Crafting takes 2-4 trips per item; finished items wait in the factory until you collect them. Sell crafted goods for high profit, or keep Tier-2 modules to install exclusive Advanced Upgrades at the Shipyard that aren't available for credits alone (Targeting Computer, Phase Cloak, Hyper Cargo Bay, Adaptive Shields). Press F on a Tech planet to open the factory."
+text = "Tech planets (Starport Alpha, Nexus Prime) host a Fabrication Plant. Pay 2500 cr to establish production, then process raw materials (Rare Crystals from Mining planets, Plasma Coils from Industrial) into Tier-1 components (Circuit Board, Power Cell, Targeting Chip). Combine those with other goods into Tier-2 modules — Nexus Prime specializes in combat (Combat Module, Cloaking Array), Starport Alpha in utility (Cargo Optimizer, Shield Matrix). Crafting takes 2-4 days per item; finished items wait in the factory until you collect them. Sell crafted goods for high profit, or keep Tier-2 modules to install exclusive Advanced Upgrades at the Shipyard that aren't available for credits alone (Targeting Computer, Phase Cloak, Hyper Cargo Bay, Adaptive Shields). Press F on a Tech planet to open the factory."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -283,7 +283,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/LoanSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "At the Quest building, you can take a loan for quick capital. Debt accrues interest each trip. If you miss repayment at maturity, collectors will drain credits, damage hull, and reduce lawful faction reputation. Debt pressure also increases encounter risk."
+text = "At the Quest building, you can take a loan for quick capital. Debt accrues interest each travel day. If you miss repayment at maturity, collectors will drain credits, damage hull, and reduce lawful faction reputation. Debt pressure also increases encounter risk."
 autowrap_mode = 3
 mouse_filter = 2
 

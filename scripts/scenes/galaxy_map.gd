@@ -15,11 +15,12 @@ var selected_planet: Resource = null
 
 var _time: float = 0.0
 var _planet_visuals: Dictionary = {} # { planet_name: { planet, node, body, body_mat, glow, glow_mat, ring, ring_mat, label, base_color, base_position, phase } }
-var _route_data: Array = []          # [{ from_name, to_name, from_pos, to_pos, is_active, line, core, pulses, phases }]
 var _hovered_planet_name: String = ""
 var _player_marker: Node3D
 var _player_marker_base_position: Vector3 = Vector3.ZERO
 var _systems_debug_label: Label = null
+var _selected_direct_line: MeshInstance3D = null
+var fuel_label: Label = null
 
 @onready var map_camera: Camera3D = $GalaxyWorld/MapCamera
 @onready var world_environment: WorldEnvironment = $GalaxyWorld/WorldEnvironment
@@ -51,12 +52,12 @@ func _ready() -> void:
 	_generate_starfield()
 	_generate_nebulae()
 	_spawn_planets()
-	_build_routes()
 	_create_player_marker()
 	_update_planet_states()
 	_update_player_position()
-	_update_ui()
 	_configure_info_panel()
+	_create_fuel_label()
+	_update_ui()
 
 	travel_button.visible = false
 	land_button.visible = true
@@ -81,6 +82,8 @@ func _apply_fonts() -> void:
 	UIStyles.apply_display_font(planet_name_label)
 	UIStyles.apply_mono_font(credits_label)
 	UIStyles.apply_mono_font(cargo_label)
+	if fuel_label:
+		UIStyles.apply_mono_font(fuel_label)
 	UIStyles.apply_mono_font(current_planet_label)
 	UIStyles.apply_mono_font(hull_label)
 	UIStyles.apply_mono_font(shield_label)
@@ -105,7 +108,6 @@ func _process(delta: float) -> void:
 	_time += delta
 	_animate_camera()
 	_animate_planets(delta)
-	_animate_routes()
 	_animate_player_marker()
 	if _systems_debug_label:
 		_systems_debug_label.text = _build_systems_debug_text()
@@ -128,6 +130,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _configure_info_panel() -> void:
+	info_panel.offset_bottom = 290.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(UIStyles.PANEL_BG, 0.92)
 	panel_style.border_color = Color(0.0, 0.65, 0.95, 0.85)
@@ -147,6 +150,17 @@ func _configure_info_panel() -> void:
 	panel_style.shadow_size = 6
 	info_panel.add_theme_stylebox_override("panel", panel_style)
 	info_panel.visible = false
+
+
+func _create_fuel_label() -> void:
+	if fuel_label:
+		return
+	fuel_label = Label.new()
+	fuel_label.name = "FuelLabel"
+	fuel_label.add_theme_font_size_override("font_size", 13)
+	fuel_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.28, 1.0))
+	fuel_label.text = "Fuel: 0/0"
+	$CanvasLayer/BottomBar/HBoxContainer.add_child(fuel_label)
 
 
 func _setup_environment() -> void:
@@ -406,86 +420,6 @@ func _depth_offset(planet_name: String, map_pos: Vector2) -> float:
 	return base + wave
 
 
-func _build_routes() -> void:
-	_route_data.clear()
-	for child in routes_container.get_children():
-		child.queue_free()
-
-	var drawn_pairs: Dictionary = {}
-	var current_name: String = GameManager.current_planet
-	var current_planet := _find_planet_by_name(current_name)
-	var active_connections: Array = []
-	if current_planet:
-		active_connections = current_planet.connected_planets
-
-	for planet: Resource in planets:
-		for connected_name: String in planet.connected_planets:
-			var pair_key := _route_key(planet.planet_name, connected_name)
-			if pair_key in drawn_pairs:
-				continue
-			drawn_pairs[pair_key] = true
-			var target := _find_planet_by_name(connected_name)
-			if target == null:
-				continue
-
-			var is_active: bool = (planet.planet_name == current_name and connected_name in active_connections) or (connected_name == current_name and planet.planet_name in active_connections)
-			var from_pos: Vector3 = _planet_to_world(planet)
-			var to_pos: Vector3 = _planet_to_world(target)
-
-			var route_root := Node3D.new()
-			route_root.name = "Route_%s" % pair_key.replace("|", "_")
-			routes_container.add_child(route_root)
-
-			var glow_color := Color(0.34, 0.60, 1.0)
-			var core_color := Color(0.66, 0.88, 1.0)
-			var dim_color := Color(0.20, 0.35, 0.55)
-			var line: MeshInstance3D
-			var core: MeshInstance3D = null
-			var pulses: Array = []
-			var phases: Array = []
-
-			if is_active:
-				line = _create_route_segment(from_pos, to_pos, glow_color, 0.095, 0.18, 1.8)
-				core = _create_route_segment(from_pos, to_pos, core_color, 0.030, 0.95, 2.8)
-				route_root.add_child(line)
-				route_root.add_child(core)
-
-				for i in 4:
-					var pulse := MeshInstance3D.new()
-					var pulse_mesh := SphereMesh.new()
-					pulse_mesh.radius = 0.10
-					pulse_mesh.height = 0.20
-					pulse_mesh.radial_segments = 18
-					pulse_mesh.rings = 10
-					pulse.mesh = pulse_mesh
-					var pulse_mat := StandardMaterial3D.new()
-					pulse_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-					pulse_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-					pulse_mat.albedo_color = Color(0.78, 0.94, 1.0, 0.95)
-					pulse_mat.emission_enabled = true
-					pulse_mat.emission = Color(0.72, 0.90, 1.0)
-					pulse_mat.emission_energy_multiplier = 3.2
-					pulse.material_override = pulse_mat
-					route_root.add_child(pulse)
-					pulses.append(pulse)
-					phases.append(float(i) / 4.0)
-			else:
-				line = _create_route_segment(from_pos, to_pos, dim_color, 0.018, 0.26, 0.4)
-				route_root.add_child(line)
-
-			_route_data.append({
-				"from_name": planet.planet_name,
-				"to_name": connected_name,
-				"from_pos": from_pos,
-				"to_pos": to_pos,
-				"is_active": is_active,
-				"line": line,
-				"core": core,
-				"pulses": pulses,
-				"phases": phases,
-			})
-
-
 func _create_route_segment(from_pos: Vector3, to_pos: Vector3, color: Color, radius: float, alpha: float, emissive_energy: float) -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
@@ -590,23 +524,6 @@ func _animate_planets(delta: float) -> void:
 		ring.rotation.z = _time * 0.45 + phase
 
 
-func _animate_routes() -> void:
-	for route: Dictionary in _route_data:
-		if not route["is_active"]:
-			continue
-		var from_pos: Vector3 = route["from_pos"]
-		var to_pos: Vector3 = route["to_pos"]
-		var pulses: Array = route["pulses"]
-		var phases: Array = route["phases"]
-		for i in pulses.size():
-			var pulse: MeshInstance3D = pulses[i]
-			var phase: float = phases[i]
-			var t: float = fmod(_time * 0.24 + phase, 1.0)
-			pulse.position = from_pos.lerp(to_pos, t)
-			var pulse_scale: float = 0.75 + sin(_time * 6.0 + phase * TAU) * 0.2
-			pulse.scale = Vector3.ONE * pulse_scale
-
-
 func _animate_player_marker() -> void:
 	if _player_marker == null:
 		return
@@ -621,17 +538,11 @@ func _find_planet_by_name(pname: String) -> Resource:
 	return null
 
 
-func _route_key(a: String, b: String) -> String:
-	if a < b:
-		return a + "|" + b
-	return b + "|" + a
-
-
 func _update_planet_states() -> void:
-	var current := _find_planet_by_name(GameManager.current_planet)
-	var reachable_names: Array = []
-	if current:
-		reachable_names = current.connected_planets
+	var reachable_names: Array[String] = []
+	for planet: Resource in planets:
+		if NavigationManager.is_reachable(GameManager.current_planet, planet.planet_name):
+			reachable_names.append(planet.planet_name)
 
 	for planet_name_key in _planet_visuals.keys():
 		var planet_name: String = str(planet_name_key)
@@ -703,6 +614,8 @@ func _update_player_position() -> void:
 func _update_ui() -> void:
 	credits_label.text = "Credits: %d" % GameManager.credits
 	cargo_label.text = "Cargo: %d/%d" % [GameManager.get_cargo_used(), GameManager.cargo_capacity]
+	if fuel_label:
+		fuel_label.text = "Fuel: %d/%d" % [GameManager.current_fuel, GameManager.max_fuel]
 	current_planet_label.text = "@ %s" % GameManager.current_planet
 	hull_label.text = "Hull: %d/%d" % [GameManager.current_hull, GameManager.max_hull]
 	shield_label.text = "Shield: %d/%d" % [GameManager.current_shield, GameManager.max_shield]
@@ -732,19 +645,22 @@ func _on_planet_clicked(planet_data: Resource) -> void:
 		travel_button.visible = false
 		land_button.visible = true
 		_on_planet_hovered(planet_data)
+		_update_route_highlights()
 		_update_planet_states()
 		return
 
 	land_button.visible = false
-	var current := _find_planet_by_name(GameManager.current_planet)
-	if current and planet_data.planet_name in current.connected_planets:
+	var route: Array[String] = NavigationManager.get_route(GameManager.current_planet, planet_data.planet_name)
+	if route.size() >= 2:
 		selected_planet = planet_data
 		travel_button.visible = true
 		travel_button.text = _get_travel_button_text(planet_data)
-		travel_button.tooltip_text = EventManager.get_travel_warning_text(planet_data.planet_name)
+		travel_button.disabled = not GameManager.can_start_travel(planet_data.planet_name, route)
+		travel_button.tooltip_text = _get_travel_tooltip(planet_data, route)
 	else:
 		selected_planet = null
 		travel_button.visible = false
+	_update_route_highlights()
 	_update_planet_states()
 
 
@@ -786,6 +702,26 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 		trades_label.text += "\n" + "\n".join(hint_lines)
 	if warning != "":
 		trades_label.text += "\nWarning: " + warning
+
+	var route: Array[String] = NavigationManager.get_route(GameManager.current_planet, planet_data.planet_name)
+	if planet_data.planet_name != GameManager.current_planet and route.size() >= 2:
+		var days: int = NavigationManager.get_travel_days(GameManager.current_planet, planet_data.planet_name)
+		var distance: float = NavigationManager.get_distance(GameManager.current_planet, planet_data.planet_name)
+		var route_danger: int = NavigationManager.get_route_danger(route)
+		var fuel_cost: int = NavigationManager.get_fuel_cost(GameManager.current_planet, planet_data.planet_name)
+		var encounter_chance: float = GameManager.get_aggregate_encounter_chance(route_danger, planet_data.planet_name, days)
+		var lane_text: String = "Safe Lane" if NavigationManager.is_safe_lane(GameManager.current_planet, planet_data.planet_name) else "Open Space"
+		trades_label.text += "\nDistance: %.0f | %s" % [distance, lane_text]
+		trades_label.text += "\nTravel Time: %d days | Fuel Cost: %d | Tank: %d/%d | Danger: %d" % [
+			days,
+			fuel_cost,
+			GameManager.current_fuel,
+			GameManager.max_fuel,
+			route_danger,
+		]
+		trades_label.text += "\nEncounter Risk: %.0f%%" % (encounter_chance * 100.0)
+		if GameManager.current_fuel < fuel_cost:
+			trades_label.text += "\nInsufficient fuel. Refuel at the shipyard."
 		
 	if QuestManager.has_active_quest() and planet_data.planet_name == QuestManager.current_quest.get("destination", ""):
 		var q := QuestManager.current_quest
@@ -810,8 +746,13 @@ func _on_standing_changed(_a = null, _b = null, _c = null) -> void:
 func _on_travel_pressed() -> void:
 	if selected_planet == null:
 		return
-	GameManager.travel_origin = GameManager.current_planet
-	GameManager.travel_destination = selected_planet.planet_name
+	var route: Array[String] = NavigationManager.get_route(GameManager.current_planet, selected_planet.planet_name)
+	if not GameManager.begin_travel(selected_planet.planet_name, route):
+		travel_button.disabled = true
+		travel_button.text = "Need Fuel"
+		_on_planet_hovered(selected_planet)
+		return
+	SaveManager.save_game()
 	GameManager.change_scene("res://scenes/travel_scene.tscn")
 
 
@@ -820,7 +761,8 @@ func _build_systems_debug_text() -> String:
 	var danger: int = 1
 	if selected_planet:
 		focus_planet = selected_planet.planet_name
-		danger = selected_planet.danger_level
+		var selected_route: Array[String] = NavigationManager.get_route(GameManager.current_planet, focus_planet)
+		danger = NavigationManager.get_route_danger(selected_route) if not selected_route.is_empty() else selected_planet.danger_level
 	else:
 		var p := _find_planet_by_name(GameManager.current_planet)
 		if p:
@@ -828,12 +770,18 @@ func _build_systems_debug_text() -> String:
 
 	var faction: String = StandingManager.get_planet_faction(focus_planet)
 	var rep: int = StandingManager.get_faction_reputation(faction)
-	var chance: float = EncounterManager.estimate_encounter_chance(danger, focus_planet)
+	var days: int = NavigationManager.get_travel_days(GameManager.current_planet, focus_planet)
+	if days < 1:
+		days = 1
+	var chance: float = GameManager.get_aggregate_encounter_chance(danger, focus_planet, days)
 
-	return "DEBUG [F10]\nCurrent: %s\nFocus: %s (Danger %d)\nFaction: %s (%+d, %s)\nLoyalty: %s | Bounty: %s\nBuy/Sell Mod @Focus: %.2f / %.2f\nEncounter Chance to Focus: %.0f%%\nTravel Warning: %s\nDebt: %s" % [
+	return "DEBUG [F10]\nCurrent: %s\nFocus: %s (Danger %d, Days %d)\nFuel: %d/%d\nFaction: %s (%+d, %s)\nLoyalty: %s | Bounty: %s\nBuy/Sell Mod @Focus: %.2f / %.2f\nEncounter Chance to Focus: %.0f%%\nTravel Warning: %s\nDebt: %s" % [
 		GameManager.current_planet,
 		focus_planet,
 		danger,
+		days,
+		GameManager.current_fuel,
+		GameManager.max_fuel,
 		faction,
 		rep,
 		StandingManager.get_reputation_tier(faction),
@@ -885,6 +833,8 @@ func _add_galaxy_background() -> void:
 
 
 func _on_land_pressed() -> void:
+	GameManager.process_travel_days(1)
+	SaveManager.save_game()
 	GameManager.change_scene("res://scenes/planet_screen.tscn")
 
 
@@ -903,10 +853,57 @@ func _build_trade_hints_for_planet(planet_name: String, goods: Array) -> Array[S
 
 
 func _get_travel_button_text(planet_data: Resource) -> String:
+	var route: Array[String] = NavigationManager.get_route(GameManager.current_planet, planet_data.planet_name)
+	var days: int = maxi(NavigationManager.get_travel_days(GameManager.current_planet, planet_data.planet_name), 1)
+	var fuel_cost: int = NavigationManager.get_fuel_cost(GameManager.current_planet, planet_data.planet_name)
+	if GameManager.current_fuel < fuel_cost:
+		return "Need %d Fuel" % fuel_cost
 	var warning: String = EventManager.get_travel_warning_text(planet_data.planet_name)
 	if warning != "":
-		return "Travel to %s (Risk)" % planet_data.planet_name
-	var chance: float = EncounterManager.estimate_encounter_chance(planet_data.danger_level, planet_data.planet_name)
+		return "Travel to %s (%d days, Risk)" % [planet_data.planet_name, days]
+	var route_danger: int = NavigationManager.get_route_danger(route)
+	var chance: float = GameManager.get_aggregate_encounter_chance(route_danger, planet_data.planet_name, days)
 	if chance >= 0.60:
-		return "Travel to %s (High Risk)" % planet_data.planet_name
-	return "Travel to %s" % planet_data.planet_name
+		return "Travel to %s (%d days, High Risk)" % [planet_data.planet_name, days]
+	return "Travel to %s (%d days)" % [planet_data.planet_name, days]
+
+
+func _get_travel_tooltip(planet_data: Resource, route: Array[String]) -> String:
+	var days: int = maxi(NavigationManager.get_travel_days(GameManager.current_planet, planet_data.planet_name), 1)
+	var fuel_cost: int = NavigationManager.get_fuel_cost(GameManager.current_planet, planet_data.planet_name)
+	var distance: float = NavigationManager.get_distance(GameManager.current_planet, planet_data.planet_name)
+	var warning: String = EventManager.get_travel_warning_text(planet_data.planet_name)
+	var lines: Array[String] = [
+		"Distance: %.0f" % distance,
+		"Travel time: %d days" % days,
+		"Fuel cost: %d" % fuel_cost,
+	]
+	if GameManager.current_fuel < fuel_cost:
+		lines.append("Not enough fuel.")
+	if warning != "":
+		lines.append(warning)
+	return "\n".join(lines)
+
+
+func _update_route_highlights() -> void:
+	_update_selected_direct_line()
+
+
+func _update_selected_direct_line() -> void:
+	if _selected_direct_line != null:
+		_selected_direct_line.queue_free()
+		_selected_direct_line = null
+	if selected_planet == null or selected_planet.planet_name == GameManager.current_planet:
+		return
+	var current := _find_planet_by_name(GameManager.current_planet)
+	if current == null:
+		return
+	_selected_direct_line = _create_route_segment(
+		_planet_to_world(current),
+		_planet_to_world(selected_planet),
+		Color(1.0, 0.74, 0.25),
+		0.045,
+		0.82,
+		3.4
+	)
+	routes_container.add_child(_selected_direct_line)

@@ -88,6 +88,7 @@ const UPGRADES: Array[String] = [
 	"res://data/upgrades/combat_scanner.tres",
 	"res://data/upgrades/shield_capacitor.tres",
 	"res://data/upgrades/cloaking_device.tres",
+	"res://data/upgrades/fuel_synthesizer.tres",
 ]
 
 const COMBAT_UPGRADES: Array[String] = [

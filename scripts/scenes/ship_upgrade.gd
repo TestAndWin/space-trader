@@ -447,6 +447,7 @@ func _update_stats() -> void:
 	_add_stat_row("Hull", "%d / %d" % [GameManager.current_hull, GameManager.max_hull])
 	_add_stat_row("Shield", "%d / %d" % [GameManager.current_shield, GameManager.max_shield])
 	_add_stat_row("Cargo Capacity", str(GameManager.cargo_capacity))
+	_add_stat_row("Fuel", "%d / %d" % [GameManager.current_fuel, GameManager.max_fuel])
 	_add_stat_row("Energy / Turn", str(GameManager.energy_per_turn))
 	_add_stat_row("Hand Size", str(GameManager.hand_size))
 	_add_stat_row("Deck Size", str(GameManager.deck.size()))

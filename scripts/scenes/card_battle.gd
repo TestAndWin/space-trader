@@ -221,10 +221,7 @@ func _on_battle_won_no_reward() -> void:
 	battle_active = false
 	GameManager.total_encounters_won += 1
 	var destination: String = GameManager.travel_destination
-	GameManager.current_planet = destination
-	if destination not in GameManager.visited_planets:
-		GameManager.visited_planets.append(destination)
-	AchievementManager.check_planets(GameManager.visited_planets)
+	GameManager.complete_travel_arrival(destination)
 	GameManager.current_encounter = null
 	GameManager.battle_result = ""
 	GameManager.change_scene("res://scenes/planet_screen.tscn")

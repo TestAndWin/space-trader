@@ -2,7 +2,7 @@ extends Node
 
 ## Manages crafting facilities on Tech planets.
 ## State per planet: unlocked, slots, active jobs, finished items.
-## Tick is called from planet_screen._do_depart() like Quest/Event managers.
+## Tick is called once for each travel day.
 
 const FACILITY_COST: int = 2500
 const SLOT_COSTS: Dictionary = {2: 800, 3: 2000}  # cost to unlock slot N
@@ -11,7 +11,7 @@ const MAX_SLOTS: int = 3
 # production_facilities[planet_name] = {
 #   "unlocked": bool,
 #   "slots": int,                    # 1..3
-#   "active_jobs": Array[Dictionary] # [{ recipe_id, trips_remaining, slot_index }]
+#   "active_jobs": Array[Dictionary] # [{ recipe_id, days_remaining, slot_index }]
 #   "finished_items": Array[Dictionary] # [{ good_path, amount }]
 # }
 var production_facilities: Dictionary = {}
@@ -163,23 +163,23 @@ func start_job(planet_name: String, recipe: Resource) -> bool:
 	var f: Dictionary = _ensure_facility(planet_name)
 	f.active_jobs.append({
 		"recipe_id": recipe.recipe_id,
-		"trips_remaining": recipe.build_trips,
+		"days_remaining": recipe.build_days,
 		"slot_index": slot,
 	})
-	EventLog.add_entry("Started crafting %s at %s (%d trips)." % [
-		recipe.output_good.good_name, planet_name, recipe.build_trips,
+	EventLog.add_entry("Started crafting %s at %s (%d days)." % [
+		recipe.output_good.good_name, planet_name, recipe.build_days,
 	])
 	return true
 
 
-# Called once per departure from any planet.
+# Called once per travel day.
 func tick() -> void:
 	for planet_name in production_facilities.keys():
 		var f: Dictionary = production_facilities[planet_name]
 		var still_active: Array = []
 		for job in f.active_jobs:
-			job.trips_remaining -= 1
-			if job.trips_remaining <= 0:
+			job.days_remaining -= 1
+			if job.days_remaining <= 0:
 				var recipe: Resource = get_recipe(job.recipe_id)
 				if recipe and recipe.output_good:
 					f.finished_items.append({

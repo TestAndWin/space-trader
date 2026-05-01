@@ -1,12 +1,12 @@
 extends Node
 
 ## RivalManager — handles the recurring Captain Vex rival questline.
-## 4 phases triggered at flight thresholds (3, 6, 9, 12 flights).
+## 4 phases triggered at travel-day thresholds (3, 6, 9, 12 days).
 
 const RIVAL_PATH := "res://data/rivals/captain_vex.tres"
 const PHASE_THRESHOLDS := [3, 6, 9, 12]
-const PHASE_COOLDOWNS  := [3, 2, 2, 0]  # Flights before rival can reappear after defeat
-const LOSS_COOLDOWN    := 1              # Flights before rival returns after beating player
+const PHASE_COOLDOWNS  := [3, 2, 2, 0]  # Travel days before rival can reappear after defeat
+const LOSS_COOLDOWN    := 1              # Travel days before rival returns after beating player
 const FINAL_PHASE      := 3             # Index of the last phase (PHASE_THRESHOLDS.size() - 1)
 
 var _rival_data: Resource = null
@@ -27,19 +27,19 @@ func reset() -> void:
 	_rivalry_active = true
 
 
-## Call this once per flight BEFORE should_rival_appear().
+## Call this once per travel day BEFORE should_rival_appear().
 ## Keeps the cooldown decrement out of the query function (no side effects).
-func on_flight_completed() -> void:
+func on_travel_day_completed() -> void:
 	if _cooldown_remaining > 0:
 		_cooldown_remaining -= 1
 
 
-## Pure query — no side effects. Call on_flight_completed() first.
-func should_rival_appear(total_flights: int) -> bool:
+## Pure query — no side effects. Call on_travel_day_completed() first.
+func should_rival_appear(total_travel_days: int) -> bool:
 	if not _rivalry_active or _rival_data == null or _cooldown_remaining > 0:
 		return false
 	for i in PHASE_THRESHOLDS.size():
-		if total_flights >= PHASE_THRESHOLDS[i] and not _phase_defeated[i]:
+		if total_travel_days >= PHASE_THRESHOLDS[i] and not _phase_defeated[i]:
 			_current_phase = i
 			return true
 	return false

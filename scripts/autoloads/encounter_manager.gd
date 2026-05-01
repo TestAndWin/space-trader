@@ -19,6 +19,11 @@ func should_encounter_happen(danger_level: int) -> bool:
 	return randf() < chance
 
 
+func should_route_encounter_happen(danger_level: int, planet_name: String, days: int) -> bool:
+	var chance: float = GameManager.get_aggregate_encounter_chance(danger_level, planet_name, days)
+	return randf() < chance
+
+
 func estimate_encounter_chance(danger_level: int, planet_name: String = "") -> float:
 	if planet_name == "":
 		planet_name = GameManager.travel_destination if GameManager.travel_destination != "" else GameManager.current_planet

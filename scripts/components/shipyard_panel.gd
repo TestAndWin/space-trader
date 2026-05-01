@@ -15,7 +15,12 @@ var hull_bar: ProgressBar
 var hull_bar_label: Label
 var shield_bar: ProgressBar
 var shield_bar_label: Label
+var fuel_bar: ProgressBar
+var fuel_bar_label: Label
 var repair_button: Button
+var buy_fuel_button: Button
+var fill_fuel_button: Button
+var emergency_fuel_button: Button
 var _bottom_row: HBoxContainer
 var status_label: Label
 
@@ -59,12 +64,42 @@ func _ready() -> void:
 	shield_bar_label = shield_container.get_node("BarLabel")
 	bars_vbox.add_child(shield_container)
 
+	var fuel_container := _create_stat_bar("FUEL", Color(0.28, 0.16, 0.04), Color(1.0, 0.58, 0.12))
+	fuel_bar = fuel_container.get_node("Bar")
+	fuel_bar_label = fuel_container.get_node("BarLabel")
+	bars_vbox.add_child(fuel_container)
+
 	repair_button = Button.new()
 	repair_button.text = "Repair Hull"
 	repair_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	repair_button.pressed.connect(_on_repair_pressed)
 	UIStyles.style_small_secondary_button(repair_button)
 	vbox.add_child(repair_button)
+
+	var fuel_row := HBoxContainer.new()
+	fuel_row.add_theme_constant_override("separation", 4)
+	vbox.add_child(fuel_row)
+
+	buy_fuel_button = Button.new()
+	buy_fuel_button.text = "Buy +1 Fuel"
+	buy_fuel_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buy_fuel_button.pressed.connect(_on_buy_fuel_pressed)
+	UIStyles.style_small_secondary_button(buy_fuel_button)
+	fuel_row.add_child(buy_fuel_button)
+
+	fill_fuel_button = Button.new()
+	fill_fuel_button.text = "Fill Tank"
+	fill_fuel_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	fill_fuel_button.pressed.connect(_on_fill_fuel_pressed)
+	UIStyles.style_small_secondary_button(fill_fuel_button)
+	fuel_row.add_child(fill_fuel_button)
+
+	emergency_fuel_button = Button.new()
+	emergency_fuel_button.text = "Emergency Fuel"
+	emergency_fuel_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	emergency_fuel_button.pressed.connect(_on_emergency_fuel_pressed)
+	UIStyles.style_small_secondary_button(emergency_fuel_button)
+	vbox.add_child(emergency_fuel_button)
 
 	_bottom_row = HBoxContainer.new()
 	_bottom_row.add_theme_constant_override("separation", 4)
@@ -178,6 +213,11 @@ func _refresh_display() -> void:
 		shield_bar.value = GameManager.current_shield
 		shield_bar_label.text = "SHIELD: %d/%d" % [GameManager.current_shield, GameManager.max_shield]
 
+	if fuel_bar:
+		fuel_bar.max_value = GameManager.max_fuel if GameManager.max_fuel > 0 else 1
+		fuel_bar.value = GameManager.current_fuel
+		fuel_bar_label.text = "FUEL: %d/%d" % [GameManager.current_fuel, GameManager.max_fuel]
+
 	var missing_hull: int = GameManager.max_hull - GameManager.current_hull
 	var per_hp: int = GameManager.REPAIR_COST_PER_HP
 	@warning_ignore("integer_division")
@@ -195,6 +235,23 @@ func _refresh_display() -> void:
 		repair_button.text = "Repair +%d HP (%dcr)" % [affordable_hp, affordable_hp * per_hp]
 		repair_button.disabled = false
 
+	_refresh_fuel_buttons()
+
+
+func _refresh_fuel_buttons() -> void:
+	var missing_fuel: int = GameManager.max_fuel - GameManager.current_fuel
+	var per_fuel: int = GameManager.FUEL_PRICE
+	var can_buy_one: bool = missing_fuel > 0 and GameManager.credits >= per_fuel
+	buy_fuel_button.text = "Buy +1 Fuel (%dcr)" % per_fuel
+	buy_fuel_button.disabled = not can_buy_one
+
+	var fill_cost: int = missing_fuel * per_fuel
+	fill_fuel_button.text = "Fill Tank (%dcr)" % fill_cost if missing_fuel > 0 else "Fill Tank (Full)"
+	fill_fuel_button.disabled = missing_fuel <= 0 or GameManager.credits < fill_cost
+
+	emergency_fuel_button.visible = GameManager.current_fuel == 0 and GameManager.credits < per_fuel
+	emergency_fuel_button.text = "Emergency Fuel (+%dcr debt)" % GameManager.EMERGENCY_FUEL_DEBT
+
 func _on_repair_pressed() -> void:
 	var missing_hull: int = GameManager.max_hull - GameManager.current_hull
 	if missing_hull <= 0:
@@ -210,6 +267,34 @@ func _on_repair_pressed() -> void:
 	GameManager.current_hull += hp_to_repair
 	EventLog.add_entry("Repaired %d hull for %dcr." % [hp_to_repair, cost])
 	status_label.text = "Repaired %d hull for %dcr" % [hp_to_repair, cost]
+	_refresh_display()
+	shipyard_action.emit()
+
+
+func _on_buy_fuel_pressed() -> void:
+	if GameManager.buy_fuel(1):
+		status_label.text = "Bought 1 fuel"
+	else:
+		status_label.text = "Cannot buy fuel"
+	_refresh_display()
+	shipyard_action.emit()
+
+
+func _on_fill_fuel_pressed() -> void:
+	var missing_fuel: int = GameManager.max_fuel - GameManager.current_fuel
+	if GameManager.buy_fuel(missing_fuel):
+		status_label.text = "Fuel tank filled"
+	else:
+		status_label.text = "Not enough credits for a full tank"
+	_refresh_display()
+	shipyard_action.emit()
+
+
+func _on_emergency_fuel_pressed() -> void:
+	if GameManager.take_emergency_fuel():
+		status_label.text = "Emergency fuel loaded"
+	else:
+		status_label.text = "Emergency fuel unavailable"
 	_refresh_display()
 	shipyard_action.emit()
 

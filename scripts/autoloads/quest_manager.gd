@@ -136,8 +136,10 @@ func _make_quest(
 		return {}
 
 	var dest: String = _pick_destination_planet(planet.planet_name, all_planet_names, good.good_name)
-	var route_hops: int = _get_route_hops(planet.planet_name, dest)
-	if route_hops < 0:
+	if dest == "":
+		return {}
+	var route_days: int = NavigationManager.get_travel_days(planet.planet_name, dest)
+	if route_days < 0:
 		return {}
 	var qty: int = randi_range(1, 3) + (1 if stage >= 3 else 0)
 	var stage_mult: float = pow(STAGE_REWARD_MULT, float(maxi(stage - 1, 0)))
@@ -148,7 +150,7 @@ func _make_quest(
 		+ GameManager.get_difficulty_quest_bonus()
 		+ int(quality.get("deadline_bonus", 0))
 	)
-	deadline = maxi(deadline, maxi(route_hops, 1))
+	deadline = maxi(deadline, maxi(route_days, 1))
 	# QUEST_NEGOTIATION crew bonus: +1 deadline, +10% reward
 	var negotiation_bonus: float = 0.0
 	for res in GameManager.get_crew_resources():
@@ -167,10 +169,10 @@ func _make_quest(
 		"deliver_good": good.good_name,
 		"deliver_qty": qty,
 		"destination": dest,
-		"route_hops": route_hops,
+		"route_days": route_days,
 		"reward_credits": reward,
 		"origin": planet.planet_name,
-		"turns_left": deadline,
+		"days_left": deadline,
 		"penalty": penalty,
 		"stage": stage,
 		"chain_length": chain_length,
@@ -231,13 +233,13 @@ func accept_quest(planet_name: String) -> bool:
 func tick() -> void:
 	if not has_active_quest():
 		return
-	current_quest["turns_left"] -= 1
+	current_quest["days_left"] -= 1
 
 
 func check_expired_quest() -> bool:
 	if not has_active_quest():
 		return false
-	if current_quest["turns_left"] >= 0:
+	if current_quest["days_left"] >= 0:
 		return false
 	var penalty: int = current_quest["penalty"]
 	EventLog.add_entry("Quest FAILED! Deliver %d %s to %s — penalty: %d cr" % [
@@ -393,6 +395,16 @@ func _find_good_by_name(good_name: String) -> Resource:
 
 
 func _pick_destination_planet(origin_name: String, candidates: Array, good_name: String) -> String:
+	var reachable_candidates: Array[String] = []
+	for candidate in candidates:
+		var candidate_name: String = str(candidate)
+		if candidate_name == origin_name:
+			continue
+		if NavigationManager.is_reachable(origin_name, candidate_name):
+			reachable_candidates.append(candidate_name)
+	if reachable_candidates.is_empty():
+		return ""
+
 	var preferred_tags: Array[String] = []
 	match good_name:
 		"Food Rations":
@@ -408,10 +420,8 @@ func _pick_destination_planet(origin_name: String, candidates: Array, good_name:
 
 	if not preferred_tags.is_empty():
 		var tagged_destinations: Array[String] = []
-		for candidate in candidates:
+		for candidate in reachable_candidates:
 			var candidate_name: String = str(candidate)
-			if candidate_name == origin_name:
-				continue
 			var tags: Array[String] = EventManager.get_active_event_tags(candidate_name)
 			for tag in preferred_tags:
 				if tag in tags:
@@ -420,37 +430,7 @@ func _pick_destination_planet(origin_name: String, candidates: Array, good_name:
 		if not tagged_destinations.is_empty():
 			return tagged_destinations[randi() % tagged_destinations.size()]
 
-	return str(candidates[randi() % candidates.size()])
-
-
-func _get_route_hops(origin_name: String, destination_name: String) -> int:
-	if origin_name == "" or destination_name == "":
-		return -1
-	if origin_name == destination_name:
-		return 0
-
-	var visited: Dictionary = {origin_name: true}
-	var frontier: Array[String] = [origin_name]
-	var hops: int = 0
-
-	while not frontier.is_empty():
-		hops += 1
-		var next_frontier: Array[String] = []
-		for current_name in frontier:
-			var planet: Resource = EconomyManager.get_planet_data(current_name)
-			if planet == null:
-				continue
-			for neighbor in planet.connected_planets:
-				var neighbor_name: String = str(neighbor)
-				if neighbor_name == destination_name:
-					return hops
-				if visited.has(neighbor_name):
-					continue
-				visited[neighbor_name] = true
-				next_frontier.append(neighbor_name)
-		frontier = next_frontier
-
-	return -1
+	return str(reachable_candidates[randi() % reachable_candidates.size()])
 
 
 func _pick_flavor(destination: String, good_name: String) -> String:

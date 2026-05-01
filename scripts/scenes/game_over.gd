@@ -6,7 +6,7 @@ const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 func _ready() -> void:
 	%TradesLabel.text = "Total Trades: %d" % GameManager.total_trades
-	%FlightsLabel.text = "Total Flights: %d" % GameManager.total_flights
+	%TravelDaysLabel.text = "Travel Days: %d" % GameManager.total_travel_days
 	%EncountersLabel.text = "Encounters Won: %d" % GameManager.total_encounters_won
 	%CreditsLabel.text = "Final Credits: %d" % GameManager.credits
 	%PlanetsLabel.text = "Planets Visited: %d" % GameManager.visited_planets.size()
@@ -15,7 +15,7 @@ func _ready() -> void:
 	if title_label:
 		UIStyles.apply_display_font(title_label)
 	UIStyles.apply_mono_font(%TradesLabel)
-	UIStyles.apply_mono_font(%FlightsLabel)
+	UIStyles.apply_mono_font(%TravelDaysLabel)
 	UIStyles.apply_mono_font(%EncountersLabel)
 	UIStyles.apply_mono_font(%CreditsLabel)
 	UIStyles.apply_mono_font(%PlanetsLabel)

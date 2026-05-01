@@ -15,10 +15,7 @@ func _ready() -> void:
 		"won":
 			%ResultTitle.text = "Victory!"
 			%ResultTitle.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
-			GameManager.current_planet = destination
-			if destination not in GameManager.visited_planets:
-				GameManager.visited_planets.append(destination)
-			AchievementManager.check_planets(GameManager.visited_planets)
+			GameManager.complete_travel_arrival(destination)
 
 			# Check if this was a rival encounter
 			var is_rival: bool = GameManager.current_encounter != null and GameManager.current_encounter.is_rival
@@ -46,10 +43,7 @@ func _ready() -> void:
 			var cargo_text := GameManager.last_cargo_lost_text
 			if cargo_text != "":
 				%ResultDescription.text += "\n" + cargo_text
-			GameManager.current_planet = destination
-			if destination not in GameManager.visited_planets:
-				GameManager.visited_planets.append(destination)
-			AchievementManager.check_planets(GameManager.visited_planets)
+			GameManager.complete_travel_arrival(destination)
 			%CardRewardPanel.visible = false
 			%RewardPanel.visible = false
 			%ContinueButton.visible = true

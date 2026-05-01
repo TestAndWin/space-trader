@@ -7,7 +7,7 @@ const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 var destination_planet: String = ""
 var dot_count: int = 0
 var dot_timer: float = 0.0
-var _flight_elapsed: float = 0.0
+var _travel_elapsed: float = 0.0
 var _arrival_triggered: bool = false
 var _warp_exit_triggered: bool = false
 var _warp_exit_elapsed: float = 0.0
@@ -83,11 +83,10 @@ const PLANET_TEX_HEIGHT: int = 192
 func _ready() -> void:
 	_rng.seed = randi()
 	destination_planet = GameManager.travel_destination if GameManager.travel_destination != "" else "Unknown"
-	GameManager.total_flights += 1
 	travel_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	warning_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	warning_label.text = _build_warning_text()
-	travel_label.text = "Traveling to " + destination_planet + "..."
+	travel_label.text = _get_travel_label_prefix() + "..."
 
 	var dest_type: int = _get_destination_type()
 	_warp_color = PLANET_WARP_COLORS.get(dest_type, PLANET_WARP_COLORS[3])
@@ -154,9 +153,9 @@ func _process(delta: float) -> void:
 		dot_timer = 0.0
 		dot_count = (dot_count + 1) % 4
 		var dots := ".".repeat(dot_count)
-		travel_label.text = "Traveling to " + destination_planet + dots
-	_flight_elapsed += delta
-	var progress := clampf(_flight_elapsed / _travel_duration, 0.0, 1.0)
+		travel_label.text = _get_travel_label_prefix() + dots
+	_travel_elapsed += delta
+	var progress := clampf(_travel_elapsed / _travel_duration, 0.0, 1.0)
 	var approach_progress := _travel_curve(progress)
 	_animate_starfield(delta, progress)
 	_animate_dust(delta, progress)
@@ -371,7 +370,7 @@ func _build_destination_planet(dest_type: int, warp_color: Color) -> void:
 	if planet_data:
 		danger_level = planet_data.danger_level
 	_planet_target_z = PLANET_TARGET_Z_BASE - float(danger_level) * PLANET_TARGET_Z_DANGER_STEP
-	_travel_duration = 4.2 + float(maxi(0, danger_level - 1)) * 0.15
+	_travel_duration = 4.2 + float(maxi(0, danger_level - 1)) * 0.15 + float(maxi(GameManager.travel_days - 1, 0)) * 0.35
 
 	var body := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
@@ -562,7 +561,7 @@ func _animate_planet(delta: float, progress: float) -> void:
 	_planet_root.position.z = lerpf(_planet_start_z, _planet_target_z, progress)
 	_planet_root.position.y = lerpf(-1.9, PLANET_END_Y, progress)
 	_planet_root.rotation.y += delta * 0.08
-	_planet_root.rotation.x = sin(_flight_elapsed * 0.35) * 0.04
+	_planet_root.rotation.x = sin(_travel_elapsed * 0.35) * 0.04
 	var planet_scale := lerpf(PLANET_START_SCALE, PLANET_END_SCALE, progress)
 	_planet_root.scale = Vector3.ONE * planet_scale
 	if _planet_material:
@@ -587,8 +586,8 @@ func _animate_camera(progress: float, approach_progress: float) -> void:
 		0.0
 	)
 	
-	var orbital_x := sin(_flight_elapsed * 0.8) * 0.35 * shake_intensity
-	var orbital_y := cos(_flight_elapsed * 1.1) * 0.28 * shake_intensity
+	var orbital_x := sin(_travel_elapsed * 0.8) * 0.35 * shake_intensity
+	var orbital_y := cos(_travel_elapsed * 1.1) * 0.28 * shake_intensity
 	var cam_z := lerpf(0.35, 2.75, pow(approach_progress, 1.75))
 	
 	travel_camera.position = Vector3(
@@ -691,7 +690,7 @@ func _on_travel_complete() -> void:
 	# Check for non-combat travel event first
 	var travel_event := TravelEventScene.instantiate()
 	add_child(travel_event)
-	if travel_event.try_trigger():
+	if travel_event.try_trigger(GameManager.travel_days):
 		travel_event.event_resolved.connect(_on_travel_event_resolved)
 		return
 	travel_event.queue_free()
@@ -703,18 +702,18 @@ func _on_travel_event_resolved() -> void:
 
 
 func _proceed_to_arrival() -> void:
-	# Ghost Run is reset on departure (see planet_screen._do_depart()),
+	# Ghost Run is reset when travel starts,
 	# so it remains a once-per-landing ability rather than 100% encounter immunity.
-	# Decrement rival cooldown before checking (pure query after this).
-	RivalManager.on_flight_completed()
 
 	var danger_level: int = 1
 	var planet_data := EconomyManager.get_planet_data(destination_planet)
 	if planet_data:
 		danger_level = planet_data.danger_level
+	if not GameManager.travel_route.is_empty():
+		danger_level = NavigationManager.get_route_danger(GameManager.travel_route)
 
 	# Rival takes priority over all other encounters (Ghost Run cannot avoid rival)
-	if RivalManager.should_rival_appear(GameManager.total_flights):
+	if RivalManager.should_rival_appear(GameManager.total_travel_days):
 		var rival_enc := RivalManager.get_rival_encounter()
 		if rival_enc:
 			GameManager.current_encounter = rival_enc
@@ -722,7 +721,7 @@ func _proceed_to_arrival() -> void:
 			return
 
 	# Normal encounter roll; Ghost Run only consumed if an encounter would actually trigger.
-	if EncounterManager.should_encounter_happen(danger_level):
+	if EncounterManager.should_route_encounter_happen(danger_level, destination_planet, GameManager.travel_days):
 		if GameManager.use_ghost_run():
 			EventLog.add_entry("Ghost Run active — slipped past undetected.")
 		else:
@@ -735,11 +734,13 @@ func _proceed_to_arrival() -> void:
 	_complete_arrival()
 
 
-## Finding #5: DRY — single place to finalise a clean planet arrival.
 func _complete_arrival() -> void:
 	EventLog.add_entry("Arrived at %s" % destination_planet)
-	GameManager.current_planet = destination_planet
-	if destination_planet not in GameManager.visited_planets:
-		GameManager.visited_planets.append(destination_planet)
-	AchievementManager.check_planets(GameManager.visited_planets)
+	GameManager.complete_travel_arrival(destination_planet)
 	GameManager.change_scene("res://scenes/planet_screen.tscn")
+
+
+func _get_travel_label_prefix() -> String:
+	var days: int = maxi(GameManager.travel_days, 1)
+	var day_text: String = "day" if days == 1 else "days"
+	return "Traveling to %s - %d %s" % [destination_planet, days, day_text]

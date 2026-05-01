@@ -1,7 +1,7 @@
 extends ColorRect
 
 ## Travel event popup — random non-combat encounters during space travel.
-## Call try_trigger() from travel_scene. If it returns true the popup is visible
+## Call try_trigger(days) from travel_scene. If it returns true the popup is visible
 ## and ready for player interaction; otherwise nothing happens.
 
 signal event_resolved
@@ -21,9 +21,10 @@ var _choice_b_button: Button
 
 # ── Public API ───────────────────────────────────────────────────────────────
 
-func try_trigger() -> bool:
+func try_trigger(days: int = 1) -> bool:
 	_load_events()
-	if randf() > TRIGGER_CHANCE:
+	var chance: float = clampf(1.0 - pow(1.0 - TRIGGER_CHANCE, maxi(days, 1)), 0.0, 0.85)
+	if randf() > chance:
 		return false
 	if _all_events.is_empty():
 		return false
@@ -222,4 +223,3 @@ func _show_outcome(text: String) -> void:
 func _close() -> void:
 	event_resolved.emit()
 	queue_free()
-

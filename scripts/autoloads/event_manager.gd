@@ -1,12 +1,12 @@
 extends Node
 
 var active_event: Dictionary = {}
-var event_turns_remaining: int = 0
+var event_days_remaining: int = 0
 var affected_planet: String = ""
 
 var active_chain: Dictionary = {}
 var chain_stage: int = -1
-var chain_turns_remaining: int = 0
+var chain_days_remaining: int = 0
 var chain_context: Dictionary = {}
 
 const EVENT_CHANCE: float = 0.3
@@ -150,8 +150,8 @@ func _load_planets() -> void:
 
 func tick() -> void:
 	if not active_event.is_empty():
-		event_turns_remaining -= 1
-		if event_turns_remaining <= 0:
+		event_days_remaining -= 1
+		if event_days_remaining <= 0:
 			var ended_event: Dictionary = active_event.duplicate(true)
 			_clear_active_event()
 			if not _start_chain_from(ended_event):
@@ -159,8 +159,8 @@ func tick() -> void:
 		return
 
 	if not active_chain.is_empty():
-		chain_turns_remaining -= 1
-		if chain_turns_remaining <= 0:
+		chain_days_remaining -= 1
+		if chain_days_remaining <= 0:
 			_advance_chain()
 		return
 
@@ -181,7 +181,7 @@ func _start_random_event() -> void:
 			continue
 		active_event = resolved
 		affected_planet = active_event.get("affected_planet", "")
-		event_turns_remaining = randi_range(
+		event_days_remaining = randi_range(
 			int(active_event.get("duration_min", MIN_DURATION)),
 			int(active_event.get("duration_max", MAX_DURATION))
 		)
@@ -190,7 +190,7 @@ func _start_random_event() -> void:
 			"source_planet": affected_planet,
 			"good": active_event.get("good", ""),
 		}
-		EventLog.add_entry("New event: %s (%d trips)" % [active_event["title"], event_turns_remaining])
+		EventLog.add_entry("New event: %s (%d days)" % [active_event["title"], event_days_remaining])
 		return
 
 
@@ -233,11 +233,11 @@ func _advance_chain() -> bool:
 	active_chain = resolved
 	active_chain["chain_id"] = chain_id
 	active_chain["chain_stage"] = chain_stage + 1
-	chain_turns_remaining = randi_range(
+	chain_days_remaining = randi_range(
 		int(active_chain.get("duration_min", CHAIN_MIN_DURATION)),
 		int(active_chain.get("duration_max", CHAIN_MAX_DURATION))
 	)
-	EventLog.add_entry("Event chain: %s (%d trips)" % [active_chain.get("title", "Unknown"), chain_turns_remaining])
+	EventLog.add_entry("Event chain: %s (%d days)" % [active_chain.get("title", "Unknown"), chain_days_remaining])
 	return true
 
 
@@ -272,14 +272,14 @@ func _resolve_effect(effect: Dictionary, context: Dictionary) -> Dictionary:
 
 func _clear_active_event() -> void:
 	active_event.clear()
-	event_turns_remaining = 0
+	event_days_remaining = 0
 	affected_planet = ""
 
 
 func _clear_chain() -> void:
 	active_chain.clear()
 	chain_stage = -1
-	chain_turns_remaining = 0
+	chain_days_remaining = 0
 	chain_context.clear()
 
 
@@ -466,16 +466,16 @@ func get_travel_warning_text(planet_name: String) -> String:
 
 func get_event_display_text() -> String:
 	if not active_event.is_empty():
-		return "%s - %s (%d trips left)" % [
+		return "%s - %s (%d days left)" % [
 			active_event.get("title", "Unknown Event"),
 			active_event.get("description", ""),
-			event_turns_remaining,
+			event_days_remaining,
 		]
 	if not active_chain.is_empty():
-		return "%s - %s (%d trips left)" % [
+		return "%s - %s (%d days left)" % [
 			active_chain.get("title", "Unknown Event"),
 			active_chain.get("description", ""),
-			chain_turns_remaining,
+			chain_days_remaining,
 		]
 	return ""
 
@@ -485,20 +485,20 @@ func get_event_display_text() -> String:
 func save_data() -> Dictionary:
 	return {
 		"active_event": active_event.duplicate(true),
-		"event_turns_remaining": event_turns_remaining,
+		"event_days_remaining": event_days_remaining,
 		"affected_planet": affected_planet,
 		"active_chain": active_chain.duplicate(true),
 		"chain_stage": chain_stage,
-		"chain_turns_remaining": chain_turns_remaining,
+		"chain_days_remaining": chain_days_remaining,
 		"chain_context": chain_context.duplicate(true),
 	}
 
 
 func load_data(data: Dictionary) -> void:
 	active_event = data.get("active_event", {}).duplicate(true)
-	event_turns_remaining = int(data.get("event_turns_remaining", 0))
+	event_days_remaining = int(data.get("event_days_remaining", 0))
 	affected_planet = data.get("affected_planet", "")
 	active_chain = data.get("active_chain", {}).duplicate(true)
 	chain_stage = int(data.get("chain_stage", -1))
-	chain_turns_remaining = int(data.get("chain_turns_remaining", 0))
+	chain_days_remaining = int(data.get("chain_days_remaining", 0))
 	chain_context = data.get("chain_context", {}).duplicate(true)

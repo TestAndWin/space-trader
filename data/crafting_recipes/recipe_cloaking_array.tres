@@ -22,5 +22,5 @@ inputs = [{
 "amount": 1
 }]
 tier = 2
-build_trips = 4
+build_days = 4
 available_at_planets = ["Nexus Prime"]

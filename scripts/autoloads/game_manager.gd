@@ -3,6 +3,7 @@ extends Node
 signal credits_changed(new_amount: int)
 signal cargo_changed
 signal crew_changed
+signal fuel_changed(current: int, maximum: int)
 
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
@@ -43,9 +44,16 @@ const MAX_CREW: int = 3
 var crew: Array = []  # Array of resource paths (String)
 
 # Navigation
+const FUEL_PRICE: int = 25
+const EMERGENCY_FUEL_DEBT: int = 100
+var max_fuel: int = 6
+var current_fuel: int = 6
 var current_planet: String = "Starport Alpha"
 var travel_destination: String = ""
 var travel_origin: String = ""
+var travel_days: int = 1
+var travel_distance: float = 0.0
+var travel_route: Array[String] = []
 var visited_planets: Array = []
 
 # Battle
@@ -77,7 +85,8 @@ var arrival_events_done: bool = false
 # Statistics
 var total_trades: int = 0
 var total_encounters_won: int = 0
-var total_flights: int = 0
+var total_travel_days: int = 0
+var current_day: int = 1
 var total_smuggler_deals: int = 0
 var total_quests_completed: int = 0
 
@@ -90,7 +99,7 @@ const LOAN_DEFAULT_TERM := 7
 const LOAN_DEFAULT_INTEREST := 0.08
 const LOAN_REPAY_CHUNK := 300
 var outstanding_debt: int = 0
-var debt_due_in_trips: int = 0
+var debt_due_in_days: int = 0
 var debt_interest_rate: float = 0.0
 var missed_debt_payments: int = 0
 
@@ -114,9 +123,14 @@ func reset() -> void:
 	crew.clear()
 	hand_size = 5
 	energy_per_turn = 3
+	max_fuel = 6
+	current_fuel = max_fuel
 	current_planet = "Starport Alpha"
 	travel_destination = ""
 	travel_origin = ""
+	travel_days = 1
+	travel_distance = 0.0
+	travel_route.clear()
 	visited_planets.clear()
 	visited_planets.append("Starport Alpha")
 	current_ship = "res://data/ships/scout.tres"
@@ -126,12 +140,13 @@ func reset() -> void:
 	arrival_events_done = false
 	total_trades = 0
 	total_encounters_won = 0
-	total_flights = 0
+	total_travel_days = 0
+	current_day = 1
 	total_smuggler_deals = 0
 	total_quests_completed = 0
 	StandingManager.reset()
 	outstanding_debt = 0
-	debt_due_in_trips = 0
+	debt_due_in_days = 0
 	debt_interest_rate = 0.0
 	missed_debt_payments = 0
 	trade_route_memory.clear()
@@ -204,20 +219,20 @@ func can_take_loan() -> bool:
 
 func take_loan(
 	amount: int = LOAN_DEFAULT_AMOUNT,
-	term_trips: int = LOAN_DEFAULT_TERM,
+	term_days: int = LOAN_DEFAULT_TERM,
 	interest_rate: float = LOAN_DEFAULT_INTEREST
 ) -> bool:
 	if has_active_loan():
 		return false
-	if amount <= 0 or term_trips <= 0:
+	if amount <= 0 or term_days <= 0:
 		return false
 	debt_interest_rate = maxf(interest_rate, 0.0)
 	outstanding_debt = int(ceil(float(amount) * (1.0 + debt_interest_rate)))
-	debt_due_in_trips = term_trips
+	debt_due_in_days = term_days
 	missed_debt_payments = 0
 	add_credits(amount)
-	EventLog.add_entry("Loan approved: +%d cr, %d trips, %.0f%% interest/trip" % [
-		amount, term_trips, debt_interest_rate * 100.0
+	EventLog.add_entry("Loan approved: +%d cr, %d days, %.0f%% interest/day" % [
+		amount, term_days, debt_interest_rate * 100.0
 	])
 	return true
 
@@ -236,7 +251,7 @@ func repay_loan(amount: int) -> int:
 	outstanding_debt -= capped_amount
 	if outstanding_debt <= 0:
 		outstanding_debt = 0
-		debt_due_in_trips = 0
+		debt_due_in_days = 0
 		debt_interest_rate = 0.0
 		missed_debt_payments = 0
 		EventLog.add_entry("Loan fully repaid.")
@@ -250,8 +265,8 @@ func process_loan_tick() -> void:
 	if not has_active_loan():
 		return
 	outstanding_debt = int(ceil(float(outstanding_debt) * (1.0 + debt_interest_rate)))
-	debt_due_in_trips = maxi(debt_due_in_trips - 1, 0)
-	if debt_due_in_trips > 0:
+	debt_due_in_days = maxi(debt_due_in_days - 1, 0)
+	if debt_due_in_days > 0:
 		return
 
 	# Debt reached maturity: attempt automatic collection.
@@ -267,7 +282,7 @@ func process_loan_tick() -> void:
 		return
 
 	missed_debt_payments += 1
-	debt_due_in_trips = 2
+	debt_due_in_days = 2
 	var hull_damage: int = 2 + missed_debt_payments * 2
 	current_hull = maxi(1, current_hull - hull_damage)
 	credits_changed.emit(credits)
@@ -283,7 +298,7 @@ func process_loan_tick() -> void:
 func get_debt_status_text() -> String:
 	if not has_active_loan():
 		return "Debt: none"
-	return "Debt: %d cr (%d trips)" % [outstanding_debt, debt_due_in_trips]
+	return "Debt: %d cr (%d days)" % [outstanding_debt, debt_due_in_days]
 
 
 func get_loan_repay_chunk() -> int:
@@ -294,9 +309,134 @@ func get_debt_risk_modifier() -> float:
 	if not has_active_loan():
 		return 0.0
 	var pressure: float = float(missed_debt_payments) * 0.02
-	if debt_due_in_trips <= 1:
+	if debt_due_in_days <= 1:
 		pressure += 0.02
 	return clampf(pressure, 0.0, 0.10)
+
+
+# ── Fuel and travel time ─────────────────────────────────────────────────────
+
+func get_fuel_cost_for_destination(destination: String) -> int:
+	return NavigationManager.get_fuel_cost(current_planet, destination)
+
+
+func can_start_travel(destination: String, route: Array[String]) -> bool:
+	if destination == "" or route.size() < 2:
+		return false
+	if str(route.front()) != current_planet or str(route.back()) != destination:
+		return false
+	var fuel_cost: int = NavigationManager.get_fuel_cost(current_planet, destination)
+	return fuel_cost >= 0 and current_fuel >= fuel_cost
+
+
+func begin_travel(destination: String, route: Array[String]) -> bool:
+	if not can_start_travel(destination, route):
+		return false
+	arrival_events_done = false
+	mission_done_this_landing = false
+	reset_ghost_run()
+	travel_origin = current_planet
+	travel_destination = destination
+	travel_route.clear()
+	for entry in route:
+		travel_route.append(str(entry))
+	travel_days = maxi(NavigationManager.get_travel_days(current_planet, destination), 1)
+	travel_distance = maxf(NavigationManager.get_distance(current_planet, destination), 0.0)
+	var fuel_cost: int = NavigationManager.get_fuel_cost(current_planet, destination)
+	if not consume_fuel(fuel_cost):
+		return false
+	process_travel_days(travel_days)
+	return true
+
+
+func process_travel_days(days: int) -> void:
+	for _i in range(maxi(days, 0)):
+		current_day += 1
+		total_travel_days += 1
+		QuestManager.tick()
+		EventManager.tick()
+		CraftingManager.tick()
+		EconomyManager.tick_economy()
+		process_loan_tick()
+		RivalManager.on_travel_day_completed()
+
+
+func consume_fuel(amount: int) -> bool:
+	if amount <= 0:
+		return true
+	if current_fuel < amount:
+		return false
+	current_fuel -= amount
+	fuel_changed.emit(current_fuel, max_fuel)
+	return true
+
+
+func buy_fuel(amount: int) -> bool:
+	if amount <= 0 or current_fuel >= max_fuel:
+		return false
+	var fuel_to_buy: int = mini(amount, max_fuel - current_fuel)
+	var cost: int = fuel_to_buy * FUEL_PRICE
+	if not remove_credits(cost):
+		return false
+	current_fuel += fuel_to_buy
+	fuel_changed.emit(current_fuel, max_fuel)
+	EventLog.add_entry("Bought %d fuel for %dcr." % [fuel_to_buy, cost])
+	return true
+
+
+func take_emergency_fuel() -> bool:
+	if current_fuel > 0 or credits >= FUEL_PRICE or current_fuel >= max_fuel:
+		return false
+	current_fuel += 1
+	outstanding_debt += EMERGENCY_FUEL_DEBT
+	if debt_due_in_days <= 0:
+		debt_due_in_days = 3
+	if debt_interest_rate <= 0.0:
+		debt_interest_rate = LOAN_DEFAULT_INTEREST
+	fuel_changed.emit(current_fuel, max_fuel)
+	EventLog.add_entry("Emergency fuel loaded: +1 fuel, +%d cr debt." % EMERGENCY_FUEL_DEBT)
+	return true
+
+
+func get_aggregate_encounter_chance(route_danger: int, destination: String, days: int) -> float:
+	var per_day: float = EncounterManager.estimate_encounter_chance(route_danger, destination)
+	if NavigationManager.is_safe_lane(current_planet, destination):
+		per_day *= 0.8
+	return clampf(1.0 - pow(1.0 - per_day, maxi(days, 1)), 0.0, 0.95)
+
+
+func apply_arrival_fuel_generation() -> void:
+	var generated: int = 0
+	for upgrade_name in installed_upgrades:
+		generated += _get_fuel_generation_for_upgrade(str(upgrade_name))
+	if generated <= 0 or current_fuel >= max_fuel:
+		return
+	var before: int = current_fuel
+	current_fuel = mini(max_fuel, current_fuel + generated)
+	if current_fuel != before:
+		fuel_changed.emit(current_fuel, max_fuel)
+		EventLog.add_entry("Fuel Synthesizer generated +%d fuel." % (current_fuel - before))
+
+
+func _get_fuel_generation_for_upgrade(upgrade_name: String) -> int:
+	for path in ResourceRegistry.UPGRADES:
+		var upgrade: Resource = load(path)
+		if upgrade and upgrade.upgrade_name == upgrade_name:
+			return int(upgrade.fuel_generation_per_arrival)
+	for path in ResourceRegistry.CRAFTED_UPGRADES:
+		var crafted_upgrade: Resource = load(path)
+		if crafted_upgrade and crafted_upgrade.upgrade_name == upgrade_name:
+			return int(crafted_upgrade.fuel_generation_per_arrival)
+	return 0
+
+
+func complete_travel_arrival(destination: String, generate_fuel: bool = true) -> void:
+	current_planet = destination
+	if destination not in visited_planets:
+		visited_planets.append(destination)
+	AchievementManager.check_planets(visited_planets)
+	if generate_fuel:
+		apply_arrival_fuel_generation()
 
 
 # ── Cargo ────────────────────────────────────────────────────────────────────
@@ -364,11 +504,14 @@ func apply_upgrade(upgrade: Resource) -> void:
 	max_shield += upgrade.shield_bonus
 	current_shield += upgrade.shield_bonus
 	cargo_capacity += upgrade.cargo_bonus
+	max_fuel += upgrade.fuel_capacity_bonus
+	current_fuel = mini(current_fuel + upgrade.fuel_capacity_bonus, max_fuel)
 	energy_per_turn += upgrade.energy_bonus
 	hand_size += upgrade.hand_size_bonus
 	for card in upgrade.cards_to_add:
 		deck.append(card)
 	installed_upgrades.append(upgrade.upgrade_name)
+	fuel_changed.emit(current_fuel, max_fuel)
 	AchievementManager.check_deck(deck.size())
 
 

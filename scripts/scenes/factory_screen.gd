@@ -155,10 +155,10 @@ func _build_unlocked_body() -> void:
 		var status_lbl := Label.new()
 		if not job_in_slot.is_empty():
 			var recipe: Resource = CraftingManager.get_recipe(job_in_slot.recipe_id)
-			status_lbl.text = "%s — building %d/%d trips" % [
+			status_lbl.text = "%s — building %d/%d days" % [
 				recipe.output_good.good_name,
-				recipe.build_trips - int(job_in_slot.trips_remaining),
-				recipe.build_trips,
+				recipe.build_days - int(job_in_slot.days_remaining),
+				recipe.build_days,
 			]
 		else:
 			status_lbl.text = "Available — pick a recipe below"
@@ -247,8 +247,8 @@ func _build_recipe_row(recipe: Resource) -> void:
 		var need: int = int(entry.amount)
 		var marker: String = "✓" if have >= need else "✗"
 		inputs_text += "%s %dx %s" % [marker, need, good.good_name]
-	label.text = "[T%d] %s  ←  %s  (%d trips)" % [
-		recipe.tier, recipe.output_good.good_name, inputs_text, recipe.build_trips,
+	label.text = "[T%d] %s  ←  %s  (%d days)" % [
+		recipe.tier, recipe.output_good.good_name, inputs_text, recipe.build_days,
 	]
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)

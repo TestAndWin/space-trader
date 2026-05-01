@@ -10,6 +10,8 @@ enum UpgradeSlot { ENGINE, HULL, SHIELDS, CARGO, WEAPONS, SPECIAL }
 @export var cargo_bonus: int = 0
 @export var hull_bonus: int = 0
 @export var shield_bonus: int = 0
+@export var fuel_capacity_bonus: int = 0
+@export var fuel_generation_per_arrival: int = 0
 @export var cards_to_add: Array[Resource] = []
 @export var hand_size_bonus: int = 0
 @export var energy_bonus: int = 0

@@ -12,14 +12,22 @@ func save_game() -> void:
 		"max_shield": GameManager.max_shield,
 		"current_shield": GameManager.current_shield,
 		"cargo_capacity": GameManager.cargo_capacity,
+		"max_fuel": GameManager.max_fuel,
+		"current_fuel": GameManager.current_fuel,
 		"cargo": GameManager.cargo.duplicate(true),
 		"hand_size": GameManager.hand_size,
 		"energy_per_turn": GameManager.energy_per_turn,
 		"current_planet": GameManager.current_planet,
+		"travel_destination": GameManager.travel_destination,
+		"travel_origin": GameManager.travel_origin,
+		"travel_days": GameManager.travel_days,
+		"travel_distance": GameManager.travel_distance,
+		"travel_route": GameManager.travel_route.duplicate(),
 		"visited_planets": GameManager.visited_planets.duplicate(),
+		"current_day": GameManager.current_day,
 		"total_trades": GameManager.total_trades,
 		"total_encounters_won": GameManager.total_encounters_won,
-		"total_flights": GameManager.total_flights,
+		"total_travel_days": GameManager.total_travel_days,
 		"standing": StandingManager.save_state(),
 		"current_ship": GameManager.current_ship,
 		"owned_ships": GameManager.owned_ships.duplicate(),
@@ -36,7 +44,7 @@ func save_game() -> void:
 		"quest_available": QuestManager.available_quests.duplicate(true),
 		"quest_next_chain_id": QuestManager.next_chain_id,
 		"outstanding_debt": GameManager.outstanding_debt,
-		"debt_due_in_trips": GameManager.debt_due_in_trips,
+		"debt_due_in_days": GameManager.debt_due_in_days,
 		"debt_interest_rate": GameManager.debt_interest_rate,
 		"missed_debt_payments": GameManager.missed_debt_payments,
 		"difficulty": GameManager.difficulty,
@@ -74,14 +82,26 @@ func load_game() -> bool:
 	GameManager.max_shield = int(data.get("max_shield", 10))
 	GameManager.current_shield = int(data.get("current_shield", 10))
 	GameManager.cargo_capacity = int(data.get("cargo_capacity", 10))
+	GameManager.max_fuel = int(data.get("max_fuel", 6))
+	GameManager.current_fuel = int(data.get("current_fuel", GameManager.max_fuel))
+	GameManager.current_fuel = clampi(GameManager.current_fuel, 0, GameManager.max_fuel)
 	GameManager.cargo = data.get("cargo", [])
 	GameManager.hand_size = int(data.get("hand_size", 5))
 	GameManager.energy_per_turn = int(data.get("energy_per_turn", 3))
 	GameManager.current_planet = data.get("current_planet", "Starport Alpha")
+	GameManager.travel_destination = data.get("travel_destination", "")
+	GameManager.travel_origin = data.get("travel_origin", "")
+	GameManager.travel_days = int(data.get("travel_days", 1))
+	GameManager.travel_distance = float(data.get("travel_distance", 0.0))
+	var saved_route: Array = data.get("travel_route", [])
+	GameManager.travel_route.clear()
+	for entry in saved_route:
+		GameManager.travel_route.append(str(entry))
 	GameManager.visited_planets = data.get("visited_planets", [])
+	GameManager.current_day = int(data.get("current_day", 1))
 	GameManager.total_trades = int(data.get("total_trades", 0))
 	GameManager.total_encounters_won = int(data.get("total_encounters_won", 0))
-	GameManager.total_flights = int(data.get("total_flights", 0))
+	GameManager.total_travel_days = int(data.get("total_travel_days", 0))
 	StandingManager.load_state(data.get("standing", {}))
 	GameManager.current_ship = data.get("current_ship", "res://data/ships/scout.tres")
 	var saved_ships: Array = data.get("owned_ships", [])
@@ -109,7 +129,7 @@ func load_game() -> bool:
 	QuestManager.available_quests = data.get("quest_available", {})
 	QuestManager.next_chain_id = int(data.get("quest_next_chain_id", 1))
 	GameManager.outstanding_debt = int(data.get("outstanding_debt", 0))
-	GameManager.debt_due_in_trips = int(data.get("debt_due_in_trips", 0))
+	GameManager.debt_due_in_days = int(data.get("debt_due_in_days", 0))
 	GameManager.debt_interest_rate = float(data.get("debt_interest_rate", 0.0))
 	GameManager.missed_debt_payments = int(data.get("missed_debt_payments", 0))
 	GameManager.difficulty = int(data.get("difficulty", GameManager.Difficulty.NORMAL))
