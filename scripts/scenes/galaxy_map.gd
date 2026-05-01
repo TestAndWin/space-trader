@@ -130,7 +130,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _configure_info_panel() -> void:
-	info_panel.offset_bottom = 290.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(UIStyles.PANEL_BG, 0.92)
 	panel_style.border_color = Color(0.0, 0.65, 0.95, 0.85)
@@ -150,6 +149,12 @@ func _configure_info_panel() -> void:
 	panel_style.shadow_size = 6
 	info_panel.add_theme_stylebox_override("panel", panel_style)
 	info_panel.visible = false
+
+
+func _fit_info_panel_height() -> void:
+	await get_tree().process_frame
+	var min_h: float = info_panel.get_minimum_size().y
+	info_panel.offset_bottom = info_panel.offset_top + min_h
 
 
 func _create_fuel_label() -> void:
@@ -666,7 +671,14 @@ func _on_planet_clicked(planet_data: Resource) -> void:
 
 func _on_planet_hovered(planet_data: Resource) -> void:
 	info_panel.visible = true
-	planet_name_label.text = planet_data.planet_name
+	var is_current: bool = planet_data.planet_name == GameManager.current_planet
+	var visited: bool = planet_data.planet_name in GameManager.visited_planets
+	if is_current:
+		planet_name_label.text = planet_data.planet_name + "  [HERE]"
+	elif visited:
+		planet_name_label.text = planet_data.planet_name + "  [VISITED]"
+	else:
+		planet_name_label.text = planet_data.planet_name + "  [UNVISITED]"
 	var type_text: String = EconomyManager.PLANET_TYPE_NAMES.get(planet_data.planet_type, "Unknown")
 	var faction: String = StandingManager.get_planet_faction(planet_data.planet_name)
 	var rep: int = StandingManager.get_faction_reputation(faction)
@@ -712,20 +724,14 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 		var encounter_chance: float = GameManager.get_aggregate_encounter_chance(route_danger, planet_data.planet_name, days)
 		var lane_text: String = "Safe Lane" if NavigationManager.is_safe_lane(GameManager.current_planet, planet_data.planet_name) else "Open Space"
 		trades_label.text += "\nDistance: %.0f | %s" % [distance, lane_text]
-		trades_label.text += "\nTravel Time: %d days | Fuel Cost: %d | Tank: %d/%d | Danger: %d" % [
-			days,
-			fuel_cost,
-			GameManager.current_fuel,
-			GameManager.max_fuel,
-			route_danger,
-		]
+		trades_label.text += "\nTravel: %d days | Fuel: %d" % [days, fuel_cost]
 		trades_label.text += "\nEncounter Risk: %.0f%%" % (encounter_chance * 100.0)
-		if GameManager.current_fuel < fuel_cost:
-			trades_label.text += "\nInsufficient fuel. Refuel at the shipyard."
 		
 	if QuestManager.has_active_quest() and planet_data.planet_name == QuestManager.current_quest.get("destination", ""):
 		var q := QuestManager.current_quest
 		trades_label.text += "\n[!] Quest Target: Deliver %dx %s" % [q.get("deliver_qty", 0), q.get("deliver_good", "Goods")]
+
+	_fit_info_panel_height()
 
 
 func _on_planet_unhovered() -> void:
@@ -868,7 +874,7 @@ func _get_travel_button_text(planet_data: Resource) -> String:
 	return "Travel to %s (%d days)" % [planet_data.planet_name, days]
 
 
-func _get_travel_tooltip(planet_data: Resource, route: Array[String]) -> String:
+func _get_travel_tooltip(planet_data: Resource, _route: Array[String]) -> String:
 	var days: int = maxi(NavigationManager.get_travel_days(GameManager.current_planet, planet_data.planet_name), 1)
 	var fuel_cost: int = NavigationManager.get_fuel_cost(GameManager.current_planet, planet_data.planet_name)
 	var distance: float = NavigationManager.get_distance(GameManager.current_planet, planet_data.planet_name)

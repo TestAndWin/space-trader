@@ -54,6 +54,8 @@ var _hotspot_pulse_tween: Tween = null
 @onready var hull_bar := $ShipStatusPanel/ShipStatusBox/ShipStats/HullBar
 @onready var shield_label := $ShipStatusPanel/ShipStatusBox/ShipStats/ShieldLabel
 @onready var shield_bar := $ShipStatusPanel/ShipStatusBox/ShipStats/ShieldBar
+@onready var fuel_label := $ShipStatusPanel/ShipStatusBox/ShipStats/FuelLabel
+@onready var fuel_bar := $ShipStatusPanel/ShipStatusBox/ShipStats/FuelBar
 @onready var bg_image: TextureRect = $BgImage
 
 
@@ -628,6 +630,7 @@ func _style_ship_panel() -> void:
 	ship_status_panel.add_theme_stylebox_override("panel", _make_holo_panel_style())
 	UIStyles.apply_mono_font(hull_label)
 	UIStyles.apply_mono_font(shield_label)
+	UIStyles.apply_mono_font(fuel_label)
 	UIStyles.apply_mono_font(capacity_label)
 	var ship_title: Label = $ShipStatusPanel/ShipStatusBox/ShipStats/ShipTitle
 	if ship_title:
@@ -851,14 +854,30 @@ func _update_ship_status() -> void:
 	hull_bar.value = hull
 
 	shield_label.text = "Shield: %d/%d" % [shield, max_shield]
-	
+
 	var shield_bar_bg := _make_bar_background_style(Color(0.04, 0.08, 0.16), Color(0.1, 0.2, 0.4))
 	shield_bar.add_theme_stylebox_override("background", shield_bar_bg)
-	
+
 	shield_bar.add_theme_stylebox_override("fill", _make_bar_fill_style(Color(0.4, 0.65, 1.0)))
-	
+
 	shield_bar.max_value = max(max_shield, 1)
 	shield_bar.value = shield
+
+	var fuel: int = GameManager.current_fuel
+	var max_fuel: int = GameManager.max_fuel
+	fuel_label.text = "Fuel: %d/%d" % [fuel, max_fuel]
+	var fuel_pct: float = float(fuel) / float(max_fuel) if max_fuel > 0 else 0.0
+	if fuel_pct > 0.5:
+		fuel_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.28))
+	elif fuel_pct > 0.25:
+		fuel_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.1))
+	else:
+		fuel_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
+	var fuel_bar_bg := _make_bar_background_style(Color(0.12, 0.08, 0.02), Color(0.35, 0.2, 0.0))
+	fuel_bar.add_theme_stylebox_override("background", fuel_bar_bg)
+	fuel_bar.add_theme_stylebox_override("fill", _make_bar_fill_style(Color(1.0, 0.65, 0.1)))
+	fuel_bar.max_value = max(max_fuel, 1)
+	fuel_bar.value = fuel
 
 
 func _update_quest_label() -> void:

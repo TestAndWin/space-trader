@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://e5dwqm2t36ni" path="res://scripts/scenes/planet_screen.gd" id="1_ps1"]
 [ext_resource type="PackedScene" path="res://scenes/components/ship_display_3d.tscn" id="7_sd1"]
-[ext_resource type="PackedScene" path="res://scenes/components/quest_widget.tscn" id="10_qw1"]
+[ext_resource type="PackedScene" uid="uid://chhuw5v0ocedj" path="res://scenes/components/quest_widget.tscn" id="10_qw1"]
 
 [node name="PlanetScreen" type="Control" unique_id=189487057]
 layout_mode = 3
@@ -134,6 +134,20 @@ mouse_filter = 2
 max_value = 10.0
 show_percentage = false
 
+[node name="FuelLabel" type="Label" parent="ShipStatusPanel/ShipStatusBox/ShipStats" unique_id=1100000001]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.72, 0.28, 1)
+theme_override_font_sizes/font_size = 13
+text = "Fuel: 0/6"
+
+[node name="FuelBar" type="ProgressBar" parent="ShipStatusPanel/ShipStatusBox/ShipStats" unique_id=1100000002]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+max_value = 6.0
+show_percentage = false
+
 [node name="CargoRow" type="HBoxContainer" parent="ShipStatusPanel/ShipStatusBox/ShipStats" unique_id=504414324]
 layout_mode = 2
 mouse_filter = 2
@@ -173,6 +187,7 @@ anchor_bottom = 1.0
 offset_left = 228.0
 offset_right = -8.0
 offset_bottom = -8.0
+grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
 
