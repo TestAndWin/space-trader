@@ -246,7 +246,8 @@ func _build_recipe_row(recipe: Resource) -> void:
 		var good: GoodData = entry.good
 		if inputs_text != "":
 			inputs_text += " + "
-		var have: int = GameManager.get_cargo_quantity(good.good_name)
+		var have: int = GameManager.get_cargo_quantity(good.good_name) \
+				+ CraftingManager.get_finished_item_quantity(_planet_name, good.good_name)
 		var need: int = int(entry.amount)
 		var marker: String = "✓" if have >= need else "✗"
 		inputs_text += "%s %dx %s" % [marker, need, good.good_name]

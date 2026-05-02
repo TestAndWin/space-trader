@@ -138,6 +138,15 @@ func get_free_slot_index(planet_name: String) -> int:
 	return -1
 
 
+func get_finished_item_quantity(planet_name: String, good_name: String) -> int:
+	var total: int = 0
+	for entry in _ensure_facility(planet_name).finished_items:
+		var good: GoodData = load(entry.good_path)
+		if good and good.good_name == good_name:
+			total += int(entry.amount)
+	return total
+
+
 func can_start_job(planet_name: String, recipe: Resource) -> bool:
 	var f: Dictionary = _ensure_facility(planet_name)
 	if not f.unlocked:
@@ -147,20 +156,48 @@ func can_start_job(planet_name: String, recipe: Resource) -> bool:
 	for entry in recipe.inputs:
 		var good: GoodData = entry.good
 		var needed: int = int(entry.amount)
-		var have: int = GameManager.get_cargo_quantity(good.good_name)
+		var have: int = GameManager.get_cargo_quantity(good.good_name) \
+				+ get_finished_item_quantity(planet_name, good.good_name)
 		if have < needed:
 			return false
 	return true
+
+
+# Consumes up to `amount` of `good_name` from finished_items.
+# Returns how much still needs to be taken from cargo.
+func _consume_from_finished(f: Dictionary, good_name: String, amount: int) -> int:
+	var remaining: int = amount
+	var kept: Array = []
+	for entry in f.finished_items:
+		if remaining <= 0:
+			kept.append(entry)
+			continue
+		var good: GoodData = load(entry.good_path)
+		if good and good.good_name == good_name:
+			var available: int = int(entry.amount)
+			if available <= remaining:
+				remaining -= available
+			else:
+				var partial: Dictionary = entry.duplicate()
+				partial.amount = available - remaining
+				remaining = 0
+				kept.append(partial)
+		else:
+			kept.append(entry)
+	f.finished_items = kept
+	return remaining
 
 
 func start_job(planet_name: String, recipe: Resource) -> bool:
 	if not can_start_job(planet_name, recipe):
 		return false
 	var slot: int = get_free_slot_index(planet_name)
+	var f: Dictionary = _ensure_facility(planet_name)
 	for entry in recipe.inputs:
 		var good: GoodData = entry.good
-		GameManager.remove_cargo(good.good_name, int(entry.amount))
-	var f: Dictionary = _ensure_facility(planet_name)
+		var remaining: int = _consume_from_finished(f, good.good_name, int(entry.amount))
+		if remaining > 0:
+			GameManager.remove_cargo(good.good_name, remaining)
 	f.active_jobs.append({
 		"recipe_id": recipe.recipe_id,
 		"days_remaining": recipe.build_days,
