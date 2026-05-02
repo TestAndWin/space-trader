@@ -28,7 +28,8 @@ const SECTION_FONT_SIZE: int = 16
 const BODY_FONT_SIZE: int    = 16  # Primary content: descriptions, status labels
 const DETAIL_FONT_SIZE: int  = 15  # Secondary rows: stats, chain labels, deadlines
 const SMALL_FONT_SIZE: int   = 14  # Fine print: notes, modifiers
-const FINE_FONT_SIZE: int    = 11  # Technically constrained: scaffold subtitle, bar labels
+const FINE_FONT_SIZE: int      = 11  # Technically constrained: bar labels (limited by bar height)
+const SUBTITLE_FONT_SIZE: int  = 14  # Overlay screen subtitles
 
 
 static func apply_screen_title(label: Label, color: Color = ACCENT) -> void:
@@ -371,7 +372,7 @@ static func create_overlay_scaffold(
 	var subtitle := Label.new()
 	subtitle.text = subtitle_text
 	var sub_settings := LabelSettings.new()
-	sub_settings.font_size = FINE_FONT_SIZE
+	sub_settings.font_size = SUBTITLE_FONT_SIZE
 	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
 	sub_settings.shadow_size = 3
 	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
