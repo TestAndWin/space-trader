@@ -84,7 +84,7 @@ func _build_ui() -> void:
 	main_vbox.add_child(content_hbox)
 
 	_quest_display = QuestDisplayScene.instantiate()
-	_quest_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_quest_display.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_quest_display.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
 	_quest_display.custom_minimum_size = Vector2(720, 0)
 	content_hbox.add_child(_quest_display)

@@ -41,10 +41,8 @@ func _build_ui() -> void:
 		done_label.add_theme_font_size_override("font_size", 17)
 		done_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
 		vbox.add_child(done_label)
-		var next_btn := Button.new()
-		next_btn.text = "New Quest"
+		var next_btn := _make_action_btn("New Quest", ACCENT_GREEN)
 		next_btn.pressed.connect(func(): just_completed = false; _build_ui())
-		UIStyles.style_accent_button(next_btn, ACCENT_GREEN, 16)
 		vbox.add_child(next_btn)
 		_add_loan_panel(vbox)
 		_add_bounty_panel(vbox)
@@ -93,10 +91,8 @@ func _build_ui() -> void:
 
 		# Check if we can deliver here
 		if q["destination"] == planet_name and _player_has_goods(q):
-			var deliver_btn := Button.new()
-			deliver_btn.text = "Deliver (%d %s)" % [q["deliver_qty"], q["deliver_good"]]
+			var deliver_btn := _make_action_btn("Deliver (%d %s)" % [q["deliver_qty"], q["deliver_good"]], ACCENT_GREEN)
 			deliver_btn.pressed.connect(_on_deliver)
-			UIStyles.style_accent_button(deliver_btn, ACCENT_GREEN, 16)
 			vbox.add_child(deliver_btn)
 		elif q["destination"] == planet_name:
 			var missing_label := Label.new()
@@ -163,14 +159,21 @@ func _build_ui() -> void:
 	info_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	vbox.add_child(info_label)
 
-	var accept_btn := Button.new()
-	accept_btn.text = "Accept Quest"
+	var accept_btn := _make_action_btn("Accept Quest", ACCENT_GREEN)
 	accept_btn.pressed.connect(_on_accept)
-	UIStyles.style_accent_button(accept_btn, ACCENT_GREEN, 16)
 	vbox.add_child(accept_btn)
 
 	_add_loan_panel(vbox)
 	_add_bounty_panel(vbox)
+
+
+func _make_action_btn(text: String, color: Color) -> Button:
+	var btn := Button.new()
+	btn.text = text
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	btn.custom_minimum_size = Vector2(320, 40)
+	UIStyles.style_accent_button(btn, color, 16)
+	return btn
 
 
 func _player_has_goods(q: Dictionary) -> bool:
@@ -214,22 +217,16 @@ func _add_loan_panel(vbox: VBoxContainer) -> void:
 	vbox.add_child(debt_label)
 
 	if GameManager.has_active_loan():
-		var repay_chunk := Button.new()
-		repay_chunk.text = "Repay %d cr" % GameManager.get_loan_repay_chunk()
+		var repay_chunk := _make_action_btn("Repay %d cr" % GameManager.get_loan_repay_chunk(), ACCENT_GREEN)
 		repay_chunk.pressed.connect(_on_repay_chunk)
-		UIStyles.style_accent_button(repay_chunk, ACCENT_GREEN, 16)
 		vbox.add_child(repay_chunk)
 
-		var repay_all := Button.new()
-		repay_all.text = "Repay All (%d cr)" % GameManager.outstanding_debt
+		var repay_all := _make_action_btn("Repay All (%d cr)" % GameManager.outstanding_debt, ACCENT_RED)
 		repay_all.pressed.connect(_on_repay_all)
-		UIStyles.style_accent_button(repay_all, ACCENT_RED, 16)
 		vbox.add_child(repay_all)
 	else:
-		var loan_btn := Button.new()
-		loan_btn.text = "Take Loan (+%d cr)" % GameManager.LOAN_DEFAULT_AMOUNT
+		var loan_btn := _make_action_btn("Take Loan (+%d cr)" % GameManager.LOAN_DEFAULT_AMOUNT, ACCENT_RED)
 		loan_btn.pressed.connect(_on_take_loan)
-		UIStyles.style_accent_button(loan_btn, ACCENT_RED, 16)
 		vbox.add_child(loan_btn)
 
 
@@ -264,12 +261,9 @@ func _add_bounty_panel(vbox: VBoxContainer) -> void:
 	bounty_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 	vbox.add_child(bounty_label)
 
-	var pay_btn := Button.new()
-	pay_btn.text = "Pay Off Bounty (%d cr)" % StandingManager.bounty_amount
+	var pay_btn := _make_action_btn("Pay Off Bounty (%d cr)" % StandingManager.bounty_amount, ACCENT_RED)
 	pay_btn.pressed.connect(_on_pay_bounty)
-	UIStyles.style_accent_button(pay_btn, ACCENT_RED, 16)
-	if GameManager.credits < StandingManager.bounty_amount:
-		pay_btn.disabled = true
+	pay_btn.disabled = GameManager.credits < StandingManager.bounty_amount
 	vbox.add_child(pay_btn)
 
 
