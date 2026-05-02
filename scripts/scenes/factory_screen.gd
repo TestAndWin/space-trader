@@ -74,9 +74,16 @@ func _build_ui() -> void:
 	panel_margin.add_theme_constant_override("margin_bottom", 12)
 	panel.add_child(panel_margin)
 
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel_margin.add_child(scroll)
+
 	_content_vbox = VBoxContainer.new()
 	_content_vbox.add_theme_constant_override("separation", 10)
-	panel_margin.add_child(_content_vbox)
+	_content_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_content_vbox)
 
 	_refresh()
 
