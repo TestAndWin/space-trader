@@ -39,8 +39,8 @@ func _ready() -> void:
 	status_label = Label.new()
 	status_label.text = ""
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 11)
-	status_label.add_theme_color_override("font_color", Color(0.0, 1.0, 0.6))
+	status_label.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
+	status_label.add_theme_color_override("font_color", UIStyles.STATUS_OK)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(status_label)
 
@@ -83,7 +83,7 @@ func _refresh_crew_ui() -> void:
 		var secondary_text: String = _get_secondary_bonus_text(crew_res)
 		info.text = crew_res.description + (("\n " + secondary_text) if secondary_text != "" else "")
 		info.tooltip_text = crew_res.crew_name
-		info.add_theme_font_size_override("font_size", 11)
+		info.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
 		info.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		info.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -91,7 +91,6 @@ func _refresh_crew_ui() -> void:
 
 		var dismiss_btn := Button.new()
 		dismiss_btn.text = "Dismiss"
-		dismiss_btn.add_theme_font_size_override("font_size", 10)
 		UIStyles.style_small_secondary_button(dismiss_btn)
 		var idx := i
 		var crew_name: String = crew_res.crew_name
@@ -106,7 +105,7 @@ func _refresh_crew_ui() -> void:
 	if crew_resources.is_empty():
 		var empty_lbl := Label.new()
 		empty_lbl.text = "No crew hired"
-		empty_lbl.add_theme_font_size_override("font_size", 11)
+		empty_lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
 		empty_lbl.add_theme_color_override("font_color", Color(0.4, 0.42, 0.45))
 		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_crew_container.add_child(empty_lbl)

@@ -139,7 +139,7 @@ func _build_ui() -> void:
 	_credits_label = Label.new()
 	_credits_label.add_theme_font_override("font", UIStyles.FONT_MONO)
 	_credits_label.add_theme_font_size_override("font_size", 20)
-	_credits_label.add_theme_color_override("font_color", Color(1.0, 0.90, 0.25))
+	_credits_label.add_theme_color_override("font_color", UIStyles.GOLD)
 	header.add_child(_credits_label)
 
 	_cargo_label = Label.new()
@@ -164,15 +164,15 @@ func _build_ui() -> void:
 
 	# Status
 	_status_detail_label = Label.new()
-	_status_detail_label.add_theme_font_size_override("font_size", 12)
-	_status_detail_label.add_theme_color_override("font_color", Color(0.85, 0.82, 0.55))
+	_status_detail_label.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
+	_status_detail_label.add_theme_color_override("font_color", UIStyles.STATUS_WARN)
 	_status_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	main_vbox.add_child(_status_detail_label)
 
 	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", 14)
-	_status_label.add_theme_color_override("font_color", Color(0.0, 1.0, 0.6))
+	_status_label.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
+	_status_label.add_theme_color_override("font_color", UIStyles.STATUS_OK)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	main_vbox.add_child(_status_label)
@@ -324,7 +324,7 @@ func _populate_cargo() -> void:
 	if not has_rows:
 		var empty_lbl := Label.new()
 		empty_lbl.text = "Cargo hold is empty"
-		empty_lbl.add_theme_font_size_override("font_size", 13)
+		empty_lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
 		empty_lbl.add_theme_color_override("font_color", Color(0.4, 0.42, 0.45))
 		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_cargo_list.add_child(empty_lbl)

@@ -146,7 +146,7 @@ func _build_ui() -> void:
 
 	# Status label
 	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", 14)
+	_status_label.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
 	_status_label.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main_vbox.add_child(_status_label)
@@ -240,7 +240,7 @@ func _build_ship_stats_panel() -> PanelContainer:
 
 	var stats_header := Label.new()
 	stats_header.text = "STATS"
-	stats_header.add_theme_font_size_override("font_size", 13)
+	stats_header.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
 	stats_header.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	stats_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(stats_header)
@@ -304,7 +304,7 @@ func _populate_available_upgrades() -> void:
 	if not any_shown:
 		var lbl := Label.new()
 		lbl.text = "No upgrades available at this planet."
-		lbl.add_theme_font_size_override("font_size", 14)
+		lbl.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
 		lbl.add_theme_color_override("font_color", Color(0.4, 0.4, 0.5))
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_upgrade_list.add_child(lbl)
@@ -360,7 +360,7 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 
 	var desc_label := Label.new()
 	desc_label.text = upgrade.description
-	desc_label.add_theme_font_size_override("font_size", 11)
+	desc_label.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
 	desc_label.add_theme_color_override("font_color", Color(0.4, 0.55, 0.7))
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_child(desc_label)
@@ -368,7 +368,7 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 	if upgrade.crafted_only and not upgrade.required_crafted_items.is_empty():
 		var req_label := Label.new()
 		req_label.text = "Requires: " + _format_required_items(upgrade)
-		req_label.add_theme_font_size_override("font_size", 11)
+		req_label.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
 		req_label.add_theme_color_override("font_color", UIStyles.GOLD if _has_required_crafted_items(upgrade) else Color(0.7, 0.45, 0.25))
 		info.add_child(req_label)
 
@@ -467,7 +467,7 @@ func _update_stats() -> void:
 		for upgrade_name in GameManager.installed_upgrades:
 			var lbl := Label.new()
 			lbl.text = "\u2713 " + upgrade_name
-			lbl.add_theme_font_size_override("font_size", 13)
+			lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
 			lbl.add_theme_color_override("font_color", Color(0.4, 0.7, 0.5))
 			_stats_list.add_child(lbl)
 
@@ -478,7 +478,7 @@ func _add_stat_row(stat_name: String, stat_value: String) -> void:
 	var name_lbl := Label.new()
 	name_lbl.text = stat_name
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.add_theme_font_size_override("font_size", 13)
+	name_lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
 	name_lbl.add_theme_color_override("font_color", Color(0.45, 0.55, 0.7))
 	row.add_child(name_lbl)
 
@@ -486,7 +486,7 @@ func _add_stat_row(stat_name: String, stat_value: String) -> void:
 	val_lbl.text = stat_value
 	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	val_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
-	val_lbl.add_theme_font_size_override("font_size", 13)
+	val_lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
 	val_lbl.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
 	row.add_child(val_lbl)
 

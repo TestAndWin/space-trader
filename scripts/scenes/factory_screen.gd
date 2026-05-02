@@ -41,8 +41,8 @@ func _build_ui() -> void:
 	_credits_label = scaffold["credits_label"]
 
 	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", 12)
-	_status_label.add_theme_color_override("font_color", Color(0.9, 0.82, 0.55))
+	_status_label.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
+	_status_label.add_theme_color_override("font_color", UIStyles.STATUS_WARN)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main_vbox.add_child(_status_label)
 

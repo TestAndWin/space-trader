@@ -23,8 +23,12 @@ static func apply_mono_font(ctrl: Control) -> void:
 # Use these for consistent overlay-screen titles. Default color is ACCENT.
 # Reserve GOLD for highlight/reward emphasis (e.g. "READY TO COLLECT", credits).
 
-const TITLE_FONT_SIZE: int = 26
+const TITLE_FONT_SIZE: int   = 26
 const SECTION_FONT_SIZE: int = 16
+const BODY_FONT_SIZE: int    = 16  # Primary content: descriptions, status labels
+const DETAIL_FONT_SIZE: int  = 15  # Secondary rows: stats, chain labels, deadlines
+const SMALL_FONT_SIZE: int   = 14  # Fine print: notes, modifiers
+const FINE_FONT_SIZE: int    = 11  # Technically constrained: scaffold subtitle, bar labels
 
 
 static func apply_screen_title(label: Label, color: Color = ACCENT) -> void:
@@ -52,6 +56,10 @@ const PANEL_BORDER := Color(0.0, 0.65, 0.95, 0.85)
 # Overlay-screen panel colors (used by market, shipyard, casino, crew, etc.)
 const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
 const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.35)
+
+# Status / feedback label colors
+const STATUS_OK   := Color(0.0, 1.0, 0.6)      # Green: action success (hired, repaired, bought)
+const STATUS_WARN := Color(0.9, 0.82, 0.55)     # Amber: informational status (quest, factory, market)
 
 # Planet-type accent colors (indexed by planet_type int)
 const TYPE_COLORS := {
@@ -350,7 +358,7 @@ static func create_overlay_scaffold(
 	var subtitle := Label.new()
 	subtitle.text = subtitle_text
 	var sub_settings := LabelSettings.new()
-	sub_settings.font_size = 11
+	sub_settings.font_size = FINE_FONT_SIZE
 	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
 	sub_settings.shadow_size = 3
 	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)

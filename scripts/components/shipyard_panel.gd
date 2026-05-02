@@ -122,8 +122,8 @@ func _ready() -> void:
 	status_label = Label.new()
 	status_label.text = ""
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", 11)
-	status_label.add_theme_color_override("font_color", Color(0.0, 1.0, 0.6))
+	status_label.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
+	status_label.add_theme_color_override("font_color", UIStyles.STATUS_OK)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(status_label)
 
