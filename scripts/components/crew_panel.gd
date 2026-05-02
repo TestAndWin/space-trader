@@ -79,26 +79,15 @@ func _refresh_crew_ui() -> void:
 		row.add_theme_constant_override("separation", 4)
 		_crew_container.add_child(row)
 
-		var info_box := VBoxContainer.new()
-		info_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		info_box.add_theme_constant_override("separation", 1)
-		row.add_child(info_box)
-
-		var primary_lbl := Label.new()
-		primary_lbl.text = crew_res.description
-		primary_lbl.tooltip_text = crew_res.crew_name
-		primary_lbl.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
-		primary_lbl.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
-		primary_lbl.mouse_filter = Control.MOUSE_FILTER_STOP
-		info_box.add_child(primary_lbl)
-
 		var secondary_text: String = _get_secondary_bonus_text(crew_res)
-		if secondary_text != "":
-			var secondary_lbl := Label.new()
-			secondary_lbl.text = secondary_text
-			secondary_lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
-			secondary_lbl.add_theme_color_override("font_color", Color(0.35, 0.7, 0.55))
-			info_box.add_child(secondary_lbl)
+		var info := Label.new()
+		info.text = crew_res.description + (" | " + secondary_text if secondary_text != "" else "")
+		info.tooltip_text = crew_res.crew_name
+		info.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
+		info.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.mouse_filter = Control.MOUSE_FILTER_STOP
+		row.add_child(info)
 
 		var dismiss_btn := Button.new()
 		dismiss_btn.text = "Dismiss"
