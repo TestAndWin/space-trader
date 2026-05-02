@@ -69,54 +69,48 @@ func _ready() -> void:
 	fuel_bar_label = fuel_container.get_node("BarLabel")
 	bars_vbox.add_child(fuel_container)
 
-	repair_button = Button.new()
+	repair_button = ActionButton.new()
 	repair_button.text = "Repair Hull"
 	repair_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	repair_button.pressed.connect(_on_repair_pressed)
-	UIStyles.style_small_secondary_button(repair_button)
 	vbox.add_child(repair_button)
 
 	var fuel_row := HBoxContainer.new()
 	fuel_row.add_theme_constant_override("separation", 4)
 	vbox.add_child(fuel_row)
 
-	buy_fuel_button = Button.new()
+	buy_fuel_button = ActionButton.new()
 	buy_fuel_button.text = "Buy +1 Fuel"
 	buy_fuel_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	buy_fuel_button.pressed.connect(_on_buy_fuel_pressed)
-	UIStyles.style_small_secondary_button(buy_fuel_button)
 	fuel_row.add_child(buy_fuel_button)
 
-	fill_fuel_button = Button.new()
+	fill_fuel_button = ActionButton.new()
 	fill_fuel_button.text = "Fill Tank"
 	fill_fuel_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	fill_fuel_button.pressed.connect(_on_fill_fuel_pressed)
-	UIStyles.style_small_secondary_button(fill_fuel_button)
 	fuel_row.add_child(fill_fuel_button)
 
-	emergency_fuel_button = Button.new()
+	emergency_fuel_button = ActionButton.new()
 	emergency_fuel_button.text = "Emergency Fuel"
 	emergency_fuel_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	emergency_fuel_button.pressed.connect(_on_emergency_fuel_pressed)
-	UIStyles.style_small_secondary_button(emergency_fuel_button)
 	vbox.add_child(emergency_fuel_button)
 
 	_bottom_row = HBoxContainer.new()
 	_bottom_row.add_theme_constant_override("separation", 4)
 	vbox.add_child(_bottom_row)
 
-	var ship_upgrades_button := Button.new()
+	var ship_upgrades_button := ActionButton.new()
 	ship_upgrades_button.text = "Upgrades"
 	ship_upgrades_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ship_upgrades_button.pressed.connect(_on_ship_upgrades_pressed)
-	UIStyles.style_small_secondary_button(ship_upgrades_button)
 	_bottom_row.add_child(ship_upgrades_button)
 
-	var ships_button := Button.new()
+	var ships_button := ActionButton.new()
 	ships_button.text = "Ships"
 	ships_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ships_button.pressed.connect(_on_ships_pressed)
-	UIStyles.style_small_secondary_button(ships_button)
 	_bottom_row.add_child(ships_button)
 
 	status_label = Label.new()

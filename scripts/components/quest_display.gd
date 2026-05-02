@@ -165,12 +165,11 @@ func _build_ui() -> void:
 	_add_bounty_panel(vbox)
 
 
-func _make_action_btn(text: String) -> Button:
-	var btn := Button.new()
+func _make_action_btn(text: String) -> ActionButton:
+	var btn := ActionButton.new()
 	btn.text = text
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	btn.custom_minimum_size = Vector2(320, 40)
-	UIStyles.style_secondary_button(btn, UIStyles.BODY_FONT_SIZE)
+	btn.custom_minimum_size = Vector2(320, 0)
 	return btn
 
 

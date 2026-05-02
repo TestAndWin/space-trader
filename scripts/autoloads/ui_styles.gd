@@ -61,6 +61,11 @@ const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.35)
 const STATUS_OK   := Color(0.0, 1.0, 0.6)      # Green: action success (hired, repaired, bought)
 const STATUS_WARN := Color(0.9, 0.82, 0.55)     # Amber: informational status (quest, factory, market)
 
+# ── ActionButton constants ───────────────────────────────────────────────────
+# Change these to restyle all ActionButtons project-wide.
+const ACTION_BTN_FONT_SIZE: int = BODY_FONT_SIZE  # 16
+const ACTION_BTN_MIN_HEIGHT: int = 36
+
 # Planet-type accent colors (indexed by planet_type int)
 const TYPE_COLORS := {
 	0: Color(0.4, 0.6, 1.0),    # INDUSTRIAL - blue
@@ -186,6 +191,14 @@ static func style_secondary_button(btn: Button, font_size: int = 0) -> void:
 	btn.add_theme_color_override("font_disabled_color", Color(0.2, 0.35, 0.45))
 	if font_size > 0:
 		btn.add_theme_font_size_override("font_size", font_size)
+
+
+# ── Action button ────────────────────────────────────────────────────────────
+# Unified style for all main-action buttons across overlay screens.
+# Use ActionButton (class_name) — this method is called automatically by it.
+
+static func style_action_button(btn: Button) -> void:
+	style_secondary_button(btn, ACTION_BTN_FONT_SIZE)
 
 
 # ── Small secondary button ──────────────────────────────────────────────────

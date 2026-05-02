@@ -89,9 +89,8 @@ func _refresh_crew_ui() -> void:
 		info.mouse_filter = Control.MOUSE_FILTER_STOP
 		row.add_child(info)
 
-		var dismiss_btn := Button.new()
+		var dismiss_btn := ActionButton.new()
 		dismiss_btn.text = "Dismiss"
-		UIStyles.style_small_secondary_button(dismiss_btn)
 		var idx := i
 		var crew_name: String = crew_res.crew_name
 		dismiss_btn.pressed.connect(func():
@@ -120,11 +119,10 @@ func _refresh_crew_ui() -> void:
 			available.append(crew_res)
 
 	for crew_res in available:
-		var hire_btn := Button.new()
+		var hire_btn := ActionButton.new()
 		hire_btn.text = "Hire %s (%dcr)" % [crew_res.crew_name, crew_res.recruit_cost]
 		hire_btn.tooltip_text = crew_res.description
 		hire_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		UIStyles.style_small_secondary_button(hire_btn)
 		hire_btn.disabled = GameManager.credits < crew_res.recruit_cost or GameManager.crew.size() >= GameManager.MAX_CREW
 		var res_ref: Resource = crew_res
 		hire_btn.pressed.connect(func():

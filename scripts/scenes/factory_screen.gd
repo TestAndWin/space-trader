@@ -108,12 +108,11 @@ func _build_locked_body() -> void:
 	info.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	_content_vbox.add_child(info)
 
-	var btn := Button.new()
+	var btn := ActionButton.new()
 	btn.text = "Establish Production Facility (%d cr)" % CraftingManager.FACILITY_COST
 	btn.disabled = GameManager.credits < CraftingManager.FACILITY_COST
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	btn.custom_minimum_size = Vector2(360, 40)
-	UIStyles.style_buy_button(btn)
+	btn.custom_minimum_size = Vector2(360, 0)
 	btn.pressed.connect(_on_unlock_pressed)
 	_content_vbox.add_child(btn)
 
@@ -168,10 +167,9 @@ func _build_unlocked_body() -> void:
 	# Slot expansion button
 	var next_cost: int = CraftingManager.get_next_slot_cost(_planet_name)
 	if next_cost > 0:
-		var expand_btn := Button.new()
+		var expand_btn := ActionButton.new()
 		expand_btn.text = "Buy Slot %d (%d cr)" % [slot_count + 1, next_cost]
 		expand_btn.disabled = GameManager.credits < next_cost
-		UIStyles.style_secondary_button(expand_btn)
 		expand_btn.pressed.connect(_on_expand_pressed)
 		_content_vbox.add_child(expand_btn)
 
@@ -198,21 +196,19 @@ func _build_unlocked_body() -> void:
 			fin_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			fin_row.add_child(fin_lbl)
 
-			var collect_btn := Button.new()
+			var collect_btn := ActionButton.new()
 			collect_btn.text = "Collect"
 			var free_space: int = GameManager.get_free_cargo_space()
 			collect_btn.disabled = free_space < int(entry.amount)
 			if collect_btn.disabled:
 				collect_btn.tooltip_text = "Cargo full — sell or store goods first"
-			UIStyles.style_secondary_button(collect_btn)
 			var idx_collect: int = i
 			collect_btn.pressed.connect(func() -> void: _on_collect_pressed(idx_collect))
 			fin_row.add_child(collect_btn)
 
 			var sell_price: int = CraftingManager.get_finished_item_sell_price(_planet_name, good)
-			var sell_btn := Button.new()
+			var sell_btn := ActionButton.new()
 			sell_btn.text = "Sell (%d cr)" % (sell_price * int(entry.amount))
-			UIStyles.style_buy_button(sell_btn)
 			var idx_sell: int = i
 			sell_btn.pressed.connect(func() -> void: _on_sell_pressed(idx_sell))
 			fin_row.add_child(sell_btn)
@@ -253,11 +249,10 @@ func _build_recipe_row(recipe: Resource) -> void:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
 
-	var build_btn := Button.new()
+	var build_btn := ActionButton.new()
 	build_btn.text = "Build"
-	build_btn.custom_minimum_size = Vector2(90, 32)
+	build_btn.custom_minimum_size = Vector2(90, 0)
 	build_btn.disabled = not CraftingManager.can_start_job(_planet_name, recipe)
-	UIStyles.style_buy_button(build_btn)
 	build_btn.pressed.connect(func() -> void: _on_build_pressed(recipe))
 	row.add_child(build_btn)
 
