@@ -72,14 +72,14 @@ func _build_ui() -> void:
 	# Spacer to push content slightly down from header
 	var top_spacer := Control.new()
 	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	top_spacer.size_flags_stretch_ratio = 1.0
+	top_spacer.size_flags_stretch_ratio = 3.0
 	top_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	main_vbox.add_child(top_spacer)
 
 	# ── Content: Quest display (centered, large) ──
 	var content_hbox := HBoxContainer.new()
 	content_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_hbox.size_flags_stretch_ratio = 5.0
+	content_hbox.size_flags_stretch_ratio = 4.0
 	content_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	main_vbox.add_child(content_hbox)
 
