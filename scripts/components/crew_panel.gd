@@ -81,7 +81,7 @@ func _refresh_crew_ui() -> void:
 
 		var secondary_text: String = _get_secondary_bonus_text(crew_res)
 		var info := Label.new()
-		info.text = crew_res.description + (" | " + secondary_text if secondary_text != "" else "")
+		info.text = crew_res.crew_name + ": " + crew_res.description + (" | " + secondary_text if secondary_text != "" else "")
 		info.tooltip_text = crew_res.crew_name
 		info.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
 		info.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
