@@ -49,7 +49,7 @@ func _build_ui() -> void:
 	# Spacer pushes content to lower portion (matches Quest screen)
 	var top_spacer := Control.new()
 	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	top_spacer.size_flags_stretch_ratio = 1.0
+	top_spacer.size_flags_stretch_ratio = 0.3
 	top_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	main_vbox.add_child(top_spacer)
 
