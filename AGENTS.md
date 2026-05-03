@@ -128,7 +128,7 @@ Signal-based: managers emit signals, UI components subscribe. Scene transitions 
 
 **Customs Scan** (`customs_scan.gd`): 20% base scan chance on arrival at **non-Outlaw** planets while carrying Spice or Stolen Tech. Options: hide cargo, pay bribe, or submit to fine. Modified by Smuggler crew bonus and Cloaking Device upgrade.
 
-**Planet Activity** (`planet_activity.gd`): Mission-building mini-game, one kind per planet type: HACKING (Tech), MINING (Mining), HARVEST (Agricultural), SMUGGLER_RACE (Outlaw), FACTORY (Industrial). Entry fee 100cr. Used on all planets except Starport Alpha (which keeps Space Invaders). Each activity has its own risk/reward loop.
+**Planet Activity** (`planet_activity.gd`): Mission-building mini-game, one kind per planet type: HACKING (Tech), MINING (Mining), HARVEST (Agricultural), SMUGGLER_RACE (Outlaw), FACTORY (Industrial). Entry fee 100cr. Used on all planets except Starport Alpha (which keeps Starport Defense). Each activity has its own risk/reward loop.
 
 **Travel Events** (`travel_event.gd`): 20% chance during travel of a non-combat encounter (stranded trader, abandoned wreck, distress signal). Modal two-choice popup with credit/hull/cargo consequences. Data in `data/travel_events/`, loaded via `ResourceRegistry.TRAVEL_EVENTS`.
 
@@ -142,7 +142,7 @@ Signal-based: managers emit signals, UI components subscribe. Scene transitions 
 
 **Tutorial** (`tutorial.gd`): Tutorial scene accessible from main menu.
 
-**Space Invaders** (`space_invaders.gd`): Mini-game mission scene, used as the "Mission" building **on Starport Alpha only**. All other planets use `planet_activity.gd` instead.
+**Starport Defense** (`starport_defense.gd`): Mini-game mission scene, used as the "Mission" building **on Starport Alpha only**. All other planets use `planet_activity.gd` instead.
 
 ### Planet Screen Layout (Hub)
 
@@ -158,7 +158,7 @@ Building buttons vary by planet type (different names, icons, colors). Buildings
 - **Crew** -> `crew_screen.gd` (fullscreen overlay wrapping CrewPanel)
 - **Quest** -> `quest_screen.gd` (fullscreen overlay for quest management)
 - **Deck** -> `deck_viewer.gd` (view/manage card deck)
-- **Mission** -> `planet_activity.gd` (planet-type-specific mini-game), except on Starport Alpha which launches `space_invaders.gd`
+- **Mission** -> `planet_activity.gd` (planet-type-specific mini-game), except on Starport Alpha which launches `starport_defense.gd`
 - **Depart** -> Galaxy Map
 
 ## Adding Game Content

@@ -416,7 +416,7 @@ C - Crew    Q - Quest Board    D - Deck Viewer
 I - Mission    G - Galaxy Map / Depart    L - Event Log
 ESC - Close current overlay
 
-Space Invaders mini-game controls:
+Starport Defense mini-game controls:
 A / Left Arrow - Move left    D / Right Arrow - Move right
 Space / Enter - Shoot"
 autowrap_mode = 3

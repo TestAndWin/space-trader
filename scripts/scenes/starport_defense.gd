@@ -1,6 +1,6 @@
 extends Control
 
-## Space Invaders mini-game — destroy all enemies to win credits.
+## Starport Defense mini-game — destroy all enemies to win credits.
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
@@ -73,7 +73,7 @@ func _ready() -> void:
 func _build_ui() -> void:
 	var scaffold: Dictionary = UIStyles.create_overlay_scaffold(
 		self,
-		"SPACE INVADERS",
+		"STARPORT DEFENSE",
 		"Destroy all enemies to earn credits",
 		"\u2726 \u2694 \u2726",
 		"Abort (%dcr)" % ABORT_PENALTY,

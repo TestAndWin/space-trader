@@ -389,7 +389,7 @@ func _on_mission_pressed() -> void:
 	if _mission_done:
 		return
 	var pt: int = current_planet_data.planet_type if current_planet_data else 0
-	# Starport Alpha keeps the Space Invaders mini-game as the mission.
+	# Starport Alpha keeps the Starport Defense mini-game as the mission.
 	# All other planets open the type-specific activity modal.
 	if GameManager.current_planet == "Starport Alpha":
 		if GameManager.credits < 100:
@@ -398,8 +398,8 @@ func _on_mission_pressed() -> void:
 			return
 		GameManager.remove_credits(100)
 		GameManager.mission_return_planet = GameManager.current_planet
-		EventLog.add_entry("Entered Space Invaders mission (-100cr).")
-		GameManager.change_scene("res://scenes/space_invaders.tscn")
+		EventLog.add_entry("Entered Starport Defense mission (-100cr).")
+		GameManager.change_scene("res://scenes/starport_defense.tscn")
 		return
 	# Other planet types: open the type-specific activity modal.
 	if has_node("PlanetActivity"):

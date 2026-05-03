@@ -1,8 +1,8 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scripts/scenes/space_invaders.gd" id="1_si1"]
+[ext_resource type="Script" path="res://scripts/scenes/starport_defense.gd" id="1_si1"]
 
-[node name="SpaceInvaders" type="Control"]
+[node name="StarportDefense" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
