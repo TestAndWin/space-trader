@@ -85,7 +85,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/GoalSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Accumulate 8000 credits AND visit all 7 planets to win the game. Trade goods, complete quest chains, win battles, and explore the galaxy to reach your goal. Reputation, local trade loyalty, bounty pressure, debt, and active world events all shape how risky or profitable your run becomes. If your hull reaches zero, the game is over."
+text = "Accumulate the credit goal (8000 / 10000 / 12000 depending on difficulty), visit all 7 planets, AND install at least one crafted T2 upgrade on your ship to win the game. Trade goods, complete quest chains, win battles, craft items at the Factory, and explore the galaxy to reach your goal. Reputation, local trade loyalty, bounty pressure, debt, and active world events all shape how risky or profitable your run becomes. If your hull reaches zero, the game is over."
 autowrap_mode = 3
 mouse_filter = 2
 

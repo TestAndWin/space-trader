@@ -10,9 +10,9 @@ const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 # Difficulty
 enum Difficulty { EASY, NORMAL, HARD }
 const DIFFICULTY_SETTINGS := {
-	Difficulty.EASY:   { "credits": 1500, "hull": 35, "encounter_mod": -0.10, "quest_deadline_bonus": 2 },
-	Difficulty.NORMAL: { "credits": 1000, "hull": 30, "encounter_mod":  0.00, "quest_deadline_bonus": 0 },
-	Difficulty.HARD:   { "credits":  600, "hull": 25, "encounter_mod":  0.10, "quest_deadline_bonus": -1 },
+	Difficulty.EASY:   { "credits": 1500, "hull": 35, "encounter_mod": -0.10, "quest_deadline_bonus": 2, "win_credits":  8000 },
+	Difficulty.NORMAL: { "credits": 1000, "hull": 30, "encounter_mod":  0.00, "quest_deadline_bonus": 0, "win_credits": 10000 },
+	Difficulty.HARD:   { "credits":  600, "hull": 25, "encounter_mod":  0.10, "quest_deadline_bonus": -1, "win_credits": 12000 },
 }
 var difficulty: int = Difficulty.NORMAL
 
@@ -161,6 +161,8 @@ func reset() -> void:
 	build_starter_deck()
 	EventLog.clear()
 	EventLog.add_entry("Welcome to Starport Alpha. Your journey begins.")
+	EventLog.add_entry("Goal: %d cr + visit all 7 planets + install 1 crafted T2 upgrade." % get_win_credits())
+	EventLog.add_entry("T2 chain: buy goods -> Factory (Tech planet) -> craft T1 -> craft T2 -> install at any Shipyard.")
 	EventManager.reset_state()
 	QuestManager.current_quest.clear()
 	QuestManager.next_chain_id = 1
@@ -517,12 +519,30 @@ func apply_upgrade(upgrade: Resource) -> void:
 
 # ── Win condition ─────────────────────────────────────────────────────────────
 
-const WIN_CREDITS: int = 8000
 const WIN_PLANETS: int = 7
 const REPAIR_COST_PER_HP: int = 8
 
+func get_win_credits() -> int:
+	var settings: Dictionary = DIFFICULTY_SETTINGS.get(difficulty, DIFFICULTY_SETTINGS[Difficulty.NORMAL])
+	return settings["win_credits"]
+
+
+func has_crafted_upgrade_installed() -> bool:
+	for path in ResourceRegistry.CRAFTED_UPGRADES:
+		var upgrade: Resource = load(path)
+		if upgrade == null:
+			continue
+		if upgrade.upgrade_name in installed_upgrades:
+			return true
+	return false
+
+
 func check_win_condition() -> bool:
-	return credits >= WIN_CREDITS and visited_planets.size() >= WIN_PLANETS
+	return (
+		credits >= get_win_credits()
+		and visited_planets.size() >= WIN_PLANETS
+		and has_crafted_upgrade_installed()
+	)
 
 
 # ── Scene management ─────────────────────────────────────────────────────────

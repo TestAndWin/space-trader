@@ -802,16 +802,20 @@ func _update_ui() -> void:
 	_update_quest_label()
 	# Goal progress
 	var planets_visited: int = GameManager.visited_planets.size()
-	var credits_ok := GameManager.credits >= GameManager.WIN_CREDITS
+	var win_credits: int = GameManager.get_win_credits()
+	var t2_installed: bool = GameManager.has_crafted_upgrade_installed()
+	var credits_ok := GameManager.credits >= win_credits
 	var planets_ok := planets_visited >= GameManager.WIN_PLANETS
-	if credits_ok and planets_ok:
+	if credits_ok and planets_ok and t2_installed:
 		goal_label.text = "Day %d | GOAL REACHED!" % GameManager.current_day
 		goal_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
 	else:
-		goal_label.text = "Day %d | %d/%d cr | %d/%d planets" % [GameManager.current_day, mini(GameManager.credits, GameManager.WIN_CREDITS), GameManager.WIN_CREDITS, planets_visited, GameManager.WIN_PLANETS]
-		var credit_progress: float = clampf(float(GameManager.credits) / float(GameManager.WIN_CREDITS), 0.0, 1.0)
+		var t2_marker: String = "T2 ✓" if t2_installed else "T2 ✗"
+		goal_label.text = "Day %d | %d/%d cr | %d/%d planets | %s" % [GameManager.current_day, mini(GameManager.credits, win_credits), win_credits, planets_visited, GameManager.WIN_PLANETS, t2_marker]
+		var credit_progress: float = clampf(float(GameManager.credits) / float(win_credits), 0.0, 1.0)
 		var planet_progress: float = clampf(float(planets_visited) / float(GameManager.WIN_PLANETS), 0.0, 1.0)
-		var progress: float = (credit_progress + planet_progress) / 2.0
+		var t2_progress: float = 1.0 if t2_installed else 0.0
+		var progress: float = (credit_progress + planet_progress + t2_progress) / 3.0
 		var goal_color := Color(0.5 + progress * 0.5, 0.4 + progress * 0.6, 0.1 + progress * 0.2)
 		goal_label.add_theme_color_override("font_color", goal_color)
 	if GameManager.has_active_loan():
