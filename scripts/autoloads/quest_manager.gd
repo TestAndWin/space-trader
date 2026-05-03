@@ -124,9 +124,6 @@ func _make_quest(
 	var quality: Dictionary = get_offer_quality_for_planet(planet.planet_name)
 	if bool(quality.get("blocked", false)):
 		return {}
-	var good: Resource = _pick_quest_good(planet.planet_name, quality)
-	if good == null:
-		return {}
 
 	var all_planet_names: Array = []
 	for p in EconomyManager.planets:
@@ -135,9 +132,18 @@ func _make_quest(
 	if all_planet_names.is_empty():
 		return {}
 
-	var dest: String = _pick_destination_planet(planet.planet_name, all_planet_names, good.good_name)
-	if dest == "":
+	var good: Resource = null
+	var dest: String = ""
+	for _attempt in 5:
+		good = _pick_quest_good(planet.planet_name, quality)
+		if good == null:
+			continue
+		dest = _pick_destination_planet(planet.planet_name, all_planet_names, good.good_name)
+		if dest != "":
+			break
+	if good == null or dest == "":
 		return {}
+
 	var route_days: int = NavigationManager.get_travel_days(planet.planet_name, dest)
 	if route_days < 0:
 		return {}
@@ -151,6 +157,12 @@ func _make_quest(
 		+ int(quality.get("deadline_bonus", 0))
 	)
 	deadline = maxi(deadline, maxi(route_days, 1))
+	var recipe: CraftingRecipeData = CraftingManager.get_recipe_for_good(good.good_name)
+	if recipe != null:
+		var craft_days: int = int(recipe.build_days) * qty
+		var material_buffer: int = 2 if recipe.inputs.size() <= 2 else 3
+		deadline += craft_days + material_buffer
+		reward_mult *= 1.5
 	# QUEST_NEGOTIATION crew bonus: +1 deadline, +10% reward
 	var negotiation_bonus: float = 0.0
 	for res in GameManager.get_crew_resources():
@@ -400,8 +412,11 @@ func _pick_destination_planet(origin_name: String, candidates: Array, good_name:
 		var candidate_name: String = str(candidate)
 		if candidate_name == origin_name:
 			continue
-		if NavigationManager.is_reachable(origin_name, candidate_name):
-			reachable_candidates.append(candidate_name)
+		if not NavigationManager.is_reachable(origin_name, candidate_name):
+			continue
+		if EconomyManager.is_good_sold_at_planet(candidate_name, good_name):
+			continue
+		reachable_candidates.append(candidate_name)
 	if reachable_candidates.is_empty():
 		return ""
 

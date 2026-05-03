@@ -38,6 +38,13 @@ func get_recipe(recipe_id: String) -> Resource:
 	return _recipes_by_id.get(recipe_id, null)
 
 
+func get_recipe_for_good(good_name: String) -> CraftingRecipeData:
+	for recipe in _recipes_by_id.values():
+		if recipe.output_good != null and recipe.output_good.good_name == good_name:
+			return recipe
+	return null
+
+
 func _ensure_facility(planet_name: String) -> Dictionary:
 	if not production_facilities.has(planet_name):
 		production_facilities[planet_name] = {

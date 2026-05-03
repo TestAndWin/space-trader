@@ -204,6 +204,15 @@ func get_available_goods(planet_type_name: String) -> Array:
 	return _type_available_goods.get(planet_type_name, [])
 
 
+func is_good_sold_at_planet(planet_name: String, good_name: String) -> bool:
+	var planet := get_planet_data(planet_name)
+	if planet == null:
+		return false
+	var planet_type: String = PLANET_TYPE_NAMES.get(planet.planet_type, "Industrial")
+	var available: Array = _type_available_goods.get(planet_type, [])
+	return good_name in available
+
+
 func get_planet_data(planet_name: String) -> Resource:
 	for planet in planets:
 		if planet.planet_name == planet_name:
