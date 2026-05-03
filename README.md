@@ -1,4 +1,4 @@
-# SpaceTrader
+# Space Trader: Dealer's Hand
 
 A 2D roguelike space trading and deck-building card game built with **Godot Engine 4.6** (GDScript).
 

@@ -83,7 +83,7 @@ func _show_difficulty_popup() -> void:
 	panel.add_child(vbox)
 
 	var title := Label.new()
-	title.text = "Schwierigkeitsgrad"
+	title.text = "Difficulty"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var title_settings := LabelSettings.new()
 	title_settings.font_size = 28
@@ -94,9 +94,9 @@ func _show_difficulty_popup() -> void:
 	vbox.add_child(HSeparator.new())
 
 	var difficulties := [
-		{ "name": "Leicht", "desc": "1500 Credits, weniger Gegner, mehr Zeit für Quests", "value": GameManager.Difficulty.EASY },
-		{ "name": "Normal", "desc": "1000 Credits, Standard-Encounter, normale Deadlines", "value": GameManager.Difficulty.NORMAL },
-		{ "name": "Schwer", "desc": "600 Credits, mehr Gegner, kürzere Deadlines, weniger Hülle", "value": GameManager.Difficulty.HARD },
+		{ "name": "Easy", "desc": "1500 credits, fewer enemies, more time for quests", "value": GameManager.Difficulty.EASY },
+		{ "name": "Normal", "desc": "1000 credits, standard encounters, normal deadlines", "value": GameManager.Difficulty.NORMAL },
+		{ "name": "Hard", "desc": "600 credits, more enemies, shorter deadlines, less hull", "value": GameManager.Difficulty.HARD },
 	]
 
 	for diff: Dictionary in difficulties:
@@ -123,7 +123,7 @@ func _show_difficulty_popup() -> void:
 	vbox.add_child(HSeparator.new())
 
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Abbrechen"
+	cancel_btn.text = "Cancel"
 	UIStyles.style_secondary_button(cancel_btn, 16)
 	cancel_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(cancel_btn)
