@@ -132,7 +132,7 @@ func get_free_slot_index(planet_name: String) -> int:
 	var used: Array = []
 	for job in f.active_jobs:
 		used.append(int(job.slot_index))
-	for i in f.slots:
+	for i in int(f.slots):
 		if i not in used:
 			return i
 	return -1
@@ -163,31 +163,6 @@ func can_start_job(planet_name: String, recipe: Resource) -> bool:
 	return true
 
 
-# Consumes up to `amount` of `good_name` from finished_items.
-# Returns how much still needs to be taken from cargo.
-func _consume_from_finished(f: Dictionary, good_name: String, amount: int) -> int:
-	var remaining: int = amount
-	var kept: Array = []
-	for entry in f.finished_items:
-		if remaining <= 0:
-			kept.append(entry)
-			continue
-		var good: GoodData = load(entry.good_path)
-		if good and good.good_name == good_name:
-			var available: int = int(entry.amount)
-			if available <= remaining:
-				remaining -= available
-			else:
-				var partial: Dictionary = entry.duplicate()
-				partial.amount = available - remaining
-				remaining = 0
-				kept.append(partial)
-		else:
-			kept.append(entry)
-	f.finished_items = kept
-	return remaining
-
-
 func start_job(planet_name: String, recipe: Resource) -> bool:
 	if not can_start_job(planet_name, recipe):
 		return false
@@ -195,9 +170,24 @@ func start_job(planet_name: String, recipe: Resource) -> bool:
 	var f: Dictionary = _ensure_facility(planet_name)
 	for entry in recipe.inputs:
 		var good: GoodData = entry.good
-		var remaining: int = _consume_from_finished(f, good.good_name, int(entry.amount))
-		if remaining > 0:
-			GameManager.remove_cargo(good.good_name, remaining)
+		var needed: int = int(entry.amount)
+		# Consume from factory finished items in-place (iterate backwards for safe removal)
+		var idx: int = f.finished_items.size() - 1
+		while idx >= 0 and needed > 0:
+			var fin: Dictionary = f.finished_items[idx]
+			var fin_good: GoodData = load(fin.good_path)
+			if fin_good and fin_good.good_name == good.good_name:
+				var available: int = int(fin.amount)
+				if available <= needed:
+					needed -= available
+					f.finished_items.remove_at(idx)
+				else:
+					fin.amount = available - needed
+					needed = 0
+			idx -= 1
+		# Consume remainder from cargo
+		if needed > 0:
+			GameManager.remove_cargo(good.good_name, needed)
 	f.active_jobs.append({
 		"recipe_id": recipe.recipe_id,
 		"days_remaining": recipe.build_days,
