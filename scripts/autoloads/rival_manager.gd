@@ -1,12 +1,12 @@
 extends Node
 
 ## RivalManager — handles the recurring Captain Vex rival questline.
-## 4 phases triggered at travel-day thresholds (3, 6, 9, 12 days).
+## 4 phases triggered at travel-day thresholds (4, 11, 18, 25 days).
 
 const RIVAL_PATH := "res://data/rivals/captain_vex.tres"
-const PHASE_THRESHOLDS := [3, 6, 9, 12]
-const PHASE_COOLDOWNS  := [3, 2, 2, 0]  # Travel days before rival can reappear after defeat
-const LOSS_COOLDOWN    := 1              # Travel days before rival returns after beating player
+const PHASE_THRESHOLDS := [4, 11, 18, 25]
+const PHASE_COOLDOWNS  := [6, 6, 6, 0]   # Travel days before rival can reappear after defeat
+const LOSS_COOLDOWN    := 3              # Travel days before rival returns after beating player
 const FINAL_PHASE      := 3             # Index of the last phase (PHASE_THRESHOLDS.size() - 1)
 
 var _rival_data: Resource = null

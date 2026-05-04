@@ -103,7 +103,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/PlanetScreenSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Each planet has a city map with clickable buildings. Click on a building to open it. Available buildings vary by planet type: Market (buy/sell goods), Shipyard (repairs, upgrades, new ships), Casino (gamble for credits), Crew (recruit crew members), Quest Board (accept delivery missions), Armory (view your deck), and Starport (depart to another planet). The header and status bars now also show the local faction, your reputation tier, loyalty tier, bounty status, and important local warnings such as patrol pressure or trader discounts."
+text = "Each planet has a city map with clickable buildings. Click on a building to open it. Available buildings vary by planet type: Market (buy/sell goods), Shipyard (repairs, upgrades, new ships), Casino (gamble for credits), Crew (recruit crew members), Quest Board (accept delivery missions), Armory (view your deck), Mission (planet-specific risk/reward mini-game — Hacking, Mining, Harvest, Smuggler Race, Factory production, or Starport Defense depending on planet type), Factory (Tech planets only: craft raw materials into Tier-1 components and Tier-2 modules for high-profit sales or exclusive Advanced Upgrades), and Starport (depart to another planet). The header and status bars now also show the local faction, your reputation tier, loyalty tier, bounty status, and important local warnings such as patrol pressure or trader discounts."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -175,7 +175,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/RivalSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "After enough travel days, the notorious pirate Captain Vex will intercept you. He grows stronger with each encounter — four phases in total, triggered roughly every three travel days. Defeating him always awards a ship upgrade. Survive all four phases and the rivalry ends for good, with a large credit bonus. Losing a fight only delays his return briefly, so be prepared before departing if your hull is low. A crew member with combat experience deals bonus damage against him."
+text = "After enough travel days, the notorious pirate Captain Vex will intercept you. He grows stronger with each encounter — four phases spread across roughly twenty travel days, with about a week between each appearance. Defeating him always awards a ship upgrade. Survive all four phases and the rivalry ends for good, with a large credit bonus. Losing a fight only delays his return briefly, so be prepared before departing if your hull is low. A crew member with combat experience deals bonus damage against him."
 autowrap_mode = 3
 mouse_filter = 2
 
