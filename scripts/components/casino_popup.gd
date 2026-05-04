@@ -174,7 +174,7 @@ func _build_ui() -> void:
 		"Leave Casino",
 		Vector2(130, 36),
 		Color(0.5, 0.15, 0.1),
-		_close
+		close
 	)
 	header.add_child(close_btn)
 
@@ -836,12 +836,12 @@ func _build_result_ui() -> void:
 		"Leave Casino",
 		Vector2(140, 50),
 		Color(0.4, 0.15, 0.1),
-		_close
+		close
 	)
 	btn_row.add_child(close_btn)
 
 
-func _close() -> void:
+func close() -> void:
 	casino_closed.emit()
 	queue_free()
 

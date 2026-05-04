@@ -114,10 +114,6 @@ Signal-based: managers emit signals, UI components subscribe. Scene transitions 
 - `ship_shield.gdshader` -- Fresnel bubble, blend_add, uniforms: shield_color, shield_strength, hit_flash/color
 - `engine_glow.gdshader` -- billboard pulsing circle, blend_add, uniforms: glow_color, pulse_speed/phase
 
-**Planet Background** (`planet_background.gd`): Procedural planet with `_draw()` -- atmosphere, body, surface bands, highlight, shadow, optional moon. 5 color schemes by planet type. API: `setup(planet_type: int)`. Shown on planet screen (120x100).
-
-**Space Background** (`space_background.gd`): Procedural starfield behind entire planet screen via `_draw()` + `_process()`. ~150 static stars (3 size classes), 7-9 nebula clouds tinted by planet atmosphere color, 15-20 twinkling stars with glow halos (sine-wave pulse). Deterministic seed per planet type. Danger level shifts colors redward and darkens nebulae. API: `setup(planet_type: int, danger_level: int)`. UI panels use 0.75 alpha so the background shines through.
-
 **City Map** (`city_map.gd`): Isometric procedural city map drawn via `_draw()`. Each building is a 3D-looking box (top/front/right faces). Building names and appearances vary by planet type. Emits `building_clicked(id)` when an interactive building is clicked. Building IDs: market, shipyard, casino, crew, quest, deck, depart, mission.
 
 **Smuggler Events** (`smuggler_event.gd`): 15% chance on planet arrival. Offers discount buy or premium sell deals. 25% chance of getting caught -> 50-150cr fine. Modal popup overlay, emits `deal_closed` signal. Instantiated in `planet_screen._ready()`.

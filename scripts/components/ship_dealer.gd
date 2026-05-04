@@ -111,7 +111,7 @@ func _build_ui() -> void:
 	close_btn.text = "Leave Showroom"
 	close_btn.custom_minimum_size = Vector2(130, 36)
 	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
-	close_btn.pressed.connect(_close)
+	close_btn.pressed.connect(close)
 	header.add_child(close_btn)
 
 	# Separator with glow
@@ -530,6 +530,6 @@ func _style_buy_button(btn: Button) -> void:
 	UIStyles.style_buy_button(btn)
 
 
-func _close() -> void:
+func close() -> void:
 	dealer_closed.emit()
 	queue_free()

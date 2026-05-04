@@ -29,7 +29,7 @@ func try_scan() -> bool:
 	_contraband_items.clear()
 	for item in GameManager.cargo:
 		var gname: String = item.get("good_name", "")
-		if gname == "Spice" or gname == "Stolen Tech":
+		if EconomyManager.is_contraband_good(gname):
 			_contraband_items.append({"good_name": gname, "quantity": item["quantity"]})
 	if _contraband_items.is_empty():
 		return false
@@ -125,7 +125,7 @@ func _build_ui() -> void:
 	var fine_btn := Button.new()
 	fine_btn.text = "Pay Fine (%d cr)" % _fine_amount
 	fine_btn.custom_minimum_size = Vector2(380, 36)
-	_apply_button_style(fine_btn, Color(0.7, 0.25, 0.1), Color(0.85, 0.35, 0.15), Color(0.55, 0.18, 0.08))
+	UIStyles.style_event_button(fine_btn, Color(0.7, 0.25, 0.1), Color(0.85, 0.35, 0.15), Color(0.55, 0.18, 0.08))
 	fine_btn.pressed.connect(_on_pay_fine)
 	if GameManager.credits < _fine_amount:
 		fine_btn.disabled = true
@@ -134,7 +134,7 @@ func _build_ui() -> void:
 	var hide_btn := Button.new()
 	hide_btn.text = "Hide Contraband (%d%% chance)" % int(round(_hide_chance * 100.0))
 	hide_btn.custom_minimum_size = Vector2(380, 36)
-	_apply_button_style(hide_btn, Color(0.4, 0.2, 0.6), Color(0.5, 0.3, 0.7), Color(0.3, 0.15, 0.45))
+	UIStyles.style_event_button(hide_btn, Color(0.4, 0.2, 0.6), Color(0.5, 0.3, 0.7), Color(0.3, 0.15, 0.45))
 	hide_btn.pressed.connect(_on_try_hide)
 	_options_container.add_child(hide_btn)
 
@@ -142,7 +142,7 @@ func _build_ui() -> void:
 	var smuggler_note: String = " — Smuggler edge" if GameManager.get_customs_bribe_bonus() > 0.0 else ""
 	bribe_btn.text = "Bribe Official (%d cr, %d%% success%s)" % [_bribe_cost, int(round(_bribe_success_chance * 100.0)), smuggler_note]
 	bribe_btn.custom_minimum_size = Vector2(380, 36)
-	_apply_button_style(bribe_btn, Color(0.6, 0.5, 0.1), Color(0.75, 0.6, 0.15), Color(0.45, 0.35, 0.08))
+	UIStyles.style_event_button(bribe_btn, Color(0.6, 0.5, 0.1), Color(0.75, 0.6, 0.15), Color(0.45, 0.35, 0.08))
 	bribe_btn.pressed.connect(_on_bribe)
 	if GameManager.credits < _bribe_cost:
 		bribe_btn.disabled = true
@@ -249,20 +249,11 @@ func _show_result(text: String) -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Continue"
 	close_btn.custom_minimum_size = Vector2(140, 36)
-	_apply_button_style(close_btn, Color(0.2, 0.4, 0.7), Color(0.25, 0.5, 0.85), Color(0.15, 0.3, 0.55))
-	close_btn.pressed.connect(_close)
+	UIStyles.style_event_button(close_btn, Color(0.2, 0.4, 0.7), Color(0.25, 0.5, 0.85), Color(0.15, 0.3, 0.55))
+	close_btn.pressed.connect(close)
 	_options_container.get_parent().add_child(close_btn)
 
 
-func _apply_button_style(btn: Button, normal_color: Color, hover_color: Color, pressed_color: Color) -> void:
-	for pair in [["normal", normal_color], ["hover", hover_color], ["pressed", pressed_color]]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = pair[1]
-		style.set_corner_radius_all(4)
-		style.set_content_margin_all(6)
-		btn.add_theme_stylebox_override(pair[0], style)
-
-
-func _close() -> void:
+func close() -> void:
 	scan_closed.emit()
 	queue_free()

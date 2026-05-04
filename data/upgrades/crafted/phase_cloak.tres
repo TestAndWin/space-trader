@@ -9,7 +9,6 @@ upgrade_name = "Phase Cloak"
 description = "50% chance to bypass customs scans. Requires 1x Cloaking Array."
 slot = 5
 cost = 800
-crafted_only = true
 required_crafted_items = [{
 "good": ExtResource("2_item"),
 "amount": 1

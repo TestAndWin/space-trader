@@ -110,24 +110,15 @@ func _build_ui() -> void:
 
 	_choice_a_button = Button.new()
 	_choice_a_button.custom_minimum_size = Vector2(160, 36)
-	_apply_button_style(_choice_a_button, Color(0.2, 0.4, 0.7), Color(0.25, 0.5, 0.85), Color(0.15, 0.3, 0.55))
+	UIStyles.style_event_button(_choice_a_button, Color(0.2, 0.4, 0.7), Color(0.25, 0.5, 0.85), Color(0.15, 0.3, 0.55))
 	_choice_a_button.pressed.connect(_on_choice_a)
 	hbox.add_child(_choice_a_button)
 
 	_choice_b_button = Button.new()
 	_choice_b_button.custom_minimum_size = Vector2(160, 36)
-	_apply_button_style(_choice_b_button, Color(0.25, 0.25, 0.28), Color(0.35, 0.35, 0.38), Color(0.18, 0.18, 0.2))
+	UIStyles.style_event_button(_choice_b_button, Color(0.25, 0.25, 0.28), Color(0.35, 0.35, 0.38), Color(0.18, 0.18, 0.2))
 	_choice_b_button.pressed.connect(_on_choice_b)
 	hbox.add_child(_choice_b_button)
-
-
-func _apply_button_style(btn: Button, normal_color: Color, hover_color: Color, pressed_color: Color) -> void:
-	for pair in [["normal", normal_color], ["hover", hover_color], ["pressed", pressed_color]]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = pair[1]
-		style.set_corner_radius_all(4)
-		style.set_content_margin_all(6)
-		btn.add_theme_stylebox_override(pair[0], style)
 
 
 # ── Display ──────────────────────────────────────────────────────────────────
@@ -215,11 +206,11 @@ func _show_outcome(text: String) -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Continue"
 	close_btn.custom_minimum_size = Vector2(140, 36)
-	_apply_button_style(close_btn, Color(0.2, 0.4, 0.7), Color(0.25, 0.5, 0.85), Color(0.15, 0.3, 0.55))
-	close_btn.pressed.connect(_close)
+	UIStyles.style_event_button(close_btn, Color(0.2, 0.4, 0.7), Color(0.25, 0.5, 0.85), Color(0.15, 0.3, 0.55))
+	close_btn.pressed.connect(close)
 	_choice_a_button.get_parent().add_child(close_btn)
 
 
-func _close() -> void:
+func close() -> void:
 	event_resolved.emit()
 	queue_free()

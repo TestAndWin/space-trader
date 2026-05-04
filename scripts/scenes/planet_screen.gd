@@ -68,6 +68,7 @@ func _ready() -> void:
 	StandingManager.reputation_changed.connect(_on_standing_changed)
 	StandingManager.loyalty_changed.connect(_on_standing_changed)
 	StandingManager.bounty_changed.connect(_on_standing_changed)
+	tree_exiting.connect(_disconnect_standing_signals)
 	_find_planet_data()
 	var is_fresh_arrival: bool = not GameManager.arrival_events_done
 	# Check quest penalty after battle credits have been awarded
@@ -251,10 +252,8 @@ func _close_top_overlay() -> bool:
 func _close_overlay_node(node: Node) -> void:
 	if not is_instance_valid(node):
 		return
-	if node.has_method("_close"):
-		node.call("_close")
-	elif node.has_method("_on_close_pressed"):
-		node.call("_on_close_pressed")
+	if node.has_method("close"):
+		node.call("close")
 	else:
 		node.queue_free()
 
@@ -626,6 +625,9 @@ func _apply_header_label_style(label: Label, font_size: int, font_color: Color, 
 	label.label_settings = settings
 
 
+var _hull_bar_fill: StyleBoxFlat
+
+
 func _style_ship_panel() -> void:
 	ship_status_panel.add_theme_stylebox_override("panel", _make_holo_panel_style())
 	UIStyles.apply_mono_font(hull_label)
@@ -639,11 +641,15 @@ func _style_ship_panel() -> void:
 	if cargo_label_node:
 		UIStyles.apply_mono_font(cargo_label_node)
 
-	# Hull bar colors
-	var bar_bg := _make_bar_background_style(Color(0.08, 0.04, 0.04), Color(0.3, 0.1, 0.1))
-	hull_bar.add_theme_stylebox_override("background", bar_bg)
+	hull_bar.add_theme_stylebox_override("background", _make_bar_background_style(Color(0.08, 0.04, 0.04), Color(0.3, 0.1, 0.1)))
+	_hull_bar_fill = _make_bar_fill_style(Color(0.2, 0.9, 0.2))
+	hull_bar.add_theme_stylebox_override("fill", _hull_bar_fill)
 
-	hull_bar.add_theme_stylebox_override("fill", _make_bar_fill_style(Color(0.2, 0.9, 0.2)))
+	shield_bar.add_theme_stylebox_override("background", _make_bar_background_style(Color(0.04, 0.08, 0.16), Color(0.1, 0.2, 0.4)))
+	shield_bar.add_theme_stylebox_override("fill", _make_bar_fill_style(Color(0.4, 0.65, 1.0)))
+
+	fuel_bar.add_theme_stylebox_override("background", _make_bar_background_style(Color(0.12, 0.08, 0.02), Color(0.35, 0.2, 0.0)))
+	fuel_bar.add_theme_stylebox_override("fill", _make_bar_fill_style(Color(1.0, 0.65, 0.1)))
 
 
 func _style_cargo_bar() -> void:
@@ -744,6 +750,12 @@ func _on_standing_changed(_a = null, _b = null, _c = null) -> void:
 	_update_header()
 
 
+func _disconnect_standing_signals() -> void:
+	StandingManager.reputation_changed.disconnect(_on_standing_changed)
+	StandingManager.loyalty_changed.disconnect(_on_standing_changed)
+	StandingManager.bounty_changed.disconnect(_on_standing_changed)
+
+
 func _update_header() -> void:
 	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
 	var rep: int = StandingManager.get_faction_reputation(faction)
@@ -792,15 +804,10 @@ func _update_ui() -> void:
 	cargo_bar.value = used
 	cargo_bar.max_value = cap
 	capacity_label.text = str(used) + "/" + str(cap)
-	# Update cargo item icons
 	_update_cargo_items()
-	# Update crew item icons
 	_update_crew_items()
-	# Update ship status
 	_update_ship_status()
-	# Update quest header label
 	_update_quest_label()
-	# Goal progress
 	var planets_visited: int = GameManager.visited_planets.size()
 	var win_credits: int = GameManager.get_win_credits()
 	var t2_installed: bool = GameManager.has_crafted_upgrade_installed()
@@ -838,32 +845,18 @@ func _update_ship_status() -> void:
 	ship_display.update_ship(hull_pct, shield_pct, GameManager.get_cargo_used(), GameManager.cargo_capacity, shape)
 
 	hull_label.text = "Hull: %d/%d" % [hull, max_hull]
-	if hull_pct > 0.6:
-		hull_label.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3))
-	elif hull_pct > 0.3:
-		hull_label.add_theme_color_override("font_color", Color(0.95, 0.8, 0.1))
-	else:
-		hull_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
+	hull_label.add_theme_color_override("font_color", UIStyles.get_hull_color(hull_pct))
 
-	# Hull bar fill color mirrors hull status
-	var bar_fill := _make_bar_fill_style(Color(0.2, 0.9, 0.2))
 	if hull_pct > 0.6:
-		bar_fill.bg_color = Color(0.2, 0.9, 0.2)
+		_hull_bar_fill.bg_color = Color(0.2, 0.9, 0.2)
 	elif hull_pct > 0.3:
-		bar_fill.bg_color = Color(0.9, 0.75, 0.1)
+		_hull_bar_fill.bg_color = Color(0.9, 0.75, 0.1)
 	else:
-		bar_fill.bg_color = Color(0.9, 0.2, 0.15)
-	hull_bar.add_theme_stylebox_override("fill", bar_fill)
+		_hull_bar_fill.bg_color = Color(0.9, 0.2, 0.15)
 	hull_bar.max_value = max_hull
 	hull_bar.value = hull
 
 	shield_label.text = "Shield: %d/%d" % [shield, max_shield]
-
-	var shield_bar_bg := _make_bar_background_style(Color(0.04, 0.08, 0.16), Color(0.1, 0.2, 0.4))
-	shield_bar.add_theme_stylebox_override("background", shield_bar_bg)
-
-	shield_bar.add_theme_stylebox_override("fill", _make_bar_fill_style(Color(0.4, 0.65, 1.0)))
-
 	shield_bar.max_value = max(max_shield, 1)
 	shield_bar.value = shield
 
@@ -877,9 +870,6 @@ func _update_ship_status() -> void:
 		fuel_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.1))
 	else:
 		fuel_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
-	var fuel_bar_bg := _make_bar_background_style(Color(0.12, 0.08, 0.02), Color(0.35, 0.2, 0.0))
-	fuel_bar.add_theme_stylebox_override("background", fuel_bar_bg)
-	fuel_bar.add_theme_stylebox_override("fill", _make_bar_fill_style(Color(1.0, 0.65, 0.1)))
 	fuel_bar.max_value = max(max_fuel, 1)
 	fuel_bar.value = fuel
 

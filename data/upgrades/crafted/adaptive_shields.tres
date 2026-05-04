@@ -10,7 +10,6 @@ description = "Shields regenerate +3 on arrival. Requires 1x Shield Matrix."
 slot = 2
 cost = 800
 shield_bonus = 0
-crafted_only = true
 required_crafted_items = [{
 "good": ExtResource("2_item"),
 "amount": 1

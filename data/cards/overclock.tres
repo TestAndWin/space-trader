@@ -14,4 +14,4 @@ heal_value = 0
 draw_cards = 1
 credits_gain = 0
 description = "Overclock systems for extra energy."
-special_effect = "bonus_energy_2"
+special_effect = 2

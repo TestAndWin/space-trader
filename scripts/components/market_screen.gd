@@ -153,7 +153,7 @@ func _build_ui() -> void:
 	close_btn.custom_minimum_size = Vector2(140, 36)
 	close_btn.mouse_filter = Control.MOUSE_FILTER_STOP
 	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
-	close_btn.pressed.connect(_close)
+	close_btn.pressed.connect(close)
 	header.add_child(close_btn)
 
 	# Separator
@@ -368,7 +368,7 @@ func _on_sell(good_name: String, quantity: int) -> void:
 	StandingManager.add_trade_loyalty(planet_name, StandingManager.get_trade_loyalty_gain(quantity, total_income))
 	GameManager.record_market_observation(planet_name, good_name, EconomyManager.get_buy_price(planet_name, good_name), sell_price)
 	AchievementManager.check_trades(GameManager.total_trades)
-	if _planet_type != EconomyManager.PT_OUTLAW and _is_contraband(good_name):
+	if _planet_type != EconomyManager.PT_OUTLAW and EconomyManager.is_contraband_good(good_name):
 		var faction: String = StandingManager.get_planet_faction(planet_name)
 		var rep_loss: int = maxi(1, quantity)
 		match StandingManager.get_reputation_tier(faction):
@@ -394,17 +394,10 @@ func _on_sell(good_name: String, quantity: int) -> void:
 		get_tree().change_scene_to_file("res://scenes/victory.tscn")
 
 
-func _close() -> void:
+func close() -> void:
 	# Close first so the overlay always disappears, even if listeners error.
 	queue_free()
 	market_closed.emit()
-
-
-func _is_contraband(good_name: String) -> bool:
-	for good in EconomyManager.goods:
-		if good.good_name == good_name:
-			return bool(good.is_contraband)
-	return false
 
 
 func _record_market_snapshot() -> void:

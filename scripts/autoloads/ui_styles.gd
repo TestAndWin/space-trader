@@ -280,6 +280,18 @@ static func style_overlay_panel(node: Control) -> void:
 	node.add_theme_stylebox_override("panel", style)
 
 
+# ── Event modal button style ────────────────────────────────────────────────
+# Three-state flat button styling used by event popups (planet/travel/customs).
+
+static func style_event_button(btn: Button, normal_color: Color, hover_color: Color, pressed_color: Color) -> void:
+	for pair in [["normal", normal_color], ["hover", hover_color], ["pressed", pressed_color]]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = pair[1]
+		style.set_corner_radius_all(4)
+		style.set_content_margin_all(6)
+		btn.add_theme_stylebox_override(pair[0], style)
+
+
 # ── Hull color helper ────────────────────────────────────────────────────────
 # Returns green / yellow / red based on hull percentage.
 

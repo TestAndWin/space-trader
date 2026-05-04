@@ -9,7 +9,6 @@ upgrade_name = "Targeting Computer"
 description = "Cards deal 20% more damage. Requires 1x Combat Module."
 slot = 4
 cost = 600
-crafted_only = true
 required_crafted_items = [{
 "good": ExtResource("2_item"),
 "amount": 1

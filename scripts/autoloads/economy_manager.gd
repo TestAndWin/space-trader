@@ -14,7 +14,6 @@ const PT_MINING := 2
 const PT_TECH := 3
 const PT_OUTLAW := 4
 
-# Map PlanetType enum values to string keys.
 const PLANET_TYPE_NAMES := {
 	0: "Industrial",   # INDUSTRIAL
 	1: "Agricultural", # AGRICULTURAL
@@ -64,8 +63,7 @@ const _type_available_goods: Dictionary = {
 	"Outlaw": ["Weapons", "Spice", "Stolen Tech", "Electronics", "Luxury Goods"],
 }
 
-# Contraband goods: names that count as contraband.
-const _contraband_goods: Array = ["Spice", "Stolen Tech"]
+const CONTRABAND_GOODS: Array = ["Spice", "Stolen Tech"]
 
 # Contraband price modifiers for non-Outlaw planets (high prices = good sell target).
 const _contraband_non_outlaw_modifiers: Dictionary = {
@@ -102,7 +100,7 @@ func _generate_initial_prices() -> void:
 			var base_price: int = good.base_price
 			var modifier: float = modifiers.get(good_name, 1.0)
 			# Contraband at non-Outlaw planets: high price (good sell target)
-			if good_name in _contraband_goods and planet_type != "Outlaw":
+			if good_name in CONTRABAND_GOODS and planet_type != "Outlaw":
 				modifier = _contraband_non_outlaw_modifiers.get(good_name, 2.0)
 			var variance: float = randf_range(0.9, 1.1)
 			var final_price := int(round(base_price * modifier * variance))
@@ -164,7 +162,7 @@ func get_sell_price_breakdown(planet_name: String, good_name: String) -> Diction
 	if GameManager.has_crew_bonus(CrewData.CrewBonus.SELL_BONUS):
 		sell_ratio = maxf(sell_ratio, GameManager.get_crew_bonus_value(CrewData.CrewBonus.SELL_BONUS))
 	var contraband_modifier: float = 1.0
-	if _is_contraband_good(good_name):
+	if is_contraband_good(good_name):
 		contraband_modifier += GameManager.get_contraband_bonus()
 	var rep_modifier: float = StandingManager.get_market_sell_modifier(planet_name)
 	var loyalty_modifier: float = StandingManager.get_loyalty_sell_modifier(planet_name)
@@ -240,13 +238,13 @@ func _can_buy_good(planet_name: String, good_name: String) -> bool:
 	var available: Array = _type_available_goods.get(planet_type, [])
 	if available.size() > 0 and not (good_name in available):
 		return false
-	if _is_contraband_good(good_name) and planet_type != "Outlaw":
+	if is_contraband_good(good_name) and planet_type != "Outlaw":
 		return false
 	return true
 
 
-func _is_contraband_good(good_name: String) -> bool:
-	return good_name in _contraband_goods
+func is_contraband_good(good_name: String) -> bool:
+	return good_name in CONTRABAND_GOODS
 
 
 func _multiply_event_entries(entries: Array) -> float:

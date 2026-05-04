@@ -135,7 +135,7 @@ func _build_ui() -> void:
 	close_btn.text = "Leave Workshop"
 	close_btn.custom_minimum_size = Vector2(140, 36)
 	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
-	close_btn.pressed.connect(_close)
+	close_btn.pressed.connect(close)
 	header.add_child(close_btn)
 
 	# Separator
@@ -365,7 +365,7 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_child(desc_label)
 
-	if upgrade.crafted_only and not upgrade.required_crafted_items.is_empty():
+	if upgrade.is_crafted_only():
 		var req_label := Label.new()
 		req_label.text = "Requires: " + _format_required_items(upgrade)
 		req_label.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
@@ -414,7 +414,7 @@ func _on_buy_upgrade(upgrade: Resource) -> void:
 
 
 func _has_required_crafted_items(upgrade: Resource) -> bool:
-	if not upgrade.crafted_only:
+	if not upgrade.is_crafted_only():
 		return true
 	for entry in upgrade.required_crafted_items:
 		var good: GoodData = entry.good
@@ -425,7 +425,7 @@ func _has_required_crafted_items(upgrade: Resource) -> bool:
 
 
 func _consume_required_crafted_items(upgrade: Resource) -> void:
-	if not upgrade.crafted_only:
+	if not upgrade.is_crafted_only():
 		return
 	for entry in upgrade.required_crafted_items:
 		var good: GoodData = entry.good
@@ -493,6 +493,6 @@ func _add_stat_row(stat_name: String, stat_value: String) -> void:
 	_stats_list.add_child(row)
 
 
-func _close() -> void:
+func close() -> void:
 	upgrades_closed.emit()
 	queue_free()

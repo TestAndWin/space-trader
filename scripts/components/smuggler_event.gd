@@ -208,11 +208,11 @@ func _on_accept() -> void:
 	if _deal_type == DealType.DISCOUNT_BUY:
 		if not GameManager.can_add_cargo(_good_name, _quantity):
 			EventLog.add_entry("Smuggler deal failed — not enough cargo space.")
-			_close()
+			close()
 			return
 		if not GameManager.remove_credits(_total_price):
 			EventLog.add_entry("Smuggler deal failed — not enough credits.")
-			_close()
+			close()
 			return
 		GameManager.add_cargo(_good_name, _quantity)
 		EventLog.add_entry(
@@ -233,7 +233,7 @@ func _on_accept() -> void:
 		_show_caught_options()
 		return
 
-	_close()
+	close()
 
 
 func _show_caught_options() -> void:
@@ -261,7 +261,7 @@ func _show_caught_options() -> void:
 		StandingManager.add_bounty(100, "caught smuggling")
 		StandingManager.add_trade_loyalty(GameManager.current_planet, -15)
 		EventLog.add_entry("Paid smuggling fine: %d cr." % fine)
-		_close()
+		close()
 	)
 	if GameManager.credits < fine:
 		fine_btn.disabled = true
@@ -281,7 +281,7 @@ func _show_caught_options() -> void:
 			StandingManager.add_bounty(150, "failed bribe attempt")
 			StandingManager.add_trade_loyalty(GameManager.current_planet, -20)
 			EventLog.add_entry("Bribe failed! Fined %d cr + bounty." % bribe_cost)
-		_close()
+		close()
 	)
 	if GameManager.credits < bribe_cost:
 		bribe_btn.disabled = true
@@ -297,7 +297,7 @@ func _show_caught_options() -> void:
 		StandingManager.add_bounty(100, "caught smuggling")
 		StandingManager.add_trade_loyalty(GameManager.current_planet, -15)
 		EventLog.add_entry("Caught smuggling. Fined %d cr." % fine)
-		_close()
+		close()
 	)
 	caught_vbox.add_child(accept_btn)
 
@@ -317,9 +317,9 @@ func _style_caught_button(btn: Button, bg_color: Color) -> void:
 
 func _on_decline() -> void:
 	EventLog.add_entry("Declined a shady deal.")
-	_close()
+	close()
 
 
-func _close() -> void:
+func close() -> void:
 	deal_closed.emit()
 	queue_free()

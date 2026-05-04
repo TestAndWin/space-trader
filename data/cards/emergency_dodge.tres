@@ -14,4 +14,4 @@ heal_value = 0
 draw_cards = 0
 credits_gain = 0
 description = "Dodge the next attack entirely"
-special_effect = "skip_enemy_turn"
+special_effect = 3

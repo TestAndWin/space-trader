@@ -167,7 +167,7 @@ func _build_ui() -> void:
 	close_btn.text = "Leave Arsenal"
 	close_btn.custom_minimum_size = Vector2(90, 36)
 	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
-	close_btn.pressed.connect(_on_close_pressed)
+	close_btn.pressed.connect(close)
 	header.add_child(close_btn)
 
 	# Separator
@@ -297,7 +297,7 @@ func _populate_deck() -> void:
 				count_label.add_theme_font_size_override("font_size", 16)
 				count_label.add_theme_color_override("font_color", UIStyles.GOLD)
 				count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				var vbox = card_display.get_node("%PlayButton").get_parent()
+				var vbox: Node = card_display.get_node("%PlayButton").get_parent()
 				vbox.add_child(count_label)
 				vbox.move_child(count_label, card_display.get_node("%PlayButton").get_index())
 		else:
@@ -311,7 +311,7 @@ func _populate_deck() -> void:
 				count_label.add_theme_font_size_override("font_size", 16)
 				count_label.add_theme_color_override("font_color", UIStyles.GOLD)
 				count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				var vbox = card_display.get_node("%PlayButton").get_parent()
+				var vbox: Node = card_display.get_node("%PlayButton").get_parent()
 				vbox.add_child(count_label)
 				vbox.move_child(count_label, card_display.get_node("%PlayButton").get_index())
 
@@ -358,5 +358,5 @@ func _refresh_all() -> void:
 	_populate_deck()
 
 
-func _on_close_pressed() -> void:
+func close() -> void:
 	queue_free()

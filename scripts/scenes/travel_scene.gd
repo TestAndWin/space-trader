@@ -238,7 +238,7 @@ func _generate_starfield(warp_color: Color) -> void:
 		var brightness: float = _rng.randf_range(0.4, 1.0)
 		var tint: float = _rng.randf_range(0.1, 0.9)
 		# Mix white, warp_color, and a complementary warm color occasionally
-		var base_color = warp_color if _rng.randf() > 0.3 else Color(1.0, 0.9, 0.7)
+		var base_color: Color = warp_color if _rng.randf() > 0.3 else Color(1.0, 0.9, 0.7)
 		if _rng.randf() > 0.9:
 			base_color = Color(0.9, 0.4, 0.8) # rare pink/purple hues
 			
@@ -283,7 +283,7 @@ func _generate_dust(warp_color: Color) -> void:
 		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 		
 		# Dust should be very faint and nebulous
-		var alpha = _rng.randf_range(0.02, 0.15)
+		var alpha: float = _rng.randf_range(0.02, 0.15)
 		var color := Color(warp_color.r, warp_color.g, warp_color.b, alpha)
 		# Occasionally different color
 		if _rng.randf() > 0.8:
@@ -349,7 +349,7 @@ func _animate_dust(delta: float, progress: float) -> void:
 		# Fade out dust as we get close to planet to not obscure it
 		if dust.material_override:
 			var mat: StandardMaterial3D = dust.material_override
-			var a = mat.albedo_color.a
+			var a: float = mat.albedo_color.a
 			mat.albedo_color.a = lerpf(a, a * (1.0 - progress), delta * 2.0)
 			
 		if dust.position.z > STARFIELD_Z_NEAR:
@@ -580,7 +580,7 @@ func _animate_camera(progress: float, approach_progress: float) -> void:
 	var shake_intensity := lerpf(1.0, 0.0, camera_curve) * (1.0 - arrival_settle * 0.85)
 	travel_camera.fov = lerpf(104.0, 72.0, camera_curve)
 
-	var shake_offset = Vector3(
+	var shake_offset := Vector3(
 		_rng.randf_range(-1.0, 1.0) * 0.04 * shake_intensity,
 		_rng.randf_range(-1.0, 1.0) * 0.04 * shake_intensity,
 		0.0

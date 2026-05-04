@@ -3,7 +3,6 @@ extends Node
 signal credits_changed(new_amount: int)
 signal cargo_changed
 signal crew_changed
-signal fuel_changed(current: int, maximum: int)
 
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
@@ -290,8 +289,8 @@ func process_loan_tick() -> void:
 	credits_changed.emit(credits)
 	EventLog.add_entry("Debt collectors hit you: Hull -%d, debt remaining %d cr" % [hull_damage, outstanding_debt])
 
-	# Missing payments hurts lawful factions.
-	for planet_type in [0, 1, 2, 3]:
+	# Missing payments hurts lawful factions (Outlaw faction has no reputation system).
+	for planet_type in [EconomyManager.PT_INDUSTRIAL, EconomyManager.PT_AGRICULTURAL, EconomyManager.PT_MINING, EconomyManager.PT_TECH]:
 		var faction: String = StandingManager.FACTION_BY_PLANET_TYPE.get(planet_type, "")
 		if faction != "":
 			StandingManager.add_faction_reputation(faction, -1, "debt default")
@@ -369,7 +368,6 @@ func consume_fuel(amount: int) -> bool:
 	if current_fuel < amount:
 		return false
 	current_fuel -= amount
-	fuel_changed.emit(current_fuel, max_fuel)
 	return true
 
 
@@ -381,7 +379,6 @@ func buy_fuel(amount: int) -> bool:
 	if not remove_credits(cost):
 		return false
 	current_fuel += fuel_to_buy
-	fuel_changed.emit(current_fuel, max_fuel)
 	EventLog.add_entry("Bought %d fuel for %dcr." % [fuel_to_buy, cost])
 	return true
 
@@ -395,7 +392,6 @@ func take_emergency_fuel() -> bool:
 		debt_due_in_days = 3
 	if debt_interest_rate <= 0.0:
 		debt_interest_rate = LOAN_DEFAULT_INTEREST
-	fuel_changed.emit(current_fuel, max_fuel)
 	EventLog.add_entry("Emergency fuel loaded: +1 fuel, +%d cr debt." % EMERGENCY_FUEL_DEBT)
 	return true
 
@@ -416,7 +412,6 @@ func apply_arrival_fuel_generation() -> void:
 	var before: int = current_fuel
 	current_fuel = mini(max_fuel, current_fuel + generated)
 	if current_fuel != before:
-		fuel_changed.emit(current_fuel, max_fuel)
 		EventLog.add_entry("Fuel Synthesizer generated +%d fuel." % (current_fuel - before))
 
 
@@ -513,7 +508,6 @@ func apply_upgrade(upgrade: Resource) -> void:
 	for card in upgrade.cards_to_add:
 		deck.append(card)
 	installed_upgrades.append(upgrade.upgrade_name)
-	fuel_changed.emit(current_fuel, max_fuel)
 	AchievementManager.check_deck(deck.size())
 
 
@@ -527,12 +521,20 @@ func get_win_credits() -> int:
 	return settings["win_credits"]
 
 
+var _crafted_upgrade_names: PackedStringArray = []
+
+func _get_crafted_upgrade_names() -> PackedStringArray:
+	if _crafted_upgrade_names.is_empty():
+		for path in ResourceRegistry.CRAFTED_UPGRADES:
+			var upgrade: Resource = load(path)
+			if upgrade != null:
+				_crafted_upgrade_names.append(upgrade.upgrade_name)
+	return _crafted_upgrade_names
+
+
 func has_crafted_upgrade_installed() -> bool:
-	for path in ResourceRegistry.CRAFTED_UPGRADES:
-		var upgrade: Resource = load(path)
-		if upgrade == null:
-			continue
-		if upgrade.upgrade_name in installed_upgrades:
+	for upgrade_name in _get_crafted_upgrade_names():
+		if upgrade_name in installed_upgrades:
 			return true
 	return false
 
@@ -625,7 +627,7 @@ func get_crew_resources() -> Array:
 	return result
 
 
-## Sum of secondary_bonus_value for all crew matching bonus_type (Finding #3/#4).
+## Sum of secondary_bonus_value for all crew matching bonus_type.
 func get_crew_secondary_bonus_value(bonus_type: int) -> float:
 	var total: float = 0.0
 	for res in get_crew_resources():
@@ -634,7 +636,7 @@ func get_crew_secondary_bonus_value(bonus_type: int) -> float:
 	return total
 
 
-## True if any hired crew has the given event_flavor_tag (Finding #8).
+## True if any hired crew has the given event_flavor_tag.
 func has_crew_flavor_tag(tag: String) -> bool:
 	for res in get_crew_resources():
 		if res.event_flavor_tag == tag:
@@ -642,7 +644,7 @@ func has_crew_flavor_tag(tag: String) -> bool:
 	return false
 
 
-## Name of the first crew member matching the event_flavor_tag, or "" (Finding #8).
+## Name of the first crew member matching the event_flavor_tag, or "".
 func get_crew_name_by_flavor_tag(tag: String) -> String:
 	for res in get_crew_resources():
 		if res.event_flavor_tag == tag:

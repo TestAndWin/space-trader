@@ -338,10 +338,10 @@ func _on_card_played(card_data: Resource) -> void:
 	combo_active = false
 
 	match card_data.card_type:
-		0: _apply_attack_card(card_data)
-		1: _apply_defense_card(card_data)
-		2: _apply_utility_card(card_data)
-		3: _apply_trade_card(card_data)
+		CardData.CardType.ATTACK: _apply_attack_card(card_data)
+		CardData.CardType.DEFENSE: _apply_defense_card(card_data)
+		CardData.CardType.UTILITY: _apply_utility_card(card_data)
+		CardData.CardType.TRADE: _apply_trade_card(card_data)
 
 	# COMBO: activate for next card
 	if card_data.keywords.has(CardData.CardKeyword.COMBO):
@@ -424,19 +424,20 @@ func _apply_trade_card(card_data: Resource) -> void:
 
 func _apply_special_effect(card_data: Resource) -> bool:
 	## Returns true if the caller should return early (battle ended).
-	if card_data.special_effect == "self_damage_5":
-		GameManager.current_hull -= 5
-	elif card_data.special_effect == "bonus_energy_2":
-		current_energy += 2
-	elif card_data.special_effect == "skip_enemy_turn":
-		skip_enemy_turn = true
-	elif card_data.special_effect == "end_encounter":
-		# Peaceful resolution: no win/loss, remove card permanently from deck
-		GameManager.remove_card_permanently(card_data.resource_path)
-		_on_battle_won_no_reward()
-		return true
-	elif card_data.special_effect == "scavenge":
-		_resolve_scavenge()
+	match card_data.special_effect:
+		CardData.SpecialEffect.SELF_DAMAGE_5:
+			GameManager.current_hull -= 5
+		CardData.SpecialEffect.BONUS_ENERGY_2:
+			current_energy += 2
+		CardData.SpecialEffect.SKIP_ENEMY_TURN:
+			skip_enemy_turn = true
+		CardData.SpecialEffect.END_ENCOUNTER:
+			# Peaceful resolution: no win/loss, remove card permanently from deck
+			GameManager.remove_card_permanently(card_data.resource_path)
+			_on_battle_won_no_reward()
+			return true
+		CardData.SpecialEffect.SCAVENGE:
+			_resolve_scavenge()
 	return false
 
 

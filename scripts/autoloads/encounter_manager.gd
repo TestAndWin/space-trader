@@ -49,8 +49,10 @@ func estimate_encounter_chance(danger_level: int, planet_name: String = "") -> f
 
 
 func is_carrying_contraband() -> bool:
-	return GameManager.get_cargo_quantity("Spice") > 0 \
-		or GameManager.get_cargo_quantity("Stolen Tech") > 0
+	for good_name in EconomyManager.CONTRABAND_GOODS:
+		if GameManager.get_cargo_quantity(good_name) > 0:
+			return true
+	return false
 
 
 func _get_difficulty_bonus() -> int:

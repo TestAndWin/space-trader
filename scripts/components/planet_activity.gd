@@ -199,7 +199,7 @@ func _build_ui() -> void:
 	_close_btn.text = "Leave"
 	_close_btn.visible = false
 	UIStyles.style_accent_button(_close_btn, Color(0.2, 0.4, 0.7))
-	_close_btn.pressed.connect(_close)
+	_close_btn.pressed.connect(close)
 	var close_row := HBoxContainer.new()
 	close_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	close_row.add_child(_close_btn)
@@ -242,7 +242,7 @@ func _finish(summary: String) -> void:
 	_close_btn.text = "Continue"
 
 
-func _close() -> void:
+func close() -> void:
 	activity_closed.emit()
 	queue_free()
 

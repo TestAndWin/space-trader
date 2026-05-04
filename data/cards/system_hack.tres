@@ -14,4 +14,4 @@ heal_value = 0
 draw_cards = 3
 credits_gain = 0
 description = "Hack enemy. Gain cards and energy."
-special_effect = "bonus_energy_2"
+special_effect = 2

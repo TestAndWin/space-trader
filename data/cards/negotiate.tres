@@ -14,4 +14,4 @@ heal_value = 0
 draw_cards = 0
 credits_gain = 50
 description = "Negotiate a peaceful resolution."
-special_effect = "end_encounter"
+special_effect = 4

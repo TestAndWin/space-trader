@@ -28,7 +28,7 @@ func generate_quests() -> void:
 	available_quests.clear()
 	for planet in EconomyManager.planets:
 		var quality: Dictionary = get_offer_quality_for_planet(planet.planet_name)
-		if bool(quality.get("blocked", false)):
+		if quality.get("blocked", false):
 			continue
 		var chain_length: int = _roll_chain_length(quality)
 		var quest := _make_quest(planet, 1, _next_chain_id(), chain_length)
@@ -37,7 +37,7 @@ func generate_quests() -> void:
 
 
 func can_offer_quest(planet_name: String) -> bool:
-	return not bool(get_offer_quality_for_planet(planet_name).get("blocked", false))
+	return not get_offer_quality_for_planet(planet_name).get("blocked", false)
 
 
 func get_offer_quality_for_planet(planet_name: String) -> Dictionary:
@@ -122,7 +122,7 @@ func _make_quest(
 	chain_length: int = 1
 ) -> Dictionary:
 	var quality: Dictionary = get_offer_quality_for_planet(planet.planet_name)
-	if bool(quality.get("blocked", false)):
+	if quality.get("blocked", false):
 		return {}
 
 	var all_planet_names: Array = []
@@ -201,7 +201,7 @@ func _make_quest(
 
 func get_offer_for_planet(planet_name: String) -> Dictionary:
 	var quality: Dictionary = get_offer_quality_for_planet(planet_name)
-	if bool(quality.get("blocked", false)):
+	if quality.get("blocked", false):
 		available_quests.erase(planet_name)
 		return {
 			"blocked": true,

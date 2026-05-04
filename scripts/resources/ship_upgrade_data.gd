@@ -16,4 +16,7 @@ enum UpgradeSlot { ENGINE, HULL, SHIELDS, CARGO, WEAPONS, SPECIAL }
 @export var hand_size_bonus: int = 0
 @export var energy_bonus: int = 0
 @export var required_crafted_items: Array[Dictionary] = []  # [{ "good": GoodData, "amount": int }]
-@export var crafted_only: bool = false
+
+
+func is_crafted_only() -> bool:
+	return not required_crafted_items.is_empty()

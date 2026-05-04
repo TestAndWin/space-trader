@@ -58,7 +58,7 @@ func _build_ui() -> void:
 		subtitle_text,
 		SHIPYARD_ICONS.get(_planet_type, "\u2699"),
 		"Leave Shipyard",
-		_close,
+		close,
 	)
 	var main_vbox: VBoxContainer = scaffold["main_vbox"]
 	_credits_label = scaffold["credits_label"]
@@ -125,6 +125,6 @@ func _refresh_ui() -> void:
 	_credits_label.text = "%d cr" % GameManager.credits
 
 
-func _close() -> void:
+func close() -> void:
 	shipyard_closed.emit()
 	queue_free()

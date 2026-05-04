@@ -57,7 +57,7 @@ func _build_ui() -> void:
 		"Accept and deliver cargo contracts",
 		QUEST_ICONS.get(_planet_type, "\u2709"),
 		"Leave Office",
-		_close,
+		close,
 	)
 	var main_vbox: VBoxContainer = scaffold["main_vbox"]
 	_credits_label = scaffold["credits_label"]
@@ -117,6 +117,6 @@ func _get_loyalty_status_text(planet_name: String) -> String:
 	return loyalty_tier
 
 
-func _close() -> void:
+func close() -> void:
 	quest_closed.emit()
 	queue_free()

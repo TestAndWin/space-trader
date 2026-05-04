@@ -10,7 +10,6 @@ description = "Adds 5 cargo capacity. Requires 1x Cargo Optimizer."
 slot = 3
 cost = 600
 cargo_bonus = 5
-crafted_only = true
 required_crafted_items = [{
 "good": ExtResource("2_item"),
 "amount": 1

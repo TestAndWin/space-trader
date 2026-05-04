@@ -35,7 +35,7 @@ func _build_ui() -> void:
 		SUBTITLE_TEXT,
 		HEADER_ICON,
 		"Leave Factory",
-		_close,
+		close,
 	)
 	var main_vbox: VBoxContainer = scaffold["main_vbox"]
 	_credits_label = scaffold["credits_label"]
@@ -287,6 +287,6 @@ func _on_build_pressed(recipe: Resource) -> void:
 		_refresh()
 
 
-func _close() -> void:
+func close() -> void:
 	factory_closed.emit()
 	queue_free()
