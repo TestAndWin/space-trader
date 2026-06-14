@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-resource-registry.sh",
+            "timeout": 15,
+            "statusMessage": "Prüfe ResourceRegistry-Eintraege..."
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/godot-smoke-test.sh",
+            "timeout": 60,
+            "statusMessage": "Godot Headless-Smoke-Test..."
+          }
+        ]
+      }
+    ]
+  }
+}
