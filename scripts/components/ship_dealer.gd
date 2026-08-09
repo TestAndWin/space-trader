@@ -18,6 +18,16 @@ var _status_label: Label
 var _current_ship_display: Control
 const ShipDisplayScene: PackedScene = preload("res://scenes/components/ship_display_3d.tscn")
 
+## When shown as a tab inside the shipyard screen the host already provides the
+## background, frame and header — drawing our own would stack a second full
+## screen inside the first, which is the nesting the tabs replaced.
+var _embedded: bool = false
+
+
+## Must be called before add_child(), because the UI is built in _ready().
+func set_embedded(value: bool) -> void:
+	_embedded = value
+
 
 func setup(planet_type: int) -> void:
 	_planet_type = planet_type
@@ -31,27 +41,34 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	# Background image
-	BackgroundUtils.add_building_background(self, "shipyard", 0.4)
+	if not _embedded:
+		BackgroundUtils.add_building_background(self, "shipyard", 0.4)
 
 	# Semi-transparent main panel
 	var panel := PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var style := StyleBoxFlat.new()
-	style.bg_color = UIStyles.PANEL_COLOR
-	style.border_color = UIStyles.BORDER_COLOR
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(16)
-	style.content_margin_left = 28
-	style.content_margin_right = 28
-	style.content_margin_top = 16
-	style.content_margin_bottom = 16
-	panel.add_theme_stylebox_override("panel", style)
+	if _embedded:
+		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	else:
+		var style := StyleBoxFlat.new()
+		style.bg_color = UIStyles.PANEL_COLOR
+		style.border_color = UIStyles.BORDER_COLOR
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(16)
+		style.content_margin_left = 28
+		style.content_margin_right = 28
+		style.content_margin_top = 16
+		style.content_margin_bottom = 16
+		panel.add_theme_stylebox_override("panel", style)
 	add_child(panel)
 
 	var main_vbox := VBoxContainer.new()
 	main_vbox.add_theme_constant_override("separation", 10)
 	panel.add_child(main_vbox)
+
+	if _embedded:
+		_build_content(main_vbox)
+		return
 
 	# ── Header ──
 	var header := HBoxContainer.new()
@@ -101,14 +118,11 @@ func _build_ui() -> void:
 	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(header_spacer)
 
-	_credits_label = Label.new()
-	_credits_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	_credits_label.add_theme_font_size_override("font_size", 20)
-	_credits_label.add_theme_color_override("font_color", UIStyles.GOLD)
+	_credits_label = UIStyles.create_credits_label()
 	header.add_child(_credits_label)
 
 	var close_btn := Button.new()
-	close_btn.text = "Leave Showroom"
+	close_btn.text = "Back to Shipyard"
 	close_btn.custom_minimum_size = Vector2(130, 36)
 	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
 	close_btn.pressed.connect(close)
@@ -120,6 +134,12 @@ func _build_ui() -> void:
 	sep.add_theme_color_override("separator", UIStyles.ACCENT_DIM)
 	main_vbox.add_child(sep)
 
+	_build_content(main_vbox)
+
+
+## Everything below the header — shared by the standalone screen and the
+## embedded shipyard tab.
+func _build_content(main_vbox: VBoxContainer) -> void:
 	# Status label
 	_status_label = Label.new()
 	_status_label.add_theme_font_size_override("font_size", 14)
@@ -259,10 +279,8 @@ func _get_current_ship_name() -> String:
 
 
 func _refresh_ui() -> void:
-	if not _credits_label:
+	if _ship_list_container == null:
 		return
-	_credits_label.text = "%d cr" % GameManager.credits
-
 	for child in _ship_list_container.get_children():
 		child.queue_free()
 

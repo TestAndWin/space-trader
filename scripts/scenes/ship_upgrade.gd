@@ -7,6 +7,19 @@ signal upgrades_closed
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
+const EnergyIcon = preload("res://scripts/components/energy_icon.gd")
+
+## Glyph per UpgradeSlot (ENGINE, HULL, SHIELDS, CARGO, WEAPONS, SPECIAL).
+## The bolt is deliberately absent here — it is reserved for upgrades that
+## grant energy, see _build_upgrade_icon().
+const SLOT_ICONS := {
+	0: "\u2699",  # ⚙ engine
+	1: "\u26E8",  # ⛨ hull
+	2: "\u25C9",  # ◉ shields
+	3: "\u25A3",  # ▣ cargo
+	4: "\u2694",  # ⚔ weapons
+	5: "\u2605",  # ★ special
+}
 
 # Planet type -> allowed upgrade slots
 const PLANET_UPGRADE_SLOTS := {
@@ -27,6 +40,16 @@ var _upgrade_list: VBoxContainer
 var _stats_list: VBoxContainer
 var _ship_display: Control
 const ShipDisplayScene: PackedScene = preload("res://scenes/components/ship_display_3d.tscn")
+
+## When shown as a tab inside the shipyard screen the host already provides the
+## background, frame and header — drawing our own would stack a second full
+## screen inside the first, which is the nesting the tabs replaced.
+var _embedded: bool = false
+
+
+## Must be called before add_child(), because the UI is built in _ready().
+func set_embedded(value: bool) -> void:
+	_embedded = value
 
 
 func setup(planet_type: int) -> void:
@@ -51,27 +74,34 @@ func _load_all_upgrades() -> void:
 
 
 func _build_ui() -> void:
-	# Background image
-	BackgroundUtils.add_building_background(self, "shipyard", 0.4)
+	if not _embedded:
+		BackgroundUtils.add_building_background(self, "shipyard", 0.4)
 
 	# Semi-transparent main panel
 	var panel := PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var style := StyleBoxFlat.new()
-	style.bg_color = UIStyles.PANEL_COLOR
-	style.border_color = UIStyles.BORDER_COLOR
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(16)
-	style.content_margin_left = 28
-	style.content_margin_right = 28
-	style.content_margin_top = 16
-	style.content_margin_bottom = 16
-	panel.add_theme_stylebox_override("panel", style)
+	if _embedded:
+		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	else:
+		var style := StyleBoxFlat.new()
+		style.bg_color = UIStyles.PANEL_COLOR
+		style.border_color = UIStyles.BORDER_COLOR
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(16)
+		style.content_margin_left = 28
+		style.content_margin_right = 28
+		style.content_margin_top = 16
+		style.content_margin_bottom = 16
+		panel.add_theme_stylebox_override("panel", style)
 	add_child(panel)
 
 	var main_vbox := VBoxContainer.new()
 	main_vbox.add_theme_constant_override("separation", 10)
 	panel.add_child(main_vbox)
+
+	if _embedded:
+		_build_content(main_vbox)
+		return
 
 	# ── Header ──
 	var header := HBoxContainer.new()
@@ -125,14 +155,11 @@ func _build_ui() -> void:
 	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(header_spacer)
 
-	_credits_label = Label.new()
-	_credits_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	_credits_label.add_theme_font_size_override("font_size", 20)
-	_credits_label.add_theme_color_override("font_color", UIStyles.GOLD)
+	_credits_label = UIStyles.create_credits_label()
 	header.add_child(_credits_label)
 
 	var close_btn := Button.new()
-	close_btn.text = "Leave Workshop"
+	close_btn.text = "Back to Shipyard"
 	close_btn.custom_minimum_size = Vector2(140, 36)
 	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
 	close_btn.pressed.connect(close)
@@ -144,6 +171,12 @@ func _build_ui() -> void:
 	sep.add_theme_color_override("separator", UIStyles.ACCENT_DIM)
 	main_vbox.add_child(sep)
 
+	_build_content(main_vbox)
+
+
+## Everything below the header — shared by the standalone screen and the
+## embedded shipyard tab.
+func _build_content(main_vbox: VBoxContainer) -> void:
 	# Status label
 	_status_label = Label.new()
 	_status_label.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
@@ -262,9 +295,8 @@ func _style_buy_button(btn: Button) -> void:
 
 
 func _refresh_all() -> void:
-	if not _credits_label:
+	if _upgrade_list == null:
 		return
-	_credits_label.text = "%d cr" % GameManager.credits
 	_update_ship_display()
 	_populate_available_upgrades()
 	_update_stats()
@@ -338,14 +370,7 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 	icon_panel.add_theme_stylebox_override("panel", icon_style)
 	hbox.add_child(icon_panel)
 
-	var icon_lbl := Label.new()
-	var slot_icons: Dictionary = {0: "\u2699", 1: "\u26E8", 2: "\u26A1", 3: "\u25A3", 4: "\u2694", 5: "\u2605"}
-	icon_lbl.text = slot_icons.get(upgrade.slot, "\u2726")
-	icon_lbl.add_theme_font_size_override("font_size", 22)
-	icon_lbl.add_theme_color_override("font_color", UIStyles.ACCENT)
-	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	icon_panel.add_child(icon_lbl)
+	icon_panel.add_child(_build_upgrade_icon(upgrade))
 
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -397,6 +422,31 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 	btn_col.add_child(buy_button)
 
 	_upgrade_list.add_child(row)
+
+
+## Icon for an upgrade row.
+##
+## Upgrades that actually grant energy (currently only the Reactor Core) get the
+## same procedurally drawn bolt the cards use for their energy cost, so the
+## symbol means one thing across the whole game. Everything else keeps its
+## slot glyph — note the SHIELDS slot previously showed the bolt, which is what
+## made it ambiguous.
+func _build_upgrade_icon(upgrade: Resource) -> Control:
+	if upgrade.energy_bonus > 0:
+		var bolt := Control.new()
+		bolt.set_script(EnergyIcon)
+		bolt.custom_minimum_size = Vector2(24, 30)
+		bolt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bolt.tooltip_text = "Grants +%d energy per turn" % upgrade.energy_bonus
+		return bolt
+
+	var icon_lbl := Label.new()
+	icon_lbl.text = SLOT_ICONS.get(upgrade.slot, "\u2726")
+	icon_lbl.add_theme_font_size_override("font_size", 22)
+	icon_lbl.add_theme_color_override("font_color", UIStyles.ACCENT)
+	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	icon_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return icon_lbl
 
 
 func _on_buy_upgrade(upgrade: Resource) -> void:

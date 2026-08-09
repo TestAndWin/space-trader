@@ -1,7 +1,33 @@
-[gd_resource type="Theme" load_steps=2 format=3]
+[gd_resource type="Theme" load_steps=3 format=3]
 
 [ext_resource type="FontFile" path="res://assets/fonts/Exo2.ttf" id="1_body"]
+
+; Tooltips float over busy planet artwork, so the plate is near-opaque and
+; carries the same cyan holo border as the in-game panels.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tooltip"]
+content_margin_left = 12.0
+content_margin_top = 9.0
+content_margin_right = 12.0
+content_margin_bottom = 9.0
+bg_color = Color(0.02, 0.035, 0.07, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0.65, 0.95, 0.85)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.65)
+shadow_size = 8
 
 [resource]
 default_font = ExtResource("1_body")
 default_font_size = 14
+TooltipLabel/colors/font_color = Color(0.9, 0.96, 1, 1)
+TooltipLabel/colors/font_shadow_color = Color(0, 0, 0, 0.9)
+TooltipLabel/constants/shadow_offset_x = 1
+TooltipLabel/constants/shadow_offset_y = 1
+TooltipLabel/font_sizes/font_size = 13
+TooltipPanel/styles/panel = SubResource("StyleBoxFlat_tooltip")

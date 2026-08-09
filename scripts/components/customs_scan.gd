@@ -238,7 +238,6 @@ func _on_bribe() -> void:
 func _confiscate_contraband() -> void:
 	for item in _contraband_items:
 		GameManager.remove_cargo(item["good_name"], item["quantity"])
-	GameManager.cargo_changed.emit()
 
 
 func _show_result(text: String) -> void:

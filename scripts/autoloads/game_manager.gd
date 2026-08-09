@@ -19,7 +19,15 @@ var difficulty: int = Difficulty.NORMAL
 var player_name: String = "Pilot"
 
 # Economy
-var credits: int = 1000
+## Every write emits credits_changed, including reset() and save loading, so UI
+## bound to the signal cannot go stale. Callers must never emit it themselves.
+## Assigning the same value is a no-op — no redundant UI churn.
+var credits: int = 1000:
+	set(value):
+		if credits == value:
+			return
+		credits = value
+		credits_changed.emit(credits)
 
 # Ship stats
 var max_hull: int = 30
@@ -29,7 +37,16 @@ var current_shield: int = 10
 var cargo_capacity: int = 10
 
 # Inventory  (each entry: { "good_name": String, "quantity": int })
-var cargo: Array = []
+## The setter only fires when the array itself is replaced (save loading,
+## reset()) — element changes cannot be observed this way. Everything that
+## modifies the hold must therefore go through add_cargo()/remove_cargo(),
+## which emit; never mutate GameManager.cargo from outside.
+var cargo: Array = []:
+	set(value):
+		if cargo == value:
+			return
+		cargo = value
+		cargo_changed.emit()
 
 # Card / combat
 var deck: Array = []
@@ -116,7 +133,7 @@ func reset() -> void:
 	max_shield = 10
 	current_shield = 10
 	cargo_capacity = 10
-	cargo.clear()
+	cargo = []  # Reassign rather than clear(), so the setter reports it.
 	deck.clear()
 	installed_upgrades.clear()
 	crew.clear()
@@ -196,7 +213,6 @@ func build_starter_deck() -> void:
 
 func add_credits(amount: int) -> void:
 	credits += amount
-	credits_changed.emit(credits)
 	AchievementManager.check_credits(credits)
 
 
@@ -204,7 +220,6 @@ func remove_credits(amount: int) -> bool:
 	if credits < amount:
 		return false
 	credits -= amount
-	credits_changed.emit(credits)
 	return true
 
 
@@ -286,7 +301,6 @@ func process_loan_tick() -> void:
 	debt_due_in_days = 2
 	var hull_damage: int = 2 + missed_debt_payments * 2
 	current_hull = maxi(1, current_hull - hull_damage)
-	credits_changed.emit(credits)
 	EventLog.add_entry("Debt collectors hit you: Hull -%d, debt remaining %d cr" % [hull_damage, outstanding_debt])
 
 	# Missing payments hurts lawful factions (Outlaw faction has no reputation system).
@@ -566,7 +580,6 @@ func hire_crew(crew_res: Resource) -> bool:
 	credits -= crew_res.recruit_cost
 	crew.append(crew_res.resource_path)
 	crew_changed.emit()
-	credits_changed.emit(credits)
 	AchievementManager.check_crew(crew.size())
 	return true
 
@@ -764,7 +777,8 @@ func switch_ship(new_ship_path: String, keep_old: bool = false) -> void:
 	cargo_capacity += new_ship.base_cargo_capacity - old_ship.base_cargo_capacity
 	energy_per_turn += new_ship.base_energy_per_turn - old_ship.base_energy_per_turn
 	hand_size += new_ship.base_hand_size - old_ship.base_hand_size
-	# Drop excess cargo
+	# Drop excess cargo — one signal for the whole adjustment, not one per item.
+	var dropped_any: bool = false
 	while get_cargo_used() > cargo_capacity and cargo.size() > 0:
 		var last_item: Dictionary = cargo[cargo.size() - 1]
 		var excess: int = get_cargo_used() - cargo_capacity
@@ -772,6 +786,8 @@ func switch_ship(new_ship_path: String, keep_old: bool = false) -> void:
 		last_item["quantity"] -= drop
 		if last_item["quantity"] <= 0:
 			cargo.remove_at(cargo.size() - 1)
+		dropped_any = true
+	if dropped_any:
 		cargo_changed.emit()
 	# Hangar bookkeeping
 	if not keep_old:
@@ -781,7 +797,6 @@ func switch_ship(new_ship_path: String, keep_old: bool = false) -> void:
 	current_ship = new_ship_path
 	# Ghost Run: available only on Smuggler-class ships, resets on every switch
 	ghost_run_available = new_ship.ship_ability == ShipData.ShipAbility.GHOST_RUN
-	credits_changed.emit(credits)
 
 
 # ── Difficulty ──────────────────────────────────────────────────────────────

@@ -18,6 +18,8 @@ var _planet_visuals: Dictionary = {} # { planet_name: { planet, node, body, body
 var _hovered_planet_name: String = ""
 var _player_marker: Node3D
 var _player_marker_base_position: Vector3 = Vector3.ZERO
+## Planets stocking the cargo the active quest still needs (marked "[+]").
+var _quest_source_planets: Array[String] = []
 var _systems_debug_label: Label = null
 var _selected_direct_line: MeshInstance3D = null
 var fuel_label: Label = null
@@ -80,7 +82,14 @@ func _ready() -> void:
 
 func _apply_fonts() -> void:
 	UIStyles.apply_display_font(planet_name_label)
+	# The scene-authored label becomes self-updating like the overlay headers.
+	credits_label.set_script(UIStyles.CreditsLabelScript)
+	credits_label.format_string = "Credits: %d"
+	credits_label.bind()
 	UIStyles.apply_mono_font(credits_label)
+	cargo_label.set_script(UIStyles.CargoLabelScript)
+	cargo_label.format_string = "Cargo: %d/%d"
+	cargo_label.bind()
 	UIStyles.apply_mono_font(cargo_label)
 	if fuel_label:
 		UIStyles.apply_mono_font(fuel_label)
@@ -549,6 +558,9 @@ func _update_planet_states() -> void:
 		if NavigationManager.is_reachable(GameManager.current_planet, planet.planet_name):
 			reachable_names.append(planet.planet_name)
 
+	# Resolved once per refresh rather than per planet — it scans every market.
+	_quest_source_planets = QuestManager.get_active_quest_source_planets()
+
 	for planet_name_key in _planet_visuals.keys():
 		var planet_name: String = str(planet_name_key)
 		var visual: Dictionary = _planet_visuals[planet_name]
@@ -596,13 +608,20 @@ func _update_planet_states() -> void:
 			ring_mat.emission_energy_multiplier = 0.0
 
 		var is_quest_dest: bool = QuestManager.has_active_quest() and planet_name == QuestManager.current_quest.get("destination", "")
+		# [+] marks planets that stock the cargo the active quest still needs,
+		# so the delivery target and the source are both visible on the map.
+		var is_quest_source: bool = not is_quest_dest and planet_name in _quest_source_planets
 		if is_quest_dest:
 			label.text = "[!] " + planet_name
+		elif is_quest_source:
+			label.text = "[+] " + planet_name
 		else:
 			label.text = planet_name
 
 		if is_quest_dest:
 			label.modulate = Color(1.0, 0.85, 0.2, 1.0) # Gold
+		elif is_quest_source:
+			label.modulate = Color(0.55, 1.0, 0.6, 1.0) # Green — buy the cargo here
 		elif is_current or is_reachable or is_hovered:
 			label.modulate = Color(0.85, 0.93, 1.0, 1.0)
 		else:
@@ -617,8 +636,7 @@ func _update_player_position() -> void:
 
 
 func _update_ui() -> void:
-	credits_label.text = "Credits: %d" % GameManager.credits
-	cargo_label.text = "Cargo: %d/%d" % [GameManager.get_cargo_used(), GameManager.cargo_capacity]
+	# credits_label and cargo_label keep themselves in sync via GameManager signals.
 	if fuel_label:
 		fuel_label.text = "Fuel: %d/%d" % [GameManager.current_fuel, GameManager.max_fuel]
 	current_planet_label.text = "@ %s" % GameManager.current_planet
@@ -730,6 +748,9 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 	if QuestManager.has_active_quest() and planet_data.planet_name == QuestManager.current_quest.get("destination", ""):
 		var q := QuestManager.current_quest
 		trades_label.text += "\n[!] Quest Target: Deliver %dx %s" % [q.get("deliver_qty", 0), q.get("deliver_good", "Goods")]
+	elif planet_data.planet_name in _quest_source_planets:
+		var qs := QuestManager.current_quest
+		trades_label.text += "\n[+] Sells %s — the cargo your contract needs" % qs.get("deliver_good", "Goods")
 
 	_fit_info_panel_height()
 

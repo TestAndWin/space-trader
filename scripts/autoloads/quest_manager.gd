@@ -228,6 +228,28 @@ func get_offer_for_planet(planet_name: String) -> Dictionary:
 	return {}
 
 
+## Where the player can obtain a quest's cargo. A contract may ask for goods
+## the issuing planet does not stock, which previously left no trail at all.
+func get_delivery_sourcing_hint(good_name: String) -> String:
+	if GameManager.get_cargo_quantity(good_name) > 0:
+		return "You already carry some %s." % good_name
+	var recipe: CraftingRecipeData = CraftingManager.get_recipe_for_good(good_name)
+	if recipe != null:
+		return "Crafted at the Fabrication Plant (Tech planets) — %d build days." % int(recipe.build_days)
+	var hint: String = EconomyManager.get_sourcing_hint(good_name)
+	return hint if hint != "" else "Not sold on any known market."
+
+
+## Planets that stock the active quest's cargo, for marking on the galaxy map.
+func get_active_quest_source_planets() -> Array[String]:
+	if not has_active_quest():
+		return []
+	var good_name: String = str(current_quest.get("deliver_good", ""))
+	if good_name == "" or GameManager.get_cargo_quantity(good_name) >= int(current_quest.get("deliver_qty", 0)):
+		return []
+	return EconomyManager.get_planets_selling(good_name)
+
+
 func has_active_quest() -> bool:
 	return current_quest.size() > 0
 
@@ -269,7 +291,6 @@ func check_expired_quest() -> bool:
 		# Confiscate cargo (highest-value first) to cover the shortfall.
 		var credits_taken: int = GameManager.credits
 		GameManager.credits = 0
-		GameManager.credits_changed.emit(GameManager.credits)
 		var remaining: int = penalty - credits_taken
 		var confiscated_summary: Array[String] = []
 		var cargo_paid: int = 0

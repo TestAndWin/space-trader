@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://cd1card_display"]
+[gd_scene load_steps=3 format=3 uid="uid://cd1card_display"]
 
 [ext_resource type="Script" path="res://scripts/components/card_display.gd" id="1_cd1"]
+[ext_resource type="Script" path="res://scripts/components/energy_icon.gd" id="2_energy"]
 
 [node name="CardDisplay" type="PanelContainer"]
 custom_minimum_size = Vector2(140, 220)
@@ -77,6 +78,8 @@ unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 size_flags_horizontal = 3
+autowrap_mode = 2
+max_lines_visible = 2
 text_overrun_behavior = 3
 theme_override_font_sizes/font_size = 14
 text = "Card Name"
@@ -85,13 +88,27 @@ text = "Card Name"
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
+size_flags_vertical = 4
 
-[node name="EnergyCostLabel" type="Label" parent="CardSurface/VBoxContainer/TextPanel/TextVBox/TopRow/CostBadge"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(20, 20)
+[node name="CostRow" type="HBoxContainer" parent="CardSurface/VBoxContainer/TextPanel/TextVBox/TopRow/CostBadge"]
 layout_mode = 2
 mouse_filter = 2
-theme_override_font_sizes/font_size = 14
+theme_override_constants/separation = 1
+
+[node name="EnergyIcon" type="Control" parent="CardSurface/VBoxContainer/TextPanel/TextVBox/TopRow/CostBadge/CostRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(13, 17)
+layout_mode = 2
+mouse_filter = 2
+size_flags_vertical = 4
+script = ExtResource("2_energy")
+
+[node name="EnergyCostLabel" type="Label" parent="CardSurface/VBoxContainer/TextPanel/TextVBox/TopRow/CostBadge/CostRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(12, 20)
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 15
 theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
 text = "1"
 horizontal_alignment = 1

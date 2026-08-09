@@ -13,7 +13,6 @@ const SUBTITLE_TEXT: String = "Refine raw materials into advanced components"
 const HEADER_ICON: String = "⚙"  # gear
 
 var _planet_name: String = ""
-var _credits_label: Label
 var _status_label: Label
 var _content_vbox: VBoxContainer
 
@@ -34,12 +33,10 @@ func _build_ui() -> void:
 		TITLE_TEXT,
 		SUBTITLE_TEXT,
 		HEADER_ICON,
-		"Leave Factory",
+		"Back to City",
 		close,
 	)
 	var main_vbox: VBoxContainer = scaffold["main_vbox"]
-	_credits_label = scaffold["credits_label"]
-
 	_status_label = Label.new()
 	_status_label.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
 	_status_label.add_theme_color_override("font_color", UIStyles.STATUS_WARN)
@@ -89,8 +86,6 @@ func _build_ui() -> void:
 
 
 func _refresh() -> void:
-	if _credits_label:
-		_credits_label.text = "%d cr" % GameManager.credits
 	if _status_label:
 		_status_label.text = "%s | Cargo %d/%d" % [
 			_planet_name,

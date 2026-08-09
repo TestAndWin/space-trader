@@ -70,6 +70,7 @@ func _build_ui() -> void:
 		chain_label.add_theme_color_override("font_color", Color(0.6, 0.78, 1.0))
 		vbox.add_child(chain_label)
 
+		_add_sourcing_hint(vbox, q["deliver_good"])
 		_add_offer_modifiers(vbox, q)
 		_add_quality_notes(vbox, q.get("quality_notes", []), Color(0.75, 0.75, 0.95))
 
@@ -144,6 +145,7 @@ func _build_ui() -> void:
 	offer_chain.add_theme_color_override("font_color", Color(0.55, 0.72, 0.95))
 	vbox.add_child(offer_chain)
 
+	_add_sourcing_hint(vbox, offer["deliver_good"])
 	_add_offer_modifiers(vbox, offer)
 	_add_quality_notes(vbox, offer.get("quality_notes", []), Color(0.78, 0.78, 0.95))
 
@@ -163,6 +165,20 @@ func _build_ui() -> void:
 
 	_add_loan_panel(vbox)
 	_add_bounty_panel(vbox)
+
+
+## Tells the player where to get the requested cargo — a contract that asks for
+## Raw Ore on a planet that sells none is otherwise a dead end.
+func _add_sourcing_hint(vbox: VBoxContainer, good_name: String) -> void:
+	var hint: String = QuestManager.get_delivery_sourcing_hint(good_name)
+	if hint == "":
+		return
+	var label := Label.new()
+	label.text = hint
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(0.72, 0.85, 0.6))
+	vbox.add_child(label)
 
 
 func _make_action_btn(text: String) -> ActionButton:

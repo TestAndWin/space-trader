@@ -32,9 +32,20 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 
 	%CardNameLabel.text = card_data.card_name
 	UIStyles.apply_display_font(%CardNameLabel)
+	# The name wraps to two lines and may still be trimmed on very long names.
+	%CardNameLabel.tooltip_text = "%s — %s" % [card_data.card_name, _rarity_name()]
+	%CardNameLabel.mouse_filter = Control.MOUSE_FILTER_STOP
+	# A drawn bolt carries the unit, so the number stays a bare number.
 	%EnergyCostLabel.text = str(card_data.energy_cost)
 	UIStyles.apply_mono_font(%EnergyCostLabel)
+	%CostBadge.tooltip_text = "Energy cost to play this card"
+	%CostBadge.mouse_filter = Control.MOUSE_FILTER_STOP
 	%DescriptionLabel.text = card_data.description
+	# Reserve a fixed line count so every card's play button and cost badge land
+	# at the same height — a two-line name would otherwise shift the whole card
+	# relative to its neighbours in the hand.
+	_lock_label_height(%CardNameLabel, 2)
+	_lock_label_height(%DescriptionLabel, 3)
 
 	var type_int := int(card_data.card_type)
 	var type_color: Color = CARD_TYPE_COLORS.get(type_int, Color(0.5, 0.5, 0.5))
@@ -76,15 +87,9 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 	var text_panel: PanelContainer = get_node("CardSurface/VBoxContainer/TextPanel")
 	text_panel.add_theme_stylebox_override("panel", text_panel_style)
 
-	# Style the floating Cost Badge
-	var badge_style := StyleBoxFlat.new()
-	badge_style.bg_color = Color(0.1, 0.1, 0.14, 0.95)
-	badge_style.border_color = Color(0.9, 0.75, 0.2, 0.9)
-	badge_style.border_width_left = 2
-	badge_style.border_width_top = 2
-	badge_style.border_width_right = 2
-	badge_style.border_width_bottom = 2
-	%CostBadge.add_theme_stylebox_override("panel", badge_style)
+	# The cost badge sits on the already-dark text panel, so it needs no plate
+	# or border of its own — the bolt glyph carries the meaning.
+	%CostBadge.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 
 	# Card name color based on type
 	%CardNameLabel.add_theme_color_override("font_color", type_color)
@@ -99,6 +104,18 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 	else:
 		modulate.a = 1.0
 		%PlayButton.disabled = false
+
+
+## Pin a label to an exact number of text lines, so cards keep a uniform
+## internal layout regardless of how long their name or description is.
+func _lock_label_height(label: Label, lines: int) -> void:
+	var font: Font = label.get_theme_font("font")
+	if font == null:
+		return
+	var font_size: int = label.get_theme_font_size("font_size")
+	label.custom_minimum_size.y = font.get_height(font_size) * float(lines)
+	label.max_lines_visible = lines
+	label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 
 
 func _apply_content_layout() -> void:
@@ -152,10 +169,53 @@ func _style_play_button() -> void:
 	button.add_theme_color_override("font_disabled_color", Color(1.0, 1.0, 1.0, 0.65))
 
 
+const RARITY_NAMES: PackedStringArray = ["Common", "Uncommon", "Rare"]
+
+
+func _rarity_name() -> String:
+	var rarity := int(card_data.get("rarity") if card_data.get("rarity") != null else 0)
+	return RARITY_NAMES[rarity] if rarity < RARITY_NAMES.size() else "Common"
+
+
 func _load_card_artwork() -> void:
-	"""Load card artwork PNG by convention: card_id derived from .tres filename."""
-	var card_id: String = card_data.resource_path.get_file().get_basename()
-	%ArtworkRect.texture = load(CARD_ART_BASE_PATH + card_id + ".png") as Texture2D
+	"""Load card artwork PNG by convention: card_id derived from .tres filename.
+	Cards created at runtime have no resource_path, so fall back to the card
+	name before giving up — a missing texture must not leave a blank card."""
+	var art: Texture2D = _load_artwork_for_id(card_data.resource_path.get_file().get_basename())
+	if art == null:
+		art = _load_artwork_for_id(card_data.card_name.to_lower().replace(" ", "_"))
+	%ArtworkRect.texture = art
+	%ArtworkRect.visible = art != null
+	_apply_artwork_fallback(art == null)
+
+
+func _load_artwork_for_id(card_id: String) -> Texture2D:
+	if card_id == "":
+		return null
+	var path: String = CARD_ART_BASE_PATH + card_id + ".png"
+	if not ResourceLoader.exists(path):
+		return null
+	return load(path) as Texture2D
+
+
+## Without artwork the card surface would be flat black. Paint a type-tinted
+## placeholder so the slot still reads as a card.
+func _apply_artwork_fallback(needed: bool) -> void:
+	var existing: ColorRect = %CardSurface.get_node_or_null("ArtworkFallback")
+	if not needed:
+		if existing:
+			existing.queue_free()
+		return
+	if existing:
+		return
+	var type_color: Color = CARD_TYPE_COLORS.get(int(card_data.card_type), Color(0.5, 0.5, 0.5))
+	var fallback := ColorRect.new()
+	fallback.name = "ArtworkFallback"
+	fallback.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fallback.color = Color(type_color.r * 0.22, type_color.g * 0.22, type_color.b * 0.28, 1.0)
+	fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	%CardSurface.add_child(fallback)
+	%CardSurface.move_child(fallback, 0)
 
 
 func _on_mouse_entered() -> void:

@@ -243,6 +243,41 @@ func _can_buy_good(planet_name: String, good_name: String) -> bool:
 	return true
 
 
+## Planets where a good can actually be bought.
+## Quests may ask for cargo the issuing planet does not stock, so the quest UI
+## and the galaxy map need to be able to point the player somewhere.
+func get_planets_selling(good_name: String) -> Array[String]:
+	var result: Array[String] = []
+	for planet in planets:
+		if _can_buy_good(planet.planet_name, good_name):
+			result.append(planet.planet_name)
+	return result
+
+
+## Planet-type names (not planet names) that stock a good — used for the short
+## "available on Mining planets" hint when the exact planets are less useful.
+func get_planet_types_selling(good_name: String) -> Array[String]:
+	var result: Array[String] = []
+	for type_name: String in _type_available_goods:
+		if good_name in _type_available_goods[type_name]:
+			if is_contraband_good(good_name) and type_name != "Outlaw":
+				continue
+			result.append(type_name)
+	return result
+
+
+## One-line sourcing hint for a good, e.g. "Raw Ore: buy on Mining or
+## Industrial planets (Iron Belt, Dust Haven, Forge World)".
+## Returns "" for goods that cannot be bought anywhere (crafted items).
+func get_sourcing_hint(good_name: String) -> String:
+	var planets_with: Array[String] = get_planets_selling(good_name)
+	if planets_with.is_empty():
+		return ""
+	var types: Array[String] = get_planet_types_selling(good_name)
+	var type_text: String = " or ".join(types) if types.size() <= 2 else ", ".join(types)
+	return "Available on %s planets: %s" % [type_text, ", ".join(planets_with)]
+
+
 func is_contraband_good(good_name: String) -> bool:
 	return good_name in CONTRABAND_GOODS
 

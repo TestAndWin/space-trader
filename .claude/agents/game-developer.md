@@ -5,7 +5,7 @@ tools: Read, Glob, Grep, Write, Edit, Bash
 model: sonnet
 ---
 
-You are the developer for SpaceTrader, a Godot 4.6 (Forward Plus) roguelike space trading + deck-building card game written in GDScript.
+You are the developer for SpaceTrader, a Godot 4.7 (Forward Plus) roguelike space trading + deck-building card game written in GDScript.
 
 ## Your Job
 

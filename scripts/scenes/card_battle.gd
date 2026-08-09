@@ -3,6 +3,7 @@ extends Control
 const CardDisplayScene = preload("res://scenes/components/card_display.tscn")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
+const EnergyPips = preload("res://scripts/components/energy_pips.gd")
 
 const FLEE_COST := 150
 const FLEE_CHANCE := 0.5
@@ -25,6 +26,8 @@ const RAMMING_SPEED_HULL_THRESHOLD := 0.70
 
 @onready var ship_display := %ShipDisplay
 
+var _energy_pips: Control = null
+
 # Special ability state
 var turn_count: int = 0
 var enemy_shield: int = 0
@@ -44,6 +47,8 @@ func _ready() -> void:
 	UIStyles.apply_mono_font(%ShieldLabel)
 	UIStyles.apply_mono_font(%DeckCountLabel)
 	UIStyles.apply_mono_font(%DiscardCountLabel)
+	_style_readability()
+	_build_energy_pips()
 	BackgroundUtils.add_fullscreen_background(
 		self,
 		"res://assets/sprites/scenes/bg_battle.png",
@@ -54,6 +59,42 @@ func _ready() -> void:
 	)
 	if encounter:
 		start_battle(encounter)
+
+
+## The enemy ability line and the deck counters sit directly on the battle
+## artwork. Outline them and lift the counter size so they stop disappearing
+## into the background.
+func _style_readability() -> void:
+	for label: Label in [%AbilityLabel, %IntentLabel, %EnemyNameLabel, %EnemyHealthLabel]:
+		label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))
+		label.add_theme_constant_override("outline_size", 6)
+	%AbilityLabel.add_theme_color_override("font_color", Color(0.86, 0.72, 1.0))
+	%AbilityLabel.add_theme_font_size_override("font_size", 15)
+	%AbilityLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+	for counter: Label in [%DeckCountLabel, %DiscardCountLabel]:
+		counter.add_theme_font_size_override("font_size", 16)
+		counter.add_theme_color_override("font_color", Color(0.62, 0.85, 1.0))
+		counter.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
+		counter.add_theme_constant_override("outline_size", 5)
+		counter.mouse_filter = Control.MOUSE_FILTER_STOP
+	%DeckCountLabel.tooltip_text = "Cards left in your draw pile"
+	%DiscardCountLabel.tooltip_text = "Cards in the discard pile — reshuffled when the draw pile runs out"
+
+
+func _build_energy_pips() -> void:
+	var energy_label: Label = %EnergyLabel
+	energy_label.text = "Energy"
+	energy_label.add_theme_font_size_override("font_size", 14)
+	energy_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
+	energy_label.add_theme_constant_override("outline_size", 5)
+
+	_energy_pips = Control.new()
+	_energy_pips.set_script(EnergyPips)
+	_energy_pips.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_energy_pips.mouse_filter = Control.MOUSE_FILTER_STOP
+	energy_label.get_parent().add_child(_energy_pips)
+	energy_label.get_parent().move_child(_energy_pips, energy_label.get_index() + 1)
 
 
 func _style_battle_buttons() -> void:
@@ -558,12 +599,8 @@ func _apply_enemy_on_hit_effects() -> void:
 	if encounter.special_ability == EncounterData.SpecialAbility.BOARDING:
 		if GameManager.cargo.size() > 0:
 			var idx := randi_range(0, GameManager.cargo.size() - 1)
-			var item: Dictionary = GameManager.cargo[idx]
-			var good_name: String = item["good_name"]
-			item["quantity"] -= 1
-			if item["quantity"] <= 0:
-				GameManager.cargo.remove_at(idx)
-			GameManager.cargo_changed.emit()
+			var good_name: String = GameManager.cargo[idx]["good_name"]
+			GameManager.remove_cargo(good_name, 1)
 			_show_battle_message("Enemy boarded! Lost 1x %s!" % good_name)
 
 
@@ -602,25 +639,23 @@ func _on_battle_won() -> void:
 
 func _on_battle_lost() -> void:
 	battle_active = false
-	# Lose half of cargo (pirates take it)
+	# Lose half of cargo (pirates take it). Decide first, then remove through
+	# GameManager so the change is reported — mutating its array directly used
+	# to skip cargo_changed entirely.
 	var lost_items: Array = []
-	var i := GameManager.cargo.size() - 1
-	while i >= 0:
-		var item: Dictionary = GameManager.cargo[i]
-		var qty: int = item["quantity"]
-		var lost: int = int(qty / 2.0)
+	var losses: Array[Dictionary] = []
+	for item: Dictionary in GameManager.cargo:
+		var lost: int = int(item["quantity"] / 2.0)
 		if lost > 0:
 			lost_items.append("%d %s" % [lost, item["good_name"]])
-			item["quantity"] -= lost
-			if item["quantity"] <= 0:
-				GameManager.cargo.remove_at(i)
-		i -= 1
+			losses.append({"good_name": item["good_name"], "quantity": lost})
+	for loss: Dictionary in losses:
+		GameManager.remove_cargo(loss["good_name"], loss["quantity"])
 	if lost_items.size() > 0:
 		GameManager.last_cargo_lost_text = "Lost: " + ", ".join(lost_items)
 		EventLog.add_entry("Pirates took cargo: " + ", ".join(lost_items))
 	else:
 		GameManager.last_cargo_lost_text = ""
-	GameManager.cargo_changed.emit()
 	var lost_credits := int(GameManager.credits * 0.3)
 	GameManager.remove_credits(lost_credits)
 	GameManager.battle_result = "lost"
@@ -683,7 +718,8 @@ func _update_player_ui() -> void:
 	%ShieldBar.max_value = GameManager.max_shield
 	%ShieldBar.value = GameManager.current_shield
 	%ShieldLabel.text = "Shield: %d / %d" % [GameManager.current_shield, GameManager.max_shield]
-	%EnergyLabel.text = "Energy: %d / %d" % [current_energy, effective_energy_per_turn]
+	if _energy_pips:
+		_energy_pips.setup(current_energy, effective_energy_per_turn)
 
 	# Ship display
 	var shield_pct: float = float(GameManager.current_shield) / float(GameManager.max_shield) if GameManager.max_shield > 0 else 0.0

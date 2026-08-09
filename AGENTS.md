@@ -4,11 +4,11 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Project Overview
 
-SpaceTrader is a 2D roguelike space trading + deck-building card game built with **Godot Engine 4.6** (Forward Plus renderer) using **GDScript**. Players trade goods across planets, build a combat deck, upgrade their ship, and complete quests. Win condition: accumulate 8000 credits AND visit all 7 planets.
+SpaceTrader is a 2D roguelike space trading + deck-building card game built with **Godot Engine 4.7** (Forward Plus renderer) using **GDScript**. Players trade goods across planets, build a combat deck, upgrade their ship, and complete quests. Win condition: accumulate 8000 credits AND visit all 7 planets.
 
 ## Running the Project
 
-- Open in Godot 4.6 editor (Import -> point to this directory)
+- Open in Godot 4.7 editor (Import -> point to this directory)
 - Press F5 to run (main scene: `res://scenes/main_menu.tscn`)
 - Window: 1280x720 game resolution, 2560x1440 window override
 - No external dependencies -- pure Godot engine
@@ -45,7 +45,7 @@ SpaceTrader is a 2D roguelike space trading + deck-building card game built with
 ### Known Issues
 - `Undefined symbol: _main`: Occurs when simulator is selected instead of a real device, or when `-ObjC -all_load` is missing from linker flags (OTHER_LDFLAGS in Xcode project)
 - `No profiles found`: Provisioning profile must include the target device — Xcode creates it automatically with "Automatically manage signing"
-- Godot 4.6 also generates empty `libgodot.visionos.*.xcframework` directories — these can be ignored
+- Godot 4.7 also generates empty `libgodot.visionos.*.xcframework` directories — these can be ignored
 
 ### Generated Files (not in git)
 Export generates: `*.xcodeproj`, `*.xcframework/`, `*.pck`, `PrivacyInfo.xcprivacy`, `MoltenVK.xcframework/`, `build/`, app source folder. Add to `.gitignore` or delete after build.
@@ -54,9 +54,9 @@ Export generates: `*.xcodeproj`, `*.xcframework/`, `*.pck`, `PrivacyInfo.xcpriva
 
 ### Autoload Singletons (`scripts/autoloads/`)
 
-Eleven global managers registered in `project.godot` provide centralized game state:
+Twelve global managers registered in `project.godot` provide centralized game state:
 
-- **GameManager** -- Player state: credits, hull/shields, cargo inventory, deck, upgrades, crew (max 3), current planet, visited planets, current ship. Emits signals on state changes (credits, cargo) for UI binding. `reset()` method centralizes all game state reset -- always use `GameManager.reset()` for new games, never duplicate reset logic in scene scripts.
+- **GameManager** -- Player state: credits, hull/shields, cargo inventory, deck, upgrades, crew (max 3), current planet, visited planets, current ship. Emits signals on state changes (credits, cargo) for UI binding. `credits` has a property setter that emits `credits_changed` on **every** write (including `reset()` and save loading) and skips the emit when the value is unchanged -- never emit `credits_changed` manually. UI must not poll the balance: use `UIStyles.create_credits_label()`, which returns a self-updating label (`scripts/components/credits_label.gd`) bound to the signal. `cargo` works the same way, with one caveat: its setter only fires when the array is **replaced** (save loading, `reset()`), not when elements change -- so all hold changes must go through `add_cargo()`/`remove_cargo()`, never by mutating `GameManager.cargo` directly. For cargo readouts use `UIStyles.create_cargo_label()` (`scripts/components/cargo_label.gd`); `planet_screen` binds `_update_cargo_display` to `cargo_changed` for its bar and icon row. `reset()` method centralizes all game state reset -- always use `GameManager.reset()` for new games, never duplicate reset logic in scene scripts.
 - **EconomyManager** -- Dynamic pricing with planet-type modifiers (5 types: Tech, Industrial, Agricultural, Mining, Outlaw). Prices drift +/-5% on departure, +/-10% variance. Contraband goods (Spice, Stolen Tech) have special pricing. Sell ratio is 75% of buy price.
 - **EncounterManager** -- Enemy encounter pool with difficulty scaling (+1 per 2 visited planets). Contraband cargo increases encounter chance by 15%.
 - **QuestManager** -- Procedural quest generation with delivery deadlines (3-5 turns) and penalties (40% of reward if missed). One active quest at a time.
@@ -67,6 +67,7 @@ Eleven global managers registered in `project.godot` provide centralized game st
 - **ScreenFade** -- Global scene transition fade effects.
 - **RivalManager** -- Captain Vex rival questline. 4 phases triggered at flight thresholds (3, 6, 9, 12). Cooldowns between reappearances. API: `on_flight_completed()`, `should_rival_appear(total_flights)`, `get_rival_encounter()`. Data in `data/rivals/captain_vex.tres`.
 - **AchievementManager** -- 12 global achievements, persisted independently of savegames in `user://achievements.json`. API: `unlock(id)`, `is_unlocked(id)`, `get_unlocked_count()`. Emits `achievement_unlocked(id)`.
+- **HintManager** -- One-shot onboarding hints, persisted independently of savegames in `user://hints_seen.json`. 8 hints keyed by `CityMap.BUILDING_*` id; they are the only in-game explanation of Fuel, Loyalty, Reputation, Bounty and the T2 win condition. API: `take_hint(id)`, `has_seen(id)`, `mark_seen(id)`, `reset_all()`.
 
 ### Static Utilities
 

@@ -12,14 +12,6 @@ const GoodIcon = preload("res://scripts/components/good_icon.gd")
 
 
 
-const MARKET_NAMES = {
-	0: "CYBER MARKET",
-	1: "FARM STAND",
-	2: "MINING EXCHANGE",
-	3: "TRADE HUB",
-	4: "BLACK MARKET",
-}
-
 const MARKET_FLAVOR = {
 	0: "Factory surplus and manufactured goods",
 	1: "Fresh produce and organic supplies",
@@ -38,6 +30,9 @@ const MARKET_ICONS = {
 
 var _planet_type: int = 0
 var _arrival_gained_cargo: Dictionary = {}
+var _title_label: Label
+var _subtitle_label: Label
+var _icon_labels: Array = []
 var _credits_label: Label
 var _cargo_label: Label
 var _market_list: VBoxContainer
@@ -48,7 +43,22 @@ var _status_detail_label: Label
 func setup(planet_type: int, arrival_gained_cargo: Dictionary = {}) -> void:
 	_planet_type = planet_type
 	_arrival_gained_cargo = arrival_gained_cargo
+	_apply_planet_theme()
 	_refresh_all()
+
+
+## The overlay is built in _ready() before setup() delivers the planet type,
+## so every planet-dependent header value is (re-)applied here.
+func _apply_planet_theme() -> void:
+	if not _title_label:
+		return
+	_title_label.text = CityMap.get_building_name(CityMap.BUILDING_MARKET, _planet_type).to_upper()
+	_title_label.add_theme_color_override(
+		"font_color", UIStyles.TYPE_COLORS.get(_planet_type, UIStyles.ACCENT)
+	)
+	_subtitle_label.text = MARKET_FLAVOR.get(_planet_type, "")
+	for icon: Label in _icon_labels:
+		icon.text = MARKET_ICONS.get(_planet_type, "◈")
 
 
 func _ready() -> void:
@@ -103,26 +113,24 @@ func _build_ui() -> void:
 	title_vbox.add_child(title_row)
 
 	var left_deco := Label.new()
-	left_deco.text = MARKET_ICONS.get(_planet_type, "\u25C8")
 	left_deco.add_theme_font_size_override("font_size", 16)
 	left_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	title_row.add_child(left_deco)
 
 	var title := Label.new()
-	title.text = MARKET_NAMES.get(_planet_type, "MARKET")
 	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", UIStyles.TYPE_COLORS.get(_planet_type, UIStyles.ACCENT))
 	title_row.add_child(title)
 
 	var right_deco := Label.new()
-	right_deco.text = MARKET_ICONS.get(_planet_type, "\u25C8")
 	right_deco.add_theme_font_size_override("font_size", 16)
 	right_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	title_row.add_child(right_deco)
 
+	_title_label = title
+	_icon_labels = [left_deco, right_deco]
+
 	var subtitle := Label.new()
-	subtitle.text = MARKET_FLAVOR.get(_planet_type, "")
 	var sub_settings := LabelSettings.new()
 	sub_settings.font_size = 11
 	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
@@ -131,25 +139,21 @@ func _build_ui() -> void:
 	sub_settings.shadow_offset = Vector2(1, 1)
 	subtitle.label_settings = sub_settings
 	title_vbox.add_child(subtitle)
+	_subtitle_label = subtitle
+	_apply_planet_theme()
 
 	var header_spacer := Control.new()
 	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(header_spacer)
 
-	_credits_label = Label.new()
-	_credits_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	_credits_label.add_theme_font_size_override("font_size", 20)
-	_credits_label.add_theme_color_override("font_color", UIStyles.GOLD)
+	_credits_label = UIStyles.create_credits_label()
 	header.add_child(_credits_label)
 
-	_cargo_label = Label.new()
-	_cargo_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	_cargo_label.add_theme_font_size_override("font_size", 16)
-	_cargo_label.add_theme_color_override("font_color", Color(0.65, 0.88, 1.0))
+	_cargo_label = UIStyles.create_cargo_label()
 	header.add_child(_cargo_label)
 
 	var close_btn := Button.new()
-	close_btn.text = "Leave Market"
+	close_btn.text = "Back to City"
 	close_btn.custom_minimum_size = Vector2(140, 36)
 	close_btn.mouse_filter = Control.MOUSE_FILTER_STOP
 	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
@@ -220,7 +224,7 @@ func _build_ui() -> void:
 
 	_market_list = VBoxContainer.new()
 	_market_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_market_list.add_theme_constant_override("separation", 2)
+	_market_list.add_theme_constant_override("separation", 4)
 	market_scroll.add_child(_market_list)
 
 	# Cargo panel (Sell side)
@@ -247,17 +251,14 @@ func _build_ui() -> void:
 
 	_cargo_list = VBoxContainer.new()
 	_cargo_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_cargo_list.add_theme_constant_override("separation", 2)
+	_cargo_list.add_theme_constant_override("separation", 4)
 	cargo_scroll.add_child(_cargo_list)
 
 
 func _refresh_all() -> void:
 	if not _credits_label:
 		return
-	_credits_label.text = "%d cr" % GameManager.credits
-	var used: int = GameManager.get_cargo_used()
-	var cap: int = GameManager.cargo_capacity
-	_cargo_label.text = "Cargo: %d/%d" % [used, cap]
+	# _cargo_label keeps itself in sync via GameManager.cargo_changed.
 	_record_market_snapshot()
 	_status_detail_label.text = _build_market_context_text()
 	_populate_market()

@@ -1,6 +1,6 @@
 # Space Trader: Dealer's Hand
 
-A 2D roguelike space trading and deck-building card game built with **Godot Engine 4.6** (GDScript).
+A 2D roguelike space trading and deck-building card game built with **Godot Engine 4.7** (GDScript).
 
 ## About
 
@@ -20,7 +20,7 @@ Trade goods across planets, build a combat deck, upgrade your ship, recruit crew
 
 ## Running
 
-1. Install [Godot 4.6](https://godotengine.org/)
+1. Install [Godot 4.7](https://godotengine.org/)
 2. Clone this repository
 3. Open the project in Godot (Import -> select this directory)
 4. Press F5 to run

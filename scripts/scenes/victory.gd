@@ -5,6 +5,9 @@ const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 
 func _ready() -> void:
+	# Set up first: if any of the stat labels below were to fail, _ready() would
+	# abort and the screen would render without its background.
+	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/scenes/bg_victory.png", 0.5, 1)
 	AchievementManager.unlock("winner")
 	%TradesLabel.text = "Total Trades: %d" % GameManager.total_trades
 	%TravelDaysLabel.text = "Travel Days: %d" % GameManager.total_travel_days
@@ -23,7 +26,6 @@ func _ready() -> void:
 	UIStyles.apply_mono_font(%UpgradesLabel)
 	%MainMenuButton.pressed.connect(_on_main_menu_pressed)
 	UIStyles.style_secondary_button(%MainMenuButton, 18)
-	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/scenes/bg_victory.png", 0.5, 1)
 
 
 func _on_main_menu_pressed() -> void:

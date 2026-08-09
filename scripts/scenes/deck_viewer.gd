@@ -18,6 +18,53 @@ const PRICE_RANGES: Dictionary = {
 	2: Vector2i(250, 400),  # RARE
 }
 
+# ── Sell price weighting ─────────────────────────────────────────────────────
+# A card's sell price is placed inside its rarity band by a power score, so a
+# Torpedo pays more than a Battle Fury even though both are Uncommon.
+
+const HEAL_WEIGHT: float = 1.5
+const CREDITS_WEIGHT: float = 0.12
+
+## Power contribution per CardData.CardKeyword. A flat per-keyword value badly
+## undervalued SHIELD_ECHO, whose bonus (half your current shield) is worth more
+## than the printed attack value on Shield Bash.
+const KEYWORD_POWER: Dictionary = {
+	0: 2.5,   # CHARGE — 1.5x damage once 2+ attacks were played this turn
+	1: 1.5,   # COMBO — next card costs 1 less energy
+	2: 5.0,   # SHIELD_ECHO — bonus damage of half the current shield (base 10)
+	3: 1.0,   # RECYCLING — one extra draw per reshuffle
+}
+
+## Energy — not hand size — is the bottleneck: 3 energy per turn against a hand
+## of 5 means roughly two cards go unplayed anyway. An extra draw therefore buys
+## selection, not throughput, and is worth far less than its raw card count.
+const DRAW_WEIGHT: float = 1.5
+
+## Cheap cards do more per turn than expensive ones with the same numbers, so
+## price in the energy cost relative to a 2-energy baseline.
+const ENERGY_BASELINE: float = 2.0
+const ENERGY_WEIGHT: float = 1.5
+
+## Power contribution per CardData.SpecialEffect.
+## SELF_DAMAGE_5 is a drawback and therefore negative.
+const SPECIAL_POWER: Dictionary = {
+	0: 0.0,    # NONE
+	1: -2.0,   # SELF_DAMAGE_5
+	2: 6.0,    # BONUS_ENERGY_2
+	3: 8.0,    # SKIP_ENEMY_TURN
+	4: 10.0,   # END_ENCOUNTER
+	5: 4.0,    # SCAVENGE
+}
+
+## Power span mapped onto each rarity band (min power -> band low,
+## max power -> band high). Fixed rather than derived from the current card
+## pool, so adding a card does not silently reprice every other card.
+const POWER_REFERENCE: Dictionary = {
+	0: Vector2(3.0, 9.5),    # COMMON
+	1: Vector2(4.0, 14.0),   # UNCOMMON
+	2: Vector2(5.0, 18.0),   # RARE
+}
+
 const TYPE_WEIGHTS: Dictionary = {
 	0: [1, 3],     # Industrial → DEFENSE, TRADE
 	1: [2, 1],     # Agricultural → UTILITY, DEFENSE
@@ -34,6 +81,7 @@ var _shop_section: VBoxContainer
 var _status_label: Label
 var _credits_label: Label
 var _title_label: Label
+var _subtitle_label: Label
 var _card_grid: GridContainer
 var _main_vbox: VBoxContainer
 
@@ -138,7 +186,8 @@ func _build_ui() -> void:
 	right_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	title_row.add_child(right_deco)
 
-	var subtitle := Label.new()
+	_subtitle_label = Label.new()
+	var subtitle := _subtitle_label
 	if _trading_enabled:
 		subtitle.text = "View & Trade Cards \u2022 Sell Unwanted \u2022 Buy New Strategies"
 	else:
@@ -157,14 +206,11 @@ func _build_ui() -> void:
 	header.add_child(header_spacer)
 
 	if _trading_enabled:
-		_credits_label = Label.new()
-		_credits_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-		_credits_label.add_theme_font_size_override("font_size", 20)
-		_credits_label.add_theme_color_override("font_color", UIStyles.GOLD)
+		_credits_label = UIStyles.create_credits_label()
 		header.add_child(_credits_label)
 
 	var close_btn := Button.new()
-	close_btn.text = "Leave Arsenal"
+	close_btn.text = "Back to City"
 	close_btn.custom_minimum_size = Vector2(90, 36)
 	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
 	close_btn.pressed.connect(close)
@@ -274,9 +320,15 @@ func _populate_deck() -> void:
 		else:
 			card_counts[cname] = {"resource": card, "count": 1}
 
-	_title_label.text = "YOUR DECK (%d cards)" % GameManager.deck.size()
-	if _credits_label:
-		_credits_label.text = "%d cr" % GameManager.credits
+	# Title matches the building name painted on the planet; the deck size moves
+	# into the subtitle so the header stays consistent with the other overlays.
+	_title_label.text = CityMap.get_building_name(CityMap.BUILDING_DECK, _planet_type).to_upper() \
+		if _trading_enabled else "YOUR DECK"
+	if _subtitle_label:
+		_subtitle_label.text = "%d cards • %s" % [
+			GameManager.deck.size(),
+			"Sell Unwanted • Buy New Strategies" if _trading_enabled else "Plan Your Strategy",
+		]
 
 	for card_name in card_counts:
 		var entry: Dictionary = card_counts[card_name]
@@ -316,10 +368,28 @@ func _populate_deck() -> void:
 				vbox.move_child(count_label, card_display.get_node("%PlayButton").get_index())
 
 
+## Rough power score of a card, used to place its sell price inside the band
+## for its rarity. Without this every Common sold for exactly the same 32cr,
+## because the price was just the band midpoint.
+func _card_power(card: Resource) -> float:
+	var power: float = float(card.attack_value) + float(card.defense_value)
+	power += float(card.heal_value) * HEAL_WEIGHT
+	power += float(card.draw_cards) * DRAW_WEIGHT
+	power += float(card.credits_gain) * CREDITS_WEIGHT
+	power += float(SPECIAL_POWER.get(card.special_effect, 0.0))
+	for keyword: int in card.keywords:
+		power += float(KEYWORD_POWER.get(keyword, 1.0))
+	power += (ENERGY_BASELINE - float(card.energy_cost)) * ENERGY_WEIGHT
+	return maxf(power, 0.0)
+
+
 func _get_sell_price(card: Resource) -> int:
 	var price_range: Vector2i = PRICE_RANGES.get(card.rarity, Vector2i(50, 80))
-	var avg: int = int((price_range.x + price_range.y) / 2.0)
-	return int(avg * SELL_RATIO)
+	var reference: Vector2 = POWER_REFERENCE.get(card.rarity, Vector2(2.0, 10.0))
+	var span: float = maxf(reference.y - reference.x, 1.0)
+	var t: float = clampf((_card_power(card) - reference.x) / span, 0.0, 1.0)
+	var value: float = lerpf(float(price_range.x), float(price_range.y), t)
+	return int(round(value * SELL_RATIO))
 
 
 func _on_buy_card(_card_data: Resource, entry: Dictionary) -> void:

@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Space Trader: Dealer's Hand"
 run/main_scene="res://scenes/main_menu.tscn"
-config/features=PackedStringArray("4.6", "Forward Plus")
+config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.png"
 
 [autoload]
@@ -35,6 +35,7 @@ EventManager="*res://scripts/autoloads/event_manager.gd"
 CraftingManager="*res://scripts/autoloads/crafting_manager.gd"
 RivalManager="*res://scripts/autoloads/rival_manager.gd"
 AchievementManager="*res://scripts/autoloads/achievement_manager.gd"
+HintManager="*res://scripts/autoloads/hint_manager.gd"
 
 [display]
 

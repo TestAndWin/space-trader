@@ -119,20 +119,81 @@ func _refresh_crew_ui() -> void:
 			available.append(crew_res)
 
 	for crew_res in available:
-		var hire_btn := ActionButton.new()
-		hire_btn.text = "Hire %s (%dcr)" % [crew_res.crew_name, crew_res.recruit_cost]
-		hire_btn.tooltip_text = crew_res.description
-		hire_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		hire_btn.disabled = GameManager.credits < crew_res.recruit_cost or GameManager.crew.size() >= GameManager.MAX_CREW
-		var res_ref: Resource = crew_res
-		hire_btn.pressed.connect(func():
-			if GameManager.hire_crew(res_ref):
-				EventLog.add_entry("Hired crew: %s" % res_ref.crew_name)
-				status_label.text = "%s hired" % res_ref.crew_name
-				_refresh_crew_ui()
-				crew_action.emit()
-		)
-		_crew_container.add_child(hire_btn)
+		_crew_container.add_child(_build_hire_card(crew_res))
+
+
+## Recruit offer as an info card: what the specialist does is visible *before*
+## the hire, not only afterwards in the roster.
+func _build_hire_card(crew_res: Resource) -> PanelContainer:
+	var card := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.02, 0.08, 0.06, 0.55)
+	style.border_color = Color(0.15, 0.45, 0.35, 0.7)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(4)
+	style.set_content_margin_all(6)
+	card.add_theme_stylebox_override("panel", style)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 2)
+	card.add_child(vbox)
+
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 6)
+	vbox.add_child(header)
+
+	var icon := Control.new()
+	icon.set_script(CrewIcon)
+	icon.custom_minimum_size = Vector2(24, 24)
+	header.add_child(icon)
+	icon.setup(crew_res.bonus_type)
+
+	var name_lbl := Label.new()
+	name_lbl.text = crew_res.crew_name
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_lbl.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
+	name_lbl.add_theme_color_override("font_color", Color(0.75, 0.95, 0.85))
+	header.add_child(name_lbl)
+
+	var cost_lbl := Label.new()
+	cost_lbl.text = "%d cr" % crew_res.recruit_cost
+	UIStyles.apply_mono_font(cost_lbl)
+	cost_lbl.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
+	cost_lbl.add_theme_color_override("font_color", UIStyles.GOLD)
+	header.add_child(cost_lbl)
+
+	var bonus_lines: Array[String] = [crew_res.description]
+	var secondary_text: String = _get_secondary_bonus_text(crew_res)
+	if secondary_text != "":
+		bonus_lines.append(secondary_text)
+	var bonus_lbl := Label.new()
+	bonus_lbl.text = "\n".join(bonus_lines)
+	bonus_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bonus_lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
+	bonus_lbl.add_theme_color_override("font_color", Color(0.55, 0.8, 0.7))
+	vbox.add_child(bonus_lbl)
+
+	var crew_full: bool = GameManager.crew.size() >= GameManager.MAX_CREW
+	var too_poor: bool = GameManager.credits < crew_res.recruit_cost
+	var hire_btn := ActionButton.new()
+	hire_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hire_btn.disabled = crew_full or too_poor
+	if crew_full:
+		hire_btn.text = "Crew full (%d/%d)" % [GameManager.crew.size(), GameManager.MAX_CREW]
+	elif too_poor:
+		hire_btn.text = "Need %d cr" % crew_res.recruit_cost
+	else:
+		hire_btn.text = "Hire (%dcr)" % crew_res.recruit_cost
+	var res_ref: Resource = crew_res
+	hire_btn.pressed.connect(func():
+		if GameManager.hire_crew(res_ref):
+			EventLog.add_entry("Hired crew: %s" % res_ref.crew_name)
+			status_label.text = "%s hired" % res_ref.crew_name
+			_refresh_crew_ui()
+			crew_action.emit()
+	)
+	vbox.add_child(hire_btn)
+	return card
 
 
 func _get_secondary_bonus_text(crew_res: Resource) -> String:

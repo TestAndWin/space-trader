@@ -8,14 +8,6 @@ signal quest_closed
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
-const QUEST_NAMES = {
-	0: "INTEL OFFICE",
-	1: "POST OFFICE",
-	2: "DISPATCH CENTER",
-	3: "LOGISTICS HQ",
-	4: "DEAD DROP",
-}
-
 const QUEST_ICONS = {
 	0: "\u2709",  # ✉
 	1: "\u2709",  # ✉
@@ -26,7 +18,7 @@ const QUEST_ICONS = {
 
 var _planet_type: int = 0
 var _planet_name: String = ""
-var _credits_label: Label
+var _title_label: Label
 var _status_label: Label
 var _quest_display: Control  # QuestDisplay instance
 
@@ -38,6 +30,9 @@ func setup(planet_type: int, planet_name: String) -> void:
 	_planet_name = planet_name
 	if _quest_display:
 		_quest_display.setup(planet_name)
+	# Built in _ready() before setup() delivers the planet type — re-apply here.
+	if _title_label:
+		_title_label.text = CityMap.get_building_name(CityMap.BUILDING_QUEST, _planet_type).to_upper()
 	_refresh_ui()
 
 
@@ -53,14 +48,14 @@ func _build_ui() -> void:
 
 	var scaffold: Dictionary = UIStyles.create_overlay_scaffold(
 		self,
-		QUEST_NAMES.get(_planet_type, "QUEST BOARD"),
+		CityMap.get_building_name(CityMap.BUILDING_QUEST, _planet_type).to_upper(),
 		"Accept and deliver cargo contracts",
 		QUEST_ICONS.get(_planet_type, "\u2709"),
-		"Leave Office",
+		"Back to City",
 		close,
 	)
 	var main_vbox: VBoxContainer = scaffold["main_vbox"]
-	_credits_label = scaffold["credits_label"]
+	_title_label = scaffold["title_label"]
 
 	_status_label = Label.new()
 	_status_label.add_theme_font_size_override("font_size", 16)
@@ -97,9 +92,6 @@ func _on_quest_changed() -> void:
 
 
 func _refresh_ui() -> void:
-	if not _credits_label:
-		return
-	_credits_label.text = "%d cr" % GameManager.credits
 	if _status_label:
 		var faction: String = StandingManager.get_planet_faction(_planet_name)
 		_status_label.text = "%s | Reputation %s | Loyalty %s | Bounty %s" % [

@@ -8,6 +8,9 @@ var reward_chosen: bool = false
 
 
 func _ready() -> void:
+	# Set up first — see victory.gd: a failure below must not take the
+	# background down with it.
+	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/scenes/bg_battle_result.png", 0.5, 1)
 	var result := GameManager.battle_result
 	var destination := GameManager.travel_destination
 
@@ -67,7 +70,6 @@ func _ready() -> void:
 	%ContinueButton.pressed.connect(_on_continue_pressed)
 	%SkipButton.pressed.connect(_on_skip_pressed)
 	_style_buttons()
-	BackgroundUtils.add_fullscreen_background(self, "res://assets/sprites/scenes/bg_battle_result.png", 0.5, 1)
 
 
 # ── Credits + Card reward (original behavior) ───────────────────────────────

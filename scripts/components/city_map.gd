@@ -19,17 +19,41 @@ const BUILDING_MISSION  = "mission"
 const BUILDING_FACTORY  = "factory"
 
 # ── Visual data ───────────────────────────────────────────────────────────────
+## Single source of truth for building names. The planet background artwork
+## paints decorated variants of these (e.g. "TECH BAY GARAGE" for "Tech Bay"),
+## so screen titles and hotspot labels must read from here — never redefine them.
 const BUILDING_NAMES: Dictionary = {
-	"market":   {0: "Trade Hub",    1: "Farm Stand",      2: "Mining Exchange", 3: "Trade Hub",      4: "Black Market"},
-	"shipyard": {0: "Tech Bay",     1: "Repair Shed",     2: "Repair Depot",    3: "Workshop",       4: "Chop Shop"},
-	"casino":   {0: "Neon Arcade",  1: "Barn Games",      2: "Casino",          3: "Casino",         4: "Smuggler's Den"},
-	"crew":     {0: "Tech Academy", 1: "Farmhands Guild", 2: "Miners Guild",    3: "Engineers Corps",4: "Mercenary Outpost"},
-	"quest":    {0: "Intel Office", 1: "Post Office",     2: "Dispatch Center", 3: "Logistics HQ",   4: "Dead Drop"},
-	"deck":     {0: "Armory",       1: "Barn Vault",      2: "Gear Locker",     3: "Arsenal",        4: "Stash"},
-	"depart":   {0: "Starport",     1: "Landing Pad",     2: "Launch Bay",      3: "Spaceport",      4: "Smuggler's Dock"},
-	"mission":  {0: "Bounty Board", 1: "Bounty Board",    2: "Bounty Board",    3: "Bounty Board",   4: "Contract Board"},
+	"market":   {0: "Trade Hub",        1: "Farm Stand",      2: "Mining Exchange", 3: "Trade Hub",      4: "Black Market"},
+	"shipyard": {0: "Tech Bay",         1: "Repair Shed",     2: "Repair Depot",    3: "Workshop",       4: "Chop Shop"},
+	"casino":   {0: "Neon Arcade",      1: "Barn Games",      2: "Casino",          3: "Casino",         4: "Smuggler's Den"},
+	"crew":     {0: "Tech Academy",     1: "Farmhands Guild", 2: "Miners Guild",    3: "Engineers Corps",4: "Mercenary Outpost"},
+	"quest":    {0: "Logistics Office", 1: "Post Office",     2: "Dispatch Center", 3: "Logistics HQ",   4: "Dead Drop"},
+	"deck":     {0: "Armory",           1: "Barn Vault",      2: "Gear Locker",     3: "Arsenal",        4: "Stash"},
+	"depart":   {0: "Starport",         1: "Landing Pad",     2: "Launch Bay",      3: "Spaceport",      4: "Smuggler's Dock"},
+	"mission":  {0: "Bounty Board",     1: "Bounty Board",    2: "Bounty Board",    3: "Mission Center", 4: "Contract Board"},
 	"factory":  {3: "Fabrication Plant"},
 }
+
+## Fallbacks for planet types a building has no dedicated name for.
+const BUILDING_NAME_FALLBACKS: Dictionary = {
+	"market":   "Market",
+	"shipyard": "Shipyard",
+	"casino":   "Casino",
+	"crew":     "Crew Quarters",
+	"quest":    "Contract Office",
+	"deck":     "Arsenal",
+	"depart":   "Spaceport",
+	"mission":  "Mission Board",
+	"factory":  "Fabrication Plant",
+}
+
+
+## Canonical display name of a building on a given planet type.
+## Used by the city map, the image hotspots and every building overlay title.
+static func get_building_name(building_id: String, planet_type: int) -> String:
+	var fallback: String = BUILDING_NAME_FALLBACKS.get(building_id, building_id.capitalize())
+	var per_type: Dictionary = BUILDING_NAMES.get(building_id, {})
+	return per_type.get(planet_type, fallback)
 
 const BUILDING_ACCENTS: Dictionary = {
 	"market":   Color(0.0, 0.85, 1.0),
@@ -153,7 +177,7 @@ func _build_buildings() -> void:
 			"w":           float(entry[3]),
 			"d":           float(entry[4]),
 			"h":           float(entry[5]),
-			"label":       (BUILDING_NAMES as Dictionary)[bid].get(pt, bid),
+			"label":       get_building_name(bid, pt),
 			"accent":      (BUILDING_ACCENTS as Dictionary).get(bid, Color.WHITE),
 			"bg":          (BUILDING_BGS as Dictionary).get(bid, Color(0.08, 0.10, 0.18)),
 			"interactive": interactive,

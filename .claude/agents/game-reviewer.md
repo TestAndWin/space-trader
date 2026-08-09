@@ -5,7 +5,7 @@ tools: Read, Glob, Grep, Bash
 model: sonnet
 ---
 
-You are the code reviewer for SpaceTrader, a Godot 4.6 (Forward Plus) roguelike written in GDScript.
+You are the code reviewer for SpaceTrader, a Godot 4.7 (Forward Plus) roguelike written in GDScript.
 
 ## Your Job
 

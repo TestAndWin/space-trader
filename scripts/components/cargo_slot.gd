@@ -23,6 +23,23 @@ var price_note: String = ""
 var selected_quantity: int = 1
 
 
+func _ready() -> void:
+	# Inset the content from the painted row plate (HBoxContainer offers no
+	# content margins of its own).
+	custom_minimum_size.y = maxf(custom_minimum_size.y, 30.0)
+	var leading := _make_edge_spacer()
+	add_child(leading)
+	move_child(leading, 0)
+	add_child(_make_edge_spacer())
+
+
+func _make_edge_spacer() -> Control:
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(4, 0)
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return spacer
+
+
 func setup(
 	p_good_name: String,
 	p_price: int,
@@ -42,6 +59,7 @@ func setup(
 	price_note = p_price_note
 	_setup_row_bg()
 	_setup_icon()
+	queue_redraw()
 	_style_buttons()
 	$PriceLabel.add_theme_font_override("font", UIStyles.FONT_MONO)
 	$QuantityLabel.add_theme_font_override("font", UIStyles.FONT_MONO)
@@ -51,22 +69,25 @@ func setup(
 
 
 func _setup_row_bg() -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = ROW_BG
-	style.border_color = ROW_BORDER
-	style.border_width_left = 1
-	style.border_width_right = 1
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.corner_radius_top_left = 3
-	style.corner_radius_top_right = 3
-	style.corner_radius_bottom_left = 3
-	style.corner_radius_bottom_right = 3
-	style.content_margin_left = 4
-	style.content_margin_right = 4
-	style.content_margin_top = 2
-	style.content_margin_bottom = 2
-	add_theme_stylebox_override("panel", style)
+	# HBoxContainer has no "panel" stylebox, so the row plate is painted in
+	# _draw() instead. A CanvasItem draws before its children, which puts it
+	# behind the icon, labels and buttons.
+	if not resized.is_connected(queue_redraw):
+		resized.connect(queue_redraw)
+
+
+## Row plate tying name, price and buttons together visually, with zebra
+## banding so the eye can follow a single row across the full width.
+func _draw() -> void:
+	if size.x <= 1.0 or size.y <= 1.0:
+		return
+	var rect := Rect2(Vector2.ZERO, size)
+	var zebra: bool = get_index() % 2 == 1
+	var bg: Color = ROW_BG
+	if zebra:
+		bg = Color(bg.r, bg.g, bg.b, minf(bg.a + 0.12, 1.0)).lightened(0.04)
+	draw_rect(rect, bg, true)
+	draw_rect(rect, ROW_BORDER, false, 1.0)
 
 
 func _setup_icon() -> void:

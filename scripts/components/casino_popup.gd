@@ -72,12 +72,21 @@ var _main_vbox: VBoxContainer
 var _content_area: VBoxContainer
 var _credits_label: Label
 var _status_label: Label
+var _title_label: Label
 
 func setup(planet_type: int, max_rounds: int = 5) -> void:
 	_planet_type = planet_type
 	_max_rounds = max_rounds
 	_state = State.SELECT
+	_apply_planet_theme()
 	_refresh_ui()
+
+
+## The overlay is built in _ready() before setup() delivers the planet type,
+## so the planet-dependent title is (re-)applied here.
+func _apply_planet_theme() -> void:
+	if _title_label:
+		_title_label.text = CityMap.get_building_name(CityMap.BUILDING_CASINO, _planet_type).to_upper()
 
 
 func _ready() -> void:
@@ -137,11 +146,12 @@ func _build_ui() -> void:
 	title_row.add_child(left_deco)
 
 	var title := Label.new()
-	title.text = "SPACE CASINO"
 	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", GOLD)
 	title_row.add_child(title)
+	_title_label = title
+	_apply_planet_theme()
 
 	var right_deco := Label.new()
 	right_deco.text = "\u2660 \u2665 \u2663 \u2666"
@@ -164,14 +174,11 @@ func _build_ui() -> void:
 	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(header_spacer)
 
-	_credits_label = Label.new()
-	_credits_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	_credits_label.add_theme_font_size_override("font_size", 20)
-	_credits_label.add_theme_color_override("font_color", GOLD)
+	_credits_label = UIStyles.create_credits_label()
 	header.add_child(_credits_label)
 
 	var close_btn := _create_casino_button(
-		"Leave Casino",
+		"Back to City",
 		Vector2(130, 36),
 		Color(0.5, 0.15, 0.1),
 		close
@@ -219,7 +226,6 @@ func _create_casino_button(
 func _refresh_ui() -> void:
 	if not _credits_label:
 		return
-	_credits_label.text = "%d cr" % GameManager.credits
 
 	for child in _content_area.get_children():
 		child.queue_free()
@@ -793,7 +799,6 @@ func _show_result(msg: String) -> void:
 
 
 func _build_result_ui() -> void:
-	_credits_label.text = "%d cr" % GameManager.credits
 
 	# Show final cards/reels
 	if _game == Game.BLACKJACK:
@@ -833,7 +838,7 @@ func _build_result_ui() -> void:
 	btn_row.add_child(again_btn)
 
 	var close_btn := _create_casino_button(
-		"Leave Casino",
+		"Back to City",
 		Vector2(140, 50),
 		Color(0.4, 0.15, 0.1),
 		close

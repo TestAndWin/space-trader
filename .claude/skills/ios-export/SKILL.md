@@ -39,7 +39,7 @@ disable-model-invocation: true
   `-ObjC -all_load` fehlt in OTHER_LDFLAGS.
 - **`No profiles found`**: Provisioning-Profil muss das Zielgerät enthalten —
   "Automatically manage signing" / `-allowProvisioningUpdates` erzeugt es.
-- Leere `libgodot.visionos.*.xcframework`-Ordner von Godot 4.6 → ignorieren.
+- Leere `libgodot.visionos.*.xcframework`-Ordner von Godot 4.7 → ignorieren.
 
 ## Generierte Dateien (nicht in git)
 `*.xcodeproj`, `*.xcframework/`, `*.pck`, `PrivacyInfo.xcprivacy`,

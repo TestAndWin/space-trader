@@ -7,6 +7,31 @@
 
 const FONT_DISPLAY: FontFile = preload("res://assets/fonts/Orbitron.ttf")
 const FONT_MONO: FontFile = preload("res://assets/fonts/ShareTechMono.ttf")
+const CreditsLabelScript = preload("res://scripts/components/credits_label.gd")
+const CargoLabelScript = preload("res://scripts/components/cargo_label.gd")
+
+
+## Self-updating cargo readout, bound to GameManager.cargo_changed.
+static func create_cargo_label(format_string: String = "Cargo: %d/%d", font_size: int = 16) -> Label:
+	var label := Label.new()
+	label.set_script(CargoLabelScript)
+	label.format_string = format_string
+	label.add_theme_font_override("font", FONT_MONO)
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", Color(0.65, 0.88, 1.0))
+	return label
+
+
+## The standard gold credit readout. It binds itself to
+## GameManager.credits_changed, so callers must not assign its text.
+static func create_credits_label(format_string: String = "%d cr", font_size: int = 20) -> Label:
+	var label := Label.new()
+	label.set_script(CreditsLabelScript)
+	label.format_string = format_string
+	label.add_theme_font_override("font", FONT_MONO)
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", GOLD)
+	return label
 
 
 static func apply_display_font(ctrl: Control) -> void:
@@ -308,9 +333,13 @@ static func get_hull_color(pct: float) -> Color:
 # Builds the standard header + panel chrome used by every overlay screen.
 # Returns a Dictionary with:
 #   "main_vbox": the VBoxContainer below the separator (add your content here)
-#   "credits_label": the Label showing credits (update in _refresh_ui)
+#   "credits_label": the Label showing credits — self-updating, do not assign
+#     its text manually (see create_credits_label)
 #   "separator": the HSeparator (for reference if needed)
 #   "header": the HBoxContainer for the header row
+#   "title_label" / "subtitle_label" / "icon_labels": header text nodes.
+#     Overlays are built in _ready() but receive their planet type in a later
+#     setup() call, so anything planet-dependent must be re-applied there.
 
 static func create_overlay_scaffold(
 	parent: Control,
@@ -396,10 +425,7 @@ static func create_overlay_scaffold(
 	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(header_spacer)
 
-	var credits_label := Label.new()
-	credits_label.add_theme_font_override("font", FONT_MONO)
-	credits_label.add_theme_font_size_override("font_size", 20)
-	credits_label.add_theme_color_override("font_color", GOLD)
+	var credits_label := create_credits_label()
 	header.add_child(credits_label)
 
 	var close_btn := Button.new()
@@ -420,4 +446,7 @@ static func create_overlay_scaffold(
 		"credits_label": credits_label,
 		"separator": sep,
 		"header": header,
+		"title_label": title,
+		"subtitle_label": subtitle,
+		"icon_labels": [left_deco, right_deco],
 	}

@@ -22,6 +22,7 @@ var buy_fuel_button: Button
 var fill_fuel_button: Button
 var emergency_fuel_button: Button
 var _bottom_row: HBoxContainer
+var _navigation_allowed: bool = true
 var status_label: Label
 
 
@@ -172,10 +173,17 @@ func _create_stat_bar(label_text: String, bg_color: Color, fill_color: Color) ->
 	return container
 
 
+## Hides the Upgrades/Ships buttons when the host already offers those as tabs.
+func set_navigation_visible(value: bool) -> void:
+	_navigation_allowed = value
+	if _bottom_row:
+		_bottom_row.visible = value and _planet_type != EconomyManager.PT_AGRICULTURAL
+
+
 func setup(planet_type: int = 0) -> void:
 	_planet_type = planet_type
 	var is_agricultural := (_planet_type == EconomyManager.PT_AGRICULTURAL)
-	_bottom_row.visible = not is_agricultural
+	_bottom_row.visible = _navigation_allowed and not is_agricultural
 	_refresh_display()
 
 

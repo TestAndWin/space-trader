@@ -18,6 +18,10 @@ const GoodIcon = preload("res://scripts/components/good_icon.gd")
 const CrewIcon = preload("res://scripts/components/crew_icon.gd")
 const CustomsScanScene = preload("res://scenes/components/customs_scan.tscn")
 const PlanetActivityScene = preload("res://scenes/components/planet_activity.tscn")
+# Scripts (not scenes) — used for their static mission metadata in the
+# pre-mission confirmation dialog.
+const PlanetActivity = preload("res://scripts/components/planet_activity.gd")
+const StarportDefense = preload("res://scripts/scenes/starport_defense.gd")
 
 
 
@@ -65,6 +69,7 @@ var _hotspot_pulse_tween: Tween = null
 
 
 func _ready() -> void:
+	GameManager.cargo_changed.connect(_update_cargo_display)
 	StandingManager.reputation_changed.connect(_on_standing_changed)
 	StandingManager.loyalty_changed.connect(_on_standing_changed)
 	StandingManager.bounty_changed.connect(_on_standing_changed)
@@ -96,7 +101,7 @@ func _ready() -> void:
 	if current_quest_dest == GameManager.current_planet and current_planet_data:
 		call_deferred("_show_quest_arrival_toast")
 
-	quest_widget.clicked.connect(_on_quest_pressed)
+	quest_widget.clicked.connect(func() -> void: _on_building_clicked(CityMap.BUILDING_QUEST))
 	call_deferred("_refresh_info_bar_text_layout")
 	call_deferred("_update_cargo_items")
 	SaveManager.save_game()
@@ -195,16 +200,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _has_overlay_open():
 		return
 
+	# Routed through _on_building_clicked so the keyboard shortcuts get the same
+	# first-visit hint as clicking the building on the map.
 	var handled := true
 	match key_event.keycode:
-		KEY_M: _on_market_pressed()       # Market
-		KEY_C: _on_crew_pressed()         # Crew
-		KEY_Q: _on_quest_pressed()        # Quest
-		KEY_S: _on_shipyard_pressed()     # Shipyard
-		KEY_D: _on_view_deck_pressed()    # Deck
-		KEY_K: _on_casino_pressed()       # Casino
-		KEY_I: _on_mission_pressed()      # Mission
-		KEY_F: _on_factory_pressed()      # Factory (Tech planets only)
+		KEY_M: _on_building_clicked(CityMap.BUILDING_MARKET)
+		KEY_C: _on_building_clicked(CityMap.BUILDING_CREW)
+		KEY_Q: _on_building_clicked(CityMap.BUILDING_QUEST)
+		KEY_S: _on_building_clicked(CityMap.BUILDING_SHIPYARD)
+		KEY_D: _on_building_clicked(CityMap.BUILDING_DECK)
+		KEY_K: _on_building_clicked(CityMap.BUILDING_CASINO)
+		KEY_I: _on_building_clicked(CityMap.BUILDING_MISSION)
+		KEY_F: _on_building_clicked(CityMap.BUILDING_FACTORY)
 		KEY_G: _on_depart_pressed()       # Depart / Galaxy
 		KEY_L: _on_event_log_pressed()    # Event log
 		_: handled = false
@@ -217,10 +224,9 @@ func _has_overlay_open() -> bool:
 
 
 func _get_top_overlay() -> Node:
-	# Prioritize nested overlays first (inside ShipyardScreen), then root overlays.
+	# The shipyard no longer stacks sub-screens — Upgrades and Ships are tabs
+	# inside ShipyardScreen, so ESC closes the shipyard as a whole.
 	var overlay_paths: Array[String] = [
-		"ShipyardScreen/ShipUpgrades",
-		"ShipyardScreen/ShipDealer",
 		"DeckViewer",
 		"QuestScreen",
 		"CrewScreen",
@@ -232,6 +238,8 @@ func _get_top_overlay() -> Node:
 		"SmugglerEvent",
 		"PlanetEvent",
 		"PlanetActivity",
+		"MissionConfirm",
+		"HintPopup",
 	]
 	for path in overlay_paths:
 		var node := get_node_or_null(path)
@@ -307,6 +315,15 @@ func _get_building_states() -> Dictionary:
 
 
 func _on_building_clicked(building_id: String) -> void:
+	# First visit to a building explains it once; afterwards it opens directly.
+	var hint: Dictionary = HintManager.take_hint(building_id)
+	if not hint.is_empty():
+		_show_hint_popup(building_id, hint, func() -> void: _open_building(building_id))
+		return
+	_open_building(building_id)
+
+
+func _open_building(building_id: String) -> void:
 	match building_id:
 		CityMap.BUILDING_MARKET:   _on_market_pressed()
 		CityMap.BUILDING_SHIPYARD: _on_shipyard_pressed()
@@ -387,26 +404,48 @@ func _on_quest_pressed() -> void:
 func _on_mission_pressed() -> void:
 	if _mission_done:
 		return
-	var pt: int = current_planet_data.planet_type if current_planet_data else 0
-	# Starport Alpha keeps the Starport Defense mini-game as the mission.
-	# All other planets open the type-specific activity modal.
-	if GameManager.current_planet == "Starport Alpha":
-		if GameManager.credits < 100:
-			EventLog.add_entry("Not enough credits for mission (100cr required).")
-			_update_ui()
-			return
-		GameManager.remove_credits(100)
-		GameManager.mission_return_planet = GameManager.current_planet
-		EventLog.add_entry("Entered Starport Defense mission (-100cr).")
-		GameManager.change_scene("res://scenes/starport_defense.tscn")
+	if has_node("MissionConfirm") or has_node("PlanetActivity"):
 		return
-	# Other planet types: open the type-specific activity modal.
+	# Entering a mission costs credits and cannot be undone, so the player sees
+	# name, rules and full cost before anything is charged.
+	if GameManager.current_planet == "Starport Alpha":
+		_show_mission_confirm(
+			"Starport Defense",
+			"Shoot down all %d raiders before you run out of lives. Winning pays %dcr; losing costs hull. Aborting mid-run costs an extra %dcr." % [
+				StarportDefense.GRID_COLS * StarportDefense.GRID_ROWS,
+				StarportDefense.WIN_REWARD,
+				StarportDefense.ABORT_PENALTY,
+			],
+			StarportDefense.ENTRY_COST,
+			StarportDefense.ABORT_PENALTY,
+			_start_starport_defense,
+		)
+		return
+	var pt: int = current_planet_data.planet_type if current_planet_data else 0
+	var kind: int = PlanetActivity.kind_for_type(pt)
+	_show_mission_confirm(
+		PlanetActivity.name_for_kind(kind),
+		PlanetActivity.rules_for_kind(kind),
+		PlanetActivity.ENTRY_FEE,
+		0,
+		_start_planet_activity.bind(pt),
+	)
+
+
+func _start_starport_defense() -> void:
+	GameManager.remove_credits(StarportDefense.ENTRY_COST)
+	GameManager.mission_return_planet = GameManager.current_planet
+	EventLog.add_entry("Entered Starport Defense mission (-%dcr)." % StarportDefense.ENTRY_COST)
+	GameManager.change_scene("res://scenes/starport_defense.tscn")
+
+
+func _start_planet_activity(planet_type: int) -> void:
 	if has_node("PlanetActivity"):
 		return
 	var activity := PlanetActivityScene.instantiate()
 	activity.name = "PlanetActivity"
 	add_child(activity)
-	if not activity.try_open(pt):
+	if not activity.try_open(planet_type):
 		activity.queue_free()
 		_update_ui()
 		return
@@ -415,6 +454,143 @@ func _on_mission_pressed() -> void:
 		_rebuild_hub_buildings()
 		_update_ui()
 	)
+
+
+## One-shot onboarding card, shown the first time a building is opened.
+## Acknowledging it marks the hint as seen and then opens the building.
+func _show_hint_popup(hint_id: String, hint: Dictionary, on_ack: Callable) -> void:
+	if has_node("HintPopup"):
+		return
+	var overlay := ColorRect.new()
+	overlay.name = "HintPopup"
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0, 0, 0, 0.7)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _make_holo_panel_style(0.96, HOLO_BORDER, 14, 24, false))
+	panel.custom_minimum_size = Vector2(470, 0)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = str(hint.get("title", "")).to_upper()
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
+	vbox.add_child(title)
+
+	var body := Label.new()
+	body.text = str(hint.get("text", ""))
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.custom_minimum_size = Vector2(420, 0)
+	body.add_theme_font_size_override("font_size", 14)
+	body.add_theme_color_override("font_color", Color(0.88, 0.93, 0.97))
+	vbox.add_child(body)
+
+	var note := Label.new()
+	note.text = "Shown once — you can reopen this place freely afterwards."
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.add_theme_font_size_override("font_size", 11)
+	note.add_theme_color_override("font_color", Color(0.5, 0.62, 0.72))
+	vbox.add_child(note)
+
+	var btn := Button.new()
+	btn.text = "Got it"
+	btn.add_theme_font_size_override("font_size", 16)
+	_style_primary_button(btn, ACCENT_DEPART)
+	btn.pressed.connect(func() -> void:
+		HintManager.mark_seen(hint_id)
+		overlay.queue_free()
+		on_ack.call()
+	)
+	vbox.add_child(btn)
+
+
+## Modal shown before a paid mission starts: what it is, how it works, what it
+## costs, and what walking out early costs. Emits nothing — runs on_confirm.
+func _show_mission_confirm(
+	mission_name: String,
+	rules_text: String,
+	entry_fee: int,
+	abort_penalty: int,
+	on_confirm: Callable,
+) -> void:
+	var overlay := ColorRect.new()
+	overlay.name = "MissionConfirm"
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0, 0, 0, 0.75)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _make_holo_panel_style(0.95, HOLO_BORDER, 14, 26, false))
+	panel.custom_minimum_size = Vector2(460, 0)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = mission_name.to_upper()
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
+	vbox.add_child(title)
+
+	var rules := Label.new()
+	rules.text = rules_text
+	rules.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rules.custom_minimum_size = Vector2(400, 0)
+	rules.add_theme_font_size_override("font_size", 13)
+	rules.add_theme_color_override("font_color", Color(0.85, 0.9, 0.95))
+	vbox.add_child(rules)
+
+	var cost_lines: Array[String] = ["Entry fee: %d cr" % entry_fee]
+	if abort_penalty > 0:
+		cost_lines.append("Leaving early: %d cr extra" % abort_penalty)
+	cost_lines.append("One mission per landing.")
+	var cost := Label.new()
+	cost.text = "\n".join(cost_lines)
+	cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cost.add_theme_font_override("font", UIStyles.FONT_MONO)
+	cost.add_theme_font_size_override("font_size", 13)
+	cost.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
+	vbox.add_child(cost)
+
+	var can_afford: bool = GameManager.credits >= entry_fee
+	var btn_start := Button.new()
+	btn_start.text = "Start (%dcr)" % entry_fee if can_afford else "Need %d cr" % entry_fee
+	btn_start.disabled = not can_afford
+	btn_start.add_theme_font_size_override("font_size", 16)
+	_style_primary_button(btn_start, ACCENT_DEPART)
+	btn_start.pressed.connect(func() -> void:
+		overlay.queue_free()
+		on_confirm.call()
+	)
+	vbox.add_child(btn_start)
+
+	var btn_back := Button.new()
+	btn_back.text = "Back"
+	btn_back.add_theme_font_size_override("font_size", 14)
+	UIStyles.style_secondary_button(btn_back)
+	btn_back.pressed.connect(func() -> void: overlay.queue_free())
+	vbox.add_child(btn_back)
 
 
 func _rebuild_hub_buildings() -> void:
@@ -471,6 +647,13 @@ func _create_image_hotspots(states: Dictionary) -> void:
 		btn.pressed.connect(func() -> void: _on_building_clicked(captured_bid))
 		container.add_child(btn)
 
+		# Hover label with the canonical building name, so the map and the
+		# overlay title always agree (the painted signage is decorated variants).
+		var name_label := _create_hotspot_label(bid, rect)
+		container.add_child(name_label)
+		btn.mouse_entered.connect(func() -> void: name_label.visible = true)
+		btn.mouse_exited.connect(func() -> void: name_label.visible = false)
+
 		# Pulsing dot indicator
 		var dot := ColorRect.new()
 		dot.size = Vector2(8, 8)
@@ -489,6 +672,33 @@ func _create_image_hotspots(states: Dictionary) -> void:
 
 	# Start pulsing animation + initial flash
 	_animate_hotspot_dots(container)
+
+
+## Floating name plate shown while a building hotspot is hovered.
+## Anchors mirror the hotspot rect (authored against the 1280x720 design size)
+## and grow sideways so long names stay centred and readable.
+func _create_hotspot_label(building_id: String, rect: Rect2) -> Label:
+	var planet_type: int = current_planet_data.planet_type if current_planet_data else 0
+	var label := Label.new()
+	label.text = CityMap.get_building_name(building_id, planet_type)
+	label.anchor_left = rect.position.x / 1280.0
+	label.anchor_right = (rect.position.x + rect.size.x) / 1280.0
+	label.anchor_top = rect.position.y / 720.0
+	label.anchor_bottom = rect.position.y / 720.0
+	label.offset_left = -70.0
+	label.offset_right = 70.0
+	label.offset_top = -28.0
+	label.offset_bottom = -6.0
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.visible = false
+	label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
+	label.add_theme_font_size_override("font_size", 15)
+	label.add_theme_color_override("font_color", Color(0.85, 0.97, 1.0))
+	label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))
+	label.add_theme_constant_override("outline_size", 8)
+	return label
 
 
 func _animate_hotspot_dots(container: Control) -> void:
@@ -607,6 +817,30 @@ func _style_info_bar() -> void:
 	_apply_header_label_style(planet_name_label, 26, Color(0.82, 0.97, 1.0), UIStyles.FONT_DISPLAY)
 	_apply_header_label_style(news_banner, 12, Color(0.92, 0.96, 1.0))
 	_apply_header_label_style(goal_label, 13, Color(1.0, 0.94, 0.62), UIStyles.FONT_MONO)
+	# Tooltips only fire on Controls that accept mouse input.
+	goal_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	_wrap_planet_title_in_panel()
+
+
+## The planet title sits over the planet artwork, which is bright on some
+## planets (e.g. Starport Alpha). Give it the same holo backdrop as the other
+## header panels instead of relying on the outline alone.
+func _wrap_planet_title_in_panel() -> void:
+	var parent := planet_name_label.get_parent()
+	if parent is PanelContainer:
+		return
+	var title_index: int = planet_name_label.get_index()
+	var row := HBoxContainer.new()
+	row.name = "PlanetTitleRow"
+	var backdrop := PanelContainer.new()
+	backdrop.name = "PlanetTitlePanel"
+	backdrop.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	backdrop.add_theme_stylebox_override("panel", _make_holo_panel_style(0.62, HOLO_BORDER, 8, 10))
+	parent.remove_child(planet_name_label)
+	backdrop.add_child(planet_name_label)
+	row.add_child(backdrop)
+	parent.add_child(row)
+	parent.move_child(row, title_index)
 
 
 func _apply_header_label_style(label: Label, font_size: int, font_color: Color, font_override: FontFile = null) -> void:
@@ -799,12 +1033,7 @@ func _update_news_banner() -> void:
 func _update_ui() -> void:
 	_update_header()
 	_update_news_banner()
-	var used: int = GameManager.get_cargo_used()
-	var cap: int = GameManager.cargo_capacity
-	cargo_bar.value = used
-	cargo_bar.max_value = cap
-	capacity_label.text = str(used) + "/" + str(cap)
-	_update_cargo_items()
+	_update_cargo_display()
 	_update_crew_items()
 	_update_ship_status()
 	_update_quest_label()
@@ -829,7 +1058,39 @@ func _update_ui() -> void:
 		goal_label.text += " | Debt %d (%d days)" % [GameManager.outstanding_debt, GameManager.debt_due_in_days]
 	if StandingManager.bounty_amount > 0:
 		goal_label.text += " | %s %d cr" % [StandingManager.get_bounty_tier(), StandingManager.bounty_amount]
+	goal_label.tooltip_text = _build_goal_tooltip(t2_installed, planets_visited, win_credits)
 	_refresh_info_bar_text_layout()
+
+
+## Explains the compact goal readout — "T2 ✗" and the bounty tier in particular
+## are the two markers players cannot decode from the label alone.
+func _build_goal_tooltip(t2_installed: bool, planets_visited: int, win_credits: int) -> String:
+	var lines: Array[String] = [
+		"VICTORY NEEDS ALL THREE",
+		"• Credits: %d / %d" % [GameManager.credits, win_credits],
+		"• Planets visited: %d / %d" % [planets_visited, GameManager.WIN_PLANETS],
+		"• T2 upgrade installed: %s" % ("yes" if t2_installed else "not yet"),
+		"",
+		"HOW TO GET THE T2 UPGRADE",
+		"1. Fabrication Plant (Tech planets only) — start a recipe",
+		"2. Wait out the build days, then collect the component",
+		"3. Shipyard → Ship Upgrades → install the crafted upgrade",
+	]
+	if GameManager.has_active_loan():
+		lines.append("")
+		lines.append("Debt: %d cr due in %d days. Miss it and the lenders take it out of your run." % [
+			GameManager.outstanding_debt, GameManager.debt_due_in_days
+		])
+	if StandingManager.bounty_amount > 0:
+		lines.append("")
+		lines.append("Bounty %d cr (%s): patrols hunt you more often and dock fees rise." % [
+			StandingManager.bounty_amount, StandingManager.get_bounty_tier()
+		])
+		lines.append("Pay it off at the contract office (%s)." % CityMap.get_building_name(
+			CityMap.BUILDING_QUEST,
+			current_planet_data.planet_type if current_planet_data else 0
+		))
+	return "\n".join(lines)
 
 
 func _update_ship_status() -> void:
@@ -1038,6 +1299,17 @@ func _build_systems_debug_text() -> String:
 		GameManager.trade_route_memory.size(),
 		", ".join(rep_parts)
 	]
+
+
+## Bar, capacity readout and icon row are one unit — bound to
+## GameManager.cargo_changed so a sale from any overlay updates the hub.
+func _update_cargo_display() -> void:
+	var used: int = GameManager.get_cargo_used()
+	var cap: int = GameManager.cargo_capacity
+	cargo_bar.value = used
+	cargo_bar.max_value = cap
+	capacity_label.text = str(used) + "/" + str(cap)
+	_update_cargo_items()
 
 
 func _update_cargo_items() -> void:

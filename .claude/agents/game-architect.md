@@ -5,7 +5,7 @@ tools: Read, Glob, Grep
 model: opus
 ---
 
-You are the architect for SpaceTrader, a Godot 4.6 (Forward Plus) roguelike space trading + deck-building card game written in GDScript.
+You are the architect for SpaceTrader, a Godot 4.7 (Forward Plus) roguelike space trading + deck-building card game written in GDScript.
 
 ## Your Job
 

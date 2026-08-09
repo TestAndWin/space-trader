@@ -74,7 +74,7 @@ func try_open(planet_type: int) -> bool:
 		EventLog.add_entry("Not enough credits for planet activity (%dcr required)." % ENTRY_FEE)
 		return false
 	_planet_type = planet_type
-	_kind = _kind_for_type(planet_type)
+	_kind = kind_for_type(planet_type)
 	GameManager.remove_credits(ENTRY_FEE)
 	GameManager.mission_done_this_landing = true
 	EventLog.add_entry("Started %s activity (-%dcr)." % [_activity_name(), ENTRY_FEE])
@@ -83,7 +83,8 @@ func try_open(planet_type: int) -> bool:
 	return true
 
 
-func _kind_for_type(pt: int) -> int:
+## Static lookups so the hub can preview name and rules before charging the fee.
+static func kind_for_type(pt: int) -> int:
 	match pt:
 		PlanetData.PlanetType.TECH:         return Kind.HACKING
 		PlanetData.PlanetType.MINING:       return Kind.MINING
@@ -92,8 +93,8 @@ func _kind_for_type(pt: int) -> int:
 		_:                                   return Kind.FACTORY
 
 
-func _activity_name() -> String:
-	match _kind:
+static func name_for_kind(kind: int) -> String:
+	match kind:
 		Kind.HACKING:        return "Data Heist"
 		Kind.MINING:         return "Deep Mining Expedition"
 		Kind.HARVEST:        return "Harvest Market"
@@ -101,13 +102,36 @@ func _activity_name() -> String:
 		_:                    return "Forge Strike"
 
 
-func _activity_subtitle() -> String:
-	match _kind:
+static func subtitle_for_kind(kind: int) -> String:
+	match kind:
 		Kind.HACKING:        return "Slice through corporate ICE layer by layer."
 		Kind.MINING:         return "Push the drill deeper. Each layer richer — and riskier."
 		Kind.HARVEST:        return "Pick a bulk harvest lot at a local discount."
 		Kind.SMUGGLER_RACE:  return "Three checkpoints. Push hard or cruise."
 		_:                    return "Time the hammer strike on the molten core."
+
+
+## One-line rule summary shown in the confirmation dialog before paying.
+static func rules_for_kind(kind: int) -> String:
+	match kind:
+		Kind.HACKING:
+			return "Breach 3 ICE layers. Stealth or Brute per layer — failures cost hull, noise risks a bounty on exit. You may abort and keep 40% of the haul."
+		Kind.MINING:
+			return "Dig up to 4 layers. Each dig pays more but raises the cave-in risk (15% → 60%). Extract any time to bank your haul safely."
+		Kind.HARVEST:
+			return "Pick one bulk lot of Food Rations at a discount, or walk away. No risk — you only need the credits and the cargo space."
+		Kind.SMUGGLER_RACE:
+			return "Three checkpoints. Boost pays 300cr at 35% patrol risk, Cruise pays 110cr at 5%. Patrol hits cost hull and add bounty."
+		_:
+			return "Three timed hammer strikes. Stop the marker in the centre for up to 260cr — missing the zones recoils into your hull."
+
+
+func _activity_name() -> String:
+	return name_for_kind(_kind)
+
+
+func _activity_subtitle() -> String:
+	return subtitle_for_kind(_kind)
 
 
 # ── UI construction ──────────────────────────────────────────────────────────
