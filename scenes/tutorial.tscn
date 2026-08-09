@@ -247,7 +247,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/ContrabandSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Spice and Stolen Tech are contraband goods mainly available at Outlaw planets. They can sell for huge profits, but carrying them increases patrol pressure and selling them at lawful worlds damages local standing, lowers loyalty, and can push your bounty higher. Contraband runs are strongest when the galaxy enters a smuggling-friendly event window, but that also tends to raise risk."
+text = "Spice and Stolen Tech are contraband goods mainly available at Outlaw planets. They can sell for huge profits, but carrying them increases patrol pressure and selling them at lawful worlds damages faction reputation and local loyalty while raising your standing with the Outlaw faction. Bounty itself only grows if a customs inspection or a smuggler deal goes wrong. Contraband runs are strongest when the galaxy enters a smuggling-friendly event window, but that also tends to raise risk."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -337,7 +337,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/BountySection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Illegal activities build up a bounty on your head. Your status moves through tiers such as Watched, Wanted, and Most Wanted. Higher tiers raise encounter pressure, make bounty hunters more likely, increase local friction and fees on lawful worlds, and can block or worsen contract offers. You can reduce your bounty by defeating bounty hunters or pay it off entirely at the Quest Board."
+text = "Illegal activities build up a bounty on your head: getting caught by customs, botched smuggler deals, traced hacks, and patrol clips during a smuggler race. Destroying a System Patrol also counts as an attack on lawful authority and adds bounty, while other enemies do not. Your status moves through tiers such as Watched, Wanted, and Most Wanted. Higher tiers raise encounter pressure, make bounty hunters more likely, increase local friction and fees on lawful worlds, and can block or worsen contract offers. You can reduce your bounty by defeating bounty hunters or pay it off entirely at the Quest Board."
 autowrap_mode = 3
 mouse_filter = 2
 
