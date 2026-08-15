@@ -42,8 +42,6 @@ func _build_ui() -> void:
 		var next_btn := _make_action_btn("New Quest")
 		next_btn.pressed.connect(func(): just_completed = false; _build_ui())
 		vbox.add_child(next_btn)
-		_add_loan_panel(vbox)
-		_add_bounty_panel(vbox)
 		return
 
 	# Active quest
@@ -99,8 +97,6 @@ func _build_ui() -> void:
 			missing_label.add_theme_font_size_override("font_size", 15)
 			missing_label.add_theme_color_override("font_color", Color(0.7, 0.4, 0.3))
 			vbox.add_child(missing_label)
-		_add_loan_panel(vbox)
-		_add_bounty_panel(vbox)
 		return
 
 	# No active quest — show local offer
@@ -120,8 +116,6 @@ func _build_ui() -> void:
 		blocked_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.35))
 		vbox.add_child(blocked_label)
 		_add_quality_notes(vbox, offer.get("quality_notes", []), Color(0.9, 0.72, 0.45))
-		_add_loan_panel(vbox)
-		_add_bounty_panel(vbox)
 		return
 
 	var offer_desc := Label.new()
@@ -162,9 +156,6 @@ func _build_ui() -> void:
 	var accept_btn := _make_action_btn("Accept Quest")
 	accept_btn.pressed.connect(_on_accept)
 	vbox.add_child(accept_btn)
-
-	_add_loan_panel(vbox)
-	_add_bounty_panel(vbox)
 
 
 ## Tells the player where to get the requested cargo — a contract that asks for
@@ -218,72 +209,6 @@ func _on_deliver() -> void:
 	_build_ui()
 
 
-func _add_loan_panel(vbox: VBoxContainer) -> void:
-	var sep := HSeparator.new()
-	vbox.add_child(sep)
-
-	var debt_label := Label.new()
-	debt_label.text = GameManager.get_debt_status_text()
-	debt_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	debt_label.add_theme_font_size_override("font_size", 15)
-	debt_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
-	vbox.add_child(debt_label)
-
-	if GameManager.has_active_loan():
-		var repay_chunk := _make_action_btn("Repay %d cr" % GameManager.get_loan_repay_chunk())
-		repay_chunk.pressed.connect(_on_repay_chunk)
-		vbox.add_child(repay_chunk)
-
-		var repay_all := _make_action_btn("Repay All (%d cr)" % GameManager.outstanding_debt)
-		repay_all.pressed.connect(_on_repay_all)
-		vbox.add_child(repay_all)
-	else:
-		var loan_btn := _make_action_btn("Take Loan (+%d cr)" % GameManager.LOAN_DEFAULT_AMOUNT)
-		loan_btn.pressed.connect(_on_take_loan)
-		vbox.add_child(loan_btn)
-
-
-func _on_take_loan() -> void:
-	if GameManager.take_loan():
-		quest_changed.emit()
-	_build_ui()
-
-
-func _on_repay_chunk() -> void:
-	GameManager.repay_loan(GameManager.get_loan_repay_chunk())
-	quest_changed.emit()
-	_build_ui()
-
-
-func _on_repay_all() -> void:
-	GameManager.repay_loan(-1)
-	quest_changed.emit()
-	_build_ui()
-
-
-func _add_bounty_panel(vbox: VBoxContainer) -> void:
-	if StandingManager.bounty_amount <= 0:
-		return
-
-	var sep := HSeparator.new()
-	vbox.add_child(sep)
-
-	var bounty_label := Label.new()
-	bounty_label.text = "Bounty: %d cr (%s)" % [StandingManager.bounty_amount, StandingManager.get_bounty_tier()]
-	bounty_label.add_theme_font_size_override("font_size", 15)
-	bounty_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
-	vbox.add_child(bounty_label)
-
-	var pay_btn := _make_action_btn("Pay Off Bounty (%d cr)" % StandingManager.bounty_amount)
-	pay_btn.pressed.connect(_on_pay_bounty)
-	pay_btn.disabled = GameManager.credits < StandingManager.bounty_amount
-	vbox.add_child(pay_btn)
-
-
-func _on_pay_bounty() -> void:
-	if StandingManager.pay_off_bounty():
-		quest_changed.emit()
-	_build_ui()
 
 
 func _add_quality_summary(vbox: VBoxContainer, quality: Dictionary) -> void:

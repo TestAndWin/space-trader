@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/components/bounty_panel.gd" id="1_bp1"]
+
+[node name="BountyPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+mouse_filter = 0
+script = ExtResource("1_bp1")

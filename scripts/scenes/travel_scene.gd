@@ -91,6 +91,24 @@ func _ready() -> void:
 	var dest_type: int = _get_destination_type()
 	_warp_color = PLANET_WARP_COLORS.get(dest_type, PLANET_WARP_COLORS[3])
 
+	var weather: Dictionary = EventManager.get_active_weather()
+	if not weather.is_empty():
+		if weather.has("tint"):
+			var tint: Color = weather.get("tint", Color.WHITE)
+			_warp_color = _warp_color.lerp(tint, 0.55)
+		
+		if weather.get("id") == "solar_storm":
+			var current_shield: float = float(GameManager.current_shield)
+			var reduction_percent: float = _rng.randf_range(0.3, 0.8)
+			var reduction_amount: int = int(round(current_shield * reduction_percent))
+			if reduction_amount > 0:
+				GameManager.current_shield = maxi(0, GameManager.current_shield - reduction_amount)
+				EventLog.add_entry("Solar Storm depleted shields by %d!" % reduction_amount)
+				_show_weather_damage_label("SOLAR STORM: -%d SHIELD" % reduction_amount)
+			var current_warning: String = warning_label.text
+			warning_label.text = (current_warning + " | SOLAR STORM INTERFERENCE") if current_warning != "" else "SOLAR STORM INTERFERENCE"
+			warning_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.2))
+
 	viewport.transparent_bg = true
 	_setup_environment(_warp_color)
 	_generate_starfield(_warp_color)
@@ -144,6 +162,27 @@ func _get_destination_type() -> int:
 	if planet:
 		return planet.planet_type
 	return 3  # Default: Tech (cyan)
+
+
+func _show_weather_damage_label(text: String) -> void:
+	var dmg_label := Label.new()
+	dmg_label.text = text
+	dmg_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
+	dmg_label.add_theme_font_size_override("font_size", 24)
+	dmg_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.2))
+	# Position roughly in the center-top
+	dmg_label.position = Vector2(640, 200)
+	dmg_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	$HUD.add_child(dmg_label)
+	
+	# Adjust position after calculating size to center it perfectly
+	dmg_label.position.x -= dmg_label.get_minimum_size().x / 2.0
+	
+	# Float up and fade out
+	var tween := create_tween()
+	tween.tween_property(dmg_label, "position:y", dmg_label.position.y - 80, 4.0).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(dmg_label, "modulate:a", 0.0, 4.0).set_delay(1.5)
+	tween.tween_callback(dmg_label.queue_free)
 
 
 func _process(delta: float) -> void:
@@ -687,18 +726,10 @@ func _ease_out_cubic(value: float) -> float:
 
 func _on_travel_complete() -> void:
 	set_process(false)
-	# Check for non-combat travel event first
-	var travel_event := TravelEventScene.instantiate()
-	add_child(travel_event)
-	if travel_event.try_trigger(GameManager.travel_days):
-		travel_event.event_resolved.connect(_on_travel_event_resolved)
-		return
-	travel_event.queue_free()
 	_proceed_to_arrival()
 
 
-func _on_travel_event_resolved() -> void:
-	_proceed_to_arrival()
+
 
 
 func _proceed_to_arrival() -> void:
@@ -731,6 +762,13 @@ func _proceed_to_arrival() -> void:
 				get_tree().change_scene_to_file("res://scenes/card_battle.tscn")
 				return
 
+	# If no combat occurred (or it was bypassed via Ghost Run), check for non-combat travel event
+	var travel_event := TravelEventScene.instantiate()
+	add_child(travel_event)
+	if travel_event.try_trigger(GameManager.travel_days):
+		travel_event.event_resolved.connect(_complete_arrival)
+		return
+	travel_event.queue_free()
 	_complete_arrival()
 
 

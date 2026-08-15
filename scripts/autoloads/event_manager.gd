@@ -9,6 +9,10 @@ var chain_stage: int = -1
 var chain_days_remaining: int = 0
 var chain_context: Dictionary = {}
 
+var active_weather: Dictionary = {}
+var weather_days_remaining: int = 0
+const WEATHER_CHANCE: float = 0.20
+
 const EVENT_CHANCE: float = 0.3
 const MIN_DURATION: int = 3
 const MAX_DURATION: int = 5
@@ -65,6 +69,36 @@ var _event_pool: Array[Dictionary] = [
 		"target": "all",
 		"tags": ["trade_agreement"],
 	},
+]
+
+var _weather_pool: Array[Dictionary] = [
+	{
+		"id": "solar_storm",
+		"title": "Solar Storm",
+		"description": "Shields reduced during travel",
+		"tint": Color(1.0, 0.4, 0.2, 0.25),
+	},
+	{
+		"id": "ion_nebula",
+		"title": "Ion Nebula",
+		"description": "Scanners disrupted",
+		"tint": Color(0.4, 0.2, 0.8, 0.25),
+		"scanners_offline": true,
+	},
+	{
+		"id": "asteroid_field",
+		"title": "Asteroid Field",
+		"description": "Travel hazards increased",
+		"tint": Color(0.6, 0.5, 0.4, 0.25),
+		"encounter_modifier": 0.25,
+	},
+	{
+		"id": "space_anomaly",
+		"title": "Space Anomaly",
+		"description": "Strange phenomena",
+		"tint": Color(0.2, 0.8, 0.6, 0.25),
+		"travel_event_chance_modifier": 0.25,
+	}
 ]
 
 var _event_chains: Dictionary = {
@@ -142,6 +176,8 @@ func _ready() -> void:
 func reset_state() -> void:
 	_clear_active_event()
 	_clear_chain()
+	active_weather.clear()
+	weather_days_remaining = 0
 
 
 func _load_planets() -> void:
@@ -149,6 +185,16 @@ func _load_planets() -> void:
 
 
 func tick() -> void:
+	if not active_weather.is_empty():
+		weather_days_remaining -= 1
+		if weather_days_remaining <= 0:
+			EventLog.add_entry("Weather cleared: %s" % active_weather.get("title", "Unknown"))
+			active_weather.clear()
+	elif randf() < WEATHER_CHANCE:
+		active_weather = _weather_pool.pick_random().duplicate(true)
+		weather_days_remaining = randi_range(3, 6)
+		EventLog.add_entry("Space Weather: %s (%d days)" % [active_weather.get("title", "Unknown"), weather_days_remaining])
+
 	if not active_event.is_empty():
 		event_days_remaining -= 1
 		if event_days_remaining <= 0:
@@ -365,6 +411,12 @@ func get_encounter_modifiers(planet_name: String = "") -> Array:
 				"modifier": effect.get("encounter_modifier", 0.0),
 				"tags": effect.get("tags", []),
 			})
+	if active_weather.has("encounter_modifier"):
+		modifiers.append({
+			"source": active_weather.get("title", "Weather"),
+			"modifier": active_weather.get("encounter_modifier", 0.0),
+			"tags": [],
+		})
 	return modifiers
 
 
@@ -479,6 +531,9 @@ func get_event_display_text() -> String:
 		]
 	return ""
 
+func get_active_weather() -> Dictionary:
+	return active_weather
+
 
 # ── Save / Load ──────────────────────────────────────────────────────────────
 
@@ -491,6 +546,8 @@ func save_data() -> Dictionary:
 		"chain_stage": chain_stage,
 		"chain_days_remaining": chain_days_remaining,
 		"chain_context": chain_context.duplicate(true),
+		"active_weather": active_weather.duplicate(true),
+		"weather_days_remaining": weather_days_remaining,
 	}
 
 
@@ -502,3 +559,5 @@ func load_data(data: Dictionary) -> void:
 	chain_stage = int(data.get("chain_stage", -1))
 	chain_days_remaining = int(data.get("chain_days_remaining", 0))
 	chain_context = data.get("chain_context", {}).duplicate(true)
+	active_weather = data.get("active_weather", {}).duplicate(true)
+	weather_days_remaining = int(data.get("weather_days_remaining", 0))

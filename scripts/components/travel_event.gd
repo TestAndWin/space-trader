@@ -23,7 +23,9 @@ var _choice_b_button: Button
 
 func try_trigger(days: int = 1) -> bool:
 	_load_events()
-	var chance: float = clampf(1.0 - pow(1.0 - TRIGGER_CHANCE, maxi(days, 1)), 0.0, 0.85)
+	var base_chance: float = 1.0 - pow(1.0 - TRIGGER_CHANCE, maxi(days, 1))
+	var weather_modifier: float = EventManager.get_active_weather().get("travel_event_chance_modifier", 0.0)
+	var chance: float = clampf(base_chance + weather_modifier, 0.0, 0.85)
 	if randf() > chance:
 		return false
 	if _all_events.is_empty():

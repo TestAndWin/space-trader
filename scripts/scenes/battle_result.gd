@@ -311,6 +311,19 @@ func _style_buttons() -> void:
 
 
 func _on_continue_pressed() -> void:
+	if GameManager.battle_result == "won":
+		var TravelEventScene = preload("res://scenes/components/travel_event.tscn")
+		var travel_event := TravelEventScene.instantiate()
+		add_child(travel_event)
+		if travel_event.try_trigger(GameManager.travel_days):
+			travel_event.event_resolved.connect(_finish_continue)
+			return
+		travel_event.queue_free()
+	
+	_finish_continue()
+
+
+func _finish_continue() -> void:
 	GameManager.current_encounter = null
 	GameManager.battle_result = ""
 	GameManager.change_scene("res://scenes/planet_screen.tscn")

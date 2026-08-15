@@ -59,6 +59,7 @@ func _ready() -> void:
 	_update_player_position()
 	_configure_info_panel()
 	_create_fuel_label()
+	_create_weather_label()
 	_update_ui()
 
 	travel_button.visible = false
@@ -175,6 +176,44 @@ func _create_fuel_label() -> void:
 	fuel_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.28, 1.0))
 	fuel_label.text = "Fuel: 0/0"
 	$CanvasLayer/BottomBar/HBoxContainer.add_child(fuel_label)
+
+
+var _weather_label: Label = null
+
+func _create_weather_label() -> void:
+	if _weather_label:
+		return
+	_weather_label = Label.new()
+	_weather_label.name = "WeatherLabel"
+	_weather_label.add_theme_font_size_override("font_size", 16)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.1, 0.14, 0.85)
+	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(6)
+	style.set_content_margin_all(8)
+	_weather_label.add_theme_stylebox_override("normal", style)
+	_weather_label.position = Vector2(640.0 - 100.0, 16.0)
+	_weather_label.z_index = 100
+	_weather_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	$CanvasLayer.add_child(_weather_label)
+	UIStyles.apply_display_font(_weather_label)
+	_weather_label.visible = false
+
+func _update_weather_ui() -> void:
+	if not _weather_label:
+		return
+	var weather: Dictionary = EventManager.get_active_weather()
+	if weather.is_empty():
+		_weather_label.visible = false
+	else:
+		_weather_label.visible = true
+		_weather_label.text = "Weather: %s (%d days)" % [weather.get("title", ""), EventManager.weather_days_remaining]
+		_weather_label.tooltip_text = weather.get("description", "")
+		var tint: Color = weather.get("tint", Color.WHITE)
+		_weather_label.add_theme_color_override("font_color", Color(tint.r + 0.3, tint.g + 0.3, tint.b + 0.3, 1.0))
+		_weather_label.size = _weather_label.get_minimum_size()
+		_weather_label.position.x = 640.0 - _weather_label.size.x / 2.0
 
 
 func _setup_environment() -> void:
@@ -642,6 +681,7 @@ func _update_ui() -> void:
 	current_planet_label.text = "@ %s" % GameManager.current_planet
 	hull_label.text = "Hull: %d/%d" % [GameManager.current_hull, GameManager.max_hull]
 	shield_label.text = "Shield: %d/%d" % [GameManager.current_shield, GameManager.max_shield]
+	_update_weather_ui()
 
 
 func _on_planet_input_event(_camera: Camera3D, event: InputEvent, _event_position: Vector3, _normal: Vector3, _shape_idx: int, planet_data: Resource) -> void:
@@ -722,14 +762,24 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 	planet_type_label.add_theme_color_override("font_color", type_color)
 
 	var available: Array = EconomyManager.get_available_goods(type_text)
-	var hint_lines: Array[String] = _build_trade_hints_for_planet(planet_data.planet_name, available)
+	var hint_lines: Array[String] = []
+	if self.has_method("_build_trade_hints_for_planet"):
+		hint_lines = self.call("_build_trade_hints_for_planet", planet_data.planet_name, available)
 	var warning: String = EventManager.get_travel_warning_text(planet_data.planet_name)
-	if available.size() > 0:
-		trades_label.text = "Trades: " + ", ".join(available)
+	
+	var weather: Dictionary = EventManager.get_active_weather()
+	if weather.get("scanners_offline", false):
+		trades_label.text = "Trades: [SCANNERS OFFLINE]\nIon Nebula interference detected."
+		danger_label.text = "Danger: Unknown | Loyalty %s" % StandingManager.get_loyalty_tier(planet_data.planet_name)
+		danger_label.add_theme_color_override("font_color", Color(0.6, 0.4, 0.8))
 	else:
-		trades_label.text = "Trades: none listed"
-	if not hint_lines.is_empty():
-		trades_label.text += "\n" + "\n".join(hint_lines)
+		if available.size() > 0:
+			trades_label.text = "Trades: " + ", ".join(available)
+		else:
+			trades_label.text = "Trades: none listed"
+		if not hint_lines.is_empty():
+			trades_label.text += "\n" + "\n".join(hint_lines)
+			
 	if warning != "":
 		trades_label.text += "\nWarning: " + warning
 

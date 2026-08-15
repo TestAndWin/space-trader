@@ -70,17 +70,28 @@ var _forge_marker: ColorRect = null
 func try_open(planet_type: int) -> bool:
 	if GameManager.mission_done_this_landing:
 		return false
-	if GameManager.credits < ENTRY_FEE:
-		EventLog.add_entry("Not enough credits for planet activity (%dcr required)." % ENTRY_FEE)
-		return false
 	_planet_type = planet_type
 	_kind = kind_for_type(planet_type)
-	GameManager.remove_credits(ENTRY_FEE)
+	var fee: int = entry_fee_for_kind(_kind)
+	if fee > 0:
+		if GameManager.credits < fee:
+			EventLog.add_entry("Not enough credits for planet activity (%dcr required)." % fee)
+			return false
+		GameManager.remove_credits(fee)
 	GameManager.mission_done_this_landing = true
-	EventLog.add_entry("Started %s activity (-%dcr)." % [_activity_name(), ENTRY_FEE])
+	if fee > 0:
+		EventLog.add_entry("Started %s activity (-%dcr)." % [_activity_name(), fee])
+	else:
+		EventLog.add_entry("Started %s activity." % _activity_name())
 	visible = true
 	_start_activity()
 	return true
+
+
+static func entry_fee_for_kind(kind: int) -> int:
+	if kind == Kind.HARVEST:
+		return 0
+	return ENTRY_FEE
 
 
 ## Static lookups so the hub can preview name and rules before charging the fee.

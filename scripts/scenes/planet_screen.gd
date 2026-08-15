@@ -421,7 +421,7 @@ func _on_mission_pressed() -> void:
 	_show_mission_confirm(
 		PlanetActivity.name_for_kind(kind),
 		PlanetActivity.rules_for_kind(kind),
-		PlanetActivity.ENTRY_FEE,
+		PlanetActivity.entry_fee_for_kind(kind),
 		0,
 		_start_planet_activity.bind(pt),
 	)
@@ -556,7 +556,11 @@ func _show_mission_confirm(
 	rules.add_theme_color_override("font_color", Color(0.85, 0.9, 0.95))
 	vbox.add_child(rules)
 
-	var cost_lines: Array[String] = ["Entry fee: %d cr" % entry_fee]
+	var cost_lines: Array[String] = []
+	if entry_fee > 0:
+		cost_lines.append("Entry fee: %d cr" % entry_fee)
+	else:
+		cost_lines.append("Entry fee: Free")
 	if abort_penalty > 0:
 		cost_lines.append("Leaving early: %d cr extra" % abort_penalty)
 	cost_lines.append("One mission per landing.")
@@ -570,7 +574,10 @@ func _show_mission_confirm(
 
 	var can_afford: bool = GameManager.credits >= entry_fee
 	var btn_start := Button.new()
-	btn_start.text = "Start (%dcr)" % entry_fee if can_afford else "Need %d cr" % entry_fee
+	if entry_fee > 0:
+		btn_start.text = "Start (%dcr)" % entry_fee if can_afford else "Need %d cr" % entry_fee
+	else:
+		btn_start.text = "Start"
 	btn_start.disabled = not can_afford
 	btn_start.add_theme_font_size_override("font_size", 16)
 	_style_primary_button(btn_start, ACCENT_DEPART)
@@ -810,6 +817,7 @@ func _style_info_bar() -> void:
 	header_spacer.visible = true
 	_apply_header_label_style(planet_name_label, 26, Color(0.82, 0.97, 1.0), UIStyles.FONT_DISPLAY)
 	_apply_header_label_style(news_banner, 12, Color(0.92, 0.96, 1.0))
+	news_banner.mouse_filter = Control.MOUSE_FILTER_STOP
 	_apply_header_label_style(goal_label, 13, Color(1.0, 0.94, 0.62), UIStyles.FONT_MONO)
 	# Tooltips only fire on Controls that accept mouse input.
 	goal_label.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -1159,8 +1167,8 @@ func _refresh_info_bar_text_layout() -> void:
 	var reserved: float = button_width + goal_width + separator * float(button_count + 3) + 24.0
 	
 	var right_offset: float = 264.0 if (quest_widget and quest_widget.visible) else 8.0
-	var expected_width: float = size.x - 228.0 - right_offset - 16.0 # 16.0 for left+right container margin
-	var available: float = expected_width - reserved
+	var expected_width: float = size.x - 228.0 - right_offset - 32.0 # Extra safe margin
+	var available: float = expected_width - reserved - 60.0 # Force earlier truncation
 
 	if available <= 0.0:
 		news_banner.text = ""
