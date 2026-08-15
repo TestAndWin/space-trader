@@ -13,7 +13,7 @@ Trade goods across planets, build a combat deck, upgrade your ship, recruit crew
 - **Ship Upgrades** — Expand hull, shields, cargo capacity, energy, and hand size at shipyards
 - **Crew System** — Recruit up to 3 crew members with passive bonuses (attack, defense, trading, smuggling)
 - **Quest System** — Procedural delivery quests with deadlines and penalties
-- **World Events** — Blockades, harvests, and tech booms that dynamically affect the economy
+- **World Events** — Blockades, harvests, Pirate Lord Crimson Jack, and tech booms that dynamically affect the economy
 - **Procedural Visuals** — Ships, planets, and starfields rendered entirely with code (no sprites)
 - **Smuggler Events** — Risky black market deals with chance of getting caught
 - **Save/Load** — JSON-based save system

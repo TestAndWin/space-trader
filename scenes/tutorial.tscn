@@ -175,7 +175,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/RivalSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "After enough travel days, the notorious pirate Captain Vex will intercept you. He grows stronger with each encounter — four phases spread across roughly twenty travel days, with about a week between each appearance. Defeating him always awards a ship upgrade. Survive all four phases and the rivalry ends for good, with a large credit bonus. Losing a fight only delays his return briefly, so be prepared before departing if your hull is low. A crew member with combat experience deals bonus damage against him."
+text = "After enough travel days, the notorious pirate Captain Vex will intercept you. He grows stronger with each encounter — four phases spread across roughly 75 travel days. Defeating him always awards a ship upgrade. Survive all four phases and the rivalry ends for good, with a large credit bonus. Losing a fight only delays his return briefly, so be prepared before departing if your hull is low. A crew member with combat experience deals bonus damage against him."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -319,7 +319,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/TravelEventsSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "During travel between planets, you may encounter random non-combat events. A stranded trader might ask for help, you could discover an abandoned wreck to salvage, or pick up a distress signal. The wider galaxy can also enter chained world events such as blockades, shortages, smuggling windows, tech theft, and security crackdowns. These chains affect prices, quest quality, route danger, and the warning text shown before travel."
+text = "During travel between planets, you may encounter random non-combat events. A stranded trader might ask for help, you could discover an abandoned wreck to salvage, or pick up a distress signal. The wider galaxy can also enter chained world events such as blockades, shortages, smuggling windows, tech theft, and security crackdowns. Furthermore, the Pirate Lord Crimson Jack might plague the galaxy as a world event, causing price spikes, intercepting quest deliveries, and waiting for you at the high-roller tables in the casino."
 autowrap_mode = 3
 mouse_filter = 2
 
