@@ -148,9 +148,6 @@ func _build_service_tab() -> void:
 	_shipyard_panel.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
 	_shipyard_panel.custom_minimum_size = Vector2(480, 0)
 	centre.add_child(_shipyard_panel)
-	# Upgrades and Ships are tabs now, so the panel's own jump buttons would be
-	# a second, redundant way in.
-	_shipyard_panel.set_navigation_visible(false)
 	_shipyard_panel.setup(_planet_type)
 
 

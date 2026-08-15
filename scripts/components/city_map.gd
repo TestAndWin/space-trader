@@ -297,7 +297,7 @@ func _draw_iso_box(b: Dictionary) -> void:
 	var w: float = b["w"];   var d: float = b["d"]; var h: float = b["h"]
 	var accent: Color  = b["accent"]
 	var base: Color    = b["bg"]
-	var hovered: bool  = (b["id"] == _hovered_building) and b["interactive"]
+	var hovered: bool  = (b["id"] == _hovered_building)
 	var done: bool     = b["done"]
 	var dim: float     = 0.5 if done else 1.0
 
@@ -525,9 +525,6 @@ func _update_hover(screen_pos: Vector2) -> void:
 	var iso_pos := _screen_to_iso(screen_pos)
 	var hit     := _hit_building(iso_pos)
 	var new_id  := hit.get("id", "") as String
-	# Only hover interactive buildings
-	if new_id != "" and not (hit.get("interactive", false) as bool):
-		new_id = ""
 	if new_id == _hovered_building:
 		return
 	_hovered_building = new_id
@@ -541,5 +538,4 @@ func _handle_click(screen_pos: Vector2) -> void:
 	var hit     := _hit_building(iso_pos)
 	if hit.is_empty():
 		return
-	if hit.get("interactive", false):
-		building_clicked.emit(hit["id"] as String)
+	building_clicked.emit(hit["id"] as String)

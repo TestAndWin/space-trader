@@ -49,50 +49,10 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	color = Color(0.0, 0.0, 0.0, 0.75)
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_PASS
-	add_child(center)
-
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(400, 0)
-
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.06, 0.08, 0.14, 0.95)
-	panel_style.border_color = Color(0.5, 0.7, 1.0)
-	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(6)
-	panel_style.set_content_margin_all(16)
-	panel.add_theme_stylebox_override("panel", panel_style)
-	center.add_child(panel)
-
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 10)
-	panel.add_child(vbox)
-
-	# Title
-	_title_label = Label.new()
-	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	_title_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
-	_title_label.add_theme_font_size_override("font_size", 22)
-	vbox.add_child(_title_label)
-
-	# Description
-	_description_label = Label.new()
-	_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_description_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
-	_description_label.custom_minimum_size = Vector2(360, 0)
-	vbox.add_child(_description_label)
-
-	# Separator
-	var sep := HSeparator.new()
-	sep.add_theme_color_override("separator", Color(0.25, 0.4, 0.6))
-	vbox.add_child(sep)
+	var scaffold := UIStyles.create_event_modal_scaffold(self, 400.0, Color(0.5, 0.8, 1.0))
+	var vbox: VBoxContainer = scaffold["vbox"]
+	_title_label = scaffold["title_label"]
+	_description_label = scaffold["description_label"]
 
 	# Outcome label (shown after choice)
 	_outcome_label = Label.new()

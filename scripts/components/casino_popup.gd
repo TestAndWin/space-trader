@@ -99,97 +99,21 @@ func _build_ui() -> void:
 	# Background image
 	BackgroundUtils.add_building_background(self, "casino", 0.4)
 
-	# Semi-transparent casino panel
-	var margin := MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 0)
-	margin.add_theme_constant_override("margin_right", 0)
-	margin.add_theme_constant_override("margin_top", 0)
-	margin.add_theme_constant_override("margin_bottom", 0)
-	add_child(margin)
-
-	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = UIStyles.PANEL_COLOR
-	style.border_color = BORDER_COLOR
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(16)
-	style.content_margin_left = 28
-	style.content_margin_right = 28
-	style.content_margin_top = 16
-	style.content_margin_bottom = 16
-	panel.add_theme_stylebox_override("panel", style)
-	margin.add_child(panel)
-
-	_main_vbox = VBoxContainer.new()
-	_main_vbox.add_theme_constant_override("separation", 12)
-	panel.add_child(_main_vbox)
-
-	# ── Header ──
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
-	_main_vbox.add_child(header)
-
-	# Title section with subtitle
-	var title_vbox := VBoxContainer.new()
-	title_vbox.add_theme_constant_override("separation", 0)
-	header.add_child(title_vbox)
-
-	var title_row := HBoxContainer.new()
-	title_row.add_theme_constant_override("separation", 10)
-	title_vbox.add_child(title_row)
-
-	var left_deco := Label.new()
-	left_deco.text = "\u2666 \u2663 \u2665 \u2660"
-	left_deco.add_theme_font_size_override("font_size", 16)
-	left_deco.add_theme_color_override("font_color", GOLD_DIM)
-	title_row.add_child(left_deco)
-
-	var title := Label.new()
-	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", GOLD)
-	title_row.add_child(title)
-	_title_label = title
-	_apply_planet_theme()
-
-	var right_deco := Label.new()
-	right_deco.text = "\u2660 \u2665 \u2663 \u2666"
-	right_deco.add_theme_font_size_override("font_size", 16)
-	right_deco.add_theme_color_override("font_color", GOLD_DIM)
-	title_row.add_child(right_deco)
-
-	var subtitle := Label.new()
-	subtitle.text = "High Stakes \u2022 Fair Games \u2022 Galactic Gaming License #4827"
-	var sub_settings := LabelSettings.new()
-	sub_settings.font_size = 11
-	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
-	sub_settings.shadow_size = 3
-	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
-	sub_settings.shadow_offset = Vector2(1, 1)
-	subtitle.label_settings = sub_settings
-	title_vbox.add_child(subtitle)
-
-	var header_spacer := Control.new()
-	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(header_spacer)
-
-	_credits_label = UIStyles.create_credits_label()
-	header.add_child(_credits_label)
-
-	var close_btn := _create_casino_button(
+	var scaffold: Dictionary = UIStyles.create_overlay_scaffold(
+		self,
+		"",
+		"High Stakes • Fair Games • Galactic Gaming License #4827",
+		"♦ ♣ ♥ ♠",
 		"Back to City",
-		Vector2(130, 36),
-		Color(0.5, 0.15, 0.1),
-		close
+		close,
+		GOLD,
+		GOLD_DIM,
+		GOLD_DIM
 	)
-	header.add_child(close_btn)
-
-	# Separator line
-	var sep := HSeparator.new()
-	sep.add_theme_constant_override("separation", 6)
-	sep.add_theme_color_override("separator", GOLD_DIM)
-	_main_vbox.add_child(sep)
+	_main_vbox = scaffold["main_vbox"]
+	_title_label = scaffold["title_label"]
+	_credits_label = scaffold["credits_label"]
+	_apply_planet_theme()
 
 	# Status label
 	_status_label = Label.new()

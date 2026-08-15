@@ -59,45 +59,15 @@ func try_scan() -> bool:
 
 
 func _build_ui() -> void:
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	color = Color(0.0, 0.0, 0.0, 0.75)
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_PASS
-	add_child(center)
-
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(430, 0)
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.1, 0.06, 0.06, 0.95)
-	panel_style.border_color = Color(0.9, 0.2, 0.15)
-	panel_style.set_border_width_all(2)
-	panel_style.set_corner_radius_all(6)
-	panel_style.set_content_margin_all(16)
-	panel.add_theme_stylebox_override("panel", panel_style)
-	center.add_child(panel)
-
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 10)
-	panel.add_child(vbox)
-
-	var title := Label.new()
+	var scaffold := UIStyles.create_event_modal_scaffold(self, 430.0, Color(1.0, 0.3, 0.2))
+	var vbox: VBoxContainer = scaffold["vbox"]
+	var title: Label = scaffold["title_label"]
 	title.text = "CUSTOMS INSPECTION"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))
-	title.add_theme_font_size_override("font_size", 22)
-	vbox.add_child(title)
 
 	var cargo_text: String = ", ".join(_contraband_items.map(func(i: Dictionary) -> String: return "%d %s" % [i["quantity"], i["good_name"]]))
-	var desc := Label.new()
+	var desc: Label = scaffold["description_label"]
 	desc.text = "Authorities are scanning your cargo hold. They flagged: %s." % cargo_text
-	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
 	desc.custom_minimum_size = Vector2(380, 0)
-	vbox.add_child(desc)
 
 	var context := Label.new()
 	context.text = _build_context_text()

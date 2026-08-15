@@ -317,6 +317,64 @@ static func style_event_button(btn: Button, normal_color: Color, hover_color: Co
 		btn.add_theme_stylebox_override(pair[0], style)
 
 
+## Standardized event modal dialog frame (used by PlanetEvent, TravelEvent, CustomsScan, SmugglerEvent).
+static func create_event_modal_scaffold(
+	parent: Control,
+	min_width: float = 400.0,
+	title_color: Color = Color(0.4, 0.7, 1.0)
+) -> Dictionary:
+	parent.mouse_filter = Control.MOUSE_FILTER_STOP
+	if parent is ColorRect:
+		(parent as ColorRect).color = Color(0.0, 0.0, 0.0, 0.75)
+		parent.set_anchors_preset(Control.PRESET_FULL_RECT)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_PASS
+	parent.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(min_width, 0)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.08, 0.12, 0.95)
+	style.border_color = Color(0.3, 0.5, 0.8)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.set_content_margin_all(16)
+	panel.add_theme_stylebox_override("panel", style)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	panel.add_child(vbox)
+
+	var title := Label.new()
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", FONT_DISPLAY)
+	title.add_theme_color_override("font_color", title_color)
+	title.add_theme_font_size_override("font_size", 22)
+	vbox.add_child(title)
+
+	var desc := Label.new()
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
+	desc.custom_minimum_size = Vector2(min_width - 40, 0)
+	vbox.add_child(desc)
+
+	var sep := HSeparator.new()
+	sep.add_theme_color_override("separator", Color(0.2, 0.35, 0.55))
+	vbox.add_child(sep)
+
+	return {
+		"vbox": vbox,
+		"title_label": title,
+		"description_label": desc,
+		"panel": panel,
+		"separator": sep,
+	}
+
+
+
 # ── Hull color helper ────────────────────────────────────────────────────────
 # Returns green / yellow / red based on hull percentage.
 

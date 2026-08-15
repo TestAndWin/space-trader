@@ -1,9 +1,6 @@
 extends PanelContainer
 
 signal shipyard_action
-signal ships_requested
-
-signal upgrades_requested
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
@@ -21,8 +18,6 @@ var repair_button: Button
 var buy_fuel_button: Button
 var fill_fuel_button: Button
 var emergency_fuel_button: Button
-var _bottom_row: HBoxContainer
-var _navigation_allowed: bool = true
 var status_label: Label
 
 
@@ -98,22 +93,6 @@ func _ready() -> void:
 	emergency_fuel_button.pressed.connect(_on_emergency_fuel_pressed)
 	vbox.add_child(emergency_fuel_button)
 
-	_bottom_row = HBoxContainer.new()
-	_bottom_row.add_theme_constant_override("separation", 4)
-	vbox.add_child(_bottom_row)
-
-	var ship_upgrades_button := ActionButton.new()
-	ship_upgrades_button.text = "Upgrades"
-	ship_upgrades_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ship_upgrades_button.pressed.connect(_on_ship_upgrades_pressed)
-	_bottom_row.add_child(ship_upgrades_button)
-
-	var ships_button := ActionButton.new()
-	ships_button.text = "Ships"
-	ships_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ships_button.pressed.connect(_on_ships_pressed)
-	_bottom_row.add_child(ships_button)
-
 	status_label = Label.new()
 	status_label.text = ""
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -173,17 +152,8 @@ func _create_stat_bar(label_text: String, bg_color: Color, fill_color: Color) ->
 	return container
 
 
-## Hides the Upgrades/Ships buttons when the host already offers those as tabs.
-func set_navigation_visible(value: bool) -> void:
-	_navigation_allowed = value
-	if _bottom_row:
-		_bottom_row.visible = value and _planet_type != EconomyManager.PT_AGRICULTURAL
-
-
 func setup(planet_type: int = 0) -> void:
 	_planet_type = planet_type
-	var is_agricultural := (_planet_type == EconomyManager.PT_AGRICULTURAL)
-	_bottom_row.visible = _navigation_allowed and not is_agricultural
 	_refresh_display()
 
 
@@ -299,11 +269,3 @@ func _on_emergency_fuel_pressed() -> void:
 		status_label.text = "Emergency fuel unavailable"
 	_refresh_display()
 	shipyard_action.emit()
-
-
-func _on_ship_upgrades_pressed() -> void:
-	upgrades_requested.emit()
-
-
-func _on_ships_pressed() -> void:
-	ships_requested.emit()

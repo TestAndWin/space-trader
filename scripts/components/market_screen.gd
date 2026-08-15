@@ -68,103 +68,27 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	# Background image
 	BackgroundUtils.add_building_background(self, "market", 0.4)
 
-	# Main panel
-	var margin := MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 0)
-	margin.add_theme_constant_override("margin_right", 0)
-	margin.add_theme_constant_override("margin_top", 0)
-	margin.add_theme_constant_override("margin_bottom", 0)
-	add_child(margin)
-
-	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = UIStyles.PANEL_COLOR
-	style.border_color = UIStyles.BORDER_COLOR
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(16)
-	style.content_margin_left = 28
-	style.content_margin_right = 28
-	style.content_margin_top = 16
-	style.content_margin_bottom = 16
-	panel.add_theme_stylebox_override("panel", style)
-	margin.add_child(panel)
-
-	var main_vbox := VBoxContainer.new()
-	main_vbox.add_theme_constant_override("separation", 12)
-	panel.add_child(main_vbox)
-
-	# ── Header ──
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
+	var scaffold: Dictionary = UIStyles.create_overlay_scaffold(
+		self,
+		"",
+		"",
+		"",
+		"Back to City",
+		close
+	)
+	var main_vbox: VBoxContainer = scaffold["main_vbox"]
+	var header: HBoxContainer = scaffold["header"]
 	header.z_index = 10
 	header.mouse_filter = Control.MOUSE_FILTER_STOP
-	main_vbox.add_child(header)
-
-	var title_vbox := VBoxContainer.new()
-	title_vbox.add_theme_constant_override("separation", 0)
-	header.add_child(title_vbox)
-
-	var title_row := HBoxContainer.new()
-	title_row.add_theme_constant_override("separation", 10)
-	title_vbox.add_child(title_row)
-
-	var left_deco := Label.new()
-	left_deco.add_theme_font_size_override("font_size", 16)
-	left_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
-	title_row.add_child(left_deco)
-
-	var title := Label.new()
-	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	title.add_theme_font_size_override("font_size", 26)
-	title_row.add_child(title)
-
-	var right_deco := Label.new()
-	right_deco.add_theme_font_size_override("font_size", 16)
-	right_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
-	title_row.add_child(right_deco)
-
-	_title_label = title
-	_icon_labels = [left_deco, right_deco]
-
-	var subtitle := Label.new()
-	var sub_settings := LabelSettings.new()
-	sub_settings.font_size = 11
-	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
-	sub_settings.shadow_size = 3
-	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
-	sub_settings.shadow_offset = Vector2(1, 1)
-	subtitle.label_settings = sub_settings
-	title_vbox.add_child(subtitle)
-	_subtitle_label = subtitle
-	_apply_planet_theme()
-
-	var header_spacer := Control.new()
-	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(header_spacer)
-
-	_credits_label = UIStyles.create_credits_label()
-	header.add_child(_credits_label)
-
+	_title_label = scaffold["title_label"]
+	_subtitle_label = scaffold["subtitle_label"]
+	_icon_labels = scaffold["icon_labels"]
+	_credits_label = scaffold["credits_label"]
 	_cargo_label = UIStyles.create_cargo_label()
 	header.add_child(_cargo_label)
-
-	var close_btn := Button.new()
-	close_btn.text = "Back to City"
-	close_btn.custom_minimum_size = Vector2(140, 36)
-	close_btn.mouse_filter = Control.MOUSE_FILTER_STOP
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
-	close_btn.pressed.connect(close)
-	header.add_child(close_btn)
-
-	# Separator
-	var sep := HSeparator.new()
-	sep.add_theme_constant_override("separation", 6)
-	sep.add_theme_color_override("separator", UIStyles.ACCENT_DIM)
-	main_vbox.add_child(sep)
+	_apply_planet_theme()
 
 	# Status
 	_status_detail_label = Label.new()

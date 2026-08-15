@@ -115,40 +115,7 @@ func _update_trade_controls() -> void:
 
 
 func _style_action_button(btn: Button, accent: Color) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = accent
-	normal.border_color = accent.lightened(0.2)
-	normal.border_width_left = 1
-	normal.border_width_right = 1
-	normal.border_width_top = 1
-	normal.border_width_bottom = 1
-	normal.corner_radius_top_left = 4
-	normal.corner_radius_top_right = 4
-	normal.corner_radius_bottom_left = 4
-	normal.corner_radius_bottom_right = 4
-	normal.content_margin_left = 6
-	normal.content_margin_right = 6
-	normal.content_margin_top = 2
-	normal.content_margin_bottom = 2
-
-	var hover := normal.duplicate()
-	hover.bg_color = accent.lightened(0.15)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = accent.darkened(0.2)
-
-	var disabled := normal.duplicate()
-	disabled.bg_color = Color(0.12, 0.14, 0.16, 0.6)
-	disabled.border_color = Color(0.2, 0.22, 0.24, 0.4)
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9))
-	btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 0.95))
-	btn.add_theme_color_override("font_pressed_color", Color(0.8, 0.8, 0.75))
-	btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.32, 0.35))
+	UIStyles.style_accent_button(btn, accent, 12)
 
 
 func _style_pm_button(btn: Button) -> void:

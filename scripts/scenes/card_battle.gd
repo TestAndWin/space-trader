@@ -98,40 +98,9 @@ func _build_energy_pips() -> void:
 
 
 func _style_battle_buttons() -> void:
-	# End Turn: neon green
 	var end_btn: Button = $MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/EndTurnButton
-	var normal_end := StyleBoxFlat.new()
-	normal_end.bg_color = Color(0.0, 0.20, 0.10, 0.9)
-	normal_end.border_color = Color(0.0, 0.85, 0.45, 0.9)
-	normal_end.set_border_width_all(2)
-	normal_end.set_corner_radius_all(6)
-	normal_end.content_margin_left = 16
-	normal_end.content_margin_right = 16
-	normal_end.content_margin_top = 6
-	normal_end.content_margin_bottom = 6
-	var hover_end := normal_end.duplicate()
-	hover_end.bg_color = Color(0.0, 0.30, 0.15, 0.9)
-	hover_end.border_color = Color(0.0, 1.0, 0.55, 1.0)
-	end_btn.add_theme_stylebox_override("normal", normal_end)
-	end_btn.add_theme_stylebox_override("hover", hover_end)
-	end_btn.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
-	end_btn.add_theme_color_override("font_hover_color", Color(0.0, 1.0, 0.55))
-	# Flee: dim cyan/grey
-	var normal_flee := StyleBoxFlat.new()
-	normal_flee.bg_color = Color(UIStyles.PANEL_BG, 0.85)
-	normal_flee.border_color = Color(0.0, 0.35, 0.55, 0.6)
-	normal_flee.set_border_width_all(1)
-	normal_flee.set_corner_radius_all(6)
-	normal_flee.content_margin_left = 12
-	normal_flee.content_margin_right = 12
-	normal_flee.content_margin_top = 6
-	normal_flee.content_margin_bottom = 6
-	var hover_flee := normal_flee.duplicate()
-	hover_flee.border_color = Color(0.0, 0.55, 0.75, 0.8)
-	%FleeButton.add_theme_stylebox_override("normal", normal_flee)
-	%FleeButton.add_theme_stylebox_override("hover", hover_flee)
-	%FleeButton.add_theme_color_override("font_color", Color(0.35, 0.6, 0.8))
-	%FleeButton.add_theme_color_override("font_hover_color", Color(0.5, 0.8, 1.0))
+	UIStyles.style_accent_button(end_btn, Color(0.0, 0.40, 0.20), 14)
+	UIStyles.style_secondary_button(%FleeButton, 14)
 
 
 func start_battle(enc: Resource) -> void:

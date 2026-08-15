@@ -304,14 +304,7 @@ func _load_background_image() -> void:
 	if tex:
 		bg_image.texture = tex
 		bg_image.visible = true
-		_create_image_hotspots(_get_building_states())
-
-
-func _get_building_states() -> Dictionary:
-	return {
-		CityMap.BUILDING_CASINO: _casino_done,
-		CityMap.BUILDING_MISSION: _mission_done,
-	}
+		_create_image_hotspots()
 
 
 func _on_building_clicked(building_id: String) -> void:
@@ -362,6 +355,7 @@ func _on_shipyard_pressed() -> void:
 
 func _on_casino_pressed() -> void:
 	if _casino_done:
+		_show_toast("Casino limit reached for this landing!", Color(1.0, 0.75, 0.3))
 		return
 	if has_node("CasinoPopup"):
 		return
@@ -403,6 +397,7 @@ func _on_quest_pressed() -> void:
 
 func _on_mission_pressed() -> void:
 	if _mission_done:
+		_show_toast("Mission already completed for this landing!", Color(1.0, 0.75, 0.3))
 		return
 	if has_node("MissionConfirm") or has_node("PlanetActivity"):
 		return
@@ -594,17 +589,16 @@ func _show_mission_confirm(
 
 
 func _rebuild_hub_buildings() -> void:
-	var states := _get_building_states()
 	if _hotspot_pulse_tween and _hotspot_pulse_tween.is_valid():
 		_hotspot_pulse_tween.kill()
 		_hotspot_pulse_tween = null
 	var hotspot_node := get_node_or_null("ImageHotspots")
 	if hotspot_node:
 		hotspot_node.queue_free()
-		_create_image_hotspots(states)
+		_create_image_hotspots()
 
 
-func _create_image_hotspots(states: Dictionary) -> void:
+func _create_image_hotspots() -> void:
 	if not current_planet_data:
 		return
 	var hotspot_map: Dictionary = current_planet_data.image_hotspots
@@ -636,7 +630,7 @@ func _create_image_hotspots(states: Dictionary) -> void:
 		btn.anchor_bottom = (rect.position.y + rect.size.y) / 720.0
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		btn.disabled = states.get(bid, false)
+		btn.disabled = false
 		btn.add_theme_stylebox_override("normal",   empty)
 		btn.add_theme_stylebox_override("pressed",  empty)
 		btn.add_theme_stylebox_override("disabled", empty)
@@ -1500,23 +1494,49 @@ func _style_primary_button(btn: Button, accent: Color) -> void:
 	btn.add_theme_color_override("font_pressed_color", Color(0.0, 0.05, 0.02))
 
 
-func _show_quest_arrival_toast() -> void:
-	var toast := Label.new()
-	toast.text = "Quest Destination Reached!"
-	toast.add_theme_font_size_override("font_size", 24)
-	toast.add_theme_color_override("font_color", Color(1.0, 0.9, 0.2))
-	toast.add_theme_color_override("font_outline_color", Color(0,0,0, 0.8))
-	toast.add_theme_constant_override("outline_size", 8)
-	toast.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	toast.position = Vector2(0, -80)
-	
+var _active_toast_container: Control = null
+var _active_toast_tween: Tween = null
+
+
+func _show_toast(text: String, text_color: Color = Color(1.0, 0.85, 0.3)) -> void:
+	if _active_toast_tween and _active_toast_tween.is_valid():
+		_active_toast_tween.kill()
+		_active_toast_tween = null
+
+	if is_instance_valid(_active_toast_container):
+		_active_toast_container.queue_free()
+		_active_toast_container = null
+
 	var container := Control.new()
+	container.name = "ToastContainer"
 	container.set_anchors_preset(Control.PRESET_FULL_RECT)
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(container)
+	_active_toast_container = container
+
+	var toast := Label.new()
+	toast.text = text
+	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toast.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	toast.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
+	toast.add_theme_font_size_override("font_size", 20)
+	toast.add_theme_color_override("font_color", text_color)
+	toast.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
+	toast.add_theme_constant_override("outline_size", 8)
+
+	toast.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	toast.grow_vertical = Control.GROW_DIRECTION_BOTH
+	toast.position = Vector2(0, -140)
+
 	container.add_child(toast)
-	
-	var tween := create_tween()
-	tween.tween_property(toast, "position:y", -180.0, 4.0).as_relative().set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(toast, "modulate:a", 0.0, 4.0).set_ease(Tween.EASE_IN)
+
+	var tween := container.create_tween()
+	_active_toast_tween = tween
+	tween.tween_property(toast, "position:y", -60.0, 2.2).as_relative().set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(toast, "modulate:a", 0.0, 2.2).set_ease(Tween.EASE_IN).set_delay(0.6)
 	tween.tween_callback(container.queue_free)
+
+
+func _show_quest_arrival_toast() -> void:
+	_show_toast("Quest Destination Reached!", Color(1.0, 0.9, 0.2))

@@ -91,6 +91,11 @@ layout_mode = 2
 custom_minimum_size = Vector2(220, 42)
 text = "Achievements"
 
+[node name="AboutButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 42)
+text = "About & Legal"
+
 [node name="QuitButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 custom_minimum_size = Vector2(220, 42)
@@ -100,4 +105,5 @@ text = "Quit"
 [connection signal="pressed" from="VBoxContainer/ContinueButton" to="." method="_on_continue_pressed"]
 [connection signal="pressed" from="VBoxContainer/HowToPlayButton" to="." method="_on_how_to_play_pressed"]
 [connection signal="pressed" from="VBoxContainer/AchievementsButton" to="." method="_on_achievements_pressed"]
+[connection signal="pressed" from="VBoxContainer/AboutButton" to="." method="_on_about_pressed"]
 [connection signal="pressed" from="VBoxContainer/QuitButton" to="." method="_on_quit_pressed"]
