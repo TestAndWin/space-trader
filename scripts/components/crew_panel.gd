@@ -81,7 +81,10 @@ func _refresh_crew_ui() -> void:
 
 		var secondary_text: String = _get_secondary_bonus_text(crew_res)
 		var info := Label.new()
-		info.text = crew_res.crew_name + ": " + crew_res.description + (" | " + secondary_text if secondary_text != "" else "")
+		var text: String = crew_res.crew_name + " (" + str(crew_res.daily_wage) + "cr/Tag): " + crew_res.description
+		if secondary_text != "":
+			text += " | " + secondary_text
+		info.text = text
 		info.tooltip_text = crew_res.crew_name
 		info.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
 		info.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
@@ -156,7 +159,7 @@ func _build_hire_card(crew_res: Resource) -> PanelContainer:
 	header.add_child(name_lbl)
 
 	var cost_lbl := Label.new()
-	cost_lbl.text = "%d cr" % crew_res.recruit_cost
+	cost_lbl.text = "Hire: %d cr | %d cr/Tag" % [crew_res.recruit_cost, crew_res.daily_wage]
 	UIStyles.apply_mono_font(cost_lbl)
 	cost_lbl.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
 	cost_lbl.add_theme_color_override("font_color", UIStyles.GOLD)
@@ -173,13 +176,13 @@ func _build_hire_card(crew_res: Resource) -> PanelContainer:
 	bonus_lbl.add_theme_color_override("font_color", Color(0.55, 0.8, 0.7))
 	vbox.add_child(bonus_lbl)
 
-	var crew_full: bool = GameManager.crew.size() >= GameManager.MAX_CREW
+	var crew_full: bool = GameManager.crew.size() >= GameManager.get_max_crew()
 	var too_poor: bool = GameManager.credits < crew_res.recruit_cost
 	var hire_btn := ActionButton.new()
 	hire_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hire_btn.disabled = crew_full or too_poor
 	if crew_full:
-		hire_btn.text = "Crew full (%d/%d)" % [GameManager.crew.size(), GameManager.MAX_CREW]
+		hire_btn.text = "Crew full (%d/%d)" % [GameManager.crew.size(), GameManager.get_max_crew()]
 	elif too_poor:
 		hire_btn.text = "Need %d cr" % crew_res.recruit_cost
 	else:

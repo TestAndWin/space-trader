@@ -47,6 +47,8 @@ func _ready() -> void:
 	UIStyles.apply_mono_font(%ShieldLabel)
 	UIStyles.apply_mono_font(%DeckCountLabel)
 	UIStyles.apply_mono_font(%DiscardCountLabel)
+	%DeckCountLabel.visible = false
+	%DiscardCountLabel.visible = false
 	_style_readability()
 	_build_energy_pips()
 	BackgroundUtils.add_fullscreen_background(
@@ -104,6 +106,7 @@ func _style_battle_buttons() -> void:
 
 
 func start_battle(enc: Resource) -> void:
+	AudioManager.play_bgm("res://assets/audio/bgm/battle.ogg")
 	encounter = enc
 	enemy_health = enc.enemy_health
 	enemy_max_health = enc.enemy_health
@@ -153,6 +156,7 @@ func _show_trade_offer() -> void:
 	overlay.color = Color(0, 0, 0, 0.7)
 	overlay.anchor_right = 1.0
 	overlay.anchor_bottom = 1.0
+	overlay.z_index = 100
 	add_child(overlay)
 
 	var panel := PanelContainer.new()
@@ -365,13 +369,17 @@ func _on_card_played(card_data: Resource) -> void:
 	hand.erase(card_data)
 	discard_pile.append(card_data)
 
+	_update_ui()
+
 	if enemy_health <= 0:
-		_on_battle_won()
+		if GameManager.has_crew_bonus(CrewData.CrewBonus.ATTACK_BONUS):
+			_show_boarding_choice()
+		else:
+			_on_battle_won()
 		return
 	if GameManager.current_hull <= 0:
 		_on_battle_lost()
 		return
-	_update_ui()
 
 	# Auto end turn when no energy left for any remaining card
 	if current_energy <= 0 or not _has_playable_card():
@@ -547,8 +555,11 @@ func _on_end_turn_pressed() -> void:
 	if encounter.special_ability == EncounterData.SpecialAbility.ADAPTATION:
 		adaptation_reduction += 1
 
-	discard_pile.append_array(hand)
+	# Reshuffle entire deck at end of turn
+	draw_pile = GameManager.deck.duplicate()
+	draw_pile.shuffle()
 	hand.clear()
+	discard_pile.clear()
 
 	if GameManager.current_hull <= 0:
 		_on_battle_lost()
@@ -571,6 +582,109 @@ func _apply_enemy_on_hit_effects() -> void:
 			var good_name: String = GameManager.cargo[idx]["good_name"]
 			GameManager.remove_cargo(good_name, 1)
 			_show_battle_message("Enemy boarded! Lost 1x %s!" % good_name)
+
+
+func _show_boarding_choice() -> void:
+	battle_active = false
+	
+	var overlay := ColorRect.new()
+	overlay.color = Color(0, 0, 0, 0.6)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 100
+	add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+
+	var container := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.9)
+	style.border_color = Color(0.8, 0.8, 0.8, 0.5)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 30
+	style.content_margin_right = 30
+	style.content_margin_top = 25
+	style.content_margin_bottom = 25
+	container.add_theme_stylebox_override("panel", style)
+	center.add_child(container)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 20)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	container.add_child(vbox)
+
+	var lbl := Label.new()
+	lbl.text = "Enemy disabled! Your combat crew can board their ship."
+	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.90, 0.25))
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(lbl)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 20)
+	vbox.add_child(btn_row)
+
+	var board_btn := Button.new()
+	board_btn.text = "Board Ship!"
+	board_btn.custom_minimum_size = Vector2(120, 40)
+	UIStyles.style_accent_button(board_btn, Color(0.6, 0.2, 0.2))
+	board_btn.pressed.connect(func():
+		container.queue_free()
+		var BoardingMinigameScene = load("res://scenes/boarding_minigame.tscn")
+		var minigame = BoardingMinigameScene.instantiate()
+		add_child(minigame)
+		minigame.boarding_finished.connect(_on_boarding_finished)
+	)
+	btn_row.add_child(board_btn)
+
+	var destroy_btn := Button.new()
+	destroy_btn.text = "Destroy & Loot"
+	destroy_btn.custom_minimum_size = Vector2(140, 40)
+	UIStyles.style_accent_button(destroy_btn, Color(0.3, 0.3, 0.3))
+	destroy_btn.pressed.connect(func():
+		container.queue_free()
+		_on_battle_won()
+	)
+	btn_row.add_child(destroy_btn)
+
+
+func _on_boarding_finished(success: bool) -> void:
+	if success:
+		var bonus: int = randi_range(100, 250)
+		GameManager.add_credits(bonus)
+		EventLog.add_entry("Boarding successful! Captured %d cr" % bonus)
+		GameManager.extra_battle_message = "Boarding successful! +%d cr bonus loot!" % bonus
+		_on_battle_won()
+	else:
+		GameManager.current_hull -= 5
+		EventLog.add_entry("Boarding failed! Took 5 hull damage")
+		if GameManager.current_hull <= 0:
+			_on_battle_lost()
+			return
+		_on_battle_boarding_failed()
+
+func _on_battle_boarding_failed() -> void:
+	battle_active = false
+	GameManager.total_encounters_won += 1
+	GameManager.battle_result = "boarding_failed"
+	EventLog.add_entry("Won battle vs %s, but boarding failed" % encounter.encounter_name)
+	AchievementManager.unlock("first_blood")
+	if encounter.encounter_name == "Bounty Hunter":
+		AchievementManager.unlock("bounty_survivor")
+	# Rival handling
+	if _is_rival_encounter():
+		RivalManager.on_rival_defeated()
+		GameManager.change_scene("res://scenes/battle_result.tscn")
+		return
+	# Bounty system
+	if encounter.encounter_name == "Bounty Hunter":
+		StandingManager.add_bounty(50, "killed authorized bounty hunter")
+	elif encounter.encounter_name == "System Patrol":
+		StandingManager.add_bounty(50, "defeated patrol")
+	GameManager.change_scene("res://scenes/battle_result.tscn")
 
 
 func _on_flee_pressed() -> void:
@@ -598,9 +712,9 @@ func _on_battle_won() -> void:
 		RivalManager.on_rival_defeated()
 		GameManager.change_scene("res://scenes/battle_result.tscn")
 		return
-	# Bounty system: defeating bounty hunters reduces bounty, defeating patrols increases it
+	# Bounty system: defeating bounty hunters or patrols increases bounty
 	if encounter.encounter_name == "Bounty Hunter":
-		StandingManager.reduce_bounty(150)
+		StandingManager.add_bounty(50, "killed authorized bounty hunter")
 	elif encounter.encounter_name == "System Patrol":
 		StandingManager.add_bounty(50, "defeated patrol")
 	GameManager.change_scene("res://scenes/battle_result.tscn")

@@ -58,6 +58,14 @@ func _ready() -> void:
 			%CardRewardPanel.visible = false
 			%RewardPanel.visible = false
 			%ContinueButton.visible = true
+		"boarding_failed":
+			%ResultTitle.text = "Boarding Failed!"
+			%ResultTitle.add_theme_color_override("font_color", Color(1.0, 0.5, 0.0))
+			%ResultDescription.text = "You barely escaped the exploding ship!\nYour hull took 5 damage.\nArriving at %s." % destination
+			GameManager.complete_travel_arrival(destination)
+			%CardRewardPanel.visible = false
+			%RewardPanel.visible = false
+			%ContinueButton.visible = true
 		_:
 			%ResultTitle.text = "Battle Over"
 			%ResultDescription.text = ""
@@ -89,6 +97,8 @@ func _award_battle_credits() -> int:
 func _setup_credits_card_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
 	%ResultDescription.text = "+%d credits!\nArriving at %s." % [earned, destination]
+	if GameManager.extra_battle_message != "":
+		%ResultDescription.text += "\n" + GameManager.extra_battle_message
 	%RewardPanel.visible = false
 
 	# Only offer card rewards for harder fights or 40% random chance
@@ -157,6 +167,8 @@ func _on_skip_pressed() -> void:
 func _setup_upgrade_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
 	%ResultDescription.text = "+%d credits!\nArriving at %s." % [earned, destination]
+	if GameManager.extra_battle_message != "":
+		%ResultDescription.text += "\n" + GameManager.extra_battle_message
 	%CardRewardPanel.visible = false
 	%ContinueButton.visible = false
 
@@ -220,6 +232,8 @@ func _get_upgrade_icon(upgrade: Resource) -> String:
 func _setup_crew_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
 	%ResultDescription.text = "+%d credits!\nArriving at %s." % [earned, destination]
+	if GameManager.extra_battle_message != "":
+		%ResultDescription.text += "\n" + GameManager.extra_battle_message
 	%CardRewardPanel.visible = false
 	%ContinueButton.visible = false
 
@@ -242,14 +256,14 @@ func _setup_crew_reward(destination: String) -> void:
 			return
 
 	var already_recruited: bool = chosen.resource_path in GameManager.crew
-	var crew_full: bool = GameManager.crew.size() >= GameManager.MAX_CREW
+	var crew_full: bool = GameManager.crew.size() >= GameManager.get_max_crew()
 
 	var blocked: bool = already_recruited or crew_full
 	var block_reason: String = ""
 	if already_recruited:
 		block_reason = "Already recruited"
 	elif crew_full:
-		block_reason = "Crew full (%d/%d)" % [GameManager.crew.size(), GameManager.MAX_CREW]
+		block_reason = "Crew full (%d/%d)" % [GameManager.crew.size(), GameManager.get_max_crew()]
 
 	_build_reward_panel(
 		"Crew Member Rescued!",
@@ -326,4 +340,5 @@ func _on_continue_pressed() -> void:
 func _finish_continue() -> void:
 	GameManager.current_encounter = null
 	GameManager.battle_result = ""
+	GameManager.extra_battle_message = ""
 	GameManager.change_scene("res://scenes/planet_screen.tscn")

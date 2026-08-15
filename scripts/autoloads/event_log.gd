@@ -1,13 +1,8 @@
 extends Node
 
 var _entries: Array[String] = []
-const MAX_ENTRIES: int = 50
-
-
 func add_entry(text: String) -> void:
 	_entries.append(text)
-	if _entries.size() > MAX_ENTRIES:
-		_entries.pop_front()
 
 
 func get_entries() -> Array:

@@ -228,7 +228,7 @@ func _show_caught_options() -> void:
 
 	# Option 2: Bribe (2x fine, no bounty, 80% success)
 	var bribe_btn := Button.new()
-	bribe_btn.text = "Bribe Official (%d cr, no bounty)" % bribe_cost
+	bribe_btn.text = "Bribe Official (%d cr, no new bounty)" % bribe_cost
 	bribe_btn.custom_minimum_size = Vector2(280, 34)
 	_style_caught_button(bribe_btn, Color(0.6, 0.5, 0.1))
 	bribe_btn.pressed.connect(func():

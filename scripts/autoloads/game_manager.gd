@@ -56,7 +56,6 @@ var hand_size: int = 5
 var energy_per_turn: int = 3
 
 # Crew
-const MAX_CREW: int = 3
 var crew: Array = []  # Array of resource paths (String)
 
 # Navigation
@@ -76,6 +75,7 @@ var visited_planets: Array = []
 var current_encounter: Resource = null
 var battle_result: String = ""
 var last_cargo_lost_text: String = ""
+var extra_battle_message: String = ""
 
 # Ship
 var current_ship: String = "res://data/ships/scout.tres"
@@ -368,6 +368,26 @@ func process_travel_days(days: int) -> void:
 	for _i in range(maxi(days, 0)):
 		current_day += 1
 		total_travel_days += 1
+		
+		# Crew wages (dynamic per member, 15-30cr per day)
+		var wages: int = 0
+		for crew_res in get_crew_resources():
+			wages += crew_res.daily_wage
+		
+		if wages > 0:
+			if credits >= wages:
+				remove_credits(wages)
+				EventLog.add_entry("Day %d: Paid %d cr in crew wages" % [current_day, wages])
+			else:
+				var shortfall: int = wages - credits
+				credits = 0
+				outstanding_debt += shortfall
+				EventLog.add_entry("Day %d: Paid wages but went into debt by %d cr" % [current_day, shortfall])
+				if debt_due_in_days <= 0:
+					debt_due_in_days = 3
+				if debt_interest_rate <= 0.0:
+					debt_interest_rate = LOAN_DEFAULT_INTEREST
+		
 		QuestManager.tick()
 		EventManager.tick()
 		CraftingManager.tick()
@@ -572,8 +592,15 @@ func change_scene(scene_path: String) -> void:
 
 # ── Crew ────────────────────────────────────────────────────────────────────
 
+func get_max_crew() -> int:
+	var ship: Resource = get_ship_data()
+	if ship:
+		return ship.max_crew
+	return 3
+
+
 func hire_crew(crew_res: Resource) -> bool:
-	if crew.size() >= MAX_CREW:
+	if crew.size() >= get_max_crew():
 		return false
 	if credits < crew_res.recruit_cost:
 		return false

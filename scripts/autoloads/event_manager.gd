@@ -69,6 +69,39 @@ var _event_pool: Array[Dictionary] = [
 		"target": "all",
 		"tags": ["trade_agreement"],
 	},
+	{
+		"id": "pirate_lord_farm_destruction",
+		"title": "Crimson Jack destroyed farms on %s!",
+		"description": "Food Rations +40% there",
+		"price_modifier": 1.4,
+		"good": "Food Rations",
+		"target": "agricultural_planet",
+		"tags": ["pirate_lord_presence"],
+	},
+	{
+		"id": "pirate_lord_forge_sabotage",
+		"title": "Crimson Jack sabotaged the forge on %s!",
+		"description": "Weapons -30% sell, Raw Ore +30% buy",
+		"price_modifier": 1.3,
+		"target": "industrial_planet",
+		"tags": ["pirate_lord_presence"],
+	},
+	{
+		"id": "pirate_lord_plunder",
+		"title": "Crimson Jack plundered %s!",
+		"description": "All prices +20% and encounters +10%",
+		"price_modifier": 1.2,
+		"encounter_modifier": 0.1,
+		"target": "specific_planet",
+		"tags": ["pirate_lord_presence"],
+	},
+	{
+		"id": "pirate_lord_taunt",
+		"title": "Crimson Jack sighted near %s",
+		"description": "They are watching you.",
+		"target": "specific_planet",
+		"tags": ["pirate_lord_presence"],
+	}
 ]
 
 var _weather_pool: Array[Dictionary] = [

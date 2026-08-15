@@ -12,6 +12,7 @@ enum ShipAbility { NONE, RAMMING_SPEED, DEEP_SCAN, BULK_DISCOUNT, GHOST_RUN, ADA
 @export var base_cargo_capacity: int = 10
 @export var base_energy_per_turn: int = 3
 @export var base_hand_size: int = 5
+@export var max_crew: int = 3
 @export var encounter_reduction: float = 0.0
 @export var contraband_bonus: float = 0.0
 @export var quest_reward_bonus: float = 0.0

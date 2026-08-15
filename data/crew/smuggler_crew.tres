@@ -10,6 +10,7 @@ description = "Smuggling fines reduced by 50%"
 bonus_type = 4
 bonus_value = 0.5
 recruit_cost = 250
+daily_wage = 20
 available_planet_types = [4]
 secondary_bonus_type = 9
 secondary_bonus_value = 0.5

@@ -175,6 +175,12 @@ func _build_select_ui() -> void:
 	else:
 		_status_label.text = "Welcome! Choose your table."
 
+	var is_vex_present: bool = false
+	if "pirate_lord_presence" in EventManager.get_active_event_tags():
+		is_vex_present = true
+		_status_label.text += " (Crimson Jack is playing at the high-roller table...)"
+		_status_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+
 	# Game selection (only if both available)
 	if has_blackjack:
 		var game_row := HBoxContainer.new()
@@ -539,6 +545,10 @@ func _resolve_blackjack() -> void:
 		msg = "Dealer wins. You lose %d cr." % _bet
 
 	if winnings > 0:
+		if "pirate_lord_presence" in EventManager.get_active_event_tags():
+			winnings = int(winnings * 1.5)
+			msg += " (Crimson Jack sneers and tosses extra chips at you!)"
+			StandingManager.add_faction_reputation("Outlaw", 1, "beat Crimson Jack at cards")
 		GameManager.add_credits(winnings)
 	EventLog.add_entry("Casino BJ: %s" % msg)
 	_show_result(msg)

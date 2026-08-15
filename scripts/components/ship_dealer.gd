@@ -242,6 +242,7 @@ func _build_current_ship_panel() -> PanelContainer:
 		_add_stat_pair(stats_grid, "Cargo", "%d slots" % GameManager.cargo_capacity)
 		_add_stat_pair(stats_grid, "Energy", "%d/turn" % GameManager.energy_per_turn)
 		_add_stat_pair(stats_grid, "Hand", "%d cards" % GameManager.hand_size)
+		_add_stat_pair(stats_grid, "Crew", "Max %d" % ship.max_crew)
 
 		# Trade-in value
 		if ship.cost > 0:
@@ -452,10 +453,12 @@ func _build_stat_comparison(ship: Resource, current: Resource) -> HBoxContainer:
 	var dc: int = ship.base_cargo_capacity - current.base_cargo_capacity
 	var de: int = ship.base_energy_per_turn - current.base_energy_per_turn
 	var dhnd: int = ship.base_hand_size - current.base_hand_size
+	var dcrew: int = ship.max_crew - current.max_crew
 
 	_add_stat_chip(row, "Hull", ship.base_max_hull, dh)
 	_add_stat_chip(row, "Shield", ship.base_max_shield, ds)
 	_add_stat_chip(row, "Cargo", ship.base_cargo_capacity, dc)
+	_add_stat_chip(row, "Crew", ship.max_crew, dcrew)
 	if de != 0:
 		_add_stat_chip(row, "Energy", ship.base_energy_per_turn, de)
 	if dhnd != 0:
@@ -516,6 +519,9 @@ func _add_stat_chip(container: HBoxContainer, stat_name: String, value: int, dif
 
 
 func _on_buy_ship(ship: Resource, cost: int, keep_old: bool) -> void:
+	if GameManager.crew.size() > ship.max_crew:
+		_status_label.text = "Cannot buy: Crew size (%d) exceeds ship capacity (%d). Fire crew first!" % [GameManager.crew.size(), ship.max_crew]
+		return
 	if not GameManager.remove_credits(cost):
 		_status_label.text = "Not enough credits!"
 		return
@@ -534,6 +540,9 @@ func _on_buy_ship(ship: Resource, cost: int, keep_old: bool) -> void:
 
 
 func _on_switch_owned(ship: Resource) -> void:
+	if GameManager.crew.size() > ship.max_crew:
+		_status_label.text = "Cannot switch: Crew size (%d) exceeds ship capacity (%d). Fire crew first!" % [GameManager.crew.size(), ship.max_crew]
+		return
 	var fee: int = GameManager.SHIP_TRANSFER_FEE
 	if not GameManager.remove_credits(fee):
 		_status_label.text = "Not enough credits!"

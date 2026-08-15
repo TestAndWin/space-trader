@@ -10,6 +10,7 @@ description = "Heal 3 hull after each combat"
 bonus_type = 7
 bonus_value = 3.0
 recruit_cost = 300
+daily_wage = 20
 available_planet_types = [3, 1]
 secondary_bonus_type = 8
 secondary_bonus_value = 0.10

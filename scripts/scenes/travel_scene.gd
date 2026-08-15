@@ -82,6 +82,7 @@ const PLANET_TEX_HEIGHT: int = 192
 
 func _ready() -> void:
 	_rng.seed = randi()
+	AudioManager.play_travel_sfx()
 	destination_planet = GameManager.travel_destination if GameManager.travel_destination != "" else "Unknown"
 	travel_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	warning_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)

@@ -12,6 +12,7 @@ base_max_shield = 6
 base_cargo_capacity = 18
 base_energy_per_turn = 3
 base_hand_size = 4
+max_crew = 4
 encounter_reduction = 0.0
 contraband_bonus = 0.0
 quest_reward_bonus = 0.0

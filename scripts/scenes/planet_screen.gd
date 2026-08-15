@@ -69,6 +69,7 @@ var _hotspot_pulse_tween: Tween = null
 
 
 func _ready() -> void:
+	AudioManager.play_bgm("res://assets/audio/bgm/planet.ogg")
 	GameManager.cargo_changed.connect(_update_cargo_display)
 	StandingManager.reputation_changed.connect(_on_standing_changed)
 	StandingManager.loyalty_changed.connect(_on_standing_changed)

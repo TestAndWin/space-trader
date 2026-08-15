@@ -356,6 +356,14 @@ func try_complete_quest(planet_name: String) -> int:
 	if quest_bonus > 0.0:
 		reward = int(round(reward * (1.0 + quest_bonus)))
 	var completed_quest: Dictionary = current_quest.duplicate(true)
+	
+	var intercepted_by_jack: bool = false
+	if "pirate_lord_presence" in EventManager.get_active_event_tags(planet_name):
+		var stolen: int = int(reward * 0.5)
+		reward -= stolen
+		intercepted_by_jack = true
+		EventLog.add_entry("Crimson Jack's goons intercepted the delivery and stole %d cr!" % stolen)
+	
 	GameManager.add_credits(reward)
 	GameManager.total_quests_completed += 1
 	AchievementManager.check_quests(GameManager.total_quests_completed)
@@ -367,7 +375,10 @@ func try_complete_quest(planet_name: String) -> int:
 			reward
 		])
 	else:
-		EventLog.add_entry("Quest complete! Delivered %d %s. +%d cr" % [
+		var log_str: String = "Quest complete! Delivered %d %s. +%d cr"
+		if intercepted_by_jack:
+			log_str = "Quest complete! Delivered %d %s. (+%d cr after theft)"
+		EventLog.add_entry(log_str % [
 			completed_quest["deliver_qty"], completed_quest["deliver_good"], reward
 		])
 		current_quest.clear()
