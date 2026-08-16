@@ -57,7 +57,13 @@ var energy_per_turn: int = 3
 
 # Crew
 var crew: Array = []  # Array of resource paths (String)
+var wounded_crew: Array = [] # Array of resource paths (String) for crew that are currently wounded
 
+# Ship Upgrades
+var damaged_upgrades: Array = [] # Array of upgrade names (String) that are damaged
+
+# Jack / Intel
+var pirate_intel: int = 0
 # Navigation
 const FUEL_PRICE: int = 25
 const EMERGENCY_FUEL_DEBT: int = 100
@@ -76,6 +82,7 @@ var current_encounter: Resource = null
 var battle_result: String = ""
 var last_cargo_lost_text: String = ""
 var extra_battle_message: String = ""
+var boarding_special_loot: String = ""
 
 # Ship
 var current_ship: String = "res://data/ships/scout.tres"
@@ -137,6 +144,9 @@ func reset() -> void:
 	deck.clear()
 	installed_upgrades.clear()
 	crew.clear()
+	wounded_crew.clear()
+	damaged_upgrades.clear()
+	pirate_intel = 0
 	hand_size = 5
 	energy_per_turn = 3
 	max_fuel = 6
@@ -169,6 +179,7 @@ func reset() -> void:
 	current_encounter = null
 	battle_result = ""
 	last_cargo_lost_text = ""
+	boarding_special_loot = ""
 	removed_cards.clear()
 	hull_upgrades_bought = 0
 	shield_upgrades_bought = 0
@@ -185,6 +196,7 @@ func reset() -> void:
 	QuestManager.generate_quests()
 	RivalManager.reset()
 	CraftingManager.reset()
+	PirateLordManager.reset()
 
 
 func build_starter_deck() -> void:
@@ -392,6 +404,7 @@ func process_travel_days(days: int) -> void:
 		EventManager.tick()
 		CraftingManager.tick()
 		EconomyManager.tick_economy()
+		PirateLordManager.tick()
 		process_loan_tick()
 		RivalManager.on_travel_day_completed()
 
@@ -619,8 +632,9 @@ func dismiss_crew(index: int) -> void:
 
 func has_crew_bonus(bonus_type: int) -> bool:
 	for path in crew:
+		if path in wounded_crew: continue
 		var res: Resource = load(path)
-		if res and res.bonus_type == bonus_type:
+		if res and (res.bonus_type == bonus_type or res.secondary_bonus_type == bonus_type):
 			return true
 	return false
 
@@ -629,6 +643,7 @@ func get_crew_bonus_value(bonus_type: int) -> float:
 	var total: float = 0.0
 	var ship: Resource = get_ship_data()
 	for path in crew:
+		if path in wounded_crew: continue
 		var res: Resource = load(path)
 		if res and res.bonus_type == bonus_type:
 			var value: float = res.bonus_value
@@ -661,6 +676,7 @@ func reset_ghost_run() -> void:
 func get_crew_resources() -> Array:
 	var result: Array = []
 	for path in crew:
+		if path in wounded_crew: continue
 		var res: Resource = load(path)
 		if res:
 			result.append(res)

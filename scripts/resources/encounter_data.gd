@@ -1,7 +1,7 @@
 class_name EncounterData
 extends Resource
 
-enum SpecialAbility { NONE, PLUNDER, SHIELD_BOOST, FLASH_GRENADE, ENERGY_DRAIN, ADAPTATION, FOCUS_FIRE, TRADE_OFFER, BOARDING }
+enum SpecialAbility { NONE, PLUNDER, SHIELD_BOOST, FLASH_GRENADE, ENERGY_DRAIN, ADAPTATION, FOCUS_FIRE, TRADE_OFFER, BOARDING, CRIMSON_FURY }
 
 @export var encounter_name: String = ""
 @export var description: String = ""

@@ -6,6 +6,7 @@ extends Control
 const DeckViewerScene = preload("res://scenes/deck_viewer.tscn")
 const SmugglerEventScene = preload("res://scenes/components/smuggler_event.tscn")
 const PlanetEventScene = preload("res://scenes/components/planet_event.tscn")
+const PirateIncursionScene = preload("res://scenes/components/pirate_incursion_event.tscn")
 const CasinoPopupScene: PackedScene = preload("res://scenes/components/casino_popup.tscn")
 const MarketScreenScene: PackedScene = preload("res://scenes/components/market_screen.tscn")
 const CrewScreenScene: PackedScene = preload("res://scenes/components/crew_screen.tscn")
@@ -129,8 +130,21 @@ func _ready() -> void:
 				_track_arrival_cargo_gains(cargo_before)
 				_update_ui()
 			)
-		# Planet arrival event (only if no smuggler event)
-		if not smuggler_active and current_planet_data:
+		# Pirate incursion event (takes precedence if active presence)
+		var incursion_handled = false
+		if current_planet_data and PirateLordManager.active_presence_planets.has(current_planet_data.planet_name):
+			var pirate_event := PirateIncursionScene.instantiate()
+			add_child(pirate_event)
+			if pirate_event.try_trigger(current_planet_data.planet_name):
+				incursion_handled = true
+				pirate_event.event_resolved.connect(func():
+					_update_ui()
+				)
+			else:
+				pirate_event.queue_free()
+
+		# Planet arrival event (only if no smuggler event and no pirate incursion)
+		if not smuggler_active and not incursion_handled and current_planet_data:
 			var cargo_before_event := _snapshot_cargo()
 			var planet_event := PlanetEventScene.instantiate()
 			add_child(planet_event)
@@ -999,14 +1013,18 @@ func _update_header() -> void:
 	var rep_tier: String = StandingManager.get_reputation_tier(faction)
 	var loyalty: int = StandingManager.get_trade_loyalty(GameManager.current_planet)
 	var loyalty_text: String = _get_loyalty_status_text(GameManager.current_planet)
-	planet_name_label.text = "%s | %s | Reputation %+d %s | Loyalty %d (%s)" % [
-		GameManager.current_planet,
-		faction,
+	planet_name_label.text = "%s | %s" % [GameManager.current_planet, faction]
+	
+	planet_name_label.tooltip_text = "Reputation: %+d %s\nLoyalty: %d (%s)\nPirate Heat: %d\nPirate Intel: %d" % [
 		rep,
 		rep_tier,
 		loyalty,
 		loyalty_text,
+		PirateLordManager.heat,
+		PirateLordManager.active_intel
 	]
+	
+	planet_name_label.mouse_filter = Control.MOUSE_FILTER_STOP
 
 
 func _get_loyalty_status_text(planet_name: String) -> String:
@@ -1050,7 +1068,7 @@ func _update_ui() -> void:
 		goal_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
 	else:
 		var t2_marker: String = "T2 ✓" if t2_installed else "T2 ✗"
-		goal_label.text = "Day %d | %d/%d cr | %d/%d planets | %s" % [GameManager.current_day, mini(GameManager.credits, win_credits), win_credits, planets_visited, GameManager.WIN_PLANETS, t2_marker]
+		goal_label.text = "Day %d | %d/%d cr | %d/%d planets | %s" % [GameManager.current_day, GameManager.credits, win_credits, planets_visited, GameManager.WIN_PLANETS, t2_marker]
 		var credit_progress: float = clampf(float(GameManager.credits) / float(win_credits), 0.0, 1.0)
 		var planet_progress: float = clampf(float(planets_visited) / float(GameManager.WIN_PLANETS), 0.0, 1.0)
 		var t2_progress: float = 1.0 if t2_installed else 0.0

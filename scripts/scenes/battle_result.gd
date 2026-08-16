@@ -15,7 +15,7 @@ func _ready() -> void:
 	var destination := GameManager.travel_destination
 
 	match result:
-		"won":
+		"won", "boarded":
 			%ResultTitle.text = "Victory!"
 			%ResultTitle.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
 			GameManager.complete_travel_arrival(destination)
@@ -31,14 +31,26 @@ func _ready() -> void:
 				_setup_upgrade_reward(destination)
 				return
 
-			# Normal roll reward type: 60% credits+card, 25% upgrade, 15% crew
-			var roll: float = randf()
-			if roll < 0.15:
-				_setup_crew_reward(destination)
-			elif roll < 0.40:
-				_setup_upgrade_reward(destination)
+			if result == "boarded":
+				if GameManager.boarding_special_loot == "crew":
+					_setup_crew_reward(destination)
+				elif GameManager.boarding_special_loot == "upgrade":
+					_setup_upgrade_reward(destination)
+				elif GameManager.boarding_special_loot == "card":
+					# Only show card selection, no credits
+					%ResultDescription.text = "You salvaged an access card from the wreck.\nArriving at %s." % destination
+					if GameManager.extra_battle_message != "":
+						%ResultDescription.text += "\n" + GameManager.extra_battle_message
+					%RewardPanel.visible = false
+					_setup_card_rewards()
+					%CardRewardPanel.visible = true
+					%ContinueButton.visible = false
+				else:
+					# Fallback if no special loot was found
+					_setup_credits_only_reward(destination)
 			else:
-				_setup_credits_card_reward(destination)
+				# Normal destruction (won without boarding) -> just credits
+				_setup_credits_only_reward(destination)
 		"lost":
 			%ResultTitle.text = "Defeated!"
 			%ResultTitle.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
@@ -94,11 +106,25 @@ func _award_battle_credits() -> int:
 	return earned
 
 
+func _setup_credits_only_reward(destination: String) -> void:
+	var earned: int = _award_battle_credits()
+	var msg = "Combat Reward: %d cr" % earned
+	if GameManager.extra_battle_message != "":
+		msg += "\n\n" + GameManager.extra_battle_message
+	msg += "\n\nArriving at %s." % destination
+	%ResultDescription.text = msg
+	%RewardPanel.visible = false
+	%CardRewardPanel.visible = false
+	%ContinueButton.visible = true
+
+
 func _setup_credits_card_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
-	%ResultDescription.text = "+%d credits!\nArriving at %s." % [earned, destination]
+	var msg = "Combat Reward: %d cr" % earned
 	if GameManager.extra_battle_message != "":
-		%ResultDescription.text += "\n" + GameManager.extra_battle_message
+		msg += "\n\n" + GameManager.extra_battle_message
+	msg += "\n\nArriving at %s." % destination
+	%ResultDescription.text = msg
 	%RewardPanel.visible = false
 
 	# Only offer card rewards for harder fights or 40% random chance
@@ -166,9 +192,11 @@ func _on_skip_pressed() -> void:
 
 func _setup_upgrade_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
-	%ResultDescription.text = "+%d credits!\nArriving at %s." % [earned, destination]
+	var msg = "Combat Reward: %d cr" % earned
 	if GameManager.extra_battle_message != "":
-		%ResultDescription.text += "\n" + GameManager.extra_battle_message
+		msg += "\n\n" + GameManager.extra_battle_message
+	msg += "\n\nArriving at %s." % destination
+	%ResultDescription.text = msg
 	%CardRewardPanel.visible = false
 	%ContinueButton.visible = false
 
@@ -231,9 +259,11 @@ func _get_upgrade_icon(upgrade: Resource) -> String:
 
 func _setup_crew_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
-	%ResultDescription.text = "+%d credits!\nArriving at %s." % [earned, destination]
+	var msg = "Combat Reward: %d cr" % earned
 	if GameManager.extra_battle_message != "":
-		%ResultDescription.text += "\n" + GameManager.extra_battle_message
+		msg += "\n" + GameManager.extra_battle_message
+	msg += "\n\nArriving at %s." % destination
+	%ResultDescription.text = msg
 	%CardRewardPanel.visible = false
 	%ContinueButton.visible = false
 

@@ -135,6 +135,21 @@ func _draw() -> void:
 	if planet_data and planet_data.danger_level >= 3:
 		var danger_color := Color(1.0, 0.2, 0.2, 0.6 + sin(pulse_time * 4.0) * 0.3)
 		draw_circle(Vector2(PLANET_RADIUS + 6, -PLANET_RADIUS + 2), 3.0, danger_color)
+		
+	# Pirate presence indicator (Skull marker)
+	if planet_data and PirateLordManager.active_presence_planets.has(planet_data.planet_name):
+		var skull_col := Color(1.0, 0.1, 0.1, 0.85 + sin(pulse_time * 5.0) * 0.15)
+		var s_pos := Vector2(-PLANET_RADIUS - 8, -PLANET_RADIUS - 8)
+		# Skull cranium
+		draw_circle(s_pos, 5.0, skull_col)
+		# Skull jaw
+		draw_rect(Rect2(s_pos.x - 3.0, s_pos.y, 6.0, 6.0), skull_col)
+		# Eyes (black)
+		draw_circle(s_pos + Vector2(-2.0, -1.0), 1.5, Color(0, 0, 0, 0.9))
+		draw_circle(s_pos + Vector2(2.0, -1.0), 1.5, Color(0, 0, 0, 0.9))
+		# Crossbones (simplified as an X behind)
+		draw_line(s_pos + Vector2(-8, -8), s_pos + Vector2(8, 8), skull_col, 2.0)
+		draw_line(s_pos + Vector2(-8, 8), s_pos + Vector2(8, -8), skull_col, 2.0)
 
 	# Update name label visibility
 	if is_current or is_reachable or hover:

@@ -175,9 +175,9 @@ func _build_select_ui() -> void:
 	else:
 		_status_label.text = "Welcome! Choose your table."
 
-	var is_vex_present: bool = false
+	var _is_vex_present: bool = false
 	if "pirate_lord_presence" in EventManager.get_active_event_tags():
-		is_vex_present = true
+		_is_vex_present = true
 		_status_label.text += " (Crimson Jack is playing at the high-roller table...)"
 		_status_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
 

@@ -70,6 +70,8 @@ const ENCOUNTERS: Array[String] = [
 	"res://data/encounters/space_anomaly.tres",
 	"res://data/encounters/system_patrol.tres",
 	"res://data/encounters/wandering_trader.tres",
+	"res://data/encounters/pirate_enforcer.tres",
+	"res://data/encounters/crimson_jack.tres",
 ]
 
 const UPGRADES: Array[String] = [
@@ -89,6 +91,7 @@ const UPGRADES: Array[String] = [
 	"res://data/upgrades/shield_capacitor.tres",
 	"res://data/upgrades/cloaking_device.tres",
 	"res://data/upgrades/fuel_synthesizer.tres",
+	"res://data/upgrades/grappling_hook.tres",
 ]
 
 const COMBAT_UPGRADES: Array[String] = [

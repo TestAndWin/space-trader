@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=2 format=3 uid="uid://c3b8u6j2b8e8f"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_4l6k5"]
+
+[resource]
+script = ExtResource("1_4l6k5")
+upgrade_name = "Grappling Hook"
+description = "Allows boarding when enemy hull is at 50% or below."
+slot = 5
+cost = 800
+cargo_bonus = 0
+hull_bonus = 0
+shield_bonus = 0
+fuel_capacity_bonus = 0
+fuel_generation_per_arrival = 0
+cards_to_add = Array[Resource]([])
+hand_size_bonus = 0
+energy_bonus = 0
+required_crafted_items = []

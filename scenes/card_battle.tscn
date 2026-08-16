@@ -240,6 +240,11 @@ layout_mode = 2
 mouse_filter = 2
 size_flags_horizontal = 3
 
+[node name="BoardButton" type="Button" parent="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Board Ship"
+
 [node name="EndTurnButton" type="Button" parent="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar"]
 layout_mode = 2
 text = "End Turn"
@@ -249,5 +254,6 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Flee"
 
+[connection signal="pressed" from="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/BoardButton" to="." method="_on_board_pressed"]
 [connection signal="pressed" from="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/EndTurnButton" to="." method="_on_end_turn_pressed"]
 [connection signal="pressed" from="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/FleeButton" to="." method="_on_flee_pressed"]

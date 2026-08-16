@@ -19,6 +19,7 @@ var enemy_intent_damage: int = 0
 var battle_active: bool = false
 var skip_enemy_turn: bool = false
 var attacks_played_this_turn: int = 0
+var _boarding_attempted: bool = false
 var combo_active: bool = false
 var recycled_this_shuffle: bool = false
 
@@ -103,6 +104,7 @@ func _style_battle_buttons() -> void:
 	var end_btn: Button = $MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/EndTurnButton
 	UIStyles.style_accent_button(end_btn, Color(0.0, 0.40, 0.20), 14)
 	UIStyles.style_secondary_button(%FleeButton, 14)
+	UIStyles.style_accent_button(%BoardButton, Color(0.5, 0.15, 0.1), 14)
 
 
 func start_battle(enc: Resource) -> void:
@@ -110,6 +112,13 @@ func start_battle(enc: Resource) -> void:
 	encounter = enc
 	enemy_health = enc.enemy_health
 	enemy_max_health = enc.enemy_health
+	GameManager.boarding_special_loot = ""
+	
+	if enc.encounter_name == "Crimson Jack":
+		var weaken = PirateLordManager.officers_defeated.size() * 15
+		enemy_health = max(1, enemy_health - weaken)
+		enemy_max_health = enemy_health
+		
 	# Shield carries over from overworld (upgrades matter)
 	draw_pile = GameManager.deck.duplicate()
 	draw_pile.shuffle()
@@ -372,10 +381,12 @@ func _on_card_played(card_data: Resource) -> void:
 	_update_ui()
 
 	if enemy_health <= 0:
-		if GameManager.has_crew_bonus(CrewData.CrewBonus.ATTACK_BONUS):
+		if encounter.encounter_name == "Crimson Jack":
+			_force_boarding()
+		elif not _boarding_attempted:
 			_show_boarding_choice()
 		else:
-			_on_battle_won()
+			_on_battle_won(false)
 		return
 	if GameManager.current_hull <= 0:
 		_on_battle_lost()
@@ -575,14 +586,42 @@ func _apply_enemy_on_hit_effects() -> void:
 			GameManager.remove_credits(stolen)
 			_show_battle_message("Enemy stole %d credits!" % stolen)
 
-	# BOARDING: steal 1 random cargo on hit
+	# BOARDING: steal 1 random cargo on hit, may wound crew
 	if encounter.special_ability == EncounterData.SpecialAbility.BOARDING:
+		var lost_msg = ""
 		if GameManager.cargo.size() > 0:
 			var idx := randi_range(0, GameManager.cargo.size() - 1)
 			var good_name: String = GameManager.cargo[idx]["good_name"]
 			GameManager.remove_cargo(good_name, 1)
-			_show_battle_message("Enemy boarded! Lost 1x %s!" % good_name)
+			lost_msg = "Lost 1x %s" % good_name
+		else:
+			var stolen = mini(50, GameManager.credits)
+			GameManager.remove_credits(stolen)
+			lost_msg = "Lost %d cr" % stolen
+			
+		var unwounded: Array = []
+		for c in GameManager.crew:
+			if c not in GameManager.wounded_crew:
+				unwounded.append(c)
+		if unwounded.size() > 0 and randf() < 0.5:
+			var to_wound = unwounded[randi() % unwounded.size()]
+			GameManager.wounded_crew.append(to_wound)
+			var res = load(to_wound)
+			lost_msg += " & %s wounded" % res.crew_name
+			
+		_show_battle_message("Enemy boarded! " + lost_msg)
 
+	# CRIMSON_FURY: Boss gains max damage on hit
+	if encounter.special_ability == EncounterData.SpecialAbility.CRIMSON_FURY:
+		encounter.enemy_attack_range.y += 5
+		_show_battle_message("Crimson Jack's fury grows! (+5 Max Dmg)")
+
+func _force_boarding() -> void:
+	battle_active = false
+	var BoardingMinigameScene = load("res://scenes/boarding_minigame.tscn")
+	var minigame = BoardingMinigameScene.instantiate()
+	add_child(minigame)
+	minigame.boarding_finished.connect(_on_boarding_finished)
 
 func _show_boarding_choice() -> void:
 	battle_active = false
@@ -616,7 +655,7 @@ func _show_boarding_choice() -> void:
 	container.add_child(vbox)
 
 	var lbl := Label.new()
-	lbl.text = "Enemy disabled! Your combat crew can board their ship."
+	lbl.text = "Enemy disabled! Do you want to board their ship?"
 	lbl.add_theme_font_size_override("font_size", 18)
 	lbl.add_theme_color_override("font_color", Color(1.0, 0.90, 0.25))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -632,7 +671,8 @@ func _show_boarding_choice() -> void:
 	board_btn.custom_minimum_size = Vector2(120, 40)
 	UIStyles.style_accent_button(board_btn, Color(0.6, 0.2, 0.2))
 	board_btn.pressed.connect(func():
-		container.queue_free()
+		_boarding_attempted = true
+		overlay.queue_free()
 		var BoardingMinigameScene = load("res://scenes/boarding_minigame.tscn")
 		var minigame = BoardingMinigameScene.instantiate()
 		add_child(minigame)
@@ -645,7 +685,10 @@ func _show_boarding_choice() -> void:
 	destroy_btn.custom_minimum_size = Vector2(140, 40)
 	UIStyles.style_accent_button(destroy_btn, Color(0.3, 0.3, 0.3))
 	destroy_btn.pressed.connect(func():
-		container.queue_free()
+		overlay.queue_free()
+		var scrap = randi_range(20, 50)
+		GameManager.add_credits(scrap)
+		GameManager.extra_battle_message = "Scrapped for %d cr" % scrap
 		_on_battle_won()
 	)
 	btn_row.add_child(destroy_btn)
@@ -653,17 +696,40 @@ func _show_boarding_choice() -> void:
 
 func _on_boarding_finished(success: bool) -> void:
 	if success:
-		var bonus: int = randi_range(100, 250)
-		GameManager.add_credits(bonus)
-		EventLog.add_entry("Boarding successful! Captured %d cr" % bonus)
-		GameManager.extra_battle_message = "Boarding successful! +%d cr bonus loot!" % bonus
-		_on_battle_won()
+		var loot_str = GameManager.extra_battle_message
+		GameManager.extra_battle_message = "Boarding successful!"
+		
+		# Intact Capture Bonus
+		if enemy_health > 0:
+			var difficulty_mult = max(1.0, float(encounter.difficulty))
+			var hp_pct = float(enemy_health) / float(enemy_max_health)
+			var capture_bonus = int(250.0 * hp_pct * difficulty_mult)
+			capture_bonus = clampi(capture_bonus, 50, 1000)
+			
+			GameManager.add_credits(capture_bonus)
+			GameManager.extra_battle_message += "\n\nCaptured Ship Sold: %d cr" % capture_bonus
+			
+			# Instantly defeat the enemy ship
+			enemy_health = 0
+			
+		var log_msg = "Boarding successful!"
+		if loot_str != "":
+			GameManager.extra_battle_message += "\n\nLoot: " + loot_str
+			log_msg += " Loot: " + loot_str
+			
+		EventLog.add_entry(log_msg)
+			
+		_on_battle_won(true)
 	else:
-		GameManager.current_hull -= 5
-		EventLog.add_entry("Boarding failed! Took 5 hull damage")
+		EventLog.add_entry("Boarding failed! Team routed.")
 		if GameManager.current_hull <= 0:
 			_on_battle_lost()
 			return
+		
+		if enemy_health > 0:
+			_update_ui()
+			return
+			
 		_on_battle_boarding_failed()
 
 func _on_battle_boarding_failed() -> void:
@@ -674,6 +740,7 @@ func _on_battle_boarding_failed() -> void:
 	AchievementManager.unlock("first_blood")
 	if encounter.encounter_name == "Bounty Hunter":
 		AchievementManager.unlock("bounty_survivor")
+	PirateLordManager.add_heat(3)
 	# Rival handling
 	if _is_rival_encounter():
 		RivalManager.on_rival_defeated()
@@ -696,22 +763,45 @@ func _on_flee_pressed() -> void:
 		EventLog.add_entry("Fled from %s" % encounter.encounter_name)
 		GameManager.change_scene("res://scenes/battle_result.tscn")
 	else:
+		_show_battle_message("Escape failed!")
 		_on_end_turn_pressed()
 
 
-func _on_battle_won() -> void:
+func _on_battle_won(was_boarded: bool = false) -> void:
+	# Stop enemy actions and show explosion
 	battle_active = false
+	
+	if not was_boarded:
+		# TODO: Play enemy ship explosion animation here
+		await get_tree().create_timer(2.0).timeout
+		
+	var result: String = "boarded" if was_boarded else "won"
 	GameManager.total_encounters_won += 1
-	GameManager.battle_result = "won"
+	GameManager.battle_result = result
 	EventLog.add_entry("Won battle vs %s" % encounter.encounter_name)
 	AchievementManager.unlock("first_blood")
 	if encounter.encounter_name == "Bounty Hunter":
 		AchievementManager.unlock("bounty_survivor")
+	PirateLordManager.add_heat(3)
 	# Rival handling
 	if _is_rival_encounter():
 		RivalManager.on_rival_defeated()
 		GameManager.change_scene("res://scenes/battle_result.tscn")
 		return
+	# Pirate Lord system
+	if encounter.encounter_name == "Crimson Enforcer":
+		PirateLordManager.defeat_officer("Enforcer")
+		PirateLordManager.add_intel(1)
+		GameManager.extra_battle_message = "Defeated Enforcer & Found Pirate Intel!"
+	elif encounter.encounter_name == "Pirate Captain":
+		PirateLordManager.add_intel(1)
+		GameManager.extra_battle_message = "Found Pirate Intel!"
+		
+	if encounter.encounter_name == "Crimson Jack":
+		PirateLordManager.jack_defeated = true
+		PirateLordManager.emit_boss_defeated()
+		GameManager.extra_battle_message = "Crimson Jack Defeated!"
+
 	# Bounty system: defeating bounty hunters or patrols increases bounty
 	if encounter.encounter_name == "Bounty Hunter":
 		StandingManager.add_bounty(50, "killed authorized bounty hunter")
@@ -760,18 +850,19 @@ func _update_ui() -> void:
 
 
 func _update_enemy_ui() -> void:
+	var display_health = max(0, enemy_health)
 	%EnemyNameLabel.text = encounter.encounter_name
 	%EnemyHealthBar.max_value = enemy_max_health
-	%EnemyHealthBar.value = enemy_health
+	%EnemyHealthBar.value = display_health
 	var enemy_style := StyleBoxFlat.new()
 	enemy_style.bg_color = Color(0.9, 0.2, 0.2)
 	%EnemyHealthBar.add_theme_stylebox_override("fill", enemy_style)
-	%EnemyHealthLabel.text = "%d / %d" % [enemy_health, enemy_max_health]
+	%EnemyHealthLabel.text = "%d / %d" % [display_health, enemy_max_health]
 
 	if enemy_shield > 0:
-		%EnemyHealthLabel.text = "%d / %d [Shield: %d]" % [enemy_health, enemy_max_health, enemy_shield]
+		%EnemyHealthLabel.text = "%d / %d [Shield: %d]" % [display_health, enemy_max_health, enemy_shield]
 
-	var enemy_hull_pct: float = float(enemy_health) / float(enemy_max_health) if enemy_max_health > 0 else 0.0
+	var enemy_hull_pct: float = float(display_health) / float(enemy_max_health) if enemy_max_health > 0 else 0.0
 	var enemy_shield_pct: float = float(enemy_shield) / 10.0 if enemy_shield > 0 else 0.0
 	%EnemyShipDisplay.update_enemy(enemy_hull_pct, enemy_shield_pct, encounter.encounter_name)
 
@@ -791,13 +882,14 @@ func _update_enemy_ui() -> void:
 
 
 func _update_player_ui() -> void:
+	var display_hull = max(0, GameManager.current_hull)
 	%HullBar.max_value = GameManager.max_hull
-	%HullBar.value = GameManager.current_hull
-	var hull_pct: float = float(GameManager.current_hull) / float(GameManager.max_hull)
+	%HullBar.value = display_hull
+	var hull_pct: float = float(display_hull) / float(GameManager.max_hull)
 	var hull_style := StyleBoxFlat.new()
 	hull_style.bg_color = Color(0.3, 0.9, 0.3) if hull_pct > 0.6 else (Color(0.9, 0.8, 0.2) if hull_pct > 0.3 else Color(0.9, 0.2, 0.2))
 	%HullBar.add_theme_stylebox_override("fill", hull_style)
-	%HullLabel.text = "Hull: %d / %d" % [GameManager.current_hull, GameManager.max_hull]
+	%HullLabel.text = "Hull: %d / %d" % [display_hull, GameManager.max_hull]
 	%ShieldBar.max_value = GameManager.max_shield
 	%ShieldBar.value = GameManager.current_shield
 	%ShieldLabel.text = "Shield: %d / %d" % [GameManager.current_shield, GameManager.max_shield]
@@ -818,6 +910,27 @@ func _update_player_ui() -> void:
 	else:
 		%FleeButton.tooltip_text = "%d%% chance to escape (-%dcr). Failure ends your turn!" % [int(FLEE_CHANCE * 100), FLEE_COST]
 		%FleeButton.text = "Flee"
+		
+	# Board Button
+	var threshold_pct: int = 50 if "Grappling Hook" in GameManager.installed_upgrades else 30
+	var threshold_hp: int = ceili(float(enemy_max_health) * float(threshold_pct) / 100.0)
+	%BoardButton.disabled = (enemy_health > threshold_hp) or (enemy_health <= 0) or _boarding_attempted
+	%BoardButton.visible = true
+	if %BoardButton.disabled:
+		if _boarding_attempted:
+			%BoardButton.tooltip_text = "Boarding party already routed!"
+		else:
+			%BoardButton.tooltip_text = "Enemy hull must be at or below %d HP to board." % threshold_hp
+	else:
+		%BoardButton.tooltip_text = "Launch boarding party! Ends the battle if successful."
+
+func _on_board_pressed() -> void:
+	if not battle_active or _boarding_attempted: return
+	_boarding_attempted = true
+	var BoardingMinigameScene = load("res://scenes/boarding_minigame.tscn")
+	var minigame = BoardingMinigameScene.instantiate()
+	add_child(minigame)
+	minigame.boarding_finished.connect(_on_boarding_finished)
 
 
 func _update_deck_info() -> void:

@@ -157,7 +157,25 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CombatSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "When you encounter enemies, you fight using cards. Each turn you draw cards and spend energy to play them. Attack cards deal damage, Defense cards raise your shield, Utility cards heal or draw more cards, and Trade cards earn credits. Your shield absorbs damage before your hull takes hits."
+text = "When you encounter enemies, you fight using cards. Each turn you draw cards and spend energy to play them. Attack cards deal damage, Defense cards raise your shield, Utility cards heal or draw more cards, and Trade cards earn credits. Your shield absorbs damage before your hull takes hits. Once an enemy ship's hull falls below 30% (or 50% with a Grappling Hook), you can attempt to Board the ship. Boarding is a push-your-luck minigame where you can secure extra cargo, intel, or upgrades, but risk injuring your crew if you push too far."
+autowrap_mode = 3
+mouse_filter = 2
+
+[node name="PirateLordSection" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/PirateLordSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+text = "Pirate Lord Crimson Jack"
+mouse_filter = 2
+
+[node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/PirateLordSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "The notorious Pirate Lord Crimson Jack oversees black market activity. Engaging in smuggling deals, winning battles, or simply travelling day by day increases your 'Heat' with his fleet. As your Heat rises, his forces will blockade planets—shown by a skull marker on the Galaxy Map. Traveling to blockaded planets leads to pirate incursions, demands for tribute, and frequent encounters with his elite Enforcers. Defeating Enforcers or boarding ships yields Pirate Intel. Once your Heat hits 100 and you have enough Intel, Crimson Jack will ambush you in a final, deadly two-phase boss battle!"
 autowrap_mode = 3
 mouse_filter = 2
 

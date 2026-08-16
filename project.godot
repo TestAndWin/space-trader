@@ -39,6 +39,7 @@ RivalManager="*res://scripts/autoloads/rival_manager.gd"
 AchievementManager="*res://scripts/autoloads/achievement_manager.gd"
 HintManager="*res://scripts/autoloads/hint_manager.gd"
 AudioManager="*res://scripts/autoloads/audio_manager.gd"
+PirateLordManager="*res://scripts/autoloads/pirate_lord_manager.gd"
 
 [display]
 

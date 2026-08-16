@@ -650,17 +650,24 @@ func _update_planet_states() -> void:
 		# [+] marks planets that stock the cargo the active quest still needs,
 		# so the delivery target and the source are both visible on the map.
 		var is_quest_source: bool = not is_quest_dest and planet_name in _quest_source_planets
+		var is_pirate: bool = PirateLordManager.active_presence_planets.has(planet_name)
+		
+		var prefix = ""
 		if is_quest_dest:
-			label.text = "[!] " + planet_name
+			prefix += "[!] "
 		elif is_quest_source:
-			label.text = "[+] " + planet_name
-		else:
-			label.text = planet_name
+			prefix += "[+] "
+		if is_pirate:
+			prefix += "[X] "
+			
+		label.text = prefix + planet_name
 
 		if is_quest_dest:
 			label.modulate = Color(1.0, 0.85, 0.2, 1.0) # Gold
+		elif is_pirate:
+			label.modulate = Color(1.0, 0.3, 0.3, 1.0) # Red
 		elif is_quest_source:
-			label.modulate = Color(0.55, 1.0, 0.6, 1.0) # Green — buy the cargo here
+			label.modulate = Color(0.55, 1.0, 0.6, 1.0) # Green
 		elif is_current or is_reachable or is_hovered:
 			label.modulate = Color(0.85, 0.93, 1.0, 1.0)
 		else:
@@ -794,6 +801,9 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 		trades_label.text += "\nDistance: %.0f | %s" % [distance, lane_text]
 		trades_label.text += "\nTravel: %d days | Fuel: %d" % [days, fuel_cost]
 		trades_label.text += "\nEncounter Risk: %.0f%%" % (encounter_chance * 100.0)
+		
+	if PirateLordManager.active_presence_planets.has(planet_data.planet_name):
+		trades_label.text += "\n\n[X] PIRATE PRESENCE: Crimson Jack's fleet detected here."
 		
 	if QuestManager.has_active_quest() and planet_data.planet_name == QuestManager.current_quest.get("destination", ""):
 		var q := QuestManager.current_quest

@@ -593,4 +593,19 @@ func load_data(data: Dictionary) -> void:
 	chain_days_remaining = int(data.get("chain_days_remaining", 0))
 	chain_context = data.get("chain_context", {}).duplicate(true)
 	active_weather = data.get("active_weather", {}).duplicate(true)
+	
+	if active_weather.has("tint"):
+		var tint_val = active_weather["tint"]
+		if typeof(tint_val) == TYPE_STRING:
+			var s = tint_val.replace("(", "").replace(")", "")
+			var parts = s.split(",")
+			if parts.size() >= 3:
+				var r = parts[0].to_float()
+				var g = parts[1].to_float()
+				var b = parts[2].to_float()
+				var a = 1.0
+				if parts.size() >= 4:
+					a = parts[3].to_float()
+				active_weather["tint"] = Color(r, g, b, a)
+				
 	weather_days_remaining = int(data.get("weather_days_remaining", 0))

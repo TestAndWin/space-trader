@@ -186,6 +186,7 @@ func _on_accept() -> void:
 
 	GameManager.total_smuggler_deals += 1
 	AchievementManager.check_smuggler_deals(GameManager.total_smuggler_deals)
+	PirateLordManager.add_heat(2)
 
 	# Risk: chance of getting caught
 	if randf() < CATCH_CHANCE:

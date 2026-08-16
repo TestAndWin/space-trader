@@ -51,7 +51,7 @@ func _type_from_name(encounter_name: String) -> int:
 	match encounter_name:
 		"Wandering Trader": return 1     # Freighter
 		"System Patrol", "Smuggler Ambush": return 2  # Scout
-		"Pirate Captain": return 3       # Warship
+		"Pirate Captain", "Crimson Enforcer", "Crimson Jack": return 3       # Warship
 		"Rogue AI": return 4             # Explorer
 		"Space Anomaly": return 5        # Smuggler
 		"Bounty Hunter": return 6        # Warship/Smuggler

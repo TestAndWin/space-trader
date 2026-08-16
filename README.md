@@ -10,6 +10,7 @@ Trade goods across planets, build a combat deck, upgrade your ship, recruit crew
 
 - **Dynamic Trading** — Buy low, sell high across 5 planet types (Tech, Industrial, Agricultural, Mining, Outlaw) with drifting prices and world events
 - **Deck-Building Combat** — Energy-based card battles with telegraphed enemy intent, special effects, and growing difficulty
+- **Boarding Mechanics** — Board weakened enemy ships in a push-your-luck minigame to secure high-tier loot, at the risk of crew injuries
 - **Ship Upgrades** — Expand hull, shields, cargo capacity, energy, and hand size at shipyards
 - **Crew System** — Recruit up to 3 crew members with passive bonuses (attack, defense, trading, smuggling)
 - **Quest System** — Procedural delivery quests with deadlines and penalties

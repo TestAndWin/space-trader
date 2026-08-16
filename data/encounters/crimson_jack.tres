@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/encounter_data.gd" id="1_cj1"]
+
+[resource]
+script = ExtResource("1_cj1")
+encounter_name = "Crimson Jack"
+description = "The notorious Pirate Lord Crimson Jack himself."
+enemy_health = 150
+enemy_attack_range = Vector2i(15, 25)
+reward_credits = 2000
+can_flee = false
+difficulty = 5
+special_ability = 9
+ability_description = "Gains +5 Max Damage on Hit"

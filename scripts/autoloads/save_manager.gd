@@ -37,6 +37,9 @@ func save_game() -> void:
 		"shield_upgrades_bought": GameManager.shield_upgrades_bought,
 		"cargo_upgrades_bought": GameManager.cargo_upgrades_bought,
 		"crew": GameManager.crew.duplicate(),
+		"wounded_crew": GameManager.wounded_crew.duplicate(),
+		"damaged_upgrades": GameManager.damaged_upgrades.duplicate(),
+		"pirate_intel": GameManager.pirate_intel,
 		"deck_cards": _serialize_deck(),
 		"event_log": EventLog.get_entries() if has_node("/root/EventLog") else [],
 		"event_manager": EventManager.save_data(),
@@ -54,6 +57,7 @@ func save_game() -> void:
 		"ghost_run_available": GameManager.ghost_run_available,
 		"rival_data": RivalManager.save_data(),
 		"crafting": CraftingManager.save_state(),
+		"pirate_lord_data": PirateLordManager.save_state(),
 	}
 	var json_string := JSON.stringify(save_data, "\t")
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -117,6 +121,9 @@ func load_game() -> bool:
 	GameManager.shield_upgrades_bought = int(data.get("shield_upgrades_bought", 0))
 	GameManager.cargo_upgrades_bought = int(data.get("cargo_upgrades_bought", 0))
 	GameManager.crew = data.get("crew", [])
+	GameManager.wounded_crew = data.get("wounded_crew", [])
+	GameManager.damaged_upgrades = data.get("damaged_upgrades", [])
+	GameManager.pirate_intel = int(data.get("pirate_intel", 0))
 	_deserialize_deck(data.get("deck_cards", []))
 	# Restore event log
 	if has_node("/root/EventLog"):
@@ -142,6 +149,12 @@ func load_game() -> bool:
 		CraftingManager.load_state(data["crafting"])
 	else:
 		CraftingManager.load_state({})
+		
+	if data.has("pirate_lord_data"):
+		PirateLordManager.load_state(data.get("pirate_lord_data", {}))
+	else:
+		PirateLordManager.reset()
+		
 	return true
 
 

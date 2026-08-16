@@ -134,9 +134,17 @@ func get_buy_price_breakdown(planet_name: String, good_name: String) -> Dictiona
 	var rep_modifier: float = StandingManager.get_market_buy_modifier(planet_name)
 	var loyalty_modifier: float = StandingManager.get_loyalty_buy_modifier(planet_name)
 	var service_fee_modifier: float = StandingManager.get_planet_service_fee_modifier(planet_name)
+	
+	var pirate_modifier: float = 1.0
+	if PirateLordManager.active_presence_planets.has(planet_name):
+		if is_contraband_good(good_name):
+			pirate_modifier = 0.5 # Cheap contraband
+		else:
+			pirate_modifier = 1.5 # Expensive regular goods
+
 	var final_price: int = max(
 		1,
-		int(round(float(base_price) * event_modifier * rep_modifier * loyalty_modifier * service_fee_modifier))
+		int(round(float(base_price) * event_modifier * rep_modifier * loyalty_modifier * service_fee_modifier * pirate_modifier))
 	)
 	return {
 		"base_price": base_price,
@@ -145,6 +153,7 @@ func get_buy_price_breakdown(planet_name: String, good_name: String) -> Dictiona
 		"rep_modifier": rep_modifier,
 		"loyalty_modifier": loyalty_modifier,
 		"service_fee_modifier": service_fee_modifier,
+		"pirate_modifier": pirate_modifier,
 		"final_price": final_price,
 	}
 
@@ -167,10 +176,18 @@ func get_sell_price_breakdown(planet_name: String, good_name: String) -> Diction
 	var rep_modifier: float = StandingManager.get_market_sell_modifier(planet_name)
 	var loyalty_modifier: float = StandingManager.get_loyalty_sell_modifier(planet_name)
 	var service_fee_modifier: float = 1.0 / StandingManager.get_planet_service_fee_modifier(planet_name)
+	
+	var pirate_modifier: float = 1.0
+	if PirateLordManager.active_presence_planets.has(planet_name):
+		if is_contraband_good(good_name):
+			pirate_modifier = 1.5 # High sell price for contraband
+		else:
+			pirate_modifier = 0.5 # Low sell price for regular goods
+			
 	var final_price: int = max(
 		1,
 		int(round(
-			float(local_price) * event_modifier * sell_ratio * contraband_modifier * rep_modifier * loyalty_modifier * service_fee_modifier
+			float(local_price) * event_modifier * sell_ratio * contraband_modifier * rep_modifier * loyalty_modifier * service_fee_modifier * pirate_modifier
 		))
 	)
 	return {
@@ -182,6 +199,7 @@ func get_sell_price_breakdown(planet_name: String, good_name: String) -> Diction
 		"rep_modifier": rep_modifier,
 		"loyalty_modifier": loyalty_modifier,
 		"service_fee_modifier": service_fee_modifier,
+		"pirate_modifier": pirate_modifier,
 		"final_price": final_price,
 	}
 

@@ -6,12 +6,12 @@
 script = ExtResource("1_crew")
 crew_name = "Medic"
 title = "Medic"
-description = "Heal 3 hull after each combat"
+description = "Heal 3 hull after each combat. Boarding: Medic (Save team 1x)."
 bonus_type = 7
 bonus_value = 3.0
 recruit_cost = 300
 daily_wage = 20
 available_planet_types = [3, 1]
-secondary_bonus_type = 8
-secondary_bonus_value = 0.10
+secondary_bonus_type = 13
+secondary_bonus_value = 1.0
 event_flavor_tag = "medical"

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/encounter_data.gd" id="1_pe1"]
+
+[resource]
+script = ExtResource("1_pe1")
+encounter_name = "Crimson Enforcer"
+description = "A heavily armed enforcer of Crimson Jack's fleet."
+enemy_health = 60
+enemy_attack_range = Vector2i(10, 16)
+reward_credits = 400
+can_flee = false
+difficulty = 4
+special_ability = 1
+ability_description = "Steals cargo on hit"

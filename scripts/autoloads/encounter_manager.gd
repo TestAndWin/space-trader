@@ -159,5 +159,20 @@ func _get_encounter_weight(enc: Resource, planet_name: String) -> float:
 			weight = 0.5
 			if "tech_boom" in tags:
 				weight += 0.3
+		"Crimson Enforcer":
+			weight = 0.0
+			if PirateLordManager.heat >= 50:
+				weight = 0.5 + (PirateLordManager.heat - 50) * 0.02
+				if PirateLordManager.active_presence_planets.has(planet_name):
+					weight += 1.5
+		"Crimson Jack":
+			weight = 0.0
+			if not PirateLordManager.jack_defeated and PirateLordManager.heat >= 100 and PirateLordManager.active_intel >= 5:
+				if PirateLordManager.active_presence_planets.has(planet_name):
+					weight = 100.0 # Force encounter
+
+	if PirateLordManager.active_presence_planets.has(planet_name):
+		if enc_name in ["Pirate Raider", "Pirate Captain"]:
+			weight += 2.0
 
 	return maxf(weight, 0.0)
