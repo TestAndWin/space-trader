@@ -272,6 +272,7 @@ func _on_buy(good_name: String, quantity: int) -> void:
 	if not GameManager.remove_credits(total_cost):
 		return
 	GameManager.add_cargo(good_name, quantity)
+	AudioManager.play_purchase()
 	GameManager.total_trades += 1
 	StandingManager.add_trade_loyalty(planet_name, StandingManager.get_trade_loyalty_gain(quantity, total_cost))
 	GameManager.record_market_observation(planet_name, good_name, buy_price, EconomyManager.get_sell_price(planet_name, good_name))
@@ -289,6 +290,7 @@ func _on_sell(good_name: String, quantity: int) -> void:
 	var total_income: int = sell_price * quantity
 	GameManager.remove_cargo(good_name, quantity)
 	GameManager.add_credits(total_income)
+	AudioManager.play_sell()
 	GameManager.total_trades += 1
 	StandingManager.add_trade_loyalty(planet_name, StandingManager.get_trade_loyalty_gain(quantity, total_income))
 	GameManager.record_market_observation(planet_name, good_name, EconomyManager.get_buy_price(planet_name, good_name), sell_price)

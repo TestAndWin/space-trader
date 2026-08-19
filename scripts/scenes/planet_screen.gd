@@ -83,6 +83,8 @@ func _ready() -> void:
 		get_tree().change_scene_to_file("res://scenes/game_over.tscn")
 		return
 	# Only real arrivals should trigger "on planet visit" effects.
+	if is_fresh_arrival:
+		AudioManager.play_arrive_sfx()
 	if is_fresh_arrival and GameManager.has_crew_bonus(CrewData.CrewBonus.HULL_REGEN):
 		var regen: int = int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.HULL_REGEN))
 		GameManager.current_hull = min(GameManager.current_hull + regen, GameManager.max_hull)
@@ -370,6 +372,7 @@ func _on_shipyard_pressed() -> void:
 
 func _on_casino_pressed() -> void:
 	if _casino_done:
+		AudioManager.play_ui_denied()
 		_show_toast("Casino limit reached for this landing!", Color(1.0, 0.75, 0.3))
 		return
 	if has_node("CasinoPopup"):
@@ -412,6 +415,7 @@ func _on_quest_pressed() -> void:
 
 func _on_mission_pressed() -> void:
 	if _mission_done:
+		AudioManager.play_ui_denied()
 		_show_toast("Mission already completed for this landing!", Color(1.0, 0.75, 0.3))
 		return
 	if has_node("MissionConfirm") or has_node("PlanetActivity"):

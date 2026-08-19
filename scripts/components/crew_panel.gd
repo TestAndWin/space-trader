@@ -190,6 +190,7 @@ func _build_hire_card(crew_res: Resource) -> PanelContainer:
 	var res_ref: Resource = crew_res
 	hire_btn.pressed.connect(func():
 		if GameManager.hire_crew(res_ref):
+			AudioManager.play_purchase()
 			EventLog.add_entry("Hired crew: %s" % res_ref.crew_name)
 			status_label.text = "%s hired" % res_ref.crew_name
 			_refresh_crew_ui()

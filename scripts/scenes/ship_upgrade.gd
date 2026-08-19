@@ -458,6 +458,7 @@ func _on_buy_upgrade(upgrade: Resource) -> void:
 		return
 	_consume_required_crafted_items(upgrade)
 	GameManager.apply_upgrade(upgrade)
+	AudioManager.play_purchase()
 	EventLog.add_entry("Installed %s for %d cr" % [upgrade.upgrade_name, upgrade.cost])
 	_status_label.text = "Installed %s!" % upgrade.upgrade_name
 	_refresh_all()

@@ -525,6 +525,7 @@ func _on_buy_ship(ship: Resource, cost: int, keep_old: bool) -> void:
 	if not GameManager.remove_credits(cost):
 		_status_label.text = "Not enough credits!"
 		return
+	AudioManager.play_purchase()
 	var old_ship: Resource = GameManager.get_ship_data()
 	var old_name: String = old_ship.ship_name if old_ship else ""
 	GameManager.switch_ship(ship.resource_path, keep_old)
@@ -547,6 +548,7 @@ func _on_switch_owned(ship: Resource) -> void:
 	if not GameManager.remove_credits(fee):
 		_status_label.text = "Not enough credits!"
 		return
+	AudioManager.play_purchase()
 	GameManager.switch_ship(ship.resource_path, true)
 	EventLog.add_entry("Switched to %s (transfer fee: %d cr)" % [ship.ship_name, fee])
 	_status_label.text = "Switched to %s!" % ship.ship_name

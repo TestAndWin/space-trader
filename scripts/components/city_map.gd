@@ -537,5 +537,8 @@ func _handle_click(screen_pos: Vector2) -> void:
 	var iso_pos := _screen_to_iso(screen_pos)
 	var hit     := _hit_building(iso_pos)
 	if hit.is_empty():
+		# Clicking bare ground is not a click on anything - staying silent is
+		# the feedback that nothing is there.
 		return
+	AudioManager.play_ui_click()
 	building_clicked.emit(hit["id"] as String)

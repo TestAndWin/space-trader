@@ -131,9 +131,6 @@ static func style_accent_button(btn: Button, accent: Color, font_size: int = 14)
 	btn.add_theme_stylebox_override("pressed", pressed)
 	btn.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9))
 	btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 0.95))
-	
-	if not btn.pressed.is_connected(AudioManager.play_ui_click):
-		btn.pressed.connect(AudioManager.play_ui_click)
 
 
 # ── Buy button ───────────────────────────────────────────────────────────────
@@ -173,9 +170,6 @@ static func style_buy_button(btn: Button) -> void:
 	btn.add_theme_color_override("font_color", Color(0.6, 0.95, 0.7))
 	btn.add_theme_color_override("font_hover_color", Color(0.8, 1.0, 0.85))
 	btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.3, 0.35))
-	
-	if not btn.pressed.is_connected(AudioManager.play_ui_click):
-		btn.pressed.connect(AudioManager.play_ui_click)
 
 
 # ── Secondary button ─────────────────────────────────────────────────────────
@@ -223,9 +217,6 @@ static func style_secondary_button(btn: Button, font_size: int = 0) -> void:
 	btn.add_theme_color_override("font_disabled_color", Color(0.2, 0.35, 0.45))
 	if font_size > 0:
 		btn.add_theme_font_size_override("font_size", font_size)
-
-	if not btn.pressed.is_connected(AudioManager.play_ui_click):
-		btn.pressed.connect(AudioManager.play_ui_click)
 
 
 # ── Action button ────────────────────────────────────────────────────────────
@@ -276,9 +267,6 @@ static func style_small_secondary_button(btn: Button) -> void:
 	btn.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
 	btn.add_theme_color_override("font_hover_color", Color(0.85, 0.98, 1.0))
 	btn.add_theme_color_override("font_disabled_color", Color(0.2, 0.35, 0.45))
-	
-	if not btn.pressed.is_connected(AudioManager.play_ui_click):
-		btn.pressed.connect(AudioManager.play_ui_click)
 
 
 # ── Panel styling ────────────────────────────────────────────────────────────
@@ -327,9 +315,6 @@ static func style_event_button(btn: Button, normal_color: Color, hover_color: Co
 		style.set_corner_radius_all(4)
 		style.set_content_margin_all(6)
 		btn.add_theme_stylebox_override(pair[0], style)
-	
-	if not btn.pressed.is_connected(AudioManager.play_ui_click):
-		btn.pressed.connect(AudioManager.play_ui_click)
 
 
 ## Standardized event modal dialog frame (used by PlanetEvent, TravelEvent, CustomsScan, SmugglerEvent).

@@ -8,6 +8,9 @@ const EnergyPips = preload("res://scripts/components/energy_pips.gd")
 const FLEE_COST := 150
 const FLEE_CHANCE := 0.5
 
+## Gap between a shot and the impact it causes, in seconds.
+const SFX_IMPACT_DELAY := 0.18
+
 var encounter: Resource = null
 var draw_pile: Array = []
 var hand: Array = []
@@ -300,6 +303,7 @@ func _start_player_turn() -> void:
 
 
 func _draw_cards(count: int) -> void:
+	var hand_size_before: int = hand.size()
 	for i in count:
 		if draw_pile.is_empty():
 			draw_pile = discard_pile.duplicate()
@@ -312,6 +316,11 @@ func _draw_cards(count: int) -> void:
 					hand.append(draw_pile.pop_back())
 		if not draw_pile.is_empty():
 			hand.append(draw_pile.pop_back())
+
+	# One swipe per draw batch, not per card - drawing a full hand of 5 would
+	# otherwise fire five overlapping cues.
+	if hand.size() > hand_size_before:
+		AudioManager.play_card_draw()
 
 
 func _hand_has_keyword(keyword: int) -> bool:
@@ -346,6 +355,20 @@ func _apply_damage_to_enemy(raw_damage: int) -> void:
 	if damage > 0 or raw_damage > 0:
 		%EnemyShipDisplay.play_hit()
 
+	# Shot first, impact a moment later - fired together they smear into one noise.
+	if raw_damage > 0:
+		AudioManager.play_laser()
+		if enemy_health > 0:
+			_play_delayed_sfx("shield_hit" if damage == 0 and shield_absorb > 0 else "hull_hit", SFX_IMPACT_DELAY)
+
+
+## Schedules a sound without blocking the caller. The battle flow is
+## synchronous, so awaiting here would delay game logic, not just audio.
+func _play_delayed_sfx(sfx_name: String, delay: float) -> void:
+	get_tree().create_timer(delay).timeout.connect(
+		func() -> void: AudioManager.play_sfx(sfx_name, 0.06)
+	)
+
 
 func _on_card_played(card_data: Resource) -> void:
 	# Calculate effective energy cost (COMBO reduces by 1)
@@ -357,6 +380,7 @@ func _on_card_played(card_data: Resource) -> void:
 		return
 
 	current_energy -= effective_cost
+	AudioManager.play_card_play()
 	# Reset combo after applying discount
 	combo_active = false
 
@@ -555,8 +579,12 @@ func _on_end_turn_pressed() -> void:
 		# Play hit animation on player ship
 		if shield_absorb > 0 and damage == 0:
 			ship_display.play_shield_hit()
+			AudioManager.play_enemy_laser()
+			_play_delayed_sfx("shield_hit", SFX_IMPACT_DELAY)
 		elif damage > 0:
 			ship_display.play_hull_hit()
+			AudioManager.play_enemy_laser()
+			_play_delayed_sfx("hull_hit", SFX_IMPACT_DELAY)
 
 		# Apply on-hit special abilities when damage got through shields
 		if damage > 0:
@@ -773,6 +801,7 @@ func _on_battle_won(was_boarded: bool = false) -> void:
 	
 	if not was_boarded:
 		# TODO: Play enemy ship explosion animation here
+		AudioManager.play_explosion()
 		await get_tree().create_timer(2.0).timeout
 		
 	var result: String = "boarded" if was_boarded else "won"
@@ -812,6 +841,7 @@ func _on_battle_won(was_boarded: bool = false) -> void:
 
 func _on_battle_lost() -> void:
 	battle_active = false
+	AudioManager.play_explosion()
 	# Lose half of cargo (pirates take it). Decide first, then remove through
 	# GameManager so the change is reported — mutating its array directly used
 	# to skip cargo_changed entirely.

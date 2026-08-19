@@ -236,6 +236,7 @@ func _on_repair_pressed() -> void:
 		return
 	var cost: int = hp_to_repair * per_hp
 	GameManager.remove_credits(cost)
+	AudioManager.play_purchase()
 	GameManager.current_hull += hp_to_repair
 	EventLog.add_entry("Repaired %d hull for %dcr." % [hp_to_repair, cost])
 	status_label.text = "Repaired %d hull for %dcr" % [hp_to_repair, cost]
@@ -245,6 +246,7 @@ func _on_repair_pressed() -> void:
 
 func _on_buy_fuel_pressed() -> void:
 	if GameManager.buy_fuel(1):
+		AudioManager.play_purchase()
 		status_label.text = "Bought 1 fuel"
 	else:
 		status_label.text = "Cannot buy fuel"
@@ -255,6 +257,7 @@ func _on_buy_fuel_pressed() -> void:
 func _on_fill_fuel_pressed() -> void:
 	var missing_fuel: int = GameManager.max_fuel - GameManager.current_fuel
 	if GameManager.buy_fuel(missing_fuel):
+		AudioManager.play_purchase()
 		status_label.text = "Fuel tank filled"
 	else:
 		status_label.text = "Not enough credits for a full tank"

@@ -284,6 +284,7 @@ func _create_game_table(title_text: String, desc_text: String, selected: bool, o
 	# Make clickable
 	table.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			AudioManager.play_ui_click()
 			on_click.call()
 	)
 	table.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -314,6 +315,7 @@ func _start_blackjack() -> void:
 	_dealer_hand.append(_draw_bj_card())
 	_player_hand.append(_draw_bj_card())
 	_dealer_hand.append(_draw_bj_card())
+	AudioManager.play_card_play()
 	if _bj_hand_value(_player_hand) == 21:
 		_dealer_revealed = true
 		_resolve_blackjack()
@@ -496,6 +498,7 @@ func _build_blackjack_ui() -> void:
 
 func _on_bj_hit() -> void:
 	_player_hand.append(_draw_bj_card())
+	AudioManager.play_card_draw()
 	var val: int = _bj_hand_value(_player_hand)
 	if val > 21:
 		_dealer_revealed = true
@@ -544,6 +547,13 @@ func _resolve_blackjack() -> void:
 	else:
 		msg = "Dealer wins. You lose %d cr." % _bet
 
+	# A push returns the bet and is neither cue - staying silent reads as "nothing happened",
+	# which is exactly what a push is.
+	if winnings > _bet:
+		AudioManager.play_casino_win()
+	elif winnings == 0:
+		AudioManager.play_casino_lose()
+
 	if winnings > 0:
 		if "pirate_lord_presence" in EventManager.get_active_event_tags():
 			winnings = int(winnings * 1.5)
@@ -575,6 +585,7 @@ func _get_slot_symbol() -> String:
 
 
 func _spin_reels() -> void:
+	AudioManager.play_casino_spin()
 	for i in 3:
 		_reels[i] = _get_slot_symbol()
 	_reels_revealed = 0
@@ -718,6 +729,9 @@ func _resolve_slots() -> void:
 
 	if winnings > 0:
 		GameManager.add_credits(winnings)
+		AudioManager.play_casino_win()
+	else:
+		AudioManager.play_casino_lose()
 	EventLog.add_entry("Casino Slots: %s" % msg)
 	_show_result(msg)
 

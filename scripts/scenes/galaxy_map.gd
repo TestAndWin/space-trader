@@ -693,6 +693,7 @@ func _update_ui() -> void:
 
 func _on_planet_input_event(_camera: Camera3D, event: InputEvent, _event_position: Vector3, _normal: Vector3, _shape_idx: int, planet_data: Resource) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		AudioManager.play_ui_click()
 		_on_planet_clicked(planet_data)
 
 
