@@ -54,8 +54,9 @@ func _init_rooms() -> void:
 	var pool: Array = [ThreatType.GUARDS, ThreatType.GUARDS, ThreatType.LOCKED_DOOR, ThreatType.TERMINAL, ThreatType.CELL, ThreatType.VAULT]
 	pool.shuffle()
 	
+	var has_intel = GameManager.has_crew_bonus(CrewData.CrewBonus.BOARDING_INTEL)
 	for i in range(3): # 4 rooms total
-		_rooms.append({ "type": pool[i], "cleared": false, "loot": [], "revealed": false })
+		_rooms.append({ "type": pool[i], "cleared": false, "loot": [], "revealed": has_intel })
 		
 	# Pre-generate loot for rooms
 	for i in range(4):
@@ -70,7 +71,15 @@ func _init_rooms() -> void:
 		elif _rooms[i].type == ThreatType.AIRLOCK:
 			# Boarding Loot Bonus (Smuggler)
 			if GameManager.has_crew_bonus(CrewData.CrewBonus.BOARDING_LOOT):
-				_rooms[i].loot.append({"name": "Smuggler Stash (1 slot)", "slots": 1, "type": "credits", "value": 150})
+				var crew_name = ""
+				for c in GameManager.get_crew_resources():
+					if c.bonus_type == CrewData.CrewBonus.BOARDING_LOOT or c.secondary_bonus_type == CrewData.CrewBonus.BOARDING_LOOT:
+						crew_name = c.crew_name
+						break
+				var label_name = "Smuggler Stash"
+				if crew_name != "":
+					label_name = "%s's Found Stash" % crew_name
+				_rooms[i].loot.append({"name": label_name + " (1 slot)", "slots": 1, "type": "credits", "value": 150})
 			
 			# 50% chance for a small reward after securing airlock
 			if randf() < 0.5:
@@ -88,14 +97,23 @@ func _draw_hand() -> void:
 	for i in range(min(4, _deck_draw.size())):
 		var card: Resource = _deck_draw[i].duplicate()
 		var type_int: int = int(card.card_type)
-		if type_int == 0:
-			card.description = "Attack: Defeat Guards (0 Alarm) or blow up doors (+30 Alarm)."
-		elif type_int == 1:
-			card.description = "Defense: Tank through Guards (+15 Alarm) or protect Hostage."
-		elif type_int == 2:
-			card.description = "Utility: Hack Terminal/Door/Vault (0 Alarm)."
-		elif type_int == 3:
-			card.description = "Trade: Not very effective in boarding."
+		if card.get("boarding_description") != null and card.boarding_description != "":
+			card.description = card.boarding_description
+		else:
+			if type_int == 0:
+				var a1 = card.get("boarding_alarm_vs_guards") if card.get("boarding_alarm_vs_guards") != null and card.get("boarding_alarm_vs_guards") >= 0 else max(0, (card.attack_value - 4) * 3)
+				var a2 = card.get("boarding_alarm_vs_doors") if card.get("boarding_alarm_vs_doors") != null and card.get("boarding_alarm_vs_doors") >= 0 else clampi(45 - (card.attack_value * 3), 10, 50)
+				card.description = "Attack: Defeat Guards (+%d Alarm) or blow up doors (+%d Alarm)." % [a1, a2]
+			elif type_int == 1:
+				var a1 = card.get("boarding_alarm_vs_guards") if card.get("boarding_alarm_vs_guards") != null and card.get("boarding_alarm_vs_guards") >= 0 else clampi(35 - (card.defense_value * 3), 0, 35)
+				var a2 = card.get("boarding_alarm_vs_hostage") if card.get("boarding_alarm_vs_hostage") != null and card.get("boarding_alarm_vs_hostage") >= 0 else clampi(30 - (card.defense_value * 2), 0, 30)
+				card.description = "Defense: Tank through Guards (+%d Alarm) or protect Hostage (+%d Alarm)." % [a1, a2]
+			elif type_int == 2:
+				var rarity_val: int = int(card.rarity if card.rarity != null else 0)
+				var a1 = card.get("boarding_alarm_vs_doors") if card.get("boarding_alarm_vs_doors") != null and card.get("boarding_alarm_vs_doors") >= 0 else max(0, 15 - (card.energy_cost * 5) - (rarity_val * 5))
+				card.description = "Utility: Hack Terminal/Door/Vault (+%d Alarm)." % a1
+			elif type_int == 3:
+				card.description = "Trade: Not very effective in boarding."
 		_hand.append(card)
 
 func _build_ui() -> void:
@@ -145,6 +163,43 @@ func _build_ui() -> void:
 	middle_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	middle_hbox.add_theme_constant_override("separation", 30)
 	main_vbox.add_child(middle_hbox)
+	
+	# CREW BUFFS BAR
+	var crew_hbox: HBoxContainer = HBoxContainer.new()
+	crew_hbox.add_theme_constant_override("separation", 10)
+	
+	var has_crew = false
+	for crew_member in GameManager.get_crew_resources():
+		var bonus_text = ""
+		if crew_member.bonus_type == CrewData.CrewBonus.BOARDING_RISK or crew_member.secondary_bonus_type == CrewData.CrewBonus.BOARDING_RISK:
+			bonus_text = "-20% Alarm Gain"
+		elif crew_member.bonus_type == CrewData.CrewBonus.BOARDING_LOOT or crew_member.secondary_bonus_type == CrewData.CrewBonus.BOARDING_LOOT:
+			bonus_text = "Extra Airlock Loot"
+		elif crew_member.bonus_type == CrewData.CrewBonus.BOARDING_BREACH or crew_member.secondary_bonus_type == CrewData.CrewBonus.BOARDING_BREACH:
+			bonus_text = "-15 Brute Force Alarm"
+		elif crew_member.bonus_type == CrewData.CrewBonus.BOARDING_INTEL or crew_member.secondary_bonus_type == CrewData.CrewBonus.BOARDING_INTEL:
+			bonus_text = "Rooms Revealed"
+		elif crew_member.bonus_type == CrewData.CrewBonus.BOARDING_MEDIC or crew_member.secondary_bonus_type == CrewData.CrewBonus.BOARDING_MEDIC:
+			bonus_text = "-10 Hull Dmg on Fail"
+			
+		if bonus_text != "":
+			has_crew = true
+			var badge: Label = Label.new()
+			badge.text = " 👤 " + crew_member.crew_name + ": " + bonus_text + " "
+			var style: StyleBoxFlat = StyleBoxFlat.new()
+			style.bg_color = Color(0.15, 0.35, 0.55, 0.8)
+			style.border_color = Color(0.3, 0.6, 0.8, 1.0)
+			style.set_border_width_all(1)
+			style.corner_radius_top_left = 5
+			style.corner_radius_top_right = 5
+			style.corner_radius_bottom_left = 5
+			style.corner_radius_bottom_right = 5
+			badge.add_theme_stylebox_override("normal", style)
+			crew_hbox.add_child(badge)
+			
+	if has_crew:
+		main_vbox.add_child(crew_hbox)
+		main_vbox.move_child(crew_hbox, main_vbox.get_child_count() - 2) # Move above middle_hbox
 	
 	# Left: Room Info
 	var room_panel: PanelContainer = PanelContainer.new()
@@ -219,7 +274,7 @@ func _build_ui() -> void:
 	nav_hbox.add_child(_ui_retreat_btn)
 	
 	_ui_advance_btn = Button.new()
-	_ui_advance_btn.text = "Next Room"
+	_ui_advance_btn.text = "Next Room (+10 Alarm)"
 	_ui_advance_btn.custom_minimum_size = Vector2(200, 50)
 	UIStyles.style_accent_button(_ui_advance_btn, Color(0.2, 0.4, 0.8))
 	_ui_advance_btn.pressed.connect(func():
@@ -260,72 +315,77 @@ func _on_card_used(_card_data: Resource, hand_index: int) -> void:
 	if room.type == ThreatType.GUARDS:
 		if type_int == 0: # Attack
 			var base_alarm: int = card.get("boarding_alarm_vs_guards") if card.get("boarding_alarm_vs_guards") != null and card.get("boarding_alarm_vs_guards") >= 0 else max(0, (card.attack_value - 4) * 3)
-			var actual_alarm: int = int(float(base_alarm) * 0.8) if GameManager.has_crew_bonus(CrewData.CrewBonus.BOARDING_RISK) else base_alarm
 			success = true
-			if base_alarm > 0: _add_alarm(base_alarm)
-			log_msg = "Used " + card.card_name + " to eliminate guards! (+%d Alarm)" % actual_alarm
+			var actual = 0
+			if base_alarm > 0: actual = _add_alarm(base_alarm)
+			log_msg = "Used " + card.card_name + " to eliminate guards! (+%d Alarm)" % actual + _last_alarm_reduction_text
 		elif type_int == 1: # Defense
-			var alarm: int = card.get("boarding_alarm_vs_guards") if card.get("boarding_alarm_vs_guards") != null and card.get("boarding_alarm_vs_guards") >= 0 else clampi(35 - (card.defense_value * 3), 0, 35)
+			var base_alarm: int = card.get("boarding_alarm_vs_guards") if card.get("boarding_alarm_vs_guards") != null and card.get("boarding_alarm_vs_guards") >= 0 else clampi(35 - (card.defense_value * 3), 0, 35)
 			success = true
-			if alarm > 0: _add_alarm(alarm)
-			log_msg = "Used " + card.card_name + " to tank through guards! (+%d Alarm)" % alarm
+			var actual = 0
+			if base_alarm > 0: actual = _add_alarm(base_alarm)
+			log_msg = "Used " + card.card_name + " to tank through guards! (+%d Alarm)" % actual + _last_alarm_reduction_text
 		else:
 			_ui_log.text = "Card ineffective against guards!"
 			return
 	elif room.type == ThreatType.LOCKED_DOOR:
 		if type_int == 2: # Utility
 			var rarity_val: int = int(card.rarity if card.rarity != null else 0)
-			var alarm: int = card.boarding_alarm_vs_doors if card.boarding_alarm_vs_doors != null and card.boarding_alarm_vs_doors >= 0 else max(0, 15 - (card.energy_cost * 5) - (rarity_val * 5))
+			var base_alarm: int = card.boarding_alarm_vs_doors if card.boarding_alarm_vs_doors != null and card.boarding_alarm_vs_doors >= 0 else max(0, 15 - (card.energy_cost * 5) - (rarity_val * 5))
 			success = true
-			if alarm > 0: _add_alarm(alarm)
-			log_msg = "Used " + card.card_name + " to bypass door. (+%d Alarm)" % alarm
+			var actual = 0
+			if base_alarm > 0: actual = _add_alarm(base_alarm)
+			log_msg = "Used " + card.card_name + " to bypass door. (+%d Alarm)" % actual + _last_alarm_reduction_text
 		elif type_int == 0: # Attack
-			var alarm: int = card.boarding_alarm_vs_doors if card.boarding_alarm_vs_doors != null and card.boarding_alarm_vs_doors >= 0 else clampi(45 - (card.attack_value * 3), 10, 50)
+			var base_alarm: int = card.boarding_alarm_vs_doors if card.boarding_alarm_vs_doors != null and card.boarding_alarm_vs_doors >= 0 else clampi(45 - (card.attack_value * 3), 10, 50)
 			success = true
-			_add_alarm(alarm)
-			log_msg = "Used " + card.card_name + " to blow the door! (+%d Alarm)" % alarm
+			var actual = _add_alarm(base_alarm)
+			log_msg = "Used " + card.card_name + " to blow the door! (+%d Alarm)" % actual + _last_alarm_reduction_text
 		else:
 			_ui_log.text = "Need Attack or Utility to pass door!"
 			return
 	elif room.type == ThreatType.TERMINAL:
 		if type_int == 2: # Utility
 			var rarity_val: int = int(card.rarity if card.rarity != null else 0)
-			var alarm: int = card.boarding_alarm_vs_terminals if card.boarding_alarm_vs_terminals != null and card.boarding_alarm_vs_terminals >= 0 else max(0, 15 - (card.energy_cost * 5) - (rarity_val * 5))
+			var base_alarm: int = card.boarding_alarm_vs_terminals if card.boarding_alarm_vs_terminals != null and card.boarding_alarm_vs_terminals >= 0 else max(0, 15 - (card.energy_cost * 5) - (rarity_val * 5))
 			success = true
 			_intel_active = true
-			if alarm > 0: _add_alarm(alarm)
-			log_msg = "Hacked terminal! Remaining rooms revealed. (+%d Alarm)" % alarm
+			var actual = 0
+			if base_alarm > 0: actual = _add_alarm(base_alarm)
+			log_msg = "Hacked terminal! Remaining rooms revealed. (+%d Alarm)" % actual + _last_alarm_reduction_text
 			for r in _rooms: r.revealed = true
 		else:
 			_ui_log.text = "Need Utility card to hack terminal."
 			return
 	elif room.type == ThreatType.CELL:
 		if type_int == 1: # Defense
-			var alarm: int = card.boarding_alarm_vs_hostage if card.boarding_alarm_vs_hostage != null and card.boarding_alarm_vs_hostage >= 0 else clampi(30 - (card.defense_value * 2), 0, 30)
+			var base_alarm: int = card.boarding_alarm_vs_hostage if card.boarding_alarm_vs_hostage != null and card.boarding_alarm_vs_hostage >= 0 else clampi(30 - (card.defense_value * 2), 0, 30)
 			success = true
-			if alarm > 0: _add_alarm(alarm)
-			log_msg = "Used " + card.card_name + " to rescue hostage! (+%d Alarm)" % alarm
+			var actual = 0
+			if base_alarm > 0: actual = _add_alarm(base_alarm)
+			log_msg = "Used " + card.card_name + " to rescue hostage! (+%d Alarm)" % actual + _last_alarm_reduction_text
 			_rooms[_current_room_idx].loot.append({"name": "Grateful Hostage (0 slots)", "slots": 0, "type": "hostage", "value": 0})
 		else:
-			var alarm: int = 20
+			var base_alarm: int = 20
 			success = true
-			_add_alarm(alarm)
-			log_msg = "Used " + card.card_name + " to rescue hostage! (+20 Alarm)"
+			var actual = _add_alarm(base_alarm)
+			log_msg = "Used " + card.card_name + " to rescue hostage! (+%d Alarm)" % actual + _last_alarm_reduction_text
 			_rooms[_current_room_idx].loot.append({"name": "Grateful Hostage (0 slots)", "slots": 0, "type": "hostage", "value": 0})
 	elif room.type == ThreatType.VAULT:
 		if type_int == 2:
 			var rarity_val: int = int(card.rarity if card.rarity != null else 0)
-			var alarm: int = card.boarding_alarm_vs_vaults if card.boarding_alarm_vs_vaults != null and card.boarding_alarm_vs_vaults >= 0 else max(0, 15 - (card.energy_cost * 5) - (rarity_val * 5))
+			var base_alarm: int = card.boarding_alarm_vs_vaults if card.boarding_alarm_vs_vaults != null and card.boarding_alarm_vs_vaults >= 0 else max(0, 15 - (card.energy_cost * 5) - (rarity_val * 5))
 			success = true
-			if alarm > 0: _add_alarm(alarm)
-			log_msg = "Vault unlocked silently. (+%d Alarm)" % alarm
+			var actual = 0
+			if base_alarm > 0: actual = _add_alarm(base_alarm)
+			log_msg = "Vault unlocked silently. (+%d Alarm)" % actual + _last_alarm_reduction_text
 		else:
 			success = true
-			var alarm: int = 40
+			var base_alarm: int = 40
 			if type_int == 0: 
-				alarm = card.boarding_alarm_vs_vaults if card.boarding_alarm_vs_vaults != null and card.boarding_alarm_vs_vaults >= 0 else clampi(45 - (card.attack_value * 3), 10, 50)
-			_add_alarm(alarm)
-			log_msg = "Vault cracked loud! (+%d Alarm)" % alarm
+				base_alarm = card.boarding_alarm_vs_vaults if card.boarding_alarm_vs_vaults != null and card.boarding_alarm_vs_vaults >= 0 else clampi(45 - (card.attack_value * 3), 10, 50)
+			var actual = _add_alarm(base_alarm)
+			log_msg = "Vault cracked loud! (+%d Alarm)" % actual + _last_alarm_reduction_text
 	elif room.type == ThreatType.AIRLOCK:
 		success = true
 		log_msg = "Secured airlock."
@@ -369,10 +429,10 @@ func _update_room_view() -> void:
 			
 		UIStyles.style_accent_button(bf_btn, Color(0.6, 0.2, 0.2))
 		bf_btn.pressed.connect(func():
-			_add_alarm(bf_alarm)
+			var actual = _add_alarm(bf_alarm)
 			room.cleared = true
 			if _is_ending: return
-			_ui_log.text = "Used brute force!"
+			_ui_log.text = "Used brute force! (+%d Alarm)" % actual + _last_alarm_reduction_text
 			_update_room_view()
 		)
 		_ui_actions_vbox.add_child(bf_btn)
@@ -396,7 +456,7 @@ func _update_room_view() -> void:
 	if _current_room_idx >= _rooms.size() - 1:
 		_ui_advance_btn.text = "Finish Boarding"
 	else:
-		_ui_advance_btn.text = "Next Room"
+		_ui_advance_btn.text = "Next Room (+10 Alarm)"
 		
 	_refresh_cards()
 
@@ -440,27 +500,38 @@ func _get_room_desc(type: int, cleared: bool) -> String:
 	return ""
 
 func _get_brute_force_alarm(type: int) -> int:
+	var base = 0
 	match type:
-		ThreatType.AIRLOCK: return 0
-		ThreatType.GUARDS: return 40
-		ThreatType.LOCKED_DOOR: return 30
-		ThreatType.TERMINAL: return 10
-		ThreatType.CELL: return 20
-		ThreatType.VAULT: return 50
-	return 0
+		ThreatType.AIRLOCK: base = 0
+		ThreatType.GUARDS: base = 40
+		ThreatType.LOCKED_DOOR: base = 45
+		ThreatType.TERMINAL: base = 10
+		ThreatType.CELL: base = 20
+		ThreatType.VAULT: base = 50
+		
+	if base > 0 and GameManager.has_crew_bonus(CrewData.CrewBonus.BOARDING_BREACH):
+		base = max(0, base - 15)
+		
+	return base
 
-func _add_alarm(amount: int) -> void:
-	# Check crew bonus for alarm reduction
-	# If we have boarding_risk bonus (id 5), reduce alarm gain
+var _last_alarm_reduction_text: String = ""
+
+func _add_alarm(amount: int) -> int:
+	_last_alarm_reduction_text = ""
 	var orig_amount = amount
-	if GameManager.has_crew_bonus(CrewData.CrewBonus.BOARDING_RISK):
+	var crew_name = ""
+	for c in GameManager.get_crew_resources():
+		if c.bonus_type == CrewData.CrewBonus.BOARDING_RISK or c.secondary_bonus_type == CrewData.CrewBonus.BOARDING_RISK:
+			crew_name = c.crew_name
+			break
+			
+	if crew_name != "":
 		amount = int(float(amount) * 0.8)
+		if orig_amount > 0 and orig_amount != amount:
+			_last_alarm_reduction_text = " (-20%% by %s)" % crew_name
 		
 	_alarm_level += amount
 	
-	# Update log to show actual applied amount instead of base amount
-	# Fix log msg later by relying on the return value or updating text directly
-	pass
 	if _alarm_level >= _max_alarm:
 		_alarm_level = _max_alarm
 		_ui_alarm_bar.value = _alarm_level
@@ -468,17 +539,26 @@ func _add_alarm(amount: int) -> void:
 		_fail_boarding()
 	else:
 		_ui_alarm_bar.value = _alarm_level
+		
+	return amount
 
 func _fail_boarding() -> void:
 	if _is_ending: return
 	_is_ending = true
 	
-	GameManager.current_hull -= 20
+	var dmg = 20
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.BOARDING_MEDIC):
+		dmg = 10
+		
+	GameManager.current_hull -= dmg
 	GameManager.current_shield = int(float(GameManager.current_shield) * 0.5)
 	
 	_ui_room_title.text = "CRITICAL FAILURE!"
 	_ui_room_title.add_theme_color_override("font_color", Color(1, 0, 0))
-	_ui_room_desc.text = "ALARM 100%! The enemy ship locked down its bulkheads and activated automated defenses. Your boarding party barely escaped under heavy fire, but your ship took 20 hull damage and lost shields during the emergency undocking!\n\n>>> RESUMING SHIP COMBAT... <<<"
+	if dmg == 10:
+		_ui_room_desc.text = "ALARM 100%! The enemy ship locked down its bulkheads... Thanks to your Boarding Medic, casualties were minimized! Your ship took 10 hull damage and lost shields during emergency undocking!\n\n>>> RESUMING SHIP COMBAT... <<<"
+	else:
+		_ui_room_desc.text = "ALARM 100%! The enemy ship locked down its bulkheads and activated automated defenses. Your boarding party barely escaped under heavy fire, but your ship took 20 hull damage and lost shields during the emergency undocking!\n\n>>> RESUMING SHIP COMBAT... <<<"
 	
 	_ui_log.text = ""
 	for c in _ui_actions_vbox.get_children(): c.queue_free()

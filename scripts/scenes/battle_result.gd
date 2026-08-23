@@ -70,6 +70,14 @@ func _ready() -> void:
 			%CardRewardPanel.visible = false
 			%RewardPanel.visible = false
 			%ContinueButton.visible = true
+		"lost_backup":
+			%ResultTitle.text = "Ship Destroyed!"
+			%ResultTitle.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2))
+			%ResultDescription.text = "Your ship was destroyed! You managed to escape in a pod and retrieve your backup ship. However, all cargo and crew on board were lost.\n\nYou have returned to %s." % GameManager.travel_origin
+			GameManager.current_planet = GameManager.travel_origin
+			%CardRewardPanel.visible = false
+			%RewardPanel.visible = false
+			%ContinueButton.visible = true
 		"boarding_failed":
 			%ResultTitle.text = "Boarding Failed!"
 			%ResultTitle.add_theme_color_override("font_color", Color(1.0, 0.5, 0.0))

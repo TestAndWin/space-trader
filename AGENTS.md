@@ -4,7 +4,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Project Overview
 
-SpaceTrader is a 2D roguelike space trading + deck-building card game built with **Godot Engine 4.7** (Forward Plus renderer) using **GDScript**. Players trade goods across planets, build a combat deck, upgrade their ship, and complete quests. Win condition: accumulate 8000 credits AND visit all 7 planets.
+SpaceTrader is a 2D roguelike space trading + deck-building card game built with **Godot Engine 4.7** (Forward Plus renderer) using **GDScript**. Players trade goods across planets, build a combat deck, upgrade their ship, and complete quests. Win condition: accumulate 8000 credits, visit all 7 planets, have the T2 upgrade installed, and have 0 Bounty.
 
 ## Running the Project
 

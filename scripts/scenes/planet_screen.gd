@@ -1079,9 +1079,10 @@ func _update_ui() -> void:
 	var planets_visited: int = GameManager.visited_planets.size()
 	var win_credits: int = GameManager.get_win_credits()
 	var t2_installed: bool = GameManager.has_crafted_upgrade_installed()
+	var bounty_ok := StandingManager.bounty_amount <= 0
 	var credits_ok := GameManager.credits >= win_credits
 	var planets_ok := planets_visited >= GameManager.WIN_PLANETS
-	if credits_ok and planets_ok and t2_installed:
+	if credits_ok and planets_ok and t2_installed and bounty_ok:
 		goal_label.text = "Day %d | GOAL REACHED!" % GameManager.current_day
 		goal_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
 	else:
@@ -1090,7 +1091,8 @@ func _update_ui() -> void:
 		var credit_progress: float = clampf(float(GameManager.credits) / float(win_credits), 0.0, 1.0)
 		var planet_progress: float = clampf(float(planets_visited) / float(GameManager.WIN_PLANETS), 0.0, 1.0)
 		var t2_progress: float = 1.0 if t2_installed else 0.0
-		var progress: float = (credit_progress + planet_progress + t2_progress) / 3.0
+		var bounty_progress: float = 1.0 if bounty_ok else 0.0
+		var progress: float = (credit_progress + planet_progress + t2_progress + bounty_progress) / 4.0
 		var goal_color := Color(0.5 + progress * 0.5, 0.4 + progress * 0.6, 0.1 + progress * 0.2)
 		goal_label.add_theme_color_override("font_color", goal_color)
 	if GameManager.has_active_loan():
@@ -1105,10 +1107,11 @@ func _update_ui() -> void:
 ## are the two markers players cannot decode from the label alone.
 func _build_goal_tooltip(t2_installed: bool, planets_visited: int, win_credits: int) -> String:
 	var lines: Array[String] = [
-		"VICTORY NEEDS ALL THREE",
+		"VICTORY NEEDS ALL FOUR",
 		"• Credits: %d / %d" % [GameManager.credits, win_credits],
 		"• Planets visited: %d / %d" % [planets_visited, GameManager.WIN_PLANETS],
 		"• T2 upgrade installed: %s" % ("yes" if t2_installed else "not yet"),
+		"• Bounty cleared: %s" % ("yes" if StandingManager.bounty_amount <= 0 else "no (%d cr)" % StandingManager.bounty_amount),
 		"",
 		"HOW TO GET THE T2 UPGRADE",
 		"1. Fabrication Plant (Tech planets only) — start a recipe",

@@ -72,6 +72,7 @@ var cargo: Array = []:
 # Card / combat
 var deck: Array = []
 var installed_upgrades: Array = []
+var ship_upgrades_store: Dictionary = {}
 var removed_cards: Array = []  # Permanently removed card paths
 var hand_size: int = 5
 var energy_per_turn: int = 3
@@ -158,6 +159,7 @@ func reset() -> void:
 	cargo = []  # Reassign rather than clear(), so the setter reports it.
 	deck.clear()
 	installed_upgrades.clear()
+	ship_upgrades_store.clear()
 	crew.clear()
 	wounded_crew.clear()
 	damaged_upgrades.clear()
@@ -623,6 +625,7 @@ func check_win_condition() -> bool:
 		credits >= get_win_credits()
 		and visited_planets.size() >= WIN_PLANETS
 		and has_crafted_upgrade_installed()
+		and StandingManager.bounty_amount <= 0
 	)
 
 
@@ -841,21 +844,88 @@ func owns_ship(path: String) -> bool:
 	return path in owned_ships
 
 
+func _get_upgrade_resource(upg_name: String) -> Resource:
+	var paths = ResourceRegistry.COMBAT_UPGRADES + ResourceRegistry.CRAFTED_UPGRADES + ResourceRegistry.UPGRADES
+	for path in paths:
+		var res = load(path)
+		if res and res.upgrade_name == upg_name:
+			return res
+	return null
+
+func save_current_ship_upgrades() -> void:
+	if current_ship == "": return
+	ship_upgrades_store[current_ship] = {
+		"installed_upgrades": installed_upgrades.duplicate(),
+		"hull_upgrades_bought": hull_upgrades_bought,
+		"shield_upgrades_bought": shield_upgrades_bought,
+		"cargo_upgrades_bought": cargo_upgrades_bought
+	}
+
+func load_ship_upgrades(ship_path: String) -> void:
+	var data = ship_upgrades_store.get(ship_path, {
+		"installed_upgrades": [],
+		"hull_upgrades_bought": 0,
+		"shield_upgrades_bought": 0,
+		"cargo_upgrades_bought": 0
+	})
+	installed_upgrades = data["installed_upgrades"].duplicate()
+	hull_upgrades_bought = data["hull_upgrades_bought"]
+	shield_upgrades_bought = data["shield_upgrades_bought"]
+	cargo_upgrades_bought = data["cargo_upgrades_bought"]
+
+
 func switch_ship(new_ship_path: String, keep_old: bool = false) -> void:
 	var old_ship: Resource = get_ship_data()
 	var new_ship: Resource = load(new_ship_path)
 	if not old_ship or not new_ship:
 		return
 	var old_path: String = current_ship
-	# Calculate stat deltas (new base - old base) and apply to current upgraded stats
-	max_hull += new_ship.base_max_hull - old_ship.base_max_hull
+	
+	save_current_ship_upgrades()
+	for upg_name in installed_upgrades:
+		var upg = _get_upgrade_resource(upg_name)
+		if upg and "cards_to_add" in upg:
+			for card in upg.cards_to_add:
+				for i in range(deck.size()):
+					if deck[i].card_name == card.card_name:
+						deck.remove_at(i)
+						break
+	
+	if not keep_old:
+		owned_ships.erase(old_path)
+		ship_upgrades_store.erase(old_path)
+	if not (new_ship_path in owned_ships):
+		owned_ships.append(new_ship_path)
+	current_ship = new_ship_path
+	
+	load_ship_upgrades(new_ship_path)
+	for upg_name in installed_upgrades:
+		var upg = _get_upgrade_resource(upg_name)
+		if upg and "cards_to_add" in upg:
+			for card in upg.cards_to_add:
+				deck.append(card)
+	
+	max_hull = new_ship.base_max_hull + (hull_upgrades_bought * 5)
+	max_shield = new_ship.base_max_shield + (shield_upgrades_bought * 3)
+	cargo_capacity = new_ship.base_cargo_capacity + (cargo_upgrades_bought * 2)
+	max_fuel = 6
+	energy_per_turn = new_ship.base_energy_per_turn
+	hand_size = new_ship.base_hand_size
+	
+	for upg_name in installed_upgrades:
+		var upg = _get_upgrade_resource(upg_name)
+		if upg:
+			max_hull += upg.hull_bonus
+			max_shield += upg.shield_bonus
+			cargo_capacity += upg.cargo_bonus
+			max_fuel += upg.fuel_capacity_bonus
+			energy_per_turn += upg.energy_bonus
+			hand_size += upg.hand_size_bonus
+			
 	current_hull = mini(current_hull, max_hull)
-	max_shield += new_ship.base_max_shield - old_ship.base_max_shield
 	current_shield = mini(current_shield, max_shield)
-	cargo_capacity += new_ship.base_cargo_capacity - old_ship.base_cargo_capacity
-	energy_per_turn += new_ship.base_energy_per_turn - old_ship.base_energy_per_turn
-	hand_size += new_ship.base_hand_size - old_ship.base_hand_size
-	# Drop excess cargo — one signal for the whole adjustment, not one per item.
+	current_fuel = mini(current_fuel, max_fuel)
+	
 	var dropped_any: bool = false
 	while get_cargo_used() > cargo_capacity and cargo.size() > 0:
 		var last_item: Dictionary = cargo[cargo.size() - 1]

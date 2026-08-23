@@ -32,6 +32,7 @@ func save_game() -> void:
 		"current_ship": GameManager.current_ship,
 		"owned_ships": GameManager.owned_ships.duplicate(),
 		"installed_upgrades": GameManager.installed_upgrades.duplicate(),
+		"ship_upgrades_store": GameManager.ship_upgrades_store.duplicate(true),
 		"removed_cards": GameManager.removed_cards.duplicate(),
 		"hull_upgrades_bought": GameManager.hull_upgrades_bought,
 		"shield_upgrades_bought": GameManager.shield_upgrades_bought,
@@ -116,6 +117,7 @@ func load_game() -> bool:
 		hangar.append(GameManager.current_ship)
 	GameManager.owned_ships = hangar
 	GameManager.installed_upgrades = data.get("installed_upgrades", [])
+	GameManager.ship_upgrades_store = data.get("ship_upgrades_store", {})
 	GameManager.removed_cards = data.get("removed_cards", [])
 	GameManager.hull_upgrades_bought = int(data.get("hull_upgrades_bought", 0))
 	GameManager.shield_upgrades_bought = int(data.get("shield_upgrades_bought", 0))

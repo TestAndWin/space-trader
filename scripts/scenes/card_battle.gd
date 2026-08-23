@@ -260,6 +260,10 @@ func _start_player_turn() -> void:
 	combo_active = false
 	recycled_this_shuffle = false
 
+	var end_btn: Button = $MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/EndTurnButton
+	if end_btn:
+		end_btn.disabled = false
+
 	# Crew per-turn regen (Medic / Engineer) — kicks in from turn 2 to avoid free start-of-fight buffs.
 	if turn_count >= 2:
 		var heal: int = GameManager.get_combat_heal_per_turn()
@@ -906,8 +910,26 @@ func _on_battle_lost() -> void:
 	if _is_rival_encounter():
 		RivalManager.on_rival_won()
 	if GameManager.current_hull <= 0:
-		GameManager.change_scene("res://scenes/game_over.tscn")
-		return
+		if GameManager.owned_ships.size() > 1:
+			var old_ship = GameManager.current_ship
+			var new_ship = ""
+			for s in GameManager.owned_ships:
+				if s != old_ship:
+					new_ship = s
+					break
+			GameManager.switch_ship(new_ship)
+			GameManager.current_hull = GameManager.max_hull
+			GameManager.current_shield = GameManager.max_shield
+			GameManager.cargo.clear()
+			GameManager.crew.clear()
+			GameManager.cargo_changed.emit()
+			GameManager.crew_changed.emit()
+			GameManager.battle_result = "lost_backup"
+			GameManager.change_scene("res://scenes/battle_result.tscn")
+			return
+		else:
+			GameManager.change_scene("res://scenes/game_over.tscn")
+			return
 	GameManager.change_scene("res://scenes/battle_result.tscn")
 
 

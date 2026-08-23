@@ -6,7 +6,7 @@
 script = ExtResource("1_crew")
 crew_name = "Medic"
 title = "Medic"
-description = "Heal 3 hull after each combat. Boarding: Medic (Save team 1x)."
+description = "Heal 1 hull per combat turn and 3 hull after combat. Boarding: Medic (Save team 1x)."
 bonus_type = 7
 bonus_value = 3.0
 recruit_cost = 300
