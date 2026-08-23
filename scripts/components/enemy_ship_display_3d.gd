@@ -43,6 +43,15 @@ func _set_hit_offset_x(val: float) -> void:
 	_hit_offset.x = val
 	queue_redraw()
 
+func _set_hit_offset_y(val: float) -> void:
+	_hit_offset.y = val
+	queue_redraw()
+
+func play_attack() -> void:
+	var tween := create_tween()
+	tween.tween_method(_set_hit_offset_y, 0.0, 15.0, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_method(_set_hit_offset_y, 15.0, 0.0, 0.15).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
 func _set_hit_flash(val: float) -> void:
 	_hit_flash = val
 	queue_redraw()
@@ -71,7 +80,7 @@ func _draw() -> void:
 	var w: float = s
 	var h: float = s
 	var cx: float = size.x * 0.5 + _hit_offset.x
-	var cy: float = size.y * 0.5
+	var cy: float = size.y * 0.5 + _hit_offset.y
 
 	var hull_color: Color
 	if hull_pct > 0.6:

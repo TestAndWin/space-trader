@@ -20,7 +20,6 @@ extends Resource
 @export var choice_b_hull: int = 0
 @export var choice_b_cargo_good: String = ""
 @export var choice_b_cargo_qty: int = 0
-@export var has_random_outcome: bool = false
 # Random outcome support: success_chance controls probability of primary outcome.
 # If roll fails, alt values + alt description are used instead.
 @export_range(0.0, 1.0) var choice_a_success_chance: float = 1.0

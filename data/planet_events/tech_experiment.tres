@@ -21,7 +21,6 @@ choice_b_credits = 0
 choice_b_hull = 0
 choice_b_cargo_good = ""
 choice_b_cargo_qty = 0
-has_random_outcome = true
 choice_a_success_chance = 0.5
 choice_a_alt_description = "The experiment goes wrong! Your hull takes 10 damage."
 choice_a_alt_credits = 0

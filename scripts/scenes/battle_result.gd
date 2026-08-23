@@ -99,6 +99,7 @@ func _award_battle_credits() -> int:
 	if GameManager.current_encounter:
 		earned = int(round(GameManager.current_encounter.reward_credits * EventManager.get_reward_modifier()))
 		GameManager.add_credits(earned)
+		EventLog.add_entry("Combat reward: %d cr" % earned)
 	# Crew medic bonus: heal hull after combat win
 	if GameManager.has_crew_bonus(CrewData.CrewBonus.COMBAT_HEAL):
 		var heal: int = int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.COMBAT_HEAL))
@@ -108,7 +109,7 @@ func _award_battle_credits() -> int:
 
 func _setup_credits_only_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
-	var msg = "Combat Reward: %d cr" % earned
+	var msg: String = "Combat Reward: %d cr" % earned
 	if GameManager.extra_battle_message != "":
 		msg += "\n\n" + GameManager.extra_battle_message
 	msg += "\n\nArriving at %s." % destination
@@ -120,7 +121,7 @@ func _setup_credits_only_reward(destination: String) -> void:
 
 func _setup_credits_card_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
-	var msg = "Combat Reward: %d cr" % earned
+	var msg: String = "Combat Reward: %d cr" % earned
 	if GameManager.extra_battle_message != "":
 		msg += "\n\n" + GameManager.extra_battle_message
 	msg += "\n\nArriving at %s." % destination
@@ -177,6 +178,7 @@ func _on_reward_card_selected(card_data: Resource) -> void:
 		return
 	card_selected = true
 	GameManager.deck.append(card_data)
+	EventLog.add_entry("Salvaged card: %s" % card_data.card_name)
 	AchievementManager.check_deck(GameManager.deck.size())
 	_on_continue_pressed()
 
@@ -192,7 +194,7 @@ func _on_skip_pressed() -> void:
 
 func _setup_upgrade_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
-	var msg = "Combat Reward: %d cr" % earned
+	var msg: String = "Combat Reward: %d cr" % earned
 	if GameManager.extra_battle_message != "":
 		msg += "\n\n" + GameManager.extra_battle_message
 	msg += "\n\nArriving at %s." % destination
@@ -239,6 +241,7 @@ func _setup_upgrade_reward(destination: String) -> void:
 				return
 			reward_chosen = true
 			GameManager.apply_upgrade(chosen)
+			EventLog.add_entry("Installed upgrade: %s" % chosen.upgrade_name)
 			_on_continue_pressed()
 		)
 
@@ -259,7 +262,7 @@ func _get_upgrade_icon(upgrade: Resource) -> String:
 
 func _setup_crew_reward(destination: String) -> void:
 	var earned: int = _award_battle_credits()
-	var msg = "Combat Reward: %d cr" % earned
+	var msg: String = "Combat Reward: %d cr" % earned
 	if GameManager.extra_battle_message != "":
 		msg += "\n" + GameManager.extra_battle_message
 	msg += "\n\nArriving at %s." % destination
@@ -312,6 +315,7 @@ func _setup_crew_reward(destination: String) -> void:
 			reward_chosen = true
 			GameManager.crew.append(chosen.resource_path)
 			GameManager.crew_changed.emit()
+			EventLog.add_entry("Rescued crew: %s" % chosen.crew_name)
 			_on_continue_pressed()
 		)
 
@@ -356,7 +360,7 @@ func _style_buttons() -> void:
 
 func _on_continue_pressed() -> void:
 	if GameManager.battle_result == "won":
-		var TravelEventScene = preload("res://scenes/components/travel_event.tscn")
+		var TravelEventScene: PackedScene = preload("res://scenes/components/travel_event.tscn")
 		var travel_event := TravelEventScene.instantiate()
 		add_child(travel_event)
 		if travel_event.try_trigger(GameManager.travel_days):

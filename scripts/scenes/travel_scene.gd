@@ -98,7 +98,7 @@ func _ready() -> void:
 			var tint: Color = weather.get("tint", Color.WHITE)
 			_warp_color = _warp_color.lerp(tint, 0.55)
 		
-		if weather.get("id") == "solar_storm":
+		if weather.id == "solar_storm":
 			var current_shield: float = float(GameManager.current_shield)
 			var reduction_percent: float = _rng.randf_range(0.3, 0.8)
 			var reduction_amount: int = int(round(current_shield * reduction_percent))

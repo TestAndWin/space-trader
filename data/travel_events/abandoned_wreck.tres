@@ -14,7 +14,6 @@ choice_a_credits = 120
 choice_a_hull = 0
 choice_b_credits = 0
 choice_b_hull = 0
-min_difficulty = 1
 choice_a_success_chance = 0.5
 choice_a_alt_description = "A structural collapse catches you mid-salvage! You grab some scraps but your hull takes a beating."
 choice_a_alt_credits = 30

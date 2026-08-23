@@ -7,5 +7,3 @@ script = ExtResource("1_rc")
 good_name = "Rare Crystals"
 base_price = 80
 is_contraband = false
-is_crafted = false
-is_raw_material = true

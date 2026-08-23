@@ -18,3 +18,11 @@ enum SpecialEffect { NONE, SELF_DAMAGE_5, BONUS_ENERGY_2, SKIP_ENEMY_TURN, END_E
 @export var credits_gain: int = 0
 @export var special_effect: SpecialEffect = SpecialEffect.NONE
 @export var keywords: Array[int] = []  # CardKeyword values
+
+@export_group("Boarding")
+@export_multiline var boarding_description: String = ""
+@export var boarding_alarm_vs_guards: int = -1
+@export var boarding_alarm_vs_doors: int = -1
+@export var boarding_alarm_vs_terminals: int = -1
+@export var boarding_alarm_vs_vaults: int = -1
+@export var boarding_alarm_vs_hostage: int = -1

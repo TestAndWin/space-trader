@@ -14,7 +14,6 @@ choice_a_credits = 50
 choice_a_hull = 0
 choice_b_credits = 0
 choice_b_hull = 0
-min_difficulty = 1
 choice_a_success_chance = 0.8
 choice_a_alt_description = "The liner's reactor was leaking radiation. Your supplies help, but your hull takes radiation damage. At least they're grateful."
 choice_a_alt_credits = -30

@@ -56,10 +56,6 @@ func play_bgm(path: String) -> void:
 	bgm_player.stream = stream
 	bgm_player.play()
 
-func stop_bgm() -> void:
-	bgm_player.stop()
-	current_bgm_path = ""
-
 # --- UI ---
 
 func play_ui_click() -> void:
@@ -93,10 +89,19 @@ func play_laser() -> void:
 	play_sfx("laser", 0.08)
 
 func play_enemy_laser() -> void:
-	play_sfx("enemy_laser", 0.08)
+	play_sfx("enemy_laser", 0.08, 0.6) # Deeper and more menacing tone
 
 func play_shield_hit() -> void:
 	play_sfx("shield_hit", 0.06)
+	
+func play_shield_up() -> void:
+	var stream: AudioStream = _get_stream(SFX_DIR + "shield_hit.wav")
+	if stream == null: return
+	var player: AudioStreamPlayer = _sfx_pool[_sfx_index]
+	_sfx_index = (_sfx_index + 1) % _sfx_pool.size()
+	player.stream = stream
+	player.pitch_scale = 0.6  # lower pitch for powering up
+	player.play()
 
 func play_hull_hit() -> void:
 	play_sfx("hull_hit", 0.06)
@@ -136,14 +141,14 @@ func play_arrive_sfx() -> void:
 ## Plays an effect from SFX_DIR by file name (without extension).
 ## pitch_variance randomizes the pitch by +/- that fraction, which keeps
 ## repeated cues (laser fire, impacts) from sounding mechanical.
-func play_sfx(sfx_name: String, pitch_variance: float = 0.0) -> void:
+func play_sfx(sfx_name: String, pitch_variance: float = 0.0, base_pitch: float = 1.0) -> void:
 	var stream: AudioStream = _get_stream(SFX_DIR + sfx_name + ".wav")
 	if stream == null:
 		return
 	var player: AudioStreamPlayer = _sfx_pool[_sfx_index]
 	_sfx_index = (_sfx_index + 1) % _sfx_pool.size()
 	player.stream = stream
-	player.pitch_scale = 1.0 if is_zero_approx(pitch_variance) else randf_range(1.0 - pitch_variance, 1.0 + pitch_variance)
+	player.pitch_scale = base_pitch if is_zero_approx(pitch_variance) else base_pitch + randf_range(-pitch_variance, pitch_variance)
 	player.play()
 
 func _get_stream(path: String) -> AudioStream:

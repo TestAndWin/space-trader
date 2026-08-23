@@ -89,9 +89,9 @@ func expand_slots(planet_name: String) -> bool:
 	var f: Dictionary = _ensure_facility(planet_name)
 	if not f.unlocked:
 		return false
-	if f.slots >= MAX_SLOTS:
+	if int(f.slots) >= MAX_SLOTS:
 		return false
-	var next_slot: int = f.slots + 1
+	var next_slot: int = int(f.slots) + 1
 	var cost: int = SLOT_COSTS.get(next_slot, 0)
 	if GameManager.credits < cost:
 		return false
@@ -107,9 +107,9 @@ func get_slot_count(planet_name: String) -> int:
 
 func get_next_slot_cost(planet_name: String) -> int:
 	var f: Dictionary = _ensure_facility(planet_name)
-	if f.slots >= MAX_SLOTS:
+	if int(f.slots) >= MAX_SLOTS:
 		return 0
-	return int(SLOT_COSTS.get(f.slots + 1, 0))
+	return int(SLOT_COSTS.get(int(f.slots) + 1, 0))
 
 
 # ── Recipes for planet ──────────────────────────────────────────────────────

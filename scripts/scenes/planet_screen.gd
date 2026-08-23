@@ -958,6 +958,20 @@ func _on_event_log_pressed() -> void:
 	log_header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(log_header_spacer)
 
+	var copy_btn := Button.new()
+	copy_btn.text = "Copy Last 50"
+	UIStyles.style_accent_button(copy_btn, Color(0.1, 0.4, 0.7))
+	copy_btn.pressed.connect(func():
+		var txt = ""
+		var ents = EventLog.get_entries()
+		var start_idx = maxi(0, ents.size() - 50)
+		for i in range(ents.size() - 1, start_idx - 1, -1):
+			txt += ents[i] + "\n"
+		DisplayServer.clipboard_set(txt.strip_edges())
+		copy_btn.text = "Copied!"
+	)
+	header.add_child(copy_btn)
+
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))

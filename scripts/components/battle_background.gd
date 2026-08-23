@@ -90,44 +90,6 @@ func _process(delta: float) -> void:
 	_animate_ships(delta)
 
 
-func play_player_attack_effect(raw_damage: int, shield_absorb: int, hull_damage: int) -> void:
-	if raw_damage <= 0 and shield_absorb <= 0 and hull_damage <= 0:
-		return
-	_fire_laser(_player_muzzle_position(), _enemy_impact_position(), Color(0.35, 0.85, 1.0), true)
-	if shield_absorb > 0:
-		_flash_shield(_enemy_shield, _enemy_shield_mat, Color(1.0, 0.45, 0.35))
-	if hull_damage > 0:
-		_pulse_ship_hit(false)
-		_spawn_explosion(
-			_enemy_impact_position(),
-			Color(1.0, 0.42, 0.22),
-			0.95 + minf(float(hull_damage) * 0.05, 0.6)
-		)
-
-
-func play_enemy_attack_effect(shield_absorb: int, hull_damage: int) -> void:
-	if shield_absorb <= 0 and hull_damage <= 0:
-		return
-	_fire_laser(_enemy_muzzle_position(), _player_impact_position(), Color(1.0, 0.35, 0.28), false)
-	if shield_absorb > 0:
-		_flash_shield(_player_shield, _player_shield_mat, Color(0.35, 0.7, 1.0))
-	if hull_damage > 0:
-		_pulse_ship_hit(true)
-		_spawn_explosion(
-			_player_impact_position(),
-			Color(1.0, 0.42, 0.2),
-			0.9 + minf(float(hull_damage) * 0.05, 0.6)
-		)
-
-
-func play_player_shield_charge_effect(_amount: int) -> void:
-	_flash_shield(_player_shield, _player_shield_mat, Color(0.35, 0.7, 1.0))
-
-
-func play_enemy_shield_charge_effect(_amount: int) -> void:
-	_flash_shield(_enemy_shield, _enemy_shield_mat, Color(1.0, 0.45, 0.35))
-
-
 func _build_viewport() -> void:
 	_viewport_container = SubViewportContainer.new()
 	_viewport_container.set_anchors_preset(Control.PRESET_FULL_RECT)

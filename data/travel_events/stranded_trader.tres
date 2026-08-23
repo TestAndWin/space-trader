@@ -14,7 +14,6 @@ choice_a_credits = 70
 choice_a_hull = 0
 choice_b_credits = 0
 choice_b_hull = 0
-min_difficulty = 1
 choice_a_success_chance = 0.75
 choice_a_alt_description = "It was a trap! Pirates ambush you during the tow. You fight them off but take hull damage and lose your fuel credits."
 choice_a_alt_credits = -50

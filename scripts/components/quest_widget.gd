@@ -4,7 +4,6 @@ signal clicked
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
-var hover_bg_color: Color = Color(0.1, 0.2, 0.35, 0.8)
 var normal_bg_color: Color = Color(0.04, 0.08, 0.16, 0.8)
 var warning_bg_color: Color = Color(0.3, 0.1, 0.1, 0.8)
 

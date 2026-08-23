@@ -12,7 +12,6 @@ extends Resource
 @export var choice_a_hull: int = 0
 @export var choice_b_credits: int = 0
 @export var choice_b_hull: int = 0
-@export var min_difficulty: int = 1
 # Random outcome support: success_chance controls probability of primary outcome.
 # If roll fails, alt values + alt description are used instead.
 @export_range(0.0, 1.0) var choice_a_success_chance: float = 1.0

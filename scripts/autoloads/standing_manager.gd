@@ -93,11 +93,6 @@ func get_faction_reputation(faction_name: String) -> int:
 	return int(faction_reputation.get(faction_name, FACTION_NEUTRAL))
 
 
-func get_current_planet_reputation() -> int:
-	var faction: String = get_planet_faction(GameManager.current_planet)
-	return get_faction_reputation(faction)
-
-
 func add_faction_reputation(faction_name: String, amount: int, reason: String = "") -> void:
 	if amount == 0:
 		return
@@ -175,27 +170,20 @@ func get_loyalty_tier(planet_name: String) -> String:
 func add_bounty(amount: int, reason: String = "") -> void:
 	if amount <= 0:
 		return
+		
+	var credit_factor: float = maxf(0.0, float(GameManager.credits) / 2000.0)
+	var time_factor: float = maxf(0.0, float(GameManager.current_day) / 20.0)
+	var multiplier: float = 1.0 + credit_factor + time_factor
+	var scaled_amount: int = int(float(amount) * multiplier)
+	
 	var previous_tier: String = get_bounty_tier()
-	bounty_amount += amount
+	bounty_amount += scaled_amount
 	if reason != "":
-		EventLog.add_entry("Bounty +%d cr (%s). Total: %d cr" % [amount, reason, bounty_amount])
+		EventLog.add_entry("Bounty +%d cr (%s). Total: %d cr" % [scaled_amount, reason, bounty_amount])
 	else:
-		EventLog.add_entry("Bounty +%d cr. Total: %d cr" % [amount, bounty_amount])
+		EventLog.add_entry("Bounty +%d cr. Total: %d cr" % [scaled_amount, bounty_amount])
 	var new_tier: String = get_bounty_tier()
 	if new_tier != previous_tier:
-		EventLog.add_entry("Bounty status is now %s." % new_tier)
-	bounty_changed.emit(bounty_amount, new_tier)
-
-
-func reduce_bounty(amount: int) -> void:
-	var previous_tier: String = get_bounty_tier()
-	bounty_amount = maxi(bounty_amount - amount, 0)
-	if bounty_amount == 0:
-		EventLog.add_entry("Bounty cleared!")
-	else:
-		EventLog.add_entry("Bounty reduced by %d cr. Remaining: %d cr" % [amount, bounty_amount])
-	var new_tier: String = get_bounty_tier()
-	if new_tier != previous_tier and bounty_amount > 0:
 		EventLog.add_entry("Bounty status is now %s." % new_tier)
 	bounty_changed.emit(bounty_amount, new_tier)
 

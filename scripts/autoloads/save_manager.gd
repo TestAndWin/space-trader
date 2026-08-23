@@ -121,7 +121,16 @@ func load_game() -> bool:
 	GameManager.shield_upgrades_bought = int(data.get("shield_upgrades_bought", 0))
 	GameManager.cargo_upgrades_bought = int(data.get("cargo_upgrades_bought", 0))
 	GameManager.crew = data.get("crew", [])
-	GameManager.wounded_crew = data.get("wounded_crew", [])
+	
+	var wc = data.get("wounded_crew")
+	if typeof(wc) == TYPE_ARRAY:
+		# Migrate old array format to dictionary
+		var new_wc = {}
+		for path in wc:
+			new_wc[path] = randi_range(4, 7)
+		GameManager.wounded_crew = new_wc
+	else:
+		GameManager.wounded_crew = data.get("wounded_crew", {})
 	GameManager.damaged_upgrades = data.get("damaged_upgrades", [])
 	GameManager.pirate_intel = int(data.get("pirate_intel", 0))
 	_deserialize_deck(data.get("deck_cards", []))

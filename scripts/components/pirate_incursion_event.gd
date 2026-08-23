@@ -80,7 +80,7 @@ func _setup_event(event_type: int) -> void:
 				var target = unwounded[randi() % unwounded.size()]
 				var res = load(target)
 				_description_label.text = "Pirates ambushed your crew on the docks! %s has been severely wounded." % res.crew_name
-				GameManager.wounded_crew.append(target)
+				GameManager.wounded_crew[target] = randi_range(4, 7)
 				var ok_btn = _create_button("Retreat")
 				ok_btn.pressed.connect(func():
 					EventLog.add_entry("%s wounded by pirates." % res.crew_name)

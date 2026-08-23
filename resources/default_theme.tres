@@ -1,9 +1,7 @@
-[gd_resource type="Theme" load_steps=3 format=3]
+[gd_resource type="Theme" format=3 uid="uid://s1rexgevx0yd"]
 
-[ext_resource type="FontFile" path="res://assets/fonts/Exo2.ttf" id="1_body"]
+[ext_resource type="FontFile" uid="uid://bd2p8u03ciaak" path="res://assets/fonts/Exo2.ttf" id="1_body"]
 
-; Tooltips float over busy planet artwork, so the plate is near-opaque and
-; carries the same cyan holo border as the in-game panels.
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tooltip"]
 content_margin_left = 12.0
 content_margin_top = 9.0

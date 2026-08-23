@@ -152,7 +152,7 @@ func _apply_outcome(credits_delta: int, hull_delta: int) -> void:
 
 	var parts: Array = []
 	if credits_delta != 0:
-		parts.append("%+d credits" % credits_delta)
+		parts.append("%+d cr" % credits_delta)
 	if hull_delta != 0:
 		parts.append("%+d hull" % hull_delta)
 	if not parts.is_empty():

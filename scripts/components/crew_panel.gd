@@ -62,10 +62,11 @@ func _refresh_crew_ui() -> void:
 	for child in _crew_container.get_children():
 		child.queue_free()
 
-	var crew_resources := GameManager.get_crew_resources()
-
 	# Populate crew portrait icons
-	for crew_res in crew_resources:
+	for i in GameManager.crew.size():
+		var path = GameManager.crew[i]
+		var crew_res = load(path)
+		if crew_res == null: continue
 		var icon := Control.new()
 		icon.set_script(CrewIcon)
 		icon.custom_minimum_size = Vector2(60, 70)
@@ -73,21 +74,30 @@ func _refresh_crew_ui() -> void:
 		icon.setup(crew_res.bonus_type)
 
 	# Show current crew members
-	for i in crew_resources.size():
-		var crew_res: Resource = crew_resources[i]
+	for i in GameManager.crew.size():
+		var path = GameManager.crew[i]
+		var is_wounded = path in GameManager.wounded_crew
+		var crew_res: Resource = load(path)
+		if crew_res == null: continue
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 4)
 		_crew_container.add_child(row)
 
 		var secondary_text: String = _get_secondary_bonus_text(crew_res)
 		var info := Label.new()
-		var text: String = crew_res.crew_name + " (" + str(crew_res.daily_wage) + "cr/Tag): " + crew_res.description
+		var text: String = crew_res.crew_name + " (" + str(crew_res.daily_wage) + "cr/day): " + crew_res.description
+		if is_wounded:
+			var days_left = int(GameManager.wounded_crew[path])
+			text = "[WOUNDED (" + str(days_left) + " days left)] " + text
 		if secondary_text != "":
 			text += " | " + secondary_text
 		info.text = text
 		info.tooltip_text = crew_res.crew_name
 		info.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
-		info.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
+		if is_wounded:
+			info.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
+		else:
+			info.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		info.mouse_filter = Control.MOUSE_FILTER_STOP
 		row.add_child(info)
@@ -104,7 +114,7 @@ func _refresh_crew_ui() -> void:
 		)
 		row.add_child(dismiss_btn)
 
-	if crew_resources.is_empty():
+	if GameManager.crew.is_empty():
 		var empty_lbl := Label.new()
 		empty_lbl.text = "No crew hired"
 		empty_lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
@@ -159,7 +169,7 @@ func _build_hire_card(crew_res: Resource) -> PanelContainer:
 	header.add_child(name_lbl)
 
 	var cost_lbl := Label.new()
-	cost_lbl.text = "Hire: %d cr | %d cr/Tag" % [crew_res.recruit_cost, crew_res.daily_wage]
+	cost_lbl.text = "Hire: %d cr | %d cr/day" % [crew_res.recruit_cost, crew_res.daily_wage]
 	UIStyles.apply_mono_font(cost_lbl)
 	cost_lbl.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
 	cost_lbl.add_theme_color_override("font_color", UIStyles.GOLD)

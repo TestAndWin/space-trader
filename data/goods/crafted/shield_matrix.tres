@@ -7,5 +7,3 @@ script = ExtResource("1_sm")
 good_name = "Shield Matrix"
 base_price = 1200
 is_contraband = false
-is_crafted = true
-is_raw_material = false

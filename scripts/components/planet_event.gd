@@ -171,8 +171,7 @@ func _on_choice_a() -> void:
 			_apply_outcome(ev.choice_a_alt_credits, ev.choice_a_alt_hull, "", 0)
 			_show_outcome(ev.choice_a_alt_description.replace("{good}", "%d %s" % [_stolen_qty, _stolen_good]))
 		else:
-			GameManager.add_cargo(_stolen_good, _stolen_qty)
-			_apply_outcome(ev.choice_a_credits, ev.choice_a_hull, "", 0)
+			_apply_outcome(ev.choice_a_credits, ev.choice_a_hull, _stolen_good, _stolen_qty)
 			_show_outcome(ev.choice_a_description.replace("{good}", "%d %s" % [_stolen_qty, _stolen_good]))
 		return
 	var effective_chance: float = ev.choice_a_success_chance + GameManager.get_event_success_bonus()
@@ -229,7 +228,7 @@ func _apply_outcome(credits_delta: int, hull_delta: int, cargo_good: String, car
 
 	var parts: Array = []
 	if credits_delta != 0:
-		parts.append("%+d credits" % credits_delta)
+		parts.append("%+d cr" % credits_delta)
 	if hull_delta != 0:
 		parts.append("%+d hull" % hull_delta)
 	if cargo_good != "" and actual_cargo_qty != 0:

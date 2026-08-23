@@ -143,12 +143,6 @@ func setup(planet_type: int, building_states: Dictionary) -> void:
 	queue_redraw()
 
 
-func update_states(states: Dictionary) -> void:
-	_building_states = states
-	_build_buildings()
-	queue_redraw()
-
-
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
 func _build_buildings() -> void:

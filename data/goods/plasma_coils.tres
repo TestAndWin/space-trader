@@ -7,5 +7,3 @@ script = ExtResource("1_pc")
 good_name = "Plasma Coils"
 base_price = 100
 is_contraband = false
-is_crafted = false
-is_raw_material = true

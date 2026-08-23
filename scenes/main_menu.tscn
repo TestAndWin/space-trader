@@ -1,9 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://ckx2v7mfqp4r1"]
+[gd_scene format=3 uid="uid://ckx2v7mfqp4r1"]
 
-[ext_resource type="Script" path="res://scripts/scenes/main_menu.gd" id="1_main"]
-[ext_resource type="Texture2D" path="res://assets/sprites/scenes/bg_start.png" id="2_bg"]
+[ext_resource type="Script" uid="uid://dxs5vn8y0c6o0" path="res://scripts/scenes/main_menu.gd" id="1_main"]
+[ext_resource type="Texture2D" uid="uid://bs27oseg2lpnq" path="res://assets/sprites/scenes/bg_start.png" id="2_bg"]
 
-[node name="MainMenu" type="Control"]
+[node name="MainMenu" type="Control" unique_id=1154963233]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,7 +13,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_main")
 
-[node name="BgImage" type="TextureRect" parent="."]
+[node name="BgImage" type="TextureRect" parent="." unique_id=1530776729]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -25,7 +25,7 @@ texture = ExtResource("2_bg")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1181105734]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -42,63 +42,60 @@ mouse_filter = 2
 theme_override_constants/separation = 10
 alignment = 1
 
-[node name="TitleLabel" type="Label" parent="VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="VBoxContainer" unique_id=156675746]
 layout_mode = 2
-theme_override_font_sizes/font_size = 52
 theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 52
 text = "SPACE TRADER"
 horizontal_alignment = 1
-mouse_filter = 2
 
-[node name="SubtitleLabel" type="Label" parent="VBoxContainer"]
+[node name="SubtitleLabel" type="Label" parent="VBoxContainer" unique_id=1501795981]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
 theme_override_font_sizes/font_size = 15
-theme_override_colors/font_color = Color(0.9, 0.95, 1.0, 1)
 text = "Dealer's Hand"
 horizontal_alignment = 1
-mouse_filter = 2
 
-[node name="VersionLabel" type="Label" parent="VBoxContainer"]
+[node name="VersionLabel" type="Label" parent="VBoxContainer" unique_id=1889444492]
 layout_mode = 2
-theme_override_font_sizes/font_size = 11
 theme_override_colors/font_color = Color(0.8, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 11
 text = "v1.0"
 horizontal_alignment = 1
-mouse_filter = 2
 
-[node name="Spacer" type="Control" parent="VBoxContainer"]
-layout_mode = 2
+[node name="Spacer" type="Control" parent="VBoxContainer" unique_id=447055365]
 custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
 mouse_filter = 2
 
-[node name="NewGameButton" type="Button" parent="VBoxContainer"]
-layout_mode = 2
+[node name="NewGameButton" type="Button" parent="VBoxContainer" unique_id=1229147932]
 custom_minimum_size = Vector2(220, 42)
+layout_mode = 2
 text = "New Game"
 
-[node name="ContinueButton" type="Button" parent="VBoxContainer"]
-layout_mode = 2
+[node name="ContinueButton" type="Button" parent="VBoxContainer" unique_id=1672747392]
 custom_minimum_size = Vector2(220, 42)
+layout_mode = 2
 text = "Continue"
 
-[node name="HowToPlayButton" type="Button" parent="VBoxContainer"]
-layout_mode = 2
+[node name="HowToPlayButton" type="Button" parent="VBoxContainer" unique_id=13561191]
 custom_minimum_size = Vector2(220, 42)
+layout_mode = 2
 text = "How to Play"
 
-[node name="AchievementsButton" type="Button" parent="VBoxContainer"]
-layout_mode = 2
+[node name="AchievementsButton" type="Button" parent="VBoxContainer" unique_id=439311260]
 custom_minimum_size = Vector2(220, 42)
+layout_mode = 2
 text = "Achievements"
 
-[node name="AboutButton" type="Button" parent="VBoxContainer"]
-layout_mode = 2
+[node name="AboutButton" type="Button" parent="VBoxContainer" unique_id=1009969295]
 custom_minimum_size = Vector2(220, 42)
+layout_mode = 2
 text = "About & Legal"
 
-[node name="QuitButton" type="Button" parent="VBoxContainer"]
-layout_mode = 2
+[node name="QuitButton" type="Button" parent="VBoxContainer" unique_id=1824837872]
 custom_minimum_size = Vector2(220, 42)
+layout_mode = 2
 text = "Quit"
 
 [connection signal="pressed" from="VBoxContainer/NewGameButton" to="." method="_on_new_game_pressed"]

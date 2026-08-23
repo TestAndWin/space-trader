@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_fw2")
 planet_name = "Forge World"
+planet_type = 0
 description = "Massive factories and shipyards."
 map_position = Vector2(300, 350)
 danger_level = 2

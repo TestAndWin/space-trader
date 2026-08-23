@@ -7,5 +7,3 @@ script = ExtResource("1_co")
 good_name = "Cargo Optimizer"
 base_price = 950
 is_contraband = false
-is_crafted = true
-is_raw_material = false

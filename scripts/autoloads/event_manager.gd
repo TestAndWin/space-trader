@@ -64,7 +64,7 @@ var _event_pool: Array[Dictionary] = [
 	{
 		"id": "trade_agreement",
 		"title": "Trade Agreement!",
-		"description": "Sell ratio 85% instead of 75%",
+		"description": "Selling prices increased by ~13%",
 		"sell_ratio_override": 0.85,
 		"target": "all",
 		"tags": ["trade_agreement"],

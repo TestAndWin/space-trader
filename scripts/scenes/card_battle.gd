@@ -118,7 +118,7 @@ func start_battle(enc: Resource) -> void:
 	GameManager.boarding_special_loot = ""
 	
 	if enc.encounter_name == "Crimson Jack":
-		var weaken = PirateLordManager.officers_defeated.size() * 15
+		var weaken: int = PirateLordManager.officers_defeated.size() * 15
 		enemy_health = max(1, enemy_health - weaken)
 		enemy_max_health = enemy_health
 		
@@ -418,7 +418,7 @@ func _on_card_played(card_data: Resource) -> void:
 
 	# Auto end turn when no energy left for any remaining card
 	if current_energy <= 0 or not _has_playable_card():
-		await get_tree().create_timer(0.4).timeout
+		await get_tree().create_timer(0.8).timeout
 		if battle_active:
 			_on_end_turn_pressed()
 
@@ -455,6 +455,8 @@ func _apply_attack_card(card_data: Resource) -> void:
 
 
 func _apply_defense_card(card_data: Resource) -> void:
+	if card_data.defense_value > 0:
+		AudioManager.play_shield_up()
 	GameManager.current_shield = min(GameManager.max_shield, GameManager.current_shield + card_data.defense_value)
 	# SHIELD_ECHO on defense: deal shield/2 as damage
 	if card_data.keywords.has(CardData.CardKeyword.SHIELD_ECHO) and GameManager.current_shield > 0:
@@ -473,6 +475,7 @@ func _apply_utility_card(card_data: Resource) -> void:
 func _apply_trade_card(card_data: Resource) -> void:
 	if card_data.credits_gain > 0:
 		GameManager.add_credits(card_data.credits_gain)
+		EventLog.add_entry("Played %s: +%d cr" % [card_data.card_name, card_data.credits_gain])
 
 
 func _apply_special_effect(card_data: Resource) -> bool:
@@ -502,6 +505,7 @@ func _resolve_scavenge() -> void:
 			var amount := randi_range(15, 50)
 			GameManager.add_credits(amount)
 			msg = "Found %d credits!" % amount
+			EventLog.add_entry("Scavenged %d cr" % amount)
 		1: # Shield
 			var amount := randi_range(2, 5)
 			GameManager.current_shield = mini(GameManager.max_shield, GameManager.current_shield + amount)
@@ -560,6 +564,11 @@ func _has_playable_card() -> bool:
 func _on_end_turn_pressed() -> void:
 	if not battle_active:
 		return
+		
+	# Disable button immediately to prevent double clicks
+	var end_btn: Button = $MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/EndTurnButton
+	if end_btn:
+		end_btn.disabled = true
 
 	if skip_enemy_turn:
 		skip_enemy_turn = false
@@ -571,6 +580,11 @@ func _on_end_turn_pressed() -> void:
 			if dodge_chance > 0.0 and randf() < dodge_chance:
 				_show_battle_message("Tactical Dodge! Enemy first attack misses.")
 				damage = 0
+				
+		if damage > 0:
+			%EnemyShipDisplay.play_attack()
+			await get_tree().create_timer(0.15).timeout
+			
 		var shield_absorb: int = mini(damage, GameManager.current_shield)
 		GameManager.current_shield -= shield_absorb
 		damage -= shield_absorb
@@ -616,14 +630,14 @@ func _apply_enemy_on_hit_effects() -> void:
 
 	# BOARDING: steal 1 random cargo on hit, may wound crew
 	if encounter.special_ability == EncounterData.SpecialAbility.BOARDING:
-		var lost_msg = ""
+		var lost_msg: String = ""
 		if GameManager.cargo.size() > 0:
 			var idx := randi_range(0, GameManager.cargo.size() - 1)
 			var good_name: String = GameManager.cargo[idx]["good_name"]
 			GameManager.remove_cargo(good_name, 1)
 			lost_msg = "Lost 1x %s" % good_name
 		else:
-			var stolen = mini(50, GameManager.credits)
+			var stolen: int = mini(50, GameManager.credits)
 			GameManager.remove_credits(stolen)
 			lost_msg = "Lost %d cr" % stolen
 			
@@ -632,9 +646,9 @@ func _apply_enemy_on_hit_effects() -> void:
 			if c not in GameManager.wounded_crew:
 				unwounded.append(c)
 		if unwounded.size() > 0 and randf() < 0.5:
-			var to_wound = unwounded[randi() % unwounded.size()]
-			GameManager.wounded_crew.append(to_wound)
-			var res = load(to_wound)
+			var to_wound: String = unwounded[randi() % unwounded.size()]
+			GameManager.wounded_crew[to_wound] = randi_range(4, 7)
+			var res: Resource = load(to_wound)
 			lost_msg += " & %s wounded" % res.crew_name
 			
 		_show_battle_message("Enemy boarded! " + lost_msg)
@@ -646,8 +660,9 @@ func _apply_enemy_on_hit_effects() -> void:
 
 func _force_boarding() -> void:
 	battle_active = false
-	var BoardingMinigameScene = load("res://scenes/boarding_minigame.tscn")
-	var minigame = BoardingMinigameScene.instantiate()
+	var BoardingMinigameScene: PackedScene = load("res://scenes/boarding_minigame.tscn")
+	var minigame: Node = BoardingMinigameScene.instantiate()
+	minigame.starting_alarm = int(maxf(0.0, float(enemy_health)) / float(enemy_max_health) * 100.0)
 	add_child(minigame)
 	minigame.boarding_finished.connect(_on_boarding_finished)
 
@@ -701,8 +716,9 @@ func _show_boarding_choice() -> void:
 	board_btn.pressed.connect(func():
 		_boarding_attempted = true
 		overlay.queue_free()
-		var BoardingMinigameScene = load("res://scenes/boarding_minigame.tscn")
-		var minigame = BoardingMinigameScene.instantiate()
+		var BoardingMinigameScene: PackedScene = load("res://scenes/boarding_minigame.tscn")
+		var minigame: Node = BoardingMinigameScene.instantiate()
+		minigame.starting_alarm = int(maxf(0.0, float(enemy_health)) / float(enemy_max_health) * 100.0)
 		add_child(minigame)
 		minigame.boarding_finished.connect(_on_boarding_finished)
 	)
@@ -714,47 +730,70 @@ func _show_boarding_choice() -> void:
 	UIStyles.style_accent_button(destroy_btn, Color(0.3, 0.3, 0.3))
 	destroy_btn.pressed.connect(func():
 		overlay.queue_free()
-		var scrap = randi_range(20, 50)
+		var scrap: int = randi_range(20, 50)
 		GameManager.add_credits(scrap)
 		GameManager.extra_battle_message = "Scrapped for %d cr" % scrap
+		EventLog.add_entry("Scrapped enemy ship for %d cr" % scrap)
 		_on_battle_won()
 	)
 	btn_row.add_child(destroy_btn)
 
 
-func _on_boarding_finished(success: bool) -> void:
-	if success:
-		var loot_str = GameManager.extra_battle_message
+func _on_boarding_finished(status: int) -> void:
+	if status == 2:
+		var loot_str: String = GameManager.extra_battle_message
 		GameManager.extra_battle_message = "Boarding successful!"
 		
-		# Intact Capture Bonus
-		if enemy_health > 0:
-			var difficulty_mult = max(1.0, float(encounter.difficulty))
-			var hp_pct = float(enemy_health) / float(enemy_max_health)
-			var capture_bonus = int(250.0 * hp_pct * difficulty_mult)
-			capture_bonus = clampi(capture_bonus, 50, 1000)
-			
-			GameManager.add_credits(capture_bonus)
-			GameManager.extra_battle_message += "\n\nCaptured Ship Sold: %d cr" % capture_bonus
-			
-			# Instantly defeat the enemy ship
-			enemy_health = 0
-			
-		var log_msg = "Boarding successful!"
+		var log_msg: String = "Boarding successful!"
 		if loot_str != "":
 			GameManager.extra_battle_message += "\n\nLoot: " + loot_str
 			log_msg += " Loot: " + loot_str
+			
+		# Intact Capture Bonus
+		if enemy_health > 0:
+			var hp_pct: float = float(enemy_health) / float(enemy_max_health)
+			# Scale reward by hull integrity (50% value if nearly destroyed, 100% if fully intact)
+			var hull_mult: float = lerp(0.5, 1.0, hp_pct)
+			
+			var base_bonus: float = float(GameManager.CAPTURED_SHIP_BASE_PRICE)
+			var variance: float = randf_range(0.8, 1.2)
+			var capture_bonus: int = int(round(base_bonus * variance * hull_mult))
+			
+			GameManager.add_credits(capture_bonus)
+			GameManager.extra_battle_message += "\n\nCaptured Ship Sold: %d cr" % capture_bonus
+			log_msg += ", Captured Ship Sold: %d cr" % capture_bonus
+			
+			# Instantly defeat the enemy ship
+			enemy_health = 0
 			
 		EventLog.add_entry(log_msg)
 			
 		_on_battle_won(true)
 	else:
-		EventLog.add_entry("Boarding failed! Team routed.")
+		if status == 1:
+			var loot_str: String = GameManager.extra_battle_message
+			if loot_str != "":
+				GameManager.extra_battle_message = "Boarding Loot: " + loot_str
+			EventLog.add_entry("Boarding team extracted. Loot: " + loot_str)
+			_show_battle_message("Extracted Loot:\n" + loot_str + "\n\nCombat Resumes!")
+		else:
+			EventLog.add_entry("Boarding failed! Team routed.")
+			_show_battle_message("Boarding Failed! Combat Resumes!")
+			
 		if GameManager.current_hull <= 0:
 			_on_battle_lost()
 			return
 		
 		if enemy_health > 0:
+			# Reshuffle and deal new hand per user request
+			for c in hand: discard_pile.append(c)
+			hand.clear()
+			draw_pile = GameManager.deck.duplicate()
+			draw_pile.shuffle()
+			discard_pile.clear()
+			current_energy = effective_energy_per_turn
+			_draw_cards(GameManager.hand_size)
+			
 			_update_ui()
 			return
 			
@@ -880,7 +919,7 @@ func _update_ui() -> void:
 
 
 func _update_enemy_ui() -> void:
-	var display_health = max(0, enemy_health)
+	var display_health: int = max(0, enemy_health)
 	%EnemyNameLabel.text = encounter.encounter_name
 	%EnemyHealthBar.max_value = enemy_max_health
 	%EnemyHealthBar.value = display_health
@@ -912,7 +951,7 @@ func _update_enemy_ui() -> void:
 
 
 func _update_player_ui() -> void:
-	var display_hull = max(0, GameManager.current_hull)
+	var display_hull: int = max(0, GameManager.current_hull)
 	%HullBar.max_value = GameManager.max_hull
 	%HullBar.value = display_hull
 	var hull_pct: float = float(display_hull) / float(GameManager.max_hull)
@@ -957,8 +996,9 @@ func _update_player_ui() -> void:
 func _on_board_pressed() -> void:
 	if not battle_active or _boarding_attempted: return
 	_boarding_attempted = true
-	var BoardingMinigameScene = load("res://scenes/boarding_minigame.tscn")
-	var minigame = BoardingMinigameScene.instantiate()
+	var BoardingMinigameScene: PackedScene = load("res://scenes/boarding_minigame.tscn")
+	var minigame: Node = BoardingMinigameScene.instantiate()
+	minigame.starting_alarm = int(maxf(0.0, float(enemy_health)) / float(enemy_max_health) * 100.0)
 	add_child(minigame)
 	minigame.boarding_finished.connect(_on_boarding_finished)
 

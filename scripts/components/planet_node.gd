@@ -25,16 +25,6 @@ func setup(data: Resource) -> void:
 	queue_redraw()
 
 
-func set_current(value: bool) -> void:
-	is_current = value
-	queue_redraw()
-
-
-func set_reachable(value: bool) -> void:
-	is_reachable = value
-	queue_redraw()
-
-
 func _process(delta: float) -> void:
 	# All planets animate continuously for a living galaxy map
 	pulse_time += delta

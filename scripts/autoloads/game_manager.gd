@@ -6,6 +6,27 @@ signal crew_changed
 
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
+# ── Constants ─────────────────────────────────────────────────────────────────
+
+# Navigation
+const FUEL_PRICE: int = 50
+const EMERGENCY_FUEL_DEBT: int = 100
+const CAPTURED_SHIP_BASE_PRICE: int = 500
+
+# Ship & Upgrades
+const SHIP_TRANSFER_FEE: int = 250
+const REPAIR_COST_PER_HP: int = 30
+const MAX_STAT_UPGRADES: int = 3
+
+# Finance
+const LOAN_DEFAULT_AMOUNT := 1000
+const LOAN_DEFAULT_TERM := 7
+const LOAN_DEFAULT_INTEREST := 0.08
+const LOAN_REPAY_CHUNK := 300
+
+# Game Logic
+const WIN_PLANETS: int = 7
+
 # Difficulty
 enum Difficulty { EASY, NORMAL, HARD }
 const DIFFICULTY_SETTINGS := {
@@ -57,7 +78,7 @@ var energy_per_turn: int = 3
 
 # Crew
 var crew: Array = []  # Array of resource paths (String)
-var wounded_crew: Array = [] # Array of resource paths (String) for crew that are currently wounded
+var wounded_crew: Dictionary = {} # Dictionary mapping path to days_left
 
 # Ship Upgrades
 var damaged_upgrades: Array = [] # Array of upgrade names (String) that are damaged
@@ -65,8 +86,6 @@ var damaged_upgrades: Array = [] # Array of upgrade names (String) that are dama
 # Jack / Intel
 var pirate_intel: int = 0
 # Navigation
-const FUEL_PRICE: int = 25
-const EMERGENCY_FUEL_DEBT: int = 100
 var max_fuel: int = 6
 var current_fuel: int = 6
 var current_planet: String = "Starport Alpha"
@@ -87,10 +106,8 @@ var boarding_special_loot: String = ""
 # Ship
 var current_ship: String = "res://data/ships/scout.tres"
 var owned_ships: Array[String] = ["res://data/ships/scout.tres"]
-const SHIP_TRANSFER_FEE: int = 250
 
 # Shipyard upgrade counters (max 3 each)
-const MAX_STAT_UPGRADES: int = 3
 var hull_upgrades_bought: int = 0
 var shield_upgrades_bought: int = 0
 var cargo_upgrades_bought: int = 0
@@ -117,14 +134,11 @@ var total_quests_completed: int = 0
 var trade_route_memory: Dictionary = {}  # { good_name: { best_buy, best_sell, last_seen } }
 
 # Finance pressure
-const LOAN_DEFAULT_AMOUNT := 1000
-const LOAN_DEFAULT_TERM := 7
-const LOAN_DEFAULT_INTEREST := 0.08
-const LOAN_REPAY_CHUNK := 300
 var outstanding_debt: int = 0
 var debt_due_in_days: int = 0
 var debt_interest_rate: float = 0.0
 var missed_debt_payments: int = 0
+var _is_resetting: bool = false
 
 
 func _ready() -> void:
@@ -133,6 +147,7 @@ func _ready() -> void:
 
 
 func reset() -> void:
+	_is_resetting = true
 	var settings: Dictionary = DIFFICULTY_SETTINGS.get(difficulty, DIFFICULTY_SETTINGS[Difficulty.NORMAL])
 	credits = settings["credits"]
 	max_hull = settings["hull"]
@@ -241,10 +256,6 @@ func has_active_loan() -> bool:
 	return outstanding_debt > 0
 
 
-func can_take_loan() -> bool:
-	return not has_active_loan()
-
-
 func take_loan(
 	amount: int = LOAN_DEFAULT_AMOUNT,
 	term_days: int = LOAN_DEFAULT_TERM,
@@ -343,10 +354,6 @@ func get_debt_risk_modifier() -> float:
 
 # ── Fuel and travel time ─────────────────────────────────────────────────────
 
-func get_fuel_cost_for_destination(destination: String) -> int:
-	return NavigationManager.get_fuel_cost(current_planet, destination)
-
-
 func can_start_travel(destination: String, route: Array[String]) -> bool:
 	if destination == "" or route.size() < 2:
 		return false
@@ -383,8 +390,10 @@ func process_travel_days(days: int) -> void:
 		
 		# Crew wages (dynamic per member, 15-30cr per day)
 		var wages: int = 0
-		for crew_res in get_crew_resources():
-			wages += crew_res.daily_wage
+		for path in crew:
+			var crew_res = load(path)
+			if crew_res:
+				wages += crew_res.daily_wage
 		
 		if wages > 0:
 			if credits >= wages:
@@ -407,6 +416,20 @@ func process_travel_days(days: int) -> void:
 		PirateLordManager.tick()
 		process_loan_tick()
 		RivalManager.on_travel_day_completed()
+		
+		# Heal wounded crew over time
+		var recovered: Array = []
+		for path in wounded_crew.keys():
+			wounded_crew[path] -= 1
+			if wounded_crew[path] <= 0:
+				recovered.append(path)
+		for path in recovered:
+			wounded_crew.erase(path)
+			var res = load(path)
+			if res:
+				EventLog.add_entry("Crew member recovered: %s is fit for duty again!" % res.crew_name)
+		if recovered.size() > 0:
+			crew_changed.emit()
 
 
 func consume_fuel(amount: int) -> bool:
@@ -418,20 +441,32 @@ func consume_fuel(amount: int) -> bool:
 	return true
 
 
+func get_fuel_price() -> int:
+	var base_price := FUEL_PRICE
+	var planet = EconomyManager.get_planet_data(current_planet)
+	if not planet:
+		return base_price
+	match planet.planet_type:
+		0, 3: # Industrial, Tech
+			return int(round(base_price * 0.85))
+		1: # Agricultural
+			return int(round(base_price * 1.15))
+		_:
+			return base_price
+
 func buy_fuel(amount: int) -> bool:
 	if amount <= 0 or current_fuel >= max_fuel:
 		return false
 	var fuel_to_buy: int = mini(amount, max_fuel - current_fuel)
-	var cost: int = fuel_to_buy * FUEL_PRICE
+	var cost: int = fuel_to_buy * get_fuel_price()
 	if not remove_credits(cost):
 		return false
 	current_fuel += fuel_to_buy
 	EventLog.add_entry("Bought %d fuel for %dcr." % [fuel_to_buy, cost])
 	return true
 
-
 func take_emergency_fuel() -> bool:
-	if current_fuel > 0 or credits >= FUEL_PRICE or current_fuel >= max_fuel:
+	if current_fuel > 0 or credits >= get_fuel_price() or current_fuel >= max_fuel:
 		return false
 	current_fuel += 1
 	outstanding_debt += EMERGENCY_FUEL_DEBT
@@ -560,9 +595,6 @@ func apply_upgrade(upgrade: Resource) -> void:
 
 # ── Win condition ─────────────────────────────────────────────────────────────
 
-const WIN_PLANETS: int = 7
-const REPAIR_COST_PER_HP: int = 8
-
 func get_win_credits() -> int:
 	var settings: Dictionary = DIFFICULTY_SETTINGS.get(difficulty, DIFFICULTY_SETTINGS[Difficulty.NORMAL])
 	return settings["win_credits"]
@@ -626,7 +658,10 @@ func hire_crew(crew_res: Resource) -> bool:
 
 func dismiss_crew(index: int) -> void:
 	if index >= 0 and index < crew.size():
+		var path = crew[index]
 		crew.remove_at(index)
+		if path in wounded_crew:
+			wounded_crew.erase(path)
 		crew_changed.emit()
 
 

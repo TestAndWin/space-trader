@@ -24,7 +24,7 @@ func _ready() -> void:
 	pivot_offset = custom_minimum_size / 2.0
 
 
-func setup(data: Resource, can_play: bool, button_text: String = "Play", show_button: bool = true) -> void:
+func setup(data: Resource, can_play: bool, button_text: String = "Play", show_button: bool = true, hide_energy: bool = false) -> void:
 	card_data = data
 	playable = can_play
 	add_theme_stylebox_override("panel", StyleBoxEmpty.new())
@@ -40,6 +40,7 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 	UIStyles.apply_mono_font(%EnergyCostLabel)
 	%CostBadge.tooltip_text = "Energy cost to play this card"
 	%CostBadge.mouse_filter = Control.MOUSE_FILTER_STOP
+	%CostBadge.visible = not hide_energy
 	%DescriptionLabel.text = card_data.description
 	# Reserve a fixed line count so every card's play button and cost badge land
 	# at the same height — a two-line name would otherwise shift the whole card
@@ -67,7 +68,7 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 	style.content_margin_bottom = 0.0
 
 	# Apply rarity glow
-	var rarity := int(card_data.get("rarity") if card_data.get("rarity") != null else 0)
+	var rarity := int(card_data.rarity if card_data.rarity != null else 0)
 	if rarity == 1: # UNCOMMON
 		style.border_color = Color(0.62, 0.84, 1.0, 0.95)
 	elif rarity == 2: # RARE
@@ -104,6 +105,14 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 	else:
 		modulate.a = 1.0
 		%PlayButton.disabled = false
+		
+	# Set boarding action tooltip on the entire card
+	tooltip_text = _get_boarding_tooltip(card_data)
+
+func _get_boarding_tooltip(card: Resource) -> String:
+	if card.boarding_description != null and card.boarding_description != "":
+		return "Boarding Action:\n" + card.boarding_description
+	return "Boarding Action:\nTrade: Not very effective in boarding."
 
 
 ## Pin a label to an exact number of text lines, so cards keep a uniform
@@ -173,7 +182,7 @@ const RARITY_NAMES: PackedStringArray = ["Common", "Uncommon", "Rare"]
 
 
 func _rarity_name() -> String:
-	var rarity := int(card_data.get("rarity") if card_data.get("rarity") != null else 0)
+	var rarity := int(card_data.rarity if card_data.rarity != null else 0)
 	return RARITY_NAMES[rarity] if rarity < RARITY_NAMES.size() else "Common"
 
 

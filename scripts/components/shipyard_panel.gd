@@ -212,7 +212,7 @@ func _refresh_display() -> void:
 
 func _refresh_fuel_buttons() -> void:
 	var missing_fuel: int = GameManager.max_fuel - GameManager.current_fuel
-	var per_fuel: int = GameManager.FUEL_PRICE
+	var per_fuel: int = GameManager.get_fuel_price()
 	var can_buy_one: bool = missing_fuel > 0 and GameManager.credits >= per_fuel
 	buy_fuel_button.text = "Buy +1 Fuel (%dcr)" % per_fuel
 	buy_fuel_button.disabled = not can_buy_one

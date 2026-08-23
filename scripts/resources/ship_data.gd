@@ -20,7 +20,6 @@ enum ShipAbility { NONE, RAMMING_SPEED, DEEP_SCAN, BULK_DISCOUNT, GHOST_RUN, ADA
 @export var hull_shape: int = 0
 @export var available_planet_types: Array[int] = []
 
-@export var ship_role: ShipRole = ShipRole.BALANCED
 @export var ship_ability: ShipAbility = ShipAbility.NONE
 @export var ability_description: String = ""
 @export var synergy_crew_bonus: int = -1  # CrewBonus enum value, +50% on this ship

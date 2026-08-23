@@ -13,12 +13,6 @@ func _load_encounters() -> void:
 	encounter_pool = ResourceRegistry.load_all(ResourceRegistry.ENCOUNTERS)
 
 
-func should_encounter_happen(danger_level: int) -> bool:
-	var target_planet: String = GameManager.travel_destination if GameManager.travel_destination != "" else GameManager.current_planet
-	var chance: float = estimate_encounter_chance(danger_level, target_planet)
-	return randf() < chance
-
-
 func should_route_encounter_happen(danger_level: int, planet_name: String, days: int) -> bool:
 	var chance: float = GameManager.get_aggregate_encounter_chance(danger_level, planet_name, days)
 	return randf() < chance

@@ -36,10 +36,6 @@ func generate_quests() -> void:
 			available_quests[planet.planet_name] = quest
 
 
-func can_offer_quest(planet_name: String) -> bool:
-	return not get_offer_quality_for_planet(planet_name).get("blocked", false)
-
-
 func get_offer_quality_for_planet(planet_name: String) -> Dictionary:
 	var faction: String = StandingManager.get_planet_faction(planet_name)
 	var rep_tier: String = StandingManager.get_reputation_tier(faction)

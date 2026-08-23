@@ -102,7 +102,7 @@ Signal-based: managers emit signals, UI components subscribe. Scene transitions 
 
 **Trading**: Buy goods at one planet, sell at another. Planet types affect which goods are cheap/expensive. Contraband is high-risk/high-reward. Price comparison arrows (green cheap / red expensive / gray average) shown via `avg_price` parameter in `cargo_slot.gd`, powered by `EconomyManager.get_average_price()`.
 
-**Ship Upgrades** (`shipyard_panel.gd`): Compact panel with live 3D `ShipDisplay` and upgrade buttons. Hull repair (8cr/HP), +5 max hull (200cr), +3 max shield (250cr), +2 cargo (300cr), plus card-adding upgrades, energy/hand size bonuses. Emits `shipyard_action` signal.
+**Ship Upgrades** (`shipyard_panel.gd`): Compact panel with live 3D `ShipDisplay` and upgrade buttons. Hull repair (50cr/HP), +5 max hull (200cr), +3 max shield (250cr), +2 cargo (300cr), plus card-adding upgrades, energy/hand size bonuses. Emits `shipyard_action` signal.
 
 **Ship Dealer** (`ship_dealer.gd`): Full-screen showroom for buying new ships. Shows 3D ship preview with stats comparison. Ships available based on planet type. Data in `data/ships/`. 5 ship types: Scout, Freighter, Warship, Smuggler, Explorer.
 
