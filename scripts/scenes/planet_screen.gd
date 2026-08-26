@@ -82,6 +82,10 @@ func _ready() -> void:
 	if QuestManager.check_expired_quest():
 		get_tree().change_scene_to_file("res://scenes/game_over.tscn")
 		return
+	# Battle/quest credits and the 7th planet visit complete the win condition
+	# away from the market, so re-check on every arrival.
+	if GameManager.try_trigger_victory():
+		return
 	# Only real arrivals should trigger "on planet visit" effects.
 	if is_fresh_arrival:
 		AudioManager.play_arrive_sfx()
@@ -840,6 +844,8 @@ func _style_info_bar() -> void:
 	_apply_header_label_style(goal_label, 13, Color(1.0, 0.94, 0.62), UIStyles.FONT_MONO)
 	# Tooltips only fire on Controls that accept mouse input.
 	goal_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Tooltips never fire on touch (iPad), so a tap opens the same text as a popup.
+	goal_label.gui_input.connect(_on_goal_label_input)
 	_wrap_planet_title_in_panel()
 
 
@@ -1082,9 +1088,15 @@ func _update_ui() -> void:
 	var bounty_ok := StandingManager.bounty_amount <= 0
 	var credits_ok := GameManager.credits >= win_credits
 	var planets_ok := planets_visited >= GameManager.WIN_PLANETS
+	var bounty_blocks_win := credits_ok and planets_ok and t2_installed and not bounty_ok
 	if credits_ok and planets_ok and t2_installed and bounty_ok:
 		goal_label.text = "Day %d | GOAL REACHED!" % GameManager.current_day
 		goal_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+	elif bounty_blocks_win:
+		goal_label.text = "Day %d | VICTORY BLOCKED — pay off bounty (%d cr)" % [
+			GameManager.current_day, StandingManager.bounty_amount
+		]
+		goal_label.add_theme_color_override("font_color", Color(1.0, 0.45, 0.3))
 	else:
 		var t2_marker: String = "T2 ✓" if t2_installed else "T2 ✗"
 		goal_label.text = "Day %d | %d/%d cr | %d/%d planets | %s" % [GameManager.current_day, GameManager.credits, win_credits, planets_visited, GameManager.WIN_PLANETS, t2_marker]
@@ -1097,7 +1109,7 @@ func _update_ui() -> void:
 		goal_label.add_theme_color_override("font_color", goal_color)
 	if GameManager.has_active_loan():
 		goal_label.text += " | Debt %d (%d days)" % [GameManager.outstanding_debt, GameManager.debt_due_in_days]
-	if StandingManager.bounty_amount > 0:
+	if StandingManager.bounty_amount > 0 and not bounty_blocks_win:
 		goal_label.text += " | %s %d cr" % [StandingManager.get_bounty_tier(), StandingManager.bounty_amount]
 	goal_label.tooltip_text = _build_goal_tooltip(t2_installed, planets_visited, win_credits)
 	_refresh_info_bar_text_layout()
@@ -1133,6 +1145,61 @@ func _build_goal_tooltip(t2_installed: bool, planets_visited: int, win_credits: 
 			current_planet_data.planet_type if current_planet_data else 0
 		))
 	return "\n".join(lines)
+
+
+func _on_goal_label_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_show_goal_popup()
+
+
+## Same content as the goal tooltip, but reachable by tap — hover tooltips do
+## not exist on touch devices, and the one-shot hints may already be dismissed.
+func _show_goal_popup() -> void:
+	if get_node_or_null("GoalPopup"):
+		return
+	var overlay := ColorRect.new()
+	overlay.name = "GoalPopup"
+	overlay.color = Color(0, 0, 0, 0.6)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			overlay.queue_free()
+	)
+	add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	UIStyles.style_panel(panel)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "VICTORY CONDITIONS"
+	UIStyles.apply_section_title(title)
+	vbox.add_child(title)
+
+	var body := Label.new()
+	body.text = _build_goal_tooltip(
+		GameManager.has_crafted_upgrade_installed(),
+		GameManager.visited_planets.size(),
+		GameManager.get_win_credits()
+	)
+	body.add_theme_font_size_override("font_size", 15)
+	vbox.add_child(body)
+
+	var close_btn := Button.new()
+	close_btn.text = "Close"
+	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	UIStyles.style_secondary_button(close_btn, 15)
+	close_btn.pressed.connect(overlay.queue_free)
+	vbox.add_child(close_btn)
 
 
 func _update_ship_status() -> void:

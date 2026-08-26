@@ -95,9 +95,9 @@ func _show_difficulty_popup() -> void:
 	vbox.add_child(HSeparator.new())
 
 	var difficulties := [
-		{ "name": "Easy", "desc": "Start 1500 cr, goal 8000 cr + install 1 crafted upgrade, fewer enemies, more time for quests", "value": GameManager.Difficulty.EASY },
-		{ "name": "Normal", "desc": "Start 1000 cr, goal 10000 cr + install 1 crafted upgrade, standard encounters, normal deadlines", "value": GameManager.Difficulty.NORMAL },
-		{ "name": "Hard", "desc": "Start 600 cr, goal 12000 cr + install 1 crafted upgrade, more enemies, shorter deadlines, less hull", "value": GameManager.Difficulty.HARD },
+		{ "name": "Easy", "desc": "Start 1500 cr, fewer enemies, more time for quests.\nWin: 8000 cr + all 7 planets + 1 crafted upgrade + no bounty", "value": GameManager.Difficulty.EASY },
+		{ "name": "Normal", "desc": "Start 1000 cr, standard encounters, normal deadlines.\nWin: 10000 cr + all 7 planets + 1 crafted upgrade + no bounty", "value": GameManager.Difficulty.NORMAL },
+		{ "name": "Hard", "desc": "Start 600 cr, more enemies, shorter deadlines, less hull.\nWin: 12000 cr + all 7 planets + 1 crafted upgrade + no bounty", "value": GameManager.Difficulty.HARD },
 	]
 
 	for diff: Dictionary in difficulties:

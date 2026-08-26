@@ -206,6 +206,8 @@ func _on_deliver() -> void:
 	if reward > 0:
 		just_completed = not QuestManager.has_active_quest()
 		quest_changed.emit()
+		if GameManager.try_trigger_victory():
+			return
 	_build_ui()
 
 

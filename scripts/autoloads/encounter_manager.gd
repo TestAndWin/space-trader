@@ -67,7 +67,8 @@ func get_encounter_for_planet(max_difficulty: int, planet_name: String) -> Resou
 	var weighted: Array[Dictionary] = []
 	var total_weight: float = 0.0
 	for enc in encounter_pool:
-		if enc.difficulty > effective_max:
+		var is_special: bool = enc.encounter_name in ["Crimson Jack", "Crimson Enforcer"]
+		if enc.difficulty > effective_max and not is_special:
 			continue
 		var weight: float = _get_encounter_weight(enc, planet_name)
 		if weight <= 0.0:

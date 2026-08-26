@@ -55,4 +55,6 @@ func _make_action_btn(text: String) -> ActionButton:
 func _on_pay_bounty() -> void:
 	if StandingManager.pay_off_bounty():
 		bounty_paid.emit()
+		if GameManager.try_trigger_victory():
+			return
 	_build_ui()

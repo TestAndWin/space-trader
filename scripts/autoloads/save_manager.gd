@@ -80,6 +80,7 @@ func load_game() -> bool:
 	if error != OK:
 		return false
 	var data: Dictionary = json.data
+	GameManager.victory_triggered = false
 	GameManager.player_name = data.get("player_name", "Pilot")
 	GameManager.credits = int(data.get("credits", 1000))
 	GameManager.max_hull = int(data.get("max_hull", 30))

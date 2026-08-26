@@ -202,10 +202,11 @@ func reset() -> void:
 	shield_upgrades_bought = 0
 	cargo_upgrades_bought = 0
 	ghost_run_available = true
+	victory_triggered = false
 	build_starter_deck()
 	EventLog.clear()
 	EventLog.add_entry("Welcome to Starport Alpha. Your journey begins.")
-	EventLog.add_entry("Goal: %d cr + visit all 7 planets + install 1 crafted T2 upgrade." % get_win_credits())
+	EventLog.add_entry("Goal: %d cr + visit all 7 planets + install 1 crafted T2 upgrade + no open bounty." % get_win_credits())
 	EventLog.add_entry("T2 chain: buy goods -> Factory (Tech planet) -> craft T1 -> craft T2 -> install at any Shipyard.")
 	EventManager.reset_state()
 	QuestManager.current_quest.clear()
@@ -593,6 +594,7 @@ func apply_upgrade(upgrade: Resource) -> void:
 		deck.append(card)
 	installed_upgrades.append(upgrade.upgrade_name)
 	AchievementManager.check_deck(deck.size())
+	try_trigger_victory()
 
 
 # ── Win condition ─────────────────────────────────────────────────────────────
@@ -627,6 +629,21 @@ func check_win_condition() -> bool:
 		and has_crafted_upgrade_installed()
 		and StandingManager.bounty_amount <= 0
 	)
+
+
+# Latched so overlapping call sites (arrival + market sell etc.) cannot
+# start the victory transition twice. Cleared on reset() and save load.
+var victory_triggered: bool = false
+
+## Central victory trigger — call after any action that can complete the last
+## win condition: planet arrival, market sale, quest delivery, upgrade
+## install, bounty payoff.
+func try_trigger_victory() -> bool:
+	if victory_triggered or not check_win_condition():
+		return false
+	victory_triggered = true
+	change_scene("res://scenes/victory.tscn")
+	return true
 
 
 # ── Scene management ─────────────────────────────────────────────────────────

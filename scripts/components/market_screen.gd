@@ -317,8 +317,7 @@ func _on_sell(good_name: String, quantity: int) -> void:
 	EventLog.add_entry("Sold %d %s for %d cr" % [quantity, good_name, total_income])
 	_status_label.text = "Sold %d %s for %d cr" % [quantity, good_name, total_income]
 	_refresh_all()
-	if GameManager.check_win_condition():
-		get_tree().change_scene_to_file("res://scenes/victory.tscn")
+	GameManager.try_trigger_victory()
 
 
 func close() -> void:
