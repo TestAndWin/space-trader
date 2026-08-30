@@ -49,7 +49,7 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.5, 0.85, 1.0, 1)
-text = "You've conquered the galaxy and amassed a fortune!"
+text = "You've defeated Crimson Jack and secured the galaxy!"
 horizontal_alignment = 1
 
 [node name="HSeparator" type="HSeparator" parent="CenterContainer/VBoxContainer"]
@@ -101,9 +101,19 @@ text = "Upgrades Installed: 0"
 layout_mode = 2
 mouse_filter = 2
 
-[node name="MainMenuButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="ButtonsRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="ContinueButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonsRow"]
 unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(200, 40)
-size_flags_horizontal = 4
-text = "Main Menu"
+text = "Continue Playing"
+
+[node name="MainMenuButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(200, 40)
+text = "End Game (Main Menu)"

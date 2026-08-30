@@ -85,7 +85,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/GoalSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Accumulate the credit goal (8000 / 10000 / 12000 depending on difficulty), visit all 7 planets, AND install at least one crafted T2 upgrade on your ship to win the game. Trade goods, complete quest chains, win battles, craft items at the Factory, and explore the galaxy to reach your goal. Reputation, local trade loyalty, bounty pressure, debt, and active world events all shape how risky or profitable your run becomes. If your hull reaches zero, the game is over."
+text = "Accumulate the credit goal (8000 / 10000 / 12000 depending on difficulty), visit all 7 planets, install at least one crafted T2 upgrade on your ship, AND have 0 Bounty to win the game. Trade goods, complete quest chains, win battles, craft items at the Factory, and explore the galaxy to reach your goal. Reputation, local trade loyalty, bounty pressure, debt, and active world events all shape how risky or profitable your run becomes. If your hull reaches zero, the game is over."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -103,7 +103,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/PlanetScreenSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Each planet has a city map with clickable buildings. Click on a building to open it. Available buildings vary by planet type: Market (buy/sell goods), Shipyard (repairs, upgrades, new ships), Casino (gamble for credits), Crew (recruit crew members), Quest Board (accept delivery missions), Armory (view your deck), Mission (planet-specific risk/reward mini-game — Hacking, Mining, Harvest, Smuggler Race, Factory production, or Starport Defense depending on planet type), Factory (Tech planets only: craft raw materials into Tier-1 components and Tier-2 modules for high-profit sales or exclusive Advanced Upgrades), and Starport (depart to another planet). The header and status bars now also show the local faction, your reputation tier, loyalty tier, bounty status, and important local warnings such as patrol pressure or trader discounts."
+text = "Each planet has a city map with clickable buildings. Click on a building to open it. Available buildings vary by planet type: Market (buy/sell goods), Shipyard (repairs, upgrades, new ships), Casino (gamble for credits), Crew (recruit crew members), Quest Board (accept delivery missions), Arsenal (view your deck), Mission (planet-specific risk/reward mini-game — Hacking, Mining, Harvest, Smuggler Race, Factory production, or Starport Defense depending on planet type), Factory (Tech planets only: craft raw materials into Tier-1 components and Tier-2 modules for high-profit sales or exclusive Advanced Upgrades), and Starport (depart to another planet). The header and status bars now also show the local faction, your reputation tier, loyalty tier, bounty status, and important local warnings such as patrol pressure or trader discounts."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -157,7 +157,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CombatSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "When you encounter enemies, you fight using cards. Each turn you draw cards and spend energy to play them. Attack cards deal damage, Defense cards raise your shield, Utility cards heal or draw more cards, and Trade cards earn credits. Your shield absorbs damage before your hull takes hits. Once an enemy ship's hull falls below 30% (or 50% with a Grappling Hook), you can attempt to Board the ship. Boarding is a push-your-luck minigame where you can secure extra cargo, intel, or upgrades, but risk injuring your crew if you push too far."
+text = "When you encounter enemies, you fight using cards. Each turn you draw cards and spend energy to play them. Attack cards deal damage, Defense cards raise your shield, Utility cards heal or draw more cards, and Trade cards earn credits. Your shield absorbs damage before your hull takes hits. Once an enemy ship's hull falls below 30% (or 50% with a Grappling Hook), you can attempt to Board the ship. Boarding is a push-your-luck minigame where you can secure extra cargo, credits, or upgrades, but risk injuring your crew if you push too far."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -175,7 +175,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/PirateLordSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "The notorious Pirate Lord Crimson Jack oversees black market activity. Engaging in smuggling deals, winning battles, or simply travelling day by day increases your 'Heat' with his fleet. As your Heat rises, his forces will blockade planets—shown by a skull marker on the Galaxy Map. Traveling to blockaded planets leads to pirate incursions, demands for tribute, and frequent encounters with his elite Enforcers. Defeating Enforcers or boarding ships yields Pirate Intel. Once your Heat hits 100 and you have enough Intel, Crimson Jack will ambush you in a final, deadly two-phase boss battle!"
+text = "The notorious Pirate Lord Crimson Jack oversees black market activity. Engaging in smuggling deals, winning battles, or simply travelling day by day increases your 'Heat' with his fleet. As your Heat rises, his forces will blockade planets—shown by a skull marker on the Galaxy Map. Traveling to blockaded planets leads to pirate incursions, demands for tribute, and frequent encounters with his elite Enforcers. Defeating Enforcers weakens Crimson Jack's flagship. Once you have met your credit goal, fully upgraded your ship (T2), and visited all planets with zero bounty, Crimson Jack's secret hideout will finally be revealed on the map for the final showdown!"
 autowrap_mode = 3
 mouse_filter = 2
 

@@ -57,3 +57,7 @@ theme/custom="res://resources/default_theme.tres"
 
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
+
+[audio]
+
+buses/default_bus_layout="res://assets/audio/default_bus_layout.tres"

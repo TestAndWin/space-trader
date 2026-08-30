@@ -6,10 +6,10 @@
 [resource]
 script = ExtResource("1_script")
 upgrade_name = "Adaptive Shields"
-description = "Shields regenerate +3 on arrival. Requires 1x Shield Matrix."
+description = "Max Shield +30. Shields regenerate +3 on arrival. Requires 1x Shield Matrix."
 slot = 2
 cost = 800
-shield_bonus = 0
+shield_bonus = 30
 required_crafted_items = [{
 "good": ExtResource("2_item"),
 "amount": 1

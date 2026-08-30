@@ -24,3 +24,9 @@ ROADMAP.md
 .superpowers/
 docs/superpowers/notes/card-artwork-brainstorm-status.md
 .env
+
+# Uncompressed background originals kept locally as a fallback. The compressed
+# versions (bg_<planet>.png) are the ones the game loads; these are ~19 MB and
+# referenced by nothing, so they stay out of the repo.
+assets/sprites/scenes/bg_*_1.png
+assets/sprites/scenes/bg_*_1.png.import

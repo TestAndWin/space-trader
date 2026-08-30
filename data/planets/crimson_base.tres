@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="PlanetData" format=3]
+
+[ext_resource type="Script" uid="uid://dveaw0qgbnqge" path="res://scripts/resources/planet_data.gd" id="1_sa1"]
+
+[resource]
+script = ExtResource("1_sa1")
+planet_name = "Crimson Jack's Hideout"
+planet_type = 4
+danger_level = 5
+description = "The secret base of the pirate lord Crimson Jack. Proceed with extreme caution."
+map_position = Vector2(640, 360)
+connected_planets = Array[String]([])
+image_hotspots = {
+"crew": Rect2(465, 365, 70, 70),
+"deck": Rect2(930, 290, 70, 75),
+"depart": Rect2(260, 440, 130, 60),
+"market": Rect2(590, 360, 40, 70),
+"casino": Rect2(820, 340, 40, 80),
+"shipyard": Rect2(350, 350, 70, 50)
+}
