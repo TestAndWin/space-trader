@@ -122,7 +122,7 @@ func start_battle(enc: Resource) -> void:
 			GameManager.Difficulty.EASY: enemy_health = 100
 			GameManager.Difficulty.NORMAL: enemy_health = 150
 			GameManager.Difficulty.HARD: enemy_health = 200
-		var weaken: int = PirateLordManager.officers_defeated.size() * 15
+		var weaken: int = PirateLordManager.officers_defeated.size() * 10
 		enemy_health = max(1, enemy_health - weaken)
 		enemy_max_health = enemy_health
 		
@@ -644,7 +644,7 @@ func _apply_enemy_on_hit_effects() -> void:
 		EncounterData.SpecialAbility.CRIMSON_FURY:
 			# Boss gains max damage on hit
 			encounter.enemy_attack_range.y += 5
-			_show_battle_message("Crimson Jack's fury grows! (+5 Max Dmg)")
+			_show_battle_message("Crimson Jack's fury grows! (+5 Max Damage)")
 
 
 ## Enemy hull is down: offer to board unless that door is already closed.

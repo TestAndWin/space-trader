@@ -237,10 +237,9 @@ func _build_ui() -> void:
 	log_frame.add_child(_log_label)
 
 	_close_btn = Button.new()
-	_close_btn.custom_minimum_size = Vector2(160, 36)
 	_close_btn.text = "Leave"
 	_close_btn.visible = false
-	UIStyles.style_accent_button(_close_btn, Color(0.2, 0.4, 0.7))
+	UIStyles.style_continue_button(_close_btn)
 	_close_btn.pressed.connect(close)
 	var close_row := HBoxContainer.new()
 	close_row.alignment = BoxContainer.ALIGNMENT_CENTER

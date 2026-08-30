@@ -417,6 +417,27 @@ func _build_trade_tooltip(good_name: String, mode: String) -> String:
 				float(sell_breakdown.get("loyalty_modifier", 1.0)),
 			])
 			lines.append("Service x%.2f" % (1.0 / float(sell_breakdown.get("service_fee_modifier", 1.0))))
+			
+			var buy_breakdown: Dictionary = EconomyManager.get_buy_price_breakdown(planet_name, good_name)
+			if not buy_breakdown.is_empty():
+				var buy_price: int = int(buy_breakdown.get("final_price", -1))
+				var final_sell_price: int = int(sell_breakdown.get("final_price", -1))
+				if buy_price > 0 and final_sell_price == buy_price:
+					var uncapped_sell_price: int = max(
+						1,
+						int(round(
+							float(sell_breakdown.get("base_price", 0)) * 
+							float(sell_breakdown.get("event_modifier", 1.0)) * 
+							float(sell_breakdown.get("sell_ratio", EconomyManager.SELL_RATIO)) * 
+							float(sell_breakdown.get("contraband_modifier", 1.0)) * 
+							float(sell_breakdown.get("rep_modifier", 1.0)) * 
+							float(sell_breakdown.get("loyalty_modifier", 1.0)) * 
+							float(sell_breakdown.get("service_fee_modifier", 1.0)) * 
+							float(sell_breakdown.get("pirate_modifier", 1.0))
+						))
+					)
+					if uncapped_sell_price > buy_price:
+						lines.append("(Capped at local buy price)")
 
 	var best_buy: Dictionary = GameManager.get_best_buy_hint(good_name)
 	if not best_buy.is_empty():

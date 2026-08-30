@@ -331,7 +331,8 @@ func _on_reward_skip_pressed() -> void:
 # ── Continue ─────────────────────────────────────────────────────────────────
 
 func _style_buttons() -> void:
-	for btn: Button in [%ContinueButton, %SkipButton, %AcceptButton, %RewardSkipButton]:
+	UIStyles.style_continue_button(%ContinueButton)
+	for btn: Button in [%SkipButton, %AcceptButton, %RewardSkipButton]:
 		UIStyles.style_secondary_button(btn)
 
 

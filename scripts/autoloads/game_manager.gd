@@ -98,6 +98,7 @@ var travel_days: int = 1
 var travel_distance: float = 0.0
 var travel_route: Array[String] = []
 var visited_planets: Array = []
+var blockaded_planet: String = ""
 
 # Battle
 var current_encounter: Resource = null
@@ -178,6 +179,7 @@ func reset() -> void:
 	travel_route.clear()
 	visited_planets.clear()
 	visited_planets.append("Starport Alpha")
+	blockaded_planet = ""
 	current_ship = "res://data/ships/scout.tres"
 	owned_ships = [current_ship]
 	mission_return_planet = ""
@@ -377,6 +379,7 @@ func begin_travel(destination: String, route: Array[String]) -> bool:
 	arrival_events_done = false
 	mission_done_this_landing = false
 	reset_ghost_run()
+	blockaded_planet = ""
 	travel_origin = current_planet
 	travel_destination = destination
 	travel_route.clear()

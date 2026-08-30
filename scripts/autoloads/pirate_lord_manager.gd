@@ -11,8 +11,7 @@ func add_heat(amount: int) -> void:
 	heat = mini(max_heat, heat + amount)
 	
 func defeat_officer(officer_name: String) -> void:
-	if officer_name not in officers_defeated:
-		officers_defeated.append(officer_name)
+	officers_defeated.append(officer_name)
 
 func tick() -> void:
 	if GameManager.victory_triggered:

@@ -47,7 +47,7 @@ func _setup_event(event_type: int) -> void:
 			)
 			hbox.add_child(pay_btn)
 
-			var refuse_btn := _create_button("Refuse (Take 15 Hull Dmg)")
+			var refuse_btn := _create_button("Refuse (Take 15 Hull Damage)")
 			refuse_btn.pressed.connect(func():
 				GameManager.current_hull = maxi(0, GameManager.current_hull - 15)
 				EventLog.add_entry("Refused pirate tribute, took 15 damage.")
@@ -99,6 +99,7 @@ func _setup_event(event_type: int) -> void:
 			var leave_btn := _create_button("Flee to Orbit")
 			leave_btn.pressed.connect(func():
 				EventLog.add_entry("Forced to leave planet due to pirate blockade.")
+				GameManager.blockaded_planet = GameManager.current_planet
 				_close()
 				GameManager.change_scene("res://scenes/galaxy_map.tscn")
 			)

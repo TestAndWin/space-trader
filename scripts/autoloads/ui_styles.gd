@@ -232,6 +232,11 @@ static func style_secondary_button(btn: Button, font_size: int = 0) -> void:
 
 static func style_action_button(btn: Button) -> void:
 	style_secondary_button(btn, ACTION_BTN_FONT_SIZE)
+	btn.custom_minimum_size.y = ACTION_BTN_MIN_HEIGHT
+
+static func style_continue_button(btn: Button) -> void:
+	btn.custom_minimum_size = Vector2(160, 40)
+	style_secondary_button(btn, FONT_BODY)
 
 
 # ── Panel styling ───────────────────────────────────────────────────

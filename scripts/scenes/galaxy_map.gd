@@ -64,6 +64,12 @@ func _ready() -> void:
 
 	travel_button.visible = false
 	land_button.visible = true
+	if GameManager.blockaded_planet == GameManager.current_planet:
+		land_button.disabled = true
+		land_button.tooltip_text = "A dense pirate blockade prevents landing here. You must travel elsewhere."
+	else:
+		land_button.disabled = false
+		land_button.tooltip_text = ""
 	travel_button.pressed.connect(_on_travel_pressed)
 	land_button.pressed.connect(_on_land_pressed)
 	_style_nav_button(travel_button, Color(0.0, 0.85, 0.45))
@@ -716,6 +722,12 @@ func _on_planet_clicked(planet_data: Resource) -> void:
 		selected_planet = planet_data
 		travel_button.visible = false
 		land_button.visible = true
+		if GameManager.blockaded_planet == GameManager.current_planet:
+			land_button.disabled = true
+			land_button.tooltip_text = "A dense pirate blockade prevents landing here. You must travel elsewhere."
+		else:
+			land_button.disabled = false
+			land_button.tooltip_text = ""
 		_on_planet_hovered(planet_data)
 		_update_selected_direct_line()
 		_update_planet_states()

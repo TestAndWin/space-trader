@@ -51,7 +51,7 @@ const BOARDING_BONUS_LABELS := {
 	CrewData.CrewBonus.BOARDING_LOOT: "Extra Airlock Loot",
 	CrewData.CrewBonus.BOARDING_BREACH: "-15 Brute Force Alarm",
 	CrewData.CrewBonus.BOARDING_INTEL: "Rooms Revealed",
-	CrewData.CrewBonus.BOARDING_MEDIC: "-10 Hull Dmg on Fail",
+	CrewData.CrewBonus.BOARDING_MEDIC: "-10 Hull Damage on Fail",
 }
 
 var starting_alarm: int = 0
@@ -625,8 +625,17 @@ func _finish_boarding(status: int) -> void:
 			"credits":
 				total_cr += item.value
 			"cargo":
-				GameManager.add_cargo(item.value, 1)
-				loot_summary.append("1x " + item.value)
+				if GameManager.can_add_cargo(item.value, 1):
+					GameManager.add_cargo(item.value, 1)
+					loot_summary.append("1x " + item.value)
+				else:
+					var sell_val: int = 50
+					for g in EconomyManager.goods:
+						if g.good_name == item.value:
+							sell_val = int(round(float(g.base_price) * EconomyManager.SELL_RATIO))
+							break
+					total_cr += sell_val
+					loot_summary.append("1x %s sold (Hold full: %d cr)" % [item.value, sell_val])
 			"data":
 				total_cr += item.value
 				loot_summary.append("Data sold for %d cr" % item.value)

@@ -14,7 +14,6 @@ const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 const MODAL_WIDTH := 400.0
 const CHOICE_BUTTON_SIZE := Vector2(160, 36)
-const CONTINUE_BUTTON_SIZE := Vector2(140, 36)
 
 # All loaded event resources
 var _all_events: Array = []
@@ -222,8 +221,7 @@ func _show_outcome(text: String) -> void:
 
 	var close_btn := Button.new()
 	close_btn.text = "Continue"
-	close_btn.custom_minimum_size = CONTINUE_BUTTON_SIZE
-	_style_primary_button(close_btn)
+	UIStyles.style_continue_button(close_btn)
 	close_btn.pressed.connect(close)
 	_choice_a_button.get_parent().add_child(close_btn)
 

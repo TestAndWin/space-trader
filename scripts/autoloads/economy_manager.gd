@@ -204,6 +204,16 @@ func get_sell_price_breakdown(planet_name: String, good_name: String) -> Diction
 			float(local_price) * event_modifier * sell_ratio * contraband_modifier * rep_modifier * loyalty_modifier * service_fee_modifier * pirate_modifier
 		))
 	)
+	
+	# Cap the sell price at the buy price if the good is sold here,
+	# so that players cannot infinitely generate money by buying and selling at the same market.
+	var buy_breakdown: Dictionary = get_buy_price_breakdown(planet_name, good_name)
+	if not buy_breakdown.is_empty():
+		var buy_price: int = int(buy_breakdown.get("final_price", -1))
+		if buy_price > 0 and final_price > buy_price:
+			final_price = buy_price
+			
+
 	return {
 		"base_price": local_price,
 		"event_modifier": event_modifier,

@@ -252,6 +252,7 @@ func _update_enemies(delta: float) -> void:
 		_enemy_direction *= -1.0
 		for enemy in _enemies:
 			if enemy["alive"]:
+				enemy["x"] = clampf(enemy["x"], AREA_LEFT + ENEMY_SIZE.x, AREA_RIGHT - ENEMY_SIZE.x)
 				enemy["y"] += ENEMY_DROP
 				# Check if enemies reached bottom
 				if enemy["y"] > AREA_BOTTOM - 60:

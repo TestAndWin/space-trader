@@ -44,7 +44,7 @@ const HINTS: Dictionary = {
 	},
 	"factory": {
 		"title": "Fabrication",
-		"text": "Craft components here over several days, then install the finished T2 upgrade at the shipyard.",
+		"text": "Craft components here over several days.",
 	},
 	"galaxy_map": {
 		"title": "Galaxy Map",
@@ -154,7 +154,7 @@ func show_hint_popup(hint_id: String, parent_node: Node, on_ack: Callable = Call
 
 	var btn := Button.new()
 	btn.text = "Continue"
-	UIStyles.style_accent_button(btn, Color(0.0, 0.85, 0.45), UIStyles.FONT_BODY)
+	UIStyles.style_continue_button(btn)
 
 	btn.pressed.connect(func() -> void:
 		overlay.queue_free()

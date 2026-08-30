@@ -223,8 +223,7 @@ func _show_result(text: String) -> void:
 
 	var close_btn := Button.new()
 	close_btn.text = "Continue"
-	close_btn.custom_minimum_size = Vector2(140, 36)
-	UIStyles.style_event_button(close_btn, Color(0.2, 0.4, 0.7), Color(0.25, 0.5, 0.85), Color(0.15, 0.3, 0.55))
+	UIStyles.style_continue_button(close_btn)
 	close_btn.pressed.connect(close)
 	_options_container.get_parent().add_child(close_btn)
 
