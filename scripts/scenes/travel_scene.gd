@@ -67,8 +67,8 @@ const PLANET_TARGET_Z_DANGER_STEP: float = 2.0
 const PLANET_END_Y: float = -0.9
 const PLANET_END_SCALE: float = 1.08
 const PLANET_START_SCALE: float = 2.5
-const PLANET_TEX_WIDTH: int = 384
-const PLANET_TEX_HEIGHT: int = 192
+const PLANET_TEX_WIDTH: int = 768
+const PLANET_TEX_HEIGHT: int = 384
 
 @onready var viewport: SubViewport = $TravelViewport/SubViewport
 @onready var world_environment: WorldEnvironment = $TravelViewport/SubViewport/TravelWorld/WorldEnvironment
@@ -500,23 +500,23 @@ func _generate_planet_surface_texture(dest_type: int, noise_seed: int) -> Textur
 	var continent_noise := FastNoiseLite.new()
 	continent_noise.seed = noise_seed
 	continent_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	continent_noise.frequency = 1.25
+	continent_noise.frequency = 1.8
 	continent_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	continent_noise.fractal_octaves = 5
-	continent_noise.fractal_gain = 0.52
+	continent_noise.fractal_octaves = 7
+	continent_noise.fractal_gain = 0.58
 
 	var detail_noise := FastNoiseLite.new()
 	detail_noise.seed = noise_seed + 173
 	detail_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	detail_noise.frequency = 4.2
+	detail_noise.frequency = 8.5
 	detail_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	detail_noise.fractal_octaves = 3
-	detail_noise.fractal_gain = 0.6
+	detail_noise.fractal_octaves = 6
+	detail_noise.fractal_gain = 0.7
 
 	var humidity_noise := FastNoiseLite.new()
 	humidity_noise.seed = noise_seed + 331
 	humidity_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	humidity_noise.frequency = 2.35
+	humidity_noise.frequency = 3.2
 
 	var sea_level: float = -0.06
 	if dest_type == 1:
@@ -529,10 +529,10 @@ func _generate_planet_surface_texture(dest_type: int, noise_seed: int) -> Textur
 		var polar: float = absf(v * 2.0 - 1.0)
 		for x: int in PLANET_TEX_WIDTH:
 			var u: float = float(x) / float(PLANET_TEX_WIDTH - 1)
-			var continents: float = continent_noise.get_noise_2d(u * 3.8, v * 1.9)
-			var detail: float = detail_noise.get_noise_2d(u * 9.5, v * 4.75)
-			var humidity: float = humidity_noise.get_noise_2d(u * 5.3 + 7.0, v * 2.4 - 3.5)
-			var elevation: float = continents * 0.8 + detail * 0.24
+			var continents: float = continent_noise.get_noise_2d(u * 5.0, v * 2.5)
+			var detail: float = detail_noise.get_noise_2d(u * 14.0, v * 7.0)
+			var humidity: float = humidity_noise.get_noise_2d(u * 8.0 + 7.0, v * 4.0 - 3.5)
+			var elevation: float = continents * 0.65 + detail * 0.45
 
 			var px_color: Color
 			if elevation < sea_level:
@@ -565,18 +565,18 @@ func _generate_planet_cloud_texture(noise_seed: int) -> Texture2D:
 	var cloud_noise := FastNoiseLite.new()
 	cloud_noise.seed = noise_seed
 	cloud_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	cloud_noise.frequency = 2.1
+	cloud_noise.frequency = 2.8
 	cloud_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	cloud_noise.fractal_octaves = 5
-	cloud_noise.fractal_gain = 0.58
+	cloud_noise.fractal_octaves = 6
+	cloud_noise.fractal_gain = 0.62
 
 	var wisp_noise := FastNoiseLite.new()
 	wisp_noise.seed = noise_seed + 97
 	wisp_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	wisp_noise.frequency = 6.4
+	wisp_noise.frequency = 8.5
 	wisp_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	wisp_noise.fractal_octaves = 2
-	wisp_noise.fractal_gain = 0.5
+	wisp_noise.fractal_octaves = 4
+	wisp_noise.fractal_gain = 0.55
 
 	for y: int in PLANET_TEX_HEIGHT:
 		var v: float = float(y) / float(PLANET_TEX_HEIGHT - 1)
