@@ -10,6 +10,7 @@ cost = 0
 base_max_hull = 30
 base_max_shield = 10
 base_cargo_capacity = 10
+base_max_fuel = 6
 base_energy_per_turn = 3
 base_hand_size = 5
 max_crew = 3

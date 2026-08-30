@@ -44,6 +44,7 @@ func save_game() -> void:
 		"deck_cards": _serialize_deck(),
 		"event_log": EventLog.get_entries(),
 		"event_manager": EventManager.save_data(),
+		"market_saturation": EconomyManager.save_saturation(),
 		"quest_current": QuestManager.current_quest.duplicate() if QuestManager.current_quest.size() > 0 else {},
 		"quest_available": QuestManager.available_quests.duplicate(true),
 		"quest_next_chain_id": QuestManager.next_chain_id,
@@ -114,7 +115,7 @@ func load_game() -> bool:
 	GameManager.total_encounters_won = int(data.get("total_encounters_won", 0))
 	GameManager.total_travel_days = int(data.get("total_travel_days", 0))
 	StandingManager.load_state(data.get("standing", {}))
-	GameManager.current_ship = data.get("current_ship", "res://data/ships/scout.tres")
+	GameManager.current_ship = data.get("current_ship", GameManager.STARTER_SHIP)
 	var saved_ships: Array = data.get("owned_ships", [])
 	var hangar: Array[String] = []
 	for p in saved_ships:
@@ -129,6 +130,9 @@ func load_game() -> bool:
 	GameManager.shield_upgrades_bought = int(data.get("shield_upgrades_bought", 0))
 	GameManager.cargo_upgrades_bought = int(data.get("cargo_upgrades_bought", 0))
 	GameManager.crew = data.get("crew", [])
+	# Tank size is derived, not stored: recomputing it here keeps saves written
+	# before per-ship tanks (and before the tank upgrades) consistent.
+	GameManager.recompute_max_fuel()
 	
 	GameManager.wounded_crew = data.get("wounded_crew", {})
 	GameManager.damaged_upgrades = data.get("damaged_upgrades", [])
@@ -137,6 +141,7 @@ func load_game() -> bool:
 	EventLog.set_entries(data.get("event_log", []))
 	# Restore event manager
 	EventManager.load_data(data.get("event_manager", {}))
+	EconomyManager.load_saturation(data.get("market_saturation", {}))
 	# Restore quest state
 	QuestManager.current_quest = data.get("quest_current", {})
 	QuestManager.available_quests = data.get("quest_available", {})

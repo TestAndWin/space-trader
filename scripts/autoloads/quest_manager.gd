@@ -12,6 +12,9 @@ const MAX_CHAIN_LENGTH := 3
 const STAGE_REWARD_MULT := 1.25
 const REPUTATION_REWARD_BASE := 2
 const REPUTATION_FAIL_PENALTY := -4
+# Share of contracts asking for a crafted good, once the player owns a
+# Fabrication Plant. Before that, crafted goods never come up at all.
+const CRAFTED_QUEST_CHANCE := 0.20
 # Event tags that make a planet a more interesting delivery target for a given
 # good. Used to steer destinations toward planets where the good matters right
 # now; goods not listed here get a plain random reachable destination.
@@ -437,11 +440,23 @@ func _pick_quest_good(planet_name: String, quality: Dictionary) -> Resource:
 				candidates.append(preferred_res)
 	if candidates.is_empty():
 		var outlaw_faction: bool = StandingManager.get_planet_faction(planet_name) == StandingManager.FACTION_BY_PLANET_TYPE.get(EconomyManager.PT_OUTLAW, "Free Cartel")
+		var crafted_candidates: Array = []
 		for good in EconomyManager.goods:
 			if good == null:
 				continue
-			if outlaw_faction or not bool(good.is_contraband):
+			if not (outlaw_faction or not bool(good.is_contraband)):
+				continue
+			# Crafted goods can only be produced at a Fabrication Plant. Asking
+			# for them before the player owns one is a dead-end contract, so
+			# they stay out of the pool until a facility exists, and stay rare
+			# afterwards.
+			if CraftingManager.get_recipe_for_good(good.good_name) != null:
+				crafted_candidates.append(good)
+			else:
 				candidates.append(good)
+		if not crafted_candidates.is_empty() and CraftingManager.has_any_facility():
+			if candidates.is_empty() or randf() < CRAFTED_QUEST_CHANCE:
+				candidates = crafted_candidates
 	if candidates.is_empty():
 		return null
 	return candidates.pick_random()

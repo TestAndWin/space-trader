@@ -13,6 +13,7 @@ const CREW_COLORS := {
 	4: Color(0.6, 0.3, 0.8),       # Smuggler - Purple
 	5: Color(0.7, 0.85, 0.95),     # Max Hull - Light Blue
 	7: Color(0.95, 0.45, 0.5),     # Medic - Pink/Red
+	16: Color(0.45, 0.9, 0.75),    # Salvager - Teal
 }
 
 
@@ -56,6 +57,7 @@ func _draw() -> void:
 		4: _draw_mask(cx, cy, r, col)
 		5: _draw_cross(cx, cy, r, col)
 		7: _draw_heart(cx, cy, r, col)
+		16: _draw_chip(cx, cy, r, col)
 
 
 func _hex_points(cx: float, cy: float, r: float) -> PackedVector2Array:
@@ -189,3 +191,20 @@ func _draw_heart(cx: float, cy: float, r: float, col: Color) -> void:
 	draw_colored_polygon(pts, col)
 	# Inner highlight
 	draw_circle(Vector2(cx - s * 0.25, cy - s * 0.1), s * 0.12, col.lightened(0.3))
+
+
+func _draw_chip(cx: float, cy: float, r: float, col: Color) -> void:
+	# Microchip: salvaged prototype hardware
+	var s := r * 0.38
+	draw_rect(Rect2(cx - s, cy - s, s * 2.0, s * 2.0), col.darkened(0.35))
+	draw_rect(Rect2(cx - s, cy - s, s * 2.0, s * 2.0), col, false, 1.5)
+	# Die in the middle
+	draw_rect(Rect2(cx - s * 0.4, cy - s * 0.4, s * 0.8, s * 0.8), col.lightened(0.35))
+	# Pins on all four edges
+	var pin := s * 0.45
+	for i in 3:
+		var offset := (float(i) - 1.0) * s * 0.7
+		draw_line(Vector2(cx + offset, cy - s), Vector2(cx + offset, cy - s - pin), col, 1.0)
+		draw_line(Vector2(cx + offset, cy + s), Vector2(cx + offset, cy + s + pin), col, 1.0)
+		draw_line(Vector2(cx - s, cy + offset), Vector2(cx - s - pin, cy + offset), col, 1.0)
+		draw_line(Vector2(cx + s, cy + offset), Vector2(cx + s + pin, cy + offset), col, 1.0)

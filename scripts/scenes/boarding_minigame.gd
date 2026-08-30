@@ -9,6 +9,16 @@ const BackgroundUtils: GDScript = preload("res://scripts/tools/background_utils.
 const MAX_ALARM := 100
 const BAG_CAPACITY := 4
 
+## Chance the Cargo Vault also holds prototype hardware. A Salvager on the crew
+## raises it by their BOARDING_TECH bonus and additionally strips a crafting
+## component out of the Security Terminal.
+const TECH_SALVAGE_BASE_CHANCE := 0.25
+const TECH_SALVAGE_COMPONENTS: Array[String] = [
+	"res://data/goods/crafted/circuit_board.tres",
+	"res://data/goods/crafted/power_cell.tres",
+	"res://data/goods/crafted/targeting_chip.tres",
+]
+
 enum ThreatType { AIRLOCK, GUARDS, LOCKED_DOOR, TERMINAL, CELL, VAULT }
 
 ## Room title, briefing text and the alarm cost of forcing the room open.
@@ -52,6 +62,7 @@ const BOARDING_BONUS_LABELS := {
 	CrewData.CrewBonus.BOARDING_BREACH: "-15 Brute Force Alarm",
 	CrewData.CrewBonus.BOARDING_INTEL: "Rooms Revealed",
 	CrewData.CrewBonus.BOARDING_MEDIC: "-10 Hull Damage on Fail",
+	CrewData.CrewBonus.BOARDING_TECH: "Tech Salvage",
 }
 
 var starting_alarm: int = 0
@@ -111,6 +122,17 @@ func _init_rooms() -> void:
 			ThreatType.VAULT:
 				room.loot.append({"name": "Secure Data (1 slot)", "slots": 1, "type": "data", "value": 250})
 				room.loot.append({"name": "Secure Data (1 slot)", "slots": 1, "type": "data", "value": 250})
+				if randf() < _tech_salvage_chance():
+					room.loot.append({"name": "Prototype Hardware (1 slot)", "slots": 1, "type": "cargo", "value": "Stolen Tech"})
+			ThreatType.TERMINAL:
+				# Only a Salvager knows which boards are worth pulling.
+				if GameManager.has_crew_bonus(CrewData.CrewBonus.BOARDING_TECH):
+					var component: Resource = load(TECH_SALVAGE_COMPONENTS.pick_random())
+					if component:
+						room.loot.append({
+							"name": "%s (1 slot)" % component.good_name,
+							"slots": 1, "type": "cargo", "value": component.good_name,
+						})
 			ThreatType.GUARDS:
 				room.loot.append({"name": "Credits (1 slot)", "slots": 1, "type": "credits", "value": randi_range(50, 150)})
 			ThreatType.LOCKED_DOOR:
@@ -131,6 +153,14 @@ func _init_rooms() -> void:
 						var cheap_goods: Array = ["Food Rations", "Raw Ore"]
 						var good_name: String = cheap_goods.pick_random()
 						room.loot.append({"name": good_name + " (1 slot)", "slots": 1, "type": "cargo", "value": good_name})
+
+## Odds that the Cargo Vault holds prototype hardware, raised by a Salvager.
+func _tech_salvage_chance() -> float:
+	var chance: float = TECH_SALVAGE_BASE_CHANCE
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.BOARDING_TECH):
+		chance += GameManager.get_crew_bonus_value(CrewData.CrewBonus.BOARDING_TECH)
+	return clampf(chance, 0.0, 1.0)
+
 
 ## Name of the first crew member providing a boarding bonus, "" if nobody does.
 func _crew_name_with_bonus(bonus: int) -> String:

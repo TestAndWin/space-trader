@@ -1,5 +1,7 @@
 extends HBoxContainer
 
+## Trades run one unit per click: `quantity` is always 1, kept in the signal
+## so the market screen's buy/sell handlers stay quantity-aware.
 signal action_pressed(good_name: String, quantity: int)
 
 const GoodIconScript = preload("res://scripts/components/good_icon.gd")
@@ -7,8 +9,6 @@ const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 const BUY_COLOR := Color(0.0, 0.75, 0.35)
 const SELL_COLOR := Color(0.85, 0.10, 0.38)
-const PM_BG := Color(0.02, 0.10, 0.22)
-const PM_BORDER := Color(0.0, 0.50, 0.80)
 var ROW_BG: Color = Color(UIStyles.PANEL_BG, 0.75)
 const ROW_BORDER := Color(0.0, 0.40, 0.65, 0.60)
 const GOOD_PRICE_COLOR := UIStyles.POSITIVE
@@ -22,8 +22,6 @@ var mode: String = "buy"  # "buy" or "sell"
 var trade_enabled: bool = true
 var trade_disabled_suffix: String = ""
 var price_note: String = ""
-
-var selected_quantity: int = 1
 
 
 func _ready() -> void:
@@ -105,46 +103,10 @@ func _setup_icon() -> void:
 
 func _style_buttons() -> void:
 	UIStyles.style_accent_button($ActionButton, BUY_COLOR if mode == "buy" else SELL_COLOR, 12)
-	_style_pm_button($MinusButton)
-	_style_pm_button($PlusButton)
 
 
 func _update_trade_controls() -> void:
-	var show_trade_controls: bool = mode == "buy" or trade_enabled
-	$ActionButton.visible = show_trade_controls
-	$MinusButton.visible = show_trade_controls
-	$PlusButton.visible = show_trade_controls
-
-
-func _style_pm_button(btn: Button) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = PM_BG
-	normal.border_color = PM_BORDER
-	normal.border_width_left = 1
-	normal.border_width_right = 1
-	normal.border_width_top = 1
-	normal.border_width_bottom = 1
-	normal.corner_radius_top_left = 4
-	normal.corner_radius_top_right = 4
-	normal.corner_radius_bottom_left = 4
-	normal.corner_radius_bottom_right = 4
-	normal.content_margin_left = 4
-	normal.content_margin_right = 4
-	normal.content_margin_top = 2
-	normal.content_margin_bottom = 2
-
-	var hover := normal.duplicate()
-	hover.bg_color = PM_BG.lightened(0.15)
-	hover.border_color = PM_BORDER.lightened(0.15)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = PM_BG.darkened(0.15)
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
-	btn.add_theme_color_override("font_hover_color", Color(0.85, 1.0, 0.85))
+	$ActionButton.visible = mode == "buy" or trade_enabled
 
 
 func _update_display() -> void:
@@ -163,15 +125,13 @@ func _update_display() -> void:
 	$PriceLabel.text = str(price) + " cr"
 	if mode == "buy":
 		$ActionButton.text = "BUY"
-		$QuantityLabel.text = "x" + str(selected_quantity)
+		$QuantityLabel.text = ""
 	else:
 		$ActionButton.text = "SELL"
-		if trade_enabled:
-			$QuantityLabel.text = "x" + str(selected_quantity) + " (" + str(quantity) + ")"
-		else:
-			$QuantityLabel.text = "x" + str(quantity)
-			if trade_disabled_suffix != "":
-				$QuantityLabel.text += " " + trade_disabled_suffix
+		# Sell rows carry the held stock; buy rows have no count to show.
+		$QuantityLabel.text = "x" + str(quantity)
+		if not trade_enabled and trade_disabled_suffix != "":
+			$QuantityLabel.text += " " + trade_disabled_suffix
 	$QuantityLabel.add_theme_color_override("font_color", NEUTRAL_PRICE_COLOR)
 	# Color price by profitability: a high price is good news when selling and
 	# bad news when buying, so the two modes are mirror images of each other.
@@ -215,19 +175,4 @@ func _find_good_data(gname: String) -> Resource:
 func _on_action_button_pressed() -> void:
 	if mode == "sell" and not trade_enabled:
 		return
-	action_pressed.emit(good_name, selected_quantity)
-
-
-func _on_plus_pressed() -> void:
-	if mode == "sell" and not trade_enabled:
-		return
-	var max_qty: int = 10 if mode == "buy" else quantity
-	selected_quantity = min(selected_quantity + 1, max_qty)
-	_update_display()
-
-
-func _on_minus_pressed() -> void:
-	if mode == "sell" and not trade_enabled:
-		return
-	selected_quantity = max(selected_quantity - 1, 1)
-	_update_display()
+	action_pressed.emit(good_name, 1)

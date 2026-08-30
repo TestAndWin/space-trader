@@ -45,6 +45,15 @@ func get_recipe_for_good(good_name: String) -> CraftingRecipeData:
 	return null
 
 
+## True once the player has unlocked a production facility anywhere. Quests are
+## only allowed to ask for crafted goods from that point on.
+func has_any_facility() -> bool:
+	for facility in production_facilities.values():
+		if bool((facility as Dictionary).get("unlocked", false)):
+			return true
+	return false
+
+
 func _ensure_facility(planet_name: String) -> Dictionary:
 	if not production_facilities.has(planet_name):
 		production_facilities[planet_name] = {
@@ -268,6 +277,7 @@ func sell_finished_item(planet_name: String, finished_index: int) -> int:
 	var price: int = get_finished_item_sell_price(planet_name, good)
 	var total: int = price * amount
 	GameManager.add_credits(total)
+	EconomyManager.register_sale(planet_name, good.good_name, amount)
 	f.finished_items.remove_at(finished_index)
 	EventLog.add_entry("Sold %d x %s for %d cr." % [amount, good.good_name, total])
 	return total

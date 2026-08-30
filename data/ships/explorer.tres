@@ -10,6 +10,7 @@ cost = 1500
 base_max_hull = 30
 base_max_shield = 12
 base_cargo_capacity = 8
+base_max_fuel = 9
 base_energy_per_turn = 4
 base_hand_size = 6
 max_crew = 3

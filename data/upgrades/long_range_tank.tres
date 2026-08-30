@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=2 format=3 uid="uid://upgrade_long_range_tank"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Long-Range Tank"
+description = "Adds 4 fuel capacity"
+slot = 0
+cost = 900
+fuel_capacity_bonus = 4

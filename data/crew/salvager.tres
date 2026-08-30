@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CrewData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/crew_data.gd" id="1_crew"]
+
+[resource]
+script = ExtResource("1_crew")
+crew_name = "Salvager"
+title = "Salvage Specialist"
+description = "Boarding: strips prototype hardware. Tech salvage chance 25% -> 70%, and the Security Terminal always yields a crafting component."
+bonus_type = 16
+bonus_value = 0.45
+recruit_cost = 375
+daily_wage = 20
+available_planet_types = [3, 4]
+secondary_bonus_type = 14
+secondary_bonus_value = 1.0
+event_flavor_tag = "tech"

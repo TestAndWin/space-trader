@@ -10,6 +10,7 @@ enum ShipAbility { NONE, RAMMING_SPEED, DEEP_SCAN, BULK_DISCOUNT, GHOST_RUN, ADA
 @export var base_max_hull: int = 30
 @export var base_max_shield: int = 10
 @export var base_cargo_capacity: int = 10
+@export var base_max_fuel: int = 6
 @export var base_energy_per_turn: int = 3
 @export var base_hand_size: int = 5
 @export var max_crew: int = 3

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ShipUpgradeData" load_steps=2 format=3 uid="uid://upgrade_auxiliary_fuel_tank"]
+
+[ext_resource type="Script" path="res://scripts/resources/ship_upgrade_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+upgrade_name = "Auxiliary Fuel Tank"
+description = "Adds 2 fuel capacity"
+slot = 0
+cost = 400
+fuel_capacity_bonus = 2

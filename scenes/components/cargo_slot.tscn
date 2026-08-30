@@ -30,29 +30,17 @@ theme_override_font_sizes/font_size = 13
 text = "100 cr"
 horizontal_alignment = 2
 
-[node name="MinusButton" type="Button" parent="."]
-custom_minimum_size = Vector2(28, 26)
-layout_mode = 2
-text = "-"
-
 [node name="QuantityLabel" type="Label" parent="."]
-custom_minimum_size = Vector2(30, 0)
+custom_minimum_size = Vector2(60, 0)
 layout_mode = 2
 mouse_filter = 2
 theme_override_font_sizes/font_size = 12
-text = "x1"
+text = ""
 horizontal_alignment = 1
-
-[node name="PlusButton" type="Button" parent="."]
-custom_minimum_size = Vector2(28, 26)
-layout_mode = 2
-text = "+"
 
 [node name="ActionButton" type="Button" parent="."]
 custom_minimum_size = Vector2(40, 0)
 layout_mode = 2
 text = "Buy"
 
-[connection signal="pressed" from="MinusButton" to="." method="_on_minus_pressed"]
-[connection signal="pressed" from="PlusButton" to="." method="_on_plus_pressed"]
 [connection signal="pressed" from="ActionButton" to="." method="_on_action_button_pressed"]

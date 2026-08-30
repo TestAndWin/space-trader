@@ -37,6 +37,8 @@ var _market_list: VBoxContainer
 var _cargo_list: VBoxContainer
 var _status_label: Label
 var _status_detail_label: Label
+var _saturation_flow: HFlowContainer
+var _saturation_hint_label: Label
 
 func setup(planet_type: int, arrival_gained_cargo: Dictionary = {}) -> void:
 	_planet_type = planet_type
@@ -107,6 +109,8 @@ func _build_ui() -> void:
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	main_vbox.add_child(_status_label)
 
+	_build_saturation_panel(main_vbox)
+
 	# Spacer to push content to lower half (small share so the lists get more height)
 	var top_spacer := Control.new()
 	top_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -126,6 +130,89 @@ func _build_ui() -> void:
 		content, "\u25C6 BUY GOODS \u25C6", UIStyles.ACCENT, true
 	)
 	_cargo_list = _build_trade_column(content, "\u25C6 SELL CARGO \u25C6", UIStyles.POSITIVE)
+
+
+## Panel above the trade columns listing every market the player has flooded,
+## and how long each needs to pay full price again. This is the only place the
+## saturation state is shown, so it also carries the one-line rule.
+func _build_saturation_panel(parent: VBoxContainer) -> void:
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.015, 0.04, 0.10, 0.5)
+	style.border_color = UIStyles.ACCENT_DIM
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(8)
+	style.set_content_margin_all(8)
+	panel.add_theme_stylebox_override("panel", style)
+	parent.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	panel.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "◆ MARKET SATURATION ◆"
+	UIStyles.apply_section_title(header, UIStyles.STATUS_WARN)
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(header)
+
+	_saturation_flow = HFlowContainer.new()
+	_saturation_flow.alignment = FlowContainer.ALIGNMENT_CENTER
+	_saturation_flow.add_theme_constant_override("h_separation", 10)
+	_saturation_flow.add_theme_constant_override("v_separation", 2)
+	vbox.add_child(_saturation_flow)
+
+	_saturation_hint_label = Label.new()
+	_saturation_hint_label.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
+	_saturation_hint_label.add_theme_color_override("font_color", Color(0.5, 0.54, 0.58))
+	_saturation_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_saturation_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(_saturation_hint_label)
+
+
+func _populate_saturation_panel() -> void:
+	if not _saturation_flow:
+		return
+	for child in _saturation_flow.get_children():
+		child.queue_free()
+
+	var flooded: Array[Dictionary] = EconomyManager.get_flooded_markets()
+	_saturation_hint_label.text = (
+		"Contraband sells %d at full price, other cargo %d. Every unit past that lowers the price; markets absorb 1 unit per day."
+		% [
+			int(EconomyManager.SATURATION_FULL_PRICE_UNITS_CONTRABAND),
+			int(EconomyManager.SATURATION_FULL_PRICE_UNITS_NORMAL),
+		]
+	)
+	if flooded.is_empty():
+		var empty_lbl := Label.new()
+		empty_lbl.text = "No markets flooded — every good sells at full price."
+		empty_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
+		empty_lbl.add_theme_color_override("font_color", UIStyles.POSITIVE)
+		_saturation_flow.add_child(empty_lbl)
+		return
+
+	var here: String = GameManager.current_planet
+	for entry in flooded:
+		_saturation_flow.add_child(_build_saturation_chip(entry, entry["planet"] == here))
+
+
+## One "Spice @ Dust Haven -36% 3d" chip. Markets on the current planet are
+## highlighted: those are the ones blocking the sale in front of the player.
+func _build_saturation_chip(entry: Dictionary, is_here: bool) -> Control:
+	var modifier: float = float(entry["modifier"])
+	var days: int = int(entry["days"])
+	var label := Label.new()
+	UIStyles.apply_mono_font(label)
+	label.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
+	var where: String = "HERE" if is_here else GameManager.get_display_planet_name(str(entry["planet"]))
+	label.text = "%s @ %s  %d%%  %dd" % [
+		entry["good"], where, int(round((modifier - 1.0) * 100.0)), days,
+	]
+	# Amber while the market is merely dented, red once it has bottomed out.
+	var severity: Color = UIStyles.CAUTION if modifier > 0.7 else UIStyles.NEGATIVE
+	label.add_theme_color_override("font_color", severity if is_here else severity.darkened(0.25))
+	return label
 
 
 ## One trade column: framed panel with a section header over a scrolling list.
@@ -180,6 +267,7 @@ func _refresh_all() -> void:
 	# _cargo_label keeps itself in sync via GameManager.cargo_changed.
 	_record_market_snapshot()
 	_status_detail_label.text = _build_market_context_text()
+	_populate_saturation_panel()
 	_populate_market()
 	_populate_cargo()
 
@@ -258,11 +346,11 @@ func _on_buy(good_name: String, quantity: int) -> void:
 	if buy_price < 0:
 		return
 	var unit_price: int = buy_price
-	# BULK_DISCOUNT: -8% when buying 3+ units with Freighter
-	if quantity >= 3:
-		var ship: Resource = GameManager.get_ship_data()
-		if ship and ship.ship_ability == ShipData.ShipAbility.BULK_DISCOUNT:
-			unit_price = int(round(float(unit_price) * 0.92))
+	# BULK_DISCOUNT: -8% buy price with the Freighter. Trades are one unit per
+	# click, so this can no longer be gated on a bulk quantity.
+	var ship: Resource = GameManager.get_ship_data()
+	if ship and ship.ship_ability == ShipData.ShipAbility.BULK_DISCOUNT:
+		unit_price = int(round(float(unit_price) * 0.92))
 	var total_cost: int = unit_price * quantity
 	if not GameManager.can_add_cargo(good_name, quantity):
 		return
@@ -284,9 +372,11 @@ func _on_sell(good_name: String, quantity: int) -> void:
 	var sell_price: int = EconomyManager.get_sell_price(planet_name, good_name)
 	if sell_price < 0:
 		return
-	var total_income: int = sell_price * quantity
+	# Priced unit by unit, so a big stack cannot outrun the saturation penalty.
+	var total_income: int = EconomyManager.get_sell_total(planet_name, good_name, quantity)
 	GameManager.remove_cargo(good_name, quantity)
 	GameManager.add_credits(total_income)
+	EconomyManager.register_sale(planet_name, good_name, quantity)
 	AudioManager.play_sell()
 	GameManager.total_trades += 1
 	StandingManager.add_trade_loyalty(planet_name, StandingManager.get_trade_loyalty_gain(quantity, total_income))
@@ -417,7 +507,18 @@ func _build_trade_tooltip(good_name: String, mode: String) -> String:
 				float(sell_breakdown.get("loyalty_modifier", 1.0)),
 			])
 			lines.append("Service x%.2f" % (1.0 / float(sell_breakdown.get("service_fee_modifier", 1.0))))
-			
+
+			# Per-good detail; the rule itself lives in the saturation panel.
+			var saturation: float = float(sell_breakdown.get("saturation_modifier", 1.0))
+			var units: float = EconomyManager.get_saturation_units(planet_name, good_name)
+			var full_price_units: float = EconomyManager.get_full_price_units(good_name)
+			if saturation < 1.0:
+				lines.append("Market flooded x%.2f — full price again in %d days" % [
+					saturation, EconomyManager.get_days_until_recovered(planet_name, good_name),
+				])
+			else:
+				lines.append("Absorbs %d more units at full price" % int(round(full_price_units - units)))
+
 			var buy_breakdown: Dictionary = EconomyManager.get_buy_price_breakdown(planet_name, good_name)
 			if not buy_breakdown.is_empty():
 				var buy_price: int = int(buy_breakdown.get("final_price", -1))
@@ -432,8 +533,9 @@ func _build_trade_tooltip(good_name: String, mode: String) -> String:
 							float(sell_breakdown.get("contraband_modifier", 1.0)) * 
 							float(sell_breakdown.get("rep_modifier", 1.0)) * 
 							float(sell_breakdown.get("loyalty_modifier", 1.0)) * 
-							float(sell_breakdown.get("service_fee_modifier", 1.0)) * 
-							float(sell_breakdown.get("pirate_modifier", 1.0))
+							float(sell_breakdown.get("service_fee_modifier", 1.0)) *
+							float(sell_breakdown.get("pirate_modifier", 1.0)) *
+							float(sell_breakdown.get("saturation_modifier", 1.0))
 						))
 					)
 					if uncapped_sell_price > buy_price:

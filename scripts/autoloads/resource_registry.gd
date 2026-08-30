@@ -91,6 +91,8 @@ const UPGRADES: Array[String] = [
 	"res://data/upgrades/shield_capacitor.tres",
 	"res://data/upgrades/cloaking_device.tres",
 	"res://data/upgrades/fuel_synthesizer.tres",
+	"res://data/upgrades/auxiliary_fuel_tank.tres",
+	"res://data/upgrades/long_range_tank.tres",
 	"res://data/upgrades/grappling_hook.tres",
 ]
 
@@ -107,6 +109,7 @@ const CREW: Array[String] = [
 	"res://data/crew/smuggler_crew.tres",
 	"res://data/crew/medic.tres",
 	"res://data/crew/engineer.tres",
+	"res://data/crew/salvager.tres",
 ]
 
 const SHIPS: Array[String] = [

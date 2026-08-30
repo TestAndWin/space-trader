@@ -19,6 +19,7 @@ const CRIMSON_BASE_NAME: String = "Crimson Jack's Hideout"
 const CRIMSON_BASE_OWNED_NAME: String = "Your Hideout"
 
 # Ship & Upgrades
+const STARTER_SHIP: String = "res://data/ships/scout.tres"
 const SHIP_TRANSFER_FEE: int = 250
 const REPAIR_COST_PER_HP: int = 30
 
@@ -108,8 +109,8 @@ var extra_battle_message: String = ""
 var boarding_special_loot: String = ""
 
 # Ship
-var current_ship: String = "res://data/ships/scout.tres"
-var owned_ships: Array[String] = ["res://data/ships/scout.tres"]
+var current_ship: String = STARTER_SHIP
+var owned_ships: Array[String] = [STARTER_SHIP]
 
 # Shipyard upgrade counters (max 3 each)
 var hull_upgrades_bought: int = 0
@@ -169,7 +170,7 @@ func reset() -> void:
 	damaged_upgrades.clear()
 	hand_size = 5
 	energy_per_turn = 3
-	max_fuel = 6
+	max_fuel = get_base_max_fuel_for_ship(STARTER_SHIP)
 	current_fuel = max_fuel
 	current_planet = "Starport Alpha"
 	travel_destination = ""
@@ -180,7 +181,7 @@ func reset() -> void:
 	visited_planets.clear()
 	visited_planets.append("Starport Alpha")
 	blockaded_planet = ""
-	current_ship = "res://data/ships/scout.tres"
+	current_ship = STARTER_SHIP
 	owned_ships = [current_ship]
 	mission_return_planet = ""
 	mission_done_this_landing = false
@@ -216,6 +217,7 @@ func reset() -> void:
 	EventLog.add_entry("Prerequisites: %d cr + visit all 7 planets + install 1 T2 upgrade + no open bounty." % get_win_credits())
 	EventLog.add_entry("T2 chain: buy goods -> Factory (Tech planet) -> craft T1 -> craft T2 -> install at any Shipyard.")
 	EventManager.reset_state()
+	EconomyManager.reset_saturation()
 	QuestManager.current_quest.clear()
 	QuestManager.next_chain_id = 1
 	QuestManager.generate_quests()
@@ -872,6 +874,27 @@ func get_ship_data() -> Resource:
 	return load(current_ship)
 
 
+## Fuel tank size of a ship class, before upgrades. Tank capacity is part of a
+## hull's identity: the Explorer ranges far, the Warship barely at all.
+func get_base_max_fuel_for_ship(ship_path: String) -> int:
+	var ship: Resource = load(ship_path)
+	if ship:
+		return int(ship.base_max_fuel)
+	return 6
+
+
+## Tank size is always the current hull's base capacity plus every installed
+## tank upgrade -- never stored, so it stays right across ship swaps and loads.
+func recompute_max_fuel() -> void:
+	var total: int = get_base_max_fuel_for_ship(current_ship)
+	for upg_name in installed_upgrades:
+		var upg: Resource = _get_upgrade_resource(upg_name)
+		if upg:
+			total += int(upg.fuel_capacity_bonus)
+	max_fuel = maxi(total, 1)
+	current_fuel = clampi(current_fuel, 0, max_fuel)
+
+
 func get_encounter_reduction() -> float:
 	var ship: Resource = get_ship_data()
 	if ship:
@@ -961,23 +984,21 @@ func switch_ship(new_ship_path: String, keep_old: bool = false) -> void:
 	max_hull = new_ship.base_max_hull + (hull_upgrades_bought * 5)
 	max_shield = new_ship.base_max_shield + (shield_upgrades_bought * 3)
 	cargo_capacity = new_ship.base_cargo_capacity + (cargo_upgrades_bought * 2)
-	max_fuel = 6
 	energy_per_turn = new_ship.base_energy_per_turn
 	hand_size = new_ship.base_hand_size
-	
+
 	for upg_name in installed_upgrades:
 		var upg = _get_upgrade_resource(upg_name)
 		if upg:
 			max_hull += upg.hull_bonus
 			max_shield += upg.shield_bonus
 			cargo_capacity += upg.cargo_bonus
-			max_fuel += upg.fuel_capacity_bonus
 			energy_per_turn += upg.energy_bonus
 			hand_size += upg.hand_size_bonus
-			
+
+	recompute_max_fuel()
 	current_hull = mini(current_hull, max_hull)
 	current_shield = mini(current_shield, max_shield)
-	current_fuel = mini(current_fuel, max_fuel)
 	
 	var dropped_any: bool = false
 	while get_cargo_used() > cargo_capacity and cargo.size() > 0:

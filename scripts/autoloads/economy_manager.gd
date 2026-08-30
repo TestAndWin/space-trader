@@ -7,6 +7,26 @@ var goods: Array = []
 # Sell prices are roughly 75% of buy prices.
 const SELL_RATIO := 0.75
 
+# ── Market saturation ────────────────────────────────────────────────────────
+# Dumping the same cargo into the same market floods it. Once a planet has taken
+# its fill of a good, every further unit sells for less; the market absorbs one
+# unit per day. Contraband floods far faster than ordinary cargo, which is what
+# stops the "buy contraband, hop to the neighbour, sell, hop back" money loop.
+
+# How many units still fetch the full price. The modifier for a unit is read
+# before that unit is booked, so the Nth sale still sees only N-1 booked units
+# -- the penalty therefore starts once the counter has reached this number.
+const SATURATION_FULL_PRICE_UNITS_NORMAL := 6.0
+const SATURATION_FULL_PRICE_UNITS_CONTRABAND := 2.0
+const SATURATION_STEP_NORMAL := 0.05
+const SATURATION_STEP_CONTRABAND := 0.12
+const SATURATION_FLOOR_NORMAL := 0.65
+const SATURATION_FLOOR_CONTRABAND := 0.35
+const SATURATION_RECOVERY_PER_DAY := 1.0
+
+# { planet_name: { good_name: { "units": float, "day": int } } }
+var market_saturation: Dictionary = {}
+
 # Planet type integer constants (avoids magic numbers).
 const PT_INDUSTRIAL := 0
 const PT_AGRICULTURAL := 1
@@ -172,7 +192,7 @@ func get_buy_price_breakdown(planet_name: String, good_name: String) -> Dictiona
 	}
 
 
-func get_sell_price_breakdown(planet_name: String, good_name: String) -> Dictionary:
+func get_sell_price_breakdown(planet_name: String, good_name: String, extra_units: float = 0.0) -> Dictionary:
 	var local_price: int = _get_local_price(planet_name, good_name)
 	if local_price < 0:
 		return {}
@@ -197,11 +217,13 @@ func get_sell_price_breakdown(planet_name: String, good_name: String) -> Diction
 			pirate_modifier = 1.5 # High sell price for contraband
 		else:
 			pirate_modifier = 0.5 # Low sell price for regular goods
-			
+
+	var saturation_modifier: float = get_saturation_modifier(planet_name, good_name, extra_units)
+
 	var final_price: int = max(
 		1,
 		int(round(
-			float(local_price) * event_modifier * sell_ratio * contraband_modifier * rep_modifier * loyalty_modifier * service_fee_modifier * pirate_modifier
+			float(local_price) * event_modifier * sell_ratio * contraband_modifier * rep_modifier * loyalty_modifier * service_fee_modifier * pirate_modifier * saturation_modifier
 		))
 	)
 	
@@ -224,6 +246,7 @@ func get_sell_price_breakdown(planet_name: String, good_name: String) -> Diction
 		"loyalty_modifier": loyalty_modifier,
 		"service_fee_modifier": service_fee_modifier,
 		"pirate_modifier": pirate_modifier,
+		"saturation_modifier": saturation_modifier,
 		"final_price": final_price,
 	}
 
@@ -326,6 +349,139 @@ func _multiply_event_entries(entries: Array) -> float:
 	for entry in entries:
 		modifier *= float((entry as Dictionary).get("modifier", 1.0))
 	return modifier
+
+
+# ── Market saturation ────────────────────────────────────────────────────────
+
+func reset_saturation() -> void:
+	market_saturation.clear()
+
+
+func save_saturation() -> Dictionary:
+	return market_saturation.duplicate(true)
+
+
+func load_saturation(data: Dictionary) -> void:
+	market_saturation = data.duplicate(true)
+
+
+## Units of a good a fresh market buys at the full price, per planet.
+func get_full_price_units(good_name: String) -> float:
+	return SATURATION_FULL_PRICE_UNITS_CONTRABAND if is_contraband_good(good_name) else SATURATION_FULL_PRICE_UNITS_NORMAL
+
+
+## Units a market has taken beyond the ones it pays full price for. The +1
+## closes the off-by-one: with N full-price units the Nth sale sees N-1 booked.
+func _units_over(units: float, full_price_units: float) -> float:
+	return units - full_price_units + 1.0
+
+
+func _get_saturation_step(good_name: String) -> float:
+	return SATURATION_STEP_CONTRABAND if is_contraband_good(good_name) else SATURATION_STEP_NORMAL
+
+
+func _get_saturation_floor(good_name: String) -> float:
+	return SATURATION_FLOOR_CONTRABAND if is_contraband_good(good_name) else SATURATION_FLOOR_NORMAL
+
+
+## Units past which the price no longer drops. Capping here keeps recovery
+## bounded -- selling 100 units must not lock a market out for 100 days.
+func _get_saturation_cap(good_name: String) -> float:
+	var floor_value: float = _get_saturation_floor(good_name)
+	var over_at_floor: float = ceil((1.0 - floor_value) / _get_saturation_step(good_name))
+	# _units_over() inverted: the unit count at which the price bottoms out.
+	return get_full_price_units(good_name) - 1.0 + over_at_floor
+
+
+## Units still flooding a market, after the daily recovery has been applied.
+func get_saturation_units(planet_name: String, good_name: String) -> float:
+	var planet_entry: Dictionary = market_saturation.get(planet_name, {})
+	var entry: Dictionary = planet_entry.get(good_name, {})
+	if entry.is_empty():
+		return 0.0
+	var days_passed: int = maxi(GameManager.current_day - int(entry.get("day", 0)), 0)
+	var recovered: float = float(days_passed) * SATURATION_RECOVERY_PER_DAY
+	return maxf(float(entry.get("units", 0.0)) - recovered, 0.0)
+
+
+## Sell-price multiplier from market saturation, 1.0 when the market is fresh.
+## `extra_units` prices a unit that has not been sold yet, so a stack sold in
+## one click is priced the same as the same stack sold one unit at a time.
+func get_saturation_modifier(planet_name: String, good_name: String, extra_units: float = 0.0) -> float:
+	var units: float = get_saturation_units(planet_name, good_name) + extra_units
+	var over: float = _units_over(units, get_full_price_units(good_name))
+	if over <= 0.0:
+		return 1.0
+	var modifier: float = 1.0 - over * _get_saturation_step(good_name)
+	return maxf(modifier, _get_saturation_floor(good_name))
+
+
+## Days until a flooded market pays full price again, 0 when it already does.
+func get_days_until_recovered(planet_name: String, good_name: String) -> int:
+	var over: float = _units_over(get_saturation_units(planet_name, good_name), get_full_price_units(good_name))
+	if over <= 0.0:
+		return 0
+	return int(ceil(over / SATURATION_RECOVERY_PER_DAY))
+
+
+## Every market currently paying below full price, worst first, so the trade hub
+## can tell the player where they have already dumped too much and how long the
+## market needs. Entries: { planet, good, modifier, days }.
+func get_flooded_markets() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for planet_name: String in market_saturation:
+		for good_name: String in market_saturation[planet_name]:
+			var modifier: float = get_saturation_modifier(planet_name, good_name)
+			if modifier >= 1.0:
+				continue
+			result.append({
+				"planet": planet_name,
+				"good": good_name,
+				"modifier": modifier,
+				"days": get_days_until_recovered(planet_name, good_name),
+			})
+	# The planet the player is standing on decides the next trade, so it leads;
+	# the rest follow worst-flooded first.
+	var here: String = GameManager.current_planet
+	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var a_here: bool = a["planet"] == here
+		var b_here: bool = b["planet"] == here
+		if a_here != b_here:
+			return a_here
+		if a["days"] != b["days"]:
+			return a["days"] > b["days"]
+		return str(a["good"]) < str(b["good"])
+	)
+	return result
+
+
+func register_sale(planet_name: String, good_name: String, quantity: int) -> void:
+	if quantity <= 0 or planet_name == "" or good_name == "":
+		return
+	var units: float = get_saturation_units(planet_name, good_name) + float(quantity)
+	units = minf(units, _get_saturation_cap(good_name))
+	if not market_saturation.has(planet_name):
+		market_saturation[planet_name] = {}
+	market_saturation[planet_name][good_name] = {
+		"units": units,
+		"day": GameManager.current_day,
+	}
+
+
+## Income for selling `quantity` units in one go. Each unit floods the market a
+## little further, so the stack is priced unit by unit -- selling ten at once
+## must not dodge the penalty that selling them one by one would incur.
+## Returns -1 when the good cannot be sold here at all.
+func get_sell_total(planet_name: String, good_name: String, quantity: int) -> int:
+	if quantity <= 0:
+		return 0
+	var total: int = 0
+	for i in range(quantity):
+		var breakdown: Dictionary = get_sell_price_breakdown(planet_name, good_name, float(i))
+		if breakdown.is_empty():
+			return -1
+		total += int(breakdown.get("final_price", 0))
+	return total
 
 
 # ── Economy tick (called after departure) ────────────────────────────────────
