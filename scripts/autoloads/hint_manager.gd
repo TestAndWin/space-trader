@@ -52,11 +52,15 @@ const HINTS: Dictionary = {
 	},
 	"battle": {
 		"title": "Combat",
-		"text": "Play cards to attack or defend. You start with limited energy each turn. Any shield you have carries over from the overworld, so prepare before you fly.",
+		"text": "Play cards to attack or defend. Each card costs energy, which replenishes every turn. Any hull damage you take carries over, so make sure to repair your ship at the shipyard before you fly.",
 	},
 	"planet_hub": {
 		"title": "Planet Hub",
 		"text": "Click on the buildings to access various facilities. The top left shows the current planet and faction. The status bar displays space news, your credits, and your main goal. The bottom left tracks your ship's hull, shields, fuel, and cargo.",
+	},
+	"boarding": {
+		"title": "Boarding",
+		"text": "Infiltrate the enemy ship room by room. Use cards to overcome obstacles — each card type interacts differently with threats and affects the Alarm level. If the Alarm reaches 100%, you take heavy damage. Loot space is limited, so grab what you can and retreat before it's too late.",
 	},
 }
 

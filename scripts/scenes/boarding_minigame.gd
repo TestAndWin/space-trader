@@ -87,6 +87,12 @@ func _ready() -> void:
 	_draw_hand()
 	_build_ui()
 	_update_room_view()
+	
+	call_deferred("_show_hint")
+
+func _show_hint() -> void:
+	if not HintManager.take_hint("boarding").is_empty():
+		HintManager.show_hint_popup("boarding", self)
 
 func _init_rooms() -> void:
 	_rooms.clear()
