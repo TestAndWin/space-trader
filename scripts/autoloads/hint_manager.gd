@@ -8,6 +8,7 @@ extends Node
 ## Reputation, Bounty and the T2 win condition, which are never introduced in
 ## the normal flow.
 
+const JsonStore = preload("res://scripts/tools/json_store.gd")
 const SAVE_PATH := "user://hints_seen.json"
 
 ## Hint id -> { title, text }. Ids for buildings match CityMap.BUILDING_*.
@@ -42,7 +43,7 @@ const HINTS: Dictionary = {
 	},
 	"factory": {
 		"title": "Fabrication",
-		"text": "Craft components here over several days, then install the finished T2 upgrade at the shipyard. Installing one T2 upgrade is one of the three win conditions — the other two are credits and visiting every planet.",
+		"text": "Craft components here over several days, then install the finished T2 upgrade at the shipyard. You need a T2 upgrade to survive locating Crimson Jack's Hideout, along with 10k credits, 0 bounty, and all planets visited.",
 	},
 }
 
@@ -72,30 +73,14 @@ func take_hint(hint_id: String) -> Dictionary:
 	return HINTS[hint_id]
 
 
-## Lets the player see the onboarding again from a settings/help screen.
-func reset_all() -> void:
-	seen.clear()
-	_save()
-
-
 # ── Persistence ─────────────────────────────────────────────────────────────
 
 func _save() -> void:
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if not file:
-		return
-	file.store_string(JSON.stringify({ "seen": seen }))
+	JsonStore.save(SAVE_PATH, { "seen": seen })
+
 
 
 func _load() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
-		return
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
-	if not file:
-		return
-	var json := JSON.new()
-	if json.parse(file.get_as_text()) != OK:
-		return
-	var data: Variant = json.data
-	if data is Dictionary and data.has("seen"):
+	var data: Dictionary = JsonStore.load_dict(SAVE_PATH)
+	if data.has("seen"):
 		seen = data["seen"]

@@ -82,6 +82,11 @@ func load_state(data: Dictionary) -> void:
 
 # ── Reputation ────────────────────────────────────────────────────────────────
 
+## " (reason)" for log lines that carry one, "" otherwise.
+func _reason_suffix(reason: String) -> String:
+	return " (%s)" % reason if reason != "" else ""
+
+
 func get_planet_faction(planet_name: String) -> String:
 	var planet: Resource = EconomyManager.get_planet_data(planet_name)
 	if planet:
@@ -102,10 +107,9 @@ func add_faction_reputation(faction_name: String, amount: int, reason: String = 
 	faction_reputation[faction_name] = new_rep
 	if current_rep == new_rep:
 		return
-	if reason != "":
-		EventLog.add_entry("%s reputation %+d (%s)" % [faction_name, (new_rep - current_rep), reason])
-	else:
-		EventLog.add_entry("%s reputation %+d" % [faction_name, (new_rep - current_rep)])
+	EventLog.add_entry("%s reputation %+d%s" % [
+		faction_name, (new_rep - current_rep), _reason_suffix(reason)
+	])
 	var new_tier: String = get_reputation_tier(faction_name)
 	if new_tier != previous_tier:
 		EventLog.add_entry("%s standing is now %s." % [faction_name, new_tier])
@@ -134,7 +138,7 @@ func get_trade_loyalty(planet_name: String) -> int:
 func add_trade_loyalty(planet_name: String, amount: int) -> void:
 	if amount == 0:
 		return
-	var current: int = trade_loyalty.get(planet_name, 0)
+	var current: int = get_trade_loyalty(planet_name)
 	var previous_tier: String = get_loyalty_tier(planet_name)
 	trade_loyalty[planet_name] = clampi(current + amount, 0, 100)
 	var updated: int = get_trade_loyalty(planet_name)
@@ -178,10 +182,9 @@ func add_bounty(amount: int, reason: String = "") -> void:
 	
 	var previous_tier: String = get_bounty_tier()
 	bounty_amount += scaled_amount
-	if reason != "":
-		EventLog.add_entry("Bounty +%d cr (%s). Total: %d cr" % [scaled_amount, reason, bounty_amount])
-	else:
-		EventLog.add_entry("Bounty +%d cr. Total: %d cr" % [scaled_amount, bounty_amount])
+	EventLog.add_entry("Bounty +%d cr%s. Total: %d cr" % [
+		scaled_amount, _reason_suffix(reason), bounty_amount
+	])
 	var new_tier: String = get_bounty_tier()
 	if new_tier != previous_tier:
 		EventLog.add_entry("Bounty status is now %s." % new_tier)

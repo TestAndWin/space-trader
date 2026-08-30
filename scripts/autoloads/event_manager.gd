@@ -330,13 +330,13 @@ func _resolve_effect(effect: Dictionary, context: Dictionary) -> Dictionary:
 			planet_name = _pick_random_planet_except_current()
 		"agricultural_planet":
 			planet_name = _pick_planet_by_type(EconomyManager.PT_AGRICULTURAL)
+		"industrial_planet":
+			planet_name = _pick_planet_by_type(EconomyManager.PT_INDUSTRIAL)
 		"tech_planet":
 			planet_name = _pick_planet_by_type(EconomyManager.PT_TECH)
 		"source_planet":
 			planet_name = str(context.get("source_planet", ""))
-		"all":
-			planet_name = ""
-		_:
+		_:  # "all" and anything unknown are galaxy-wide
 			planet_name = ""
 
 	if target != "all" and planet_name == "":
@@ -367,9 +367,7 @@ func _pick_random_planet_except_current() -> String:
 	for planet in _planets:
 		if planet.planet_name != GameManager.current_planet:
 			options.append(planet.planet_name)
-	if options.is_empty():
-		return ""
-	return options[randi() % options.size()]
+	return "" if options.is_empty() else options.pick_random()
 
 
 func _pick_planet_by_type(planet_type: int) -> String:
@@ -377,9 +375,7 @@ func _pick_planet_by_type(planet_type: int) -> String:
 	for planet in _planets:
 		if planet.planet_type == planet_type:
 			options.append(planet.planet_name)
-	if options.is_empty():
-		return ""
-	return options[randi() % options.size()]
+	return "" if options.is_empty() else options.pick_random()
 
 
 func _get_active_effects() -> Array[Dictionary]:
@@ -404,13 +400,6 @@ func _effect_applies_to(effect: Dictionary, planet_name: String, good_name: Stri
 	return goods.is_empty() or good_name in goods
 
 
-func _multiply_modifiers(entries: Array) -> float:
-	var value: float = 1.0
-	for entry in entries:
-		value *= float((entry as Dictionary).get("modifier", 1.0))
-	return value
-
-
 # ── Public API ───────────────────────────────────────────────────────────────
 
 func get_price_modifiers_for(planet_name: String, good_name: String) -> Array:
@@ -427,13 +416,10 @@ func get_price_modifiers_for(planet_name: String, good_name: String) -> Array:
 	return modifiers
 
 
-func get_price_modifier(planet_name: String, good_name: String) -> float:
-	return _multiply_modifiers(get_price_modifiers_for(planet_name, good_name))
-
 
 func get_encounter_modifiers(planet_name: String = "") -> Array:
 	if planet_name == "":
-		planet_name = GameManager.travel_destination if GameManager.travel_destination != "" else GameManager.current_planet
+		planet_name = GameManager.get_focus_planet()
 	var modifiers: Array = []
 	for effect in _get_active_effects():
 		if not _effect_applies_to(effect, planet_name):
@@ -480,7 +466,7 @@ func get_reward_modifier() -> float:
 
 func get_active_event_tags(planet_name: String = "") -> Array[String]:
 	if planet_name == "":
-		planet_name = GameManager.travel_destination if GameManager.travel_destination != "" else GameManager.current_planet
+		planet_name = GameManager.get_focus_planet()
 	var tags: Array[String] = []
 	for effect in _get_active_effects():
 		if not _effect_applies_to(effect, planet_name):

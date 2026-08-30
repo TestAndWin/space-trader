@@ -58,7 +58,7 @@ func _generate_deal() -> void:
 		if GameManager.cargo.is_empty():
 			_deal_type = DealType.DISCOUNT_BUY
 		else:
-			var item: Dictionary = GameManager.cargo[randi() % GameManager.cargo.size()]
+			var item: Dictionary = GameManager.cargo.pick_random()
 			_good_name = item["good_name"]
 			_quantity = clampi(randi_range(QTY_MIN, QTY_MAX), 1, item["quantity"])
 			var base_price := _get_base_price(_good_name)
@@ -66,7 +66,7 @@ func _generate_deal() -> void:
 			_total_price = int(round(base_price * multiplier * _quantity))
 
 	if _deal_type == DealType.DISCOUNT_BUY:
-		var good: Resource = EconomyManager.goods[randi() % EconomyManager.goods.size()]
+		var good: Resource = EconomyManager.goods.pick_random()
 		_good_name = good.good_name
 		_quantity = randi_range(QTY_MIN, QTY_MAX)
 		var multiplier := randf_range(DISCOUNT_MIN, DISCOUNT_MAX)
@@ -121,42 +121,18 @@ func _build_ui() -> void:
 	_accept_button = Button.new()
 	_accept_button.text = "Accept"
 	_accept_button.custom_minimum_size = Vector2(120, 36)
-	var accept_style := StyleBoxFlat.new()
-	accept_style.bg_color = Color(0.7, 0.25, 0.1)
-	accept_style.set_corner_radius_all(4)
-	accept_style.set_content_margin_all(6)
-	_accept_button.add_theme_stylebox_override("normal", accept_style)
-	var accept_hover := StyleBoxFlat.new()
-	accept_hover.bg_color = Color(0.85, 0.35, 0.15)
-	accept_hover.set_corner_radius_all(4)
-	accept_hover.set_content_margin_all(6)
-	_accept_button.add_theme_stylebox_override("hover", accept_hover)
-	var accept_pressed := StyleBoxFlat.new()
-	accept_pressed.bg_color = Color(0.55, 0.18, 0.08)
-	accept_pressed.set_corner_radius_all(4)
-	accept_pressed.set_content_margin_all(6)
-	_accept_button.add_theme_stylebox_override("pressed", accept_pressed)
+	UIStyles.style_event_button(
+		_accept_button, Color(0.7, 0.25, 0.1), Color(0.85, 0.35, 0.15), Color(0.55, 0.18, 0.08)
+	)
 	_accept_button.pressed.connect(_on_accept)
 	hbox.add_child(_accept_button)
 
 	_decline_button = Button.new()
 	_decline_button.text = "Decline"
 	_decline_button.custom_minimum_size = Vector2(120, 36)
-	var decline_style := StyleBoxFlat.new()
-	decline_style.bg_color = Color(0.25, 0.25, 0.28)
-	decline_style.set_corner_radius_all(4)
-	decline_style.set_content_margin_all(6)
-	_decline_button.add_theme_stylebox_override("normal", decline_style)
-	var decline_hover := StyleBoxFlat.new()
-	decline_hover.bg_color = Color(0.35, 0.35, 0.38)
-	decline_hover.set_corner_radius_all(4)
-	decline_hover.set_content_margin_all(6)
-	_decline_button.add_theme_stylebox_override("hover", decline_hover)
-	var decline_pressed := StyleBoxFlat.new()
-	decline_pressed.bg_color = Color(0.18, 0.18, 0.2)
-	decline_pressed.set_corner_radius_all(4)
-	decline_pressed.set_content_margin_all(6)
-	_decline_button.add_theme_stylebox_override("pressed", decline_pressed)
+	UIStyles.style_event_button(
+		_decline_button, Color(0.25, 0.25, 0.28), Color(0.35, 0.35, 0.38), Color(0.18, 0.18, 0.2)
+	)
 	_decline_button.pressed.connect(_on_decline)
 	hbox.add_child(_decline_button)
 

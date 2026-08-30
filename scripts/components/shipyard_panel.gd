@@ -4,9 +4,8 @@ signal shipyard_action
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
-const ShipDisplayScene: PackedScene = preload("res://scenes/components/ship_display_3d.tscn")
+const ShipDisplayScene: PackedScene = preload("res://scenes/components/ship_display.tscn")
 var ship_display_node: Control
-var _planet_type: int = 0
 
 var hull_bar: ProgressBar
 var hull_bar_label: Label
@@ -96,8 +95,8 @@ func _ready() -> void:
 	status_label = Label.new()
 	status_label.text = ""
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
-	status_label.add_theme_color_override("font_color", UIStyles.STATUS_OK)
+	status_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
+	status_label.add_theme_color_override("font_color", UIStyles.POSITIVE)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(status_label)
 
@@ -145,15 +144,16 @@ func _create_stat_bar(label_text: String, bg_color: Color, fill_color: Color) ->
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
-	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_font_size_override("font_size", UIStyles.FONT_MICRO)
 	lbl.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9, 0.95))
 	container.add_child(lbl)
 
 	return container
 
 
-func setup(planet_type: int = 0) -> void:
-	_planet_type = planet_type
+## The panel offers the same repair/fuel services everywhere, so the planet type
+## it is handed does not change anything here.
+func setup(_planet_type: int = 0) -> void:
 	_refresh_display()
 
 
@@ -176,7 +176,7 @@ func _refresh_display() -> void:
 			fill_color = Color(0.85, 0.65, 0.15)
 		else:
 			fill_color = Color(0.85, 0.2, 0.15)
-		var fill_style := hull_bar.get_theme_stylebox("fill").duplicate()
+		var fill_style = hull_bar.get_theme_stylebox("fill").duplicate()
 		fill_style.bg_color = fill_color
 		hull_bar.add_theme_stylebox_override("fill", fill_style)
 

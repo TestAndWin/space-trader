@@ -3,6 +3,15 @@ extends Control
 const CardDisplayScene: PackedScene = preload("res://scenes/components/card_display.tscn")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
+const TravelEventScene: PackedScene = preload("res://scenes/components/travel_event.tscn")
+
+## Icon per combat-upgrade reward; anything unlisted falls back to the wrench.
+const UPGRADE_ICONS: Dictionary = {
+	"Armor Plating": "🛡",
+	"Combat Scanner": "📡",
+	"Shield Capacitor": "⚡",
+}
+
 var card_selected: bool = false
 var reward_chosen: bool = false
 
@@ -17,7 +26,7 @@ func _ready() -> void:
 	match result:
 		"won", "boarded":
 			%ResultTitle.text = "Victory!"
-			%ResultTitle.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
+			%ResultTitle.add_theme_color_override("font_color", UIStyles.POSITIVE)
 			GameManager.complete_travel_arrival(destination)
 
 			# Check if this was a rival encounter
@@ -53,45 +62,39 @@ func _ready() -> void:
 				_setup_credits_only_reward(destination)
 		"lost":
 			%ResultTitle.text = "Defeated!"
-			%ResultTitle.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
-			%ResultDescription.text = "You crash-landed at %s.\nCredits remaining: %d cr" % [destination, GameManager.credits]
+			%ResultTitle.add_theme_color_override("font_color", UIStyles.NEGATIVE)
 			var cargo_text := GameManager.last_cargo_lost_text
+			if destination == GameManager.CRIMSON_BASE_NAME and not GameManager.victory_triggered:
+				%ResultDescription.text = "You were defeated by Crimson Jack!\nYou barely escaped back to %s.\nCredits remaining: %d cr" % [GameManager.travel_origin, GameManager.credits]
+				GameManager.complete_travel_arrival(GameManager.travel_origin)
+			else:
+				%ResultDescription.text = "You crash-landed at %s.\nCredits remaining: %d cr" % [destination, GameManager.credits]
+				GameManager.complete_travel_arrival(destination)
 			if cargo_text != "":
 				%ResultDescription.text += "\n" + cargo_text
-			GameManager.complete_travel_arrival(destination)
-			%CardRewardPanel.visible = false
-			%RewardPanel.visible = false
-			%ContinueButton.visible = true
+			_show_continue_only()
 		"fled":
 			%ResultTitle.text = "Escaped!"
-			%ResultTitle.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+			%ResultTitle.add_theme_color_override("font_color", UIStyles.CAUTION)
 			%ResultDescription.text = "You fled back to %s. -150 credits.\nCredits remaining: %d cr" % [GameManager.travel_origin, GameManager.credits]
 			GameManager.current_planet = GameManager.travel_origin
-			%CardRewardPanel.visible = false
-			%RewardPanel.visible = false
-			%ContinueButton.visible = true
+			_show_continue_only()
 		"lost_backup":
 			%ResultTitle.text = "Ship Destroyed!"
-			%ResultTitle.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2))
+			%ResultTitle.add_theme_color_override("font_color", UIStyles.NEGATIVE)
 			%ResultDescription.text = "Your ship was destroyed! You managed to escape in a pod and retrieve your backup ship. However, all cargo and crew on board were lost.\n\nYou have returned to %s." % GameManager.travel_origin
 			GameManager.current_planet = GameManager.travel_origin
-			%CardRewardPanel.visible = false
-			%RewardPanel.visible = false
-			%ContinueButton.visible = true
+			_show_continue_only()
 		"boarding_failed":
 			%ResultTitle.text = "Boarding Failed!"
 			%ResultTitle.add_theme_color_override("font_color", Color(1.0, 0.5, 0.0))
 			%ResultDescription.text = "You barely escaped the exploding ship!\nYour hull took 5 damage.\nArriving at %s." % destination
 			GameManager.complete_travel_arrival(destination)
-			%CardRewardPanel.visible = false
-			%RewardPanel.visible = false
-			%ContinueButton.visible = true
+			_show_continue_only()
 		_:
 			%ResultTitle.text = "Battle Over"
 			%ResultDescription.text = ""
-			%CardRewardPanel.visible = false
-			%RewardPanel.visible = false
-			%ContinueButton.visible = true
+			_show_continue_only()
 
 	UIStyles.apply_display_font(%ResultTitle)
 	UIStyles.apply_display_font(%RewardTitle)
@@ -101,6 +104,25 @@ func _ready() -> void:
 
 
 # ── Credits + Card reward (original behavior) ───────────────────────────────
+
+## Hides both reward panels and offers only "Continue".
+func _show_continue_only() -> void:
+	%CardRewardPanel.visible = false
+	%RewardPanel.visible = false
+	%ContinueButton.visible = true
+
+
+## Awards the battle credits and writes the standard arrival description.
+## `extra_separator` exists only because the crew reward has always put a
+## single newline in front of the extra battle message where the others put two.
+func _describe_battle_reward(destination: String, extra_separator: String = "\n\n") -> void:
+	var earned: int = _award_battle_credits()
+	var msg: String = "Combat Reward: %d cr" % earned
+	if GameManager.extra_battle_message != "":
+		msg += extra_separator + GameManager.extra_battle_message
+	msg += "\n\nArriving at %s." % destination
+	%ResultDescription.text = msg
+
 
 func _award_battle_credits() -> int:
 	var earned: int = 0
@@ -116,37 +138,8 @@ func _award_battle_credits() -> int:
 
 
 func _setup_credits_only_reward(destination: String) -> void:
-	var earned: int = _award_battle_credits()
-	var msg: String = "Combat Reward: %d cr" % earned
-	if GameManager.extra_battle_message != "":
-		msg += "\n\n" + GameManager.extra_battle_message
-	msg += "\n\nArriving at %s." % destination
-	%ResultDescription.text = msg
-	%RewardPanel.visible = false
-	%CardRewardPanel.visible = false
-	%ContinueButton.visible = true
-
-
-func _setup_credits_card_reward(destination: String) -> void:
-	var earned: int = _award_battle_credits()
-	var msg: String = "Combat Reward: %d cr" % earned
-	if GameManager.extra_battle_message != "":
-		msg += "\n\n" + GameManager.extra_battle_message
-	msg += "\n\nArriving at %s." % destination
-	%ResultDescription.text = msg
-	%RewardPanel.visible = false
-
-	# Only offer card rewards for harder fights or 40% random chance
-	var enc_diff: int = 0
-	if GameManager.current_encounter:
-		enc_diff = GameManager.current_encounter.difficulty
-	if enc_diff >= 2 or randf() < 0.4:
-		_setup_card_rewards()
-		%CardRewardPanel.visible = true
-		%ContinueButton.visible = false
-	else:
-		%CardRewardPanel.visible = false
-		%ContinueButton.visible = true
+	_describe_battle_reward(destination)
+	_show_continue_only()
 
 
 func _setup_card_rewards() -> void:
@@ -201,12 +194,7 @@ func _on_skip_pressed() -> void:
 # ── Upgrade reward ───────────────────────────────────────────────────────────
 
 func _setup_upgrade_reward(destination: String) -> void:
-	var earned: int = _award_battle_credits()
-	var msg: String = "Combat Reward: %d cr" % earned
-	if GameManager.extra_battle_message != "":
-		msg += "\n\n" + GameManager.extra_battle_message
-	msg += "\n\nArriving at %s." % destination
-	%ResultDescription.text = msg
+	_describe_battle_reward(destination)
 	%CardRewardPanel.visible = false
 	%ContinueButton.visible = false
 
@@ -215,15 +203,13 @@ func _setup_upgrade_reward(destination: String) -> void:
 
 	# Find one that's not already installed
 	var chosen: Resource = null
-	var all_installed: bool = true
 	for upg in combat_upgrades:
 		if upg.upgrade_name not in GameManager.installed_upgrades:
 			chosen = upg
-			all_installed = false
 			break
 
-	if all_installed and combat_upgrades.size() > 0:
-		# Bad luck — show what it would have been
+	if chosen == null and not combat_upgrades.is_empty():
+		# Bad luck, everything is installed already — show what it would have been
 		chosen = combat_upgrades[0]
 
 	if not chosen:
@@ -235,7 +221,7 @@ func _setup_upgrade_reward(destination: String) -> void:
 	var already_owned: bool = chosen.upgrade_name in GameManager.installed_upgrades
 	_build_reward_panel(
 		"Ship Upgrade Found!",
-		_get_upgrade_icon(chosen),
+		UPGRADE_ICONS.get(chosen.upgrade_name, "🔧"),
 		chosen.upgrade_name,
 		chosen.description,
 		"Install" if not already_owned else "",
@@ -254,27 +240,10 @@ func _setup_upgrade_reward(destination: String) -> void:
 		)
 
 
-func _get_upgrade_icon(upgrade: Resource) -> String:
-	match upgrade.upgrade_name:
-		"Armor Plating":
-			return "🛡"
-		"Combat Scanner":
-			return "📡"
-		"Shield Capacitor":
-			return "⚡"
-		_:
-			return "🔧"
-
-
 # ── Crew reward ──────────────────────────────────────────────────────────────
 
 func _setup_crew_reward(destination: String) -> void:
-	var earned: int = _award_battle_credits()
-	var msg: String = "Combat Reward: %d cr" % earned
-	if GameManager.extra_battle_message != "":
-		msg += "\n" + GameManager.extra_battle_message
-	msg += "\n\nArriving at %s." % destination
-	%ResultDescription.text = msg
+	_describe_battle_reward(destination, "\n")
 	%CardRewardPanel.visible = false
 	%ContinueButton.visible = false
 
@@ -368,14 +337,13 @@ func _style_buttons() -> void:
 
 func _on_continue_pressed() -> void:
 	if GameManager.battle_result == "won":
-		var TravelEventScene: PackedScene = preload("res://scenes/components/travel_event.tscn")
 		var travel_event := TravelEventScene.instantiate()
 		add_child(travel_event)
 		if travel_event.try_trigger(GameManager.travel_days):
 			travel_event.event_resolved.connect(_finish_continue)
 			return
 		travel_event.queue_free()
-	
+
 	_finish_continue()
 
 
@@ -383,4 +351,14 @@ func _finish_continue() -> void:
 	GameManager.current_encounter = null
 	GameManager.battle_result = ""
 	GameManager.extra_battle_message = ""
-	GameManager.change_scene("res://scenes/planet_screen.tscn")
+	if GameManager.current_hull <= 0:
+		# If defeated at Crimson Jack's Hideout (before victory), survive with 1 HP
+		if GameManager.travel_destination == GameManager.CRIMSON_BASE_NAME and not GameManager.victory_triggered:
+			GameManager.current_hull = 1
+			GameManager.change_scene("res://scenes/planet_screen.tscn")
+		else:
+			GameManager.change_scene("res://scenes/game_over.tscn")
+	else:
+		if GameManager.try_trigger_actual_victory():
+			return
+		GameManager.change_scene("res://scenes/planet_screen.tscn")

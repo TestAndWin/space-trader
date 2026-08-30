@@ -81,30 +81,44 @@ func _ready() -> void:
 
 func _load_data() -> void:
 	planets = ResourceRegistry.load_all(ResourceRegistry.PLANETS)
+	if GameManager.crimson_base_unlocked:
+		var crimson_base: Resource = load(ResourceRegistry.CRIMSON_BASE)
+		if crimson_base:
+			planets.append(crimson_base)
 	goods = ResourceRegistry.load_all(ResourceRegistry.GOODS)
 	# Crafted goods need prices for sell_finished_item() but are not buyable
 	# (they are not listed in _type_available_goods).
 	goods.append_array(ResourceRegistry.load_all(ResourceRegistry.CRAFTED_GOODS))
 
 
+func reload_planets() -> void:
+	_load_data()
+	# Need to generate prices for the new planet if it wasn't there
+	for planet in planets:
+		if not price_table.has(planet.planet_name):
+			_generate_prices_for_planet(planet)
+
+func _generate_prices_for_planet(planet: Resource) -> void:
+	var planet_name: String = planet.planet_name
+	var planet_type: String = PLANET_TYPE_NAMES.get(planet.planet_type, "Industrial")
+	var modifiers: Dictionary = _type_modifiers.get(planet_type, {})
+	price_table[planet_name] = {}
+	for good in goods:
+		var good_name: String = good.good_name
+		var base_price: int = good.base_price
+		var modifier: float = modifiers.get(good_name, 1.0)
+		# Contraband at non-Outlaw planets: high price (good sell target)
+		if good_name in CONTRABAND_GOODS and planet_type != "Outlaw":
+			modifier = _contraband_non_outlaw_modifiers.get(good_name, 2.0)
+		var variance: float = randf_range(0.9, 1.1)
+		var final_price := int(round(base_price * modifier * variance))
+		price_table[planet_name][good_name] = max(1, final_price)
+
 # ── Price generation ─────────────────────────────────────────────────────────
 
 func _generate_initial_prices() -> void:
 	for planet in planets:
-		var planet_name: String = planet.planet_name
-		var planet_type: String = PLANET_TYPE_NAMES.get(planet.planet_type, "Industrial")
-		var modifiers: Dictionary = _type_modifiers.get(planet_type, {})
-		price_table[planet_name] = {}
-		for good in goods:
-			var good_name: String = good.good_name
-			var base_price: int = good.base_price
-			var modifier: float = modifiers.get(good_name, 1.0)
-			# Contraband at non-Outlaw planets: high price (good sell target)
-			if good_name in CONTRABAND_GOODS and planet_type != "Outlaw":
-				modifier = _contraband_non_outlaw_modifiers.get(good_name, 2.0)
-			var variance: float = randf_range(0.9, 1.1)
-			var final_price := int(round(base_price * modifier * variance))
-			price_table[planet_name][good_name] = max(1, final_price)
+		_generate_prices_for_planet(planet)
 
 
 # ── Public API ───────────────────────────────────────────────────────────────
@@ -221,12 +235,9 @@ func get_available_goods(planet_type_name: String) -> Array:
 
 
 func is_good_sold_at_planet(planet_name: String, good_name: String) -> bool:
-	var planet := get_planet_data(planet_name)
-	if planet == null:
+	if get_planet_data(planet_name) == null:
 		return false
-	var planet_type: String = PLANET_TYPE_NAMES.get(planet.planet_type, "Industrial")
-	var available: Array = _type_available_goods.get(planet_type, [])
-	return good_name in available
+	return good_name in _type_available_goods.get(_get_planet_type(planet_name), [])
 
 
 func get_planet_data(planet_name: String) -> Resource:
@@ -250,7 +261,7 @@ func _get_local_price(planet_name: String, good_name: String) -> int:
 
 
 func _can_buy_good(planet_name: String, good_name: String) -> bool:
-	if not (planet_name in price_table and good_name in price_table[planet_name]):
+	if _get_local_price(planet_name, good_name) < 0:
 		return false
 	var planet_type: String = _get_planet_type(planet_name)
 	var available: Array = _type_available_goods.get(planet_type, [])

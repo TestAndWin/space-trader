@@ -95,13 +95,7 @@ func play_shield_hit() -> void:
 	play_sfx("shield_hit", 0.06)
 	
 func play_shield_up() -> void:
-	var stream: AudioStream = _get_stream(SFX_DIR + "shield_hit.wav")
-	if stream == null: return
-	var player: AudioStreamPlayer = _sfx_pool[_sfx_index]
-	_sfx_index = (_sfx_index + 1) % _sfx_pool.size()
-	player.stream = stream
-	player.pitch_scale = 0.6  # lower pitch for powering up
-	player.play()
+	play_sfx("shield_hit", 0.0, 0.6)  # lower pitch for powering up
 
 func play_hull_hit() -> void:
 	play_sfx("hull_hit", 0.06)

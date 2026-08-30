@@ -34,7 +34,6 @@ var _icon_labels: Array = []
 var _tab_bar: TabBar
 var _tab_content: MarginContainer
 var _active_tab: int = Tab.SERVICE
-var _shipyard_panel: Control  # ShipyardPanel instance, only on the SERVICE tab
 
 const ShipyardPanelScene: PackedScene = preload("res://scenes/components/shipyard_panel.tscn")
 const ShipDealerScene: PackedScene = preload("res://scenes/components/ship_dealer.tscn")
@@ -73,7 +72,7 @@ func _build_ui() -> void:
 		self,
 		"",
 		"",
-		SHIPYARD_ICONS.get(_planet_type, "⚙"),
+		"⚙",  # planet-specific icon is applied by _apply_planet_theme()
 		"Back to City",
 		close,
 	)
@@ -86,8 +85,8 @@ func _build_ui() -> void:
 	_tab_bar = TabBar.new()
 	for tab: int in [Tab.SERVICE, Tab.UPGRADES, Tab.SHIPS]:
 		_tab_bar.add_tab(TAB_TITLES[tab])
-	_tab_bar.add_theme_font_size_override("font_size", 16)
-	_tab_bar.tab_changed.connect(_on_tab_changed)
+	_tab_bar.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
+	_tab_bar.tab_changed.connect(_show_tab)
 	main_vbox.add_child(_tab_bar)
 
 	_tab_content = MarginContainer.new()
@@ -111,15 +110,10 @@ func _refresh_tab_availability() -> void:
 		_tab_bar.current_tab = Tab.SERVICE
 
 
-func _on_tab_changed(tab: int) -> void:
-	_show_tab(tab)
-
-
 func _show_tab(tab: int) -> void:
 	if _tab_content == null:
 		return
 	_active_tab = tab
-	_shipyard_panel = null
 	for child in _tab_content.get_children():
 		child.queue_free()
 	match tab:
@@ -143,12 +137,12 @@ func _build_service_tab() -> void:
 	centre.alignment = BoxContainer.ALIGNMENT_CENTER
 	_tab_content.add_child(centre)
 
-	_shipyard_panel = ShipyardPanelScene.instantiate()
-	_shipyard_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_shipyard_panel.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
-	_shipyard_panel.custom_minimum_size = Vector2(480, 0)
-	centre.add_child(_shipyard_panel)
-	_shipyard_panel.setup(_planet_type)
+	var panel: Control = ShipyardPanelScene.instantiate()
+	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	panel.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
+	panel.custom_minimum_size = Vector2(480, 0)
+	centre.add_child(panel)
+	panel.setup(_planet_type)
 
 
 func close() -> void:

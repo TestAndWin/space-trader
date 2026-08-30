@@ -36,14 +36,14 @@ func _build_ui() -> void:
 	var title := Label.new()
 	title.text = "ACHIEVEMENTS"
 	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_font_size_override("font_size", UIStyles.FONT_TITLE)
 	title.add_theme_color_override("font_color", UIStyles.GOLD)
 	header.add_child(title)
 
 	var count_label := Label.new()
 	count_label.text = "%d / %d" % [AchievementManager.get_unlocked_count(), AchievementManager.get_total_count()]
 	count_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	count_label.add_theme_font_size_override("font_size", 20)
+	count_label.add_theme_font_size_override("font_size", UIStyles.FONT_HEADING)
 	count_label.add_theme_color_override("font_color", Color(0.6, 0.8, 1.0))
 	count_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(count_label)
@@ -87,12 +87,8 @@ func _create_card(info: Dictionary, unlocked: bool) -> PanelContainer:
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var style := StyleBoxFlat.new()
-	if unlocked:
-		style.bg_color = Color(0.08, 0.12, 0.06, 0.9)
-		style.border_color = UIStyles.GOLD.darkened(0.3)
-	else:
-		style.bg_color = Color(0.06, 0.06, 0.08, 0.7)
-		style.border_color = Color(0.2, 0.2, 0.25, 0.5)
+	style.bg_color = Color(0.08, 0.12, 0.06, 0.9) if unlocked else Color(0.06, 0.06, 0.08, 0.7)
+	style.border_color = UIStyles.GOLD.darkened(0.3) if unlocked else Color(0.2, 0.2, 0.25, 0.5)
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(8)
 	style.set_content_margin_all(12)
@@ -104,13 +100,9 @@ func _create_card(info: Dictionary, unlocked: bool) -> PanelContainer:
 
 	# Icon area
 	var icon_label := Label.new()
-	if unlocked:
-		icon_label.text = "★"
-		icon_label.add_theme_color_override("font_color", UIStyles.GOLD)
-	else:
-		icon_label.text = "?"
-		icon_label.add_theme_color_override("font_color", Color(0.3, 0.3, 0.35))
-	icon_label.add_theme_font_size_override("font_size", 32)
+	icon_label.text = "★" if unlocked else "?"
+	icon_label.add_theme_color_override("font_color", UIStyles.GOLD if unlocked else Color(0.3, 0.3, 0.35))
+	icon_label.add_theme_font_size_override("font_size", UIStyles.FONT_TITLE)
 	icon_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hbox.add_child(icon_label)
 
@@ -121,24 +113,17 @@ func _create_card(info: Dictionary, unlocked: bool) -> PanelContainer:
 	hbox.add_child(text_vbox)
 
 	var name_label := Label.new()
-	if unlocked:
-		name_label.text = info["name"]
-		name_label.add_theme_color_override("font_color", UIStyles.GOLD)
-	else:
-		name_label.text = "???"
-		name_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.45))
+	name_label.text = info["name"] if unlocked else "???"
+	name_label.add_theme_color_override("font_color", UIStyles.GOLD if unlocked else Color(0.4, 0.4, 0.45))
 	name_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	name_label.add_theme_font_size_override("font_size", 18)
+	name_label.add_theme_font_size_override("font_size", UIStyles.FONT_SUBHEADING)
 	text_vbox.add_child(name_label)
 
 	var desc_label := Label.new()
 	desc_label.text = info["description"]
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if unlocked:
-		desc_label.add_theme_color_override("font_color", Color(0.75, 0.85, 0.7))
-	else:
-		desc_label.add_theme_color_override("font_color", Color(0.35, 0.35, 0.4))
-	desc_label.add_theme_font_size_override("font_size", 13)
+	desc_label.add_theme_color_override("font_color", Color(0.75, 0.85, 0.7) if unlocked else Color(0.35, 0.35, 0.4))
+	desc_label.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
 	text_vbox.add_child(desc_label)
 
 	return card

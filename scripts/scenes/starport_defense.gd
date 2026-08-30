@@ -25,13 +25,16 @@ const ENEMY_MOVE_SPEED: float = 60.0
 const ENEMY_DROP: float = 20.0
 const ENEMY_FIRE_INTERVAL: float = 1.5
 
+## Horizontal centre of the game area — where the player ship starts.
+const PLAYER_START_X: float = 640.0
+
 # Game area bounds
 const AREA_LEFT: float = 100.0
 const AREA_RIGHT: float = 1180.0
 const AREA_TOP: float = 60.0
 const AREA_BOTTOM: float = 560.0
 
-var _player_x: float = 640.0
+var _player_x: float = PLAYER_START_X
 var _player_lives: int = 3
 var _player_bullet: Dictionary = {}  # { x, y } or empty
 var _player_shoot_cooldown: float = 0.0
@@ -44,14 +47,13 @@ var _enemy_bullet_speed: float = ENEMY_BULLET_SPEED
 var _enemy_fire_timer: float = 0.0
 
 var _game_active: bool = false
-var _game_won: bool = false
 var _result_shown: bool = false
 var _result_timer: float = 0.0
 var _crew_intro_timer: float = 0.0  # While > 0, _info_label shows the crew bonus summary
 var _particles: Array = []  # Array of { x, y, vx, vy, life, color }
 var _player_flash: float = 0.0  # Screen shake / flash timer on player hit
 var _touch_active: bool = false  # Touch input active
-var _touch_target_x: float = 640.0  # X position finger is pointing at
+var _touch_target_x: float = PLAYER_START_X  # X position finger is pointing at
 
 var _canvas: Control
 var _lives_label: Label
@@ -88,14 +90,14 @@ func _build_ui() -> void:
 
 	_lives_label = Label.new()
 	_lives_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	_lives_label.add_theme_font_size_override("font_size", 18)
-	_lives_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
+	_lives_label.add_theme_font_size_override("font_size", UIStyles.FONT_SUBHEADING)
+	_lives_label.add_theme_color_override("font_color", UIStyles.NEGATIVE)
 	header.add_child(_lives_label)
 	header.move_child(_lives_label, header.get_child_count() - 2)
 
 	_info_label = Label.new()
 	_info_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	_info_label.add_theme_font_size_override("font_size", 16)
+	_info_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
 	_info_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.4))
 	header.add_child(_info_label)
 	header.move_child(_info_label, header.get_child_count() - 2)
@@ -113,7 +115,7 @@ func _init_game() -> void:
 	_enemies.clear()
 	_enemy_bullets.clear()
 	_player_bullet = {}
-	_player_x = 640.0
+	_player_x = PLAYER_START_X
 	_player_lives = 3
 	# Navigator gives 4 lives
 	if GameManager.has_crew_bonus(CrewData.CrewBonus.ENCOUNTER_REDUCTION):
@@ -122,7 +124,6 @@ func _init_game() -> void:
 	_enemy_direction = 1.0
 	_enemy_fire_timer = 0.0
 	_game_active = true
-	_game_won = false
 	_result_shown = false
 
 	var start_x: float = 340.0
@@ -229,6 +230,15 @@ func _update_player_bullet(delta: float) -> void:
 		_player_bullet = {}
 
 
+## The enemies that have not been shot down yet.
+func _alive_enemies() -> Array:
+	var alive: Array = []
+	for enemy in _enemies:
+		if enemy["alive"]:
+			alive.append(enemy)
+	return alive
+
+
 func _update_enemies(delta: float) -> void:
 	var should_drop: bool = false
 	for enemy in _enemies:
@@ -252,12 +262,9 @@ func _update_enemies(delta: float) -> void:
 	_enemy_fire_timer -= delta
 	if _enemy_fire_timer <= 0:
 		_enemy_fire_timer = ENEMY_FIRE_INTERVAL
-		var alive_enemies: Array = []
-		for enemy in _enemies:
-			if enemy["alive"]:
-				alive_enemies.append(enemy)
+		var alive_enemies: Array = _alive_enemies()
 		if alive_enemies.size() > 0:
-			var shooter: Dictionary = alive_enemies[randi() % alive_enemies.size()]
+			var shooter: Dictionary = alive_enemies.pick_random()
 			_enemy_bullets.append({ "x": shooter["x"], "y": shooter["y"] + ENEMY_SIZE.y * 0.5 })
 
 
@@ -285,12 +292,7 @@ func _check_collisions() -> void:
 				break
 
 	# Check if all enemies dead
-	var all_dead: bool = true
-	for enemy in _enemies:
-		if enemy["alive"]:
-			all_dead = false
-			break
-	if all_dead:
+	if _alive_enemies().is_empty():
 		_on_game_won()
 		return
 
@@ -313,19 +315,17 @@ func _check_collisions() -> void:
 
 func _on_game_won() -> void:
 	_game_active = false
-	_game_won = true
 	GameManager.mission_done_this_landing = true
 	GameManager.add_credits(WIN_REWARD)
 	EventLog.add_entry("Mission complete! Earned %d cr." % WIN_REWARD)
 	_info_label.text = "VICTORY! +%d cr" % WIN_REWARD
-	_info_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+	_info_label.add_theme_color_override("font_color", UIStyles.POSITIVE)
 	_result_shown = true
 	_result_timer = 2.0
 
 
 func _on_game_lost() -> void:
 	_game_active = false
-	_game_won = false
 	GameManager.mission_done_this_landing = true
 	var hull_damage: int = randi_range(LOSE_HULL_MIN, LOSE_HULL_MAX)
 	# Medic reduces hull damage taken on loss
@@ -334,7 +334,7 @@ func _on_game_lost() -> void:
 	GameManager.current_hull = maxi(1, GameManager.current_hull - hull_damage)
 	EventLog.add_entry("Mission failed! Ship took %d hull damage." % hull_damage)
 	_info_label.text = "DEFEATED! -%d hull" % hull_damage
-	_info_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	_info_label.add_theme_color_override("font_color", UIStyles.NEGATIVE)
 	_result_shown = true
 	_result_timer = 2.0
 
@@ -357,16 +357,9 @@ func _return_to_planet() -> void:
 
 
 func _update_hud() -> void:
-	var hearts: String = ""
-	for i in _player_lives:
-		hearts += "♥ "
-	_lives_label.text = hearts
+	_lives_label.text = "♥ ".repeat(_player_lives)
 	if not _result_shown and _crew_intro_timer <= 0.0:
-		var alive_count: int = 0
-		for enemy in _enemies:
-			if enemy["alive"]:
-				alive_count += 1
-		_info_label.text = "Enemies: %d" % alive_count
+		_info_label.text = "Enemies: %d" % _alive_enemies().size()
 
 
 func _on_canvas_draw() -> void:
@@ -420,7 +413,7 @@ func _on_canvas_draw() -> void:
 
 
 func _spawn_explosion(x: float, y: float, base_color: Color) -> void:
-	for i in 8:
+	for _i in 8:
 		var angle: float = randf() * TAU
 		var speed: float = randf_range(60.0, 180.0)
 		_particles.append({

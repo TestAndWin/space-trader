@@ -48,24 +48,31 @@ static func apply_mono_font(ctrl: Control) -> void:
 # Use these for consistent overlay-screen titles. Default color is ACCENT.
 # Reserve GOLD for highlight/reward emphasis (e.g. "READY TO COLLECT", credits).
 
-const TITLE_FONT_SIZE: int   = 26
-const SECTION_FONT_SIZE: int = 16
-const BODY_FONT_SIZE: int    = 16  # Primary content: descriptions, status labels
-const DETAIL_FONT_SIZE: int  = 15  # Secondary rows: stats, chain labels, deadlines
-const SMALL_FONT_SIZE: int   = 14  # Fine print: notes, modifiers
-const FINE_FONT_SIZE: int      = 11  # Technically constrained: bar labels (limited by bar height)
-const SUBTITLE_FONT_SIZE: int  = 14  # Overlay screen subtitles
+# ── Type scale ──────────────────────────────────────────────────────────────
+# Nine steps, named by role. Never write a raw font size: if none of these fits,
+# the design needs a new step here, not a one-off number at the call site.
+# Two roles may share a value (FONT_BODY/FONT_DETAIL are close on purpose);
+# picking by role is what keeps the intent readable.
+const FONT_HERO: int       = 52  # Main menu wordmark, galaxy-map planet labels
+const FONT_TITLE: int      = 28  # Screen titles
+const FONT_HEADING: int    = 22  # Modal titles, panel headings
+const FONT_SUBHEADING: int = 18  # Card titles, sub-panel headings
+const FONT_BODY: int       = 16  # Primary content: descriptions, status labels
+const FONT_DETAIL: int     = 15  # Secondary rows: stats, chain labels, deadlines
+const FONT_LABEL: int      = 13  # Buttons, compact labels, overlay subtitles
+const FONT_CAPTION: int    = 12  # Fine print: notes, modifiers, log lines
+const FONT_MICRO: int      = 10  # Technically constrained: bar and chip labels
 
 
 static func apply_screen_title(label: Label, color: Color = ACCENT) -> void:
 	apply_display_font(label)
-	label.add_theme_font_size_override("font_size", TITLE_FONT_SIZE)
+	label.add_theme_font_size_override("font_size", FONT_TITLE)
 	label.add_theme_color_override("font_color", color)
 
 
 static func apply_section_title(label: Label, color: Color = ACCENT) -> void:
 	apply_display_font(label)
-	label.add_theme_font_size_override("font_size", SECTION_FONT_SIZE)
+	label.add_theme_font_size_override("font_size", FONT_BODY)
 	label.add_theme_color_override("font_color", color)
 
 
@@ -76,6 +83,7 @@ const ACCENT := Color(0.0, 0.9, 1.0)
 const ACCENT_DIM := Color(0.0, 0.45, 0.75, 0.6)
 const POSITIVE := Color(0.2, 0.9, 0.35)
 const NEGATIVE := Color(1.0, 0.35, 0.3)
+const CAUTION  := Color(1.0, 0.85, 0.3)   # Amber: the middle step between POSITIVE and NEGATIVE
 const PANEL_BG := Color(0.02, 0.06, 0.14)
 const PANEL_BORDER := Color(0.0, 0.65, 0.95, 0.85)
 
@@ -84,12 +92,11 @@ const PANEL_COLOR := Color(0.02, 0.06, 0.14, 0.45)
 const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.35)
 
 # Status / feedback label colors
-const STATUS_OK   := Color(0.0, 1.0, 0.6)      # Green: action success (hired, repaired, bought)
 const STATUS_WARN := Color(0.9, 0.82, 0.55)     # Amber: informational status (quest, factory, market)
 
 # ── ActionButton constants ───────────────────────────────────────────────────
 # Change these to restyle all ActionButtons project-wide.
-const ACTION_BTN_FONT_SIZE: int = BODY_FONT_SIZE  # 16
+const ACTION_BTN_FONT_SIZE: int = FONT_BODY
 const ACTION_BTN_MIN_HEIGHT: int = 36
 
 # Planet-type accent colors (indexed by planet_type int)
@@ -138,7 +145,7 @@ static func style_accent_button(btn: Button, accent: Color, font_size: int = 14)
 # Replaces: _style_buy_button() in ship_upgrade, ship_dealer.
 
 static func style_buy_button(btn: Button) -> void:
-	btn.add_theme_font_size_override("font_size", 14)
+	btn.add_theme_font_size_override("font_size", FONT_LABEL)
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = Color(0.0, 0.18, 0.10)
 	normal.border_color = Color(0.0, 0.6, 0.4, 0.7)
@@ -227,49 +234,7 @@ static func style_action_button(btn: Button) -> void:
 	style_secondary_button(btn, ACTION_BTN_FONT_SIZE)
 
 
-# ── Small secondary button ──────────────────────────────────────────────────
-# Used for: compact buttons in panels (upgrade, hire, dismiss).
-# Replaces: _style_upgrade_button() in crew_panel, shipyard_panel
-# with smaller margins for inline use.
-
-static func style_small_secondary_button(btn: Button) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.02, 0.08, 0.18)
-	normal.border_color = Color(0.0, 0.45, 0.75)
-	normal.set_border_width_all(1)
-	normal.set_corner_radius_all(3)
-	normal.content_margin_left = 4
-	normal.content_margin_right = 4
-	normal.content_margin_top = 1
-	normal.content_margin_bottom = 1
-
-	var hover := normal.duplicate()
-	hover.bg_color = Color(0.02, 0.08, 0.18).lightened(0.12)
-	hover.border_color = Color(0.0, 0.45, 0.75).lightened(0.15)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = Color(0.02, 0.08, 0.18).darkened(0.15)
-
-	var disabled := StyleBoxFlat.new()
-	disabled.bg_color = Color(0.02, 0.05, 0.10, 0.6)
-	disabled.border_color = Color(0.0, 0.2, 0.35, 0.4)
-	disabled.set_border_width_all(1)
-	disabled.set_corner_radius_all(3)
-	disabled.content_margin_left = 4
-	disabled.content_margin_right = 4
-	disabled.content_margin_top = 1
-	disabled.content_margin_bottom = 1
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
-	btn.add_theme_color_override("font_hover_color", Color(0.85, 0.98, 1.0))
-	btn.add_theme_color_override("font_disabled_color", Color(0.2, 0.35, 0.45))
-
-
-# ── Panel styling ────────────────────────────────────────────────────────────
+# ── Panel styling ───────────────────────────────────────────────────
 # Used for: PanelContainer backgrounds with border.
 # Replaces: inline panel StyleBox code in crew_panel, shipyard_panel,
 #           quest_display, planet_screen info boxes.
@@ -287,22 +252,66 @@ static func style_panel(node: Control, bg_alpha: float = 0.75) -> void:
 	node.add_theme_stylebox_override("panel", style)
 
 
-# ── Overlay panel styling ────────────────────────────────────────────────────
-# Used for: full-screen popup overlays (ship dealer, casino, etc.).
-# Replaces: inline overlay StyleBox code in ship_upgrade, casino_popup,
-#           ship_dealer, deck_viewer.
+# ── Fullscreen overlay panel ──────────────────────────────────
+# Chrome for the fullscreen showroom screens (ship dealer, ship upgrade).
+# Embedded variants sit inside another panel and draw no chrome of their own,
+# so callers pass their _embedded flag straight through.
 
-static func style_overlay_panel(node: Control) -> void:
+static func style_overlay_panel(panel: Control, embedded: bool = false) -> void:
+	if embedded:
+		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		return
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(PANEL_BG.r, PANEL_BG.g, PANEL_BG.b, 0.65)
-	style.border_color = Color(PANEL_BORDER.r, PANEL_BORDER.g, PANEL_BORDER.b, 0.55)
+	style.bg_color = PANEL_COLOR
+	style.border_color = BORDER_COLOR
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(16)
 	style.content_margin_left = 28
 	style.content_margin_right = 28
 	style.content_margin_top = 16
 	style.content_margin_bottom = 16
-	node.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override("panel", style)
+
+
+# ── Confirmation modal scaffold ─────────────────────────────────────────────
+# Overlay + centred panel + content VBox, as used by the main menu and the end
+# screens. Returns { "overlay", "vbox" }; callers fill the VBox and free the
+# overlay to dismiss.
+
+static func create_confirm_modal(
+	parent: Control,
+	overlay_alpha: float,
+	bg_color: Color,
+	border_color: Color,
+	separation: int,
+	content_min_size: Vector2,
+) -> Dictionary:
+	var overlay := ColorRect.new()
+	overlay.color = Color(0.0, 0.0, 0.0, overlay_alpha)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	parent.add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = bg_color
+	panel_style.border_color = border_color
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel_style.set_content_margin_all(24)
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", separation)
+	vbox.custom_minimum_size = content_min_size
+	panel.add_child(vbox)
+
+	return { "overlay": overlay, "vbox": vbox }
 
 
 # ── Event modal button style ────────────────────────────────────────────────
@@ -352,7 +361,7 @@ static func create_event_modal_scaffold(
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_override("font", FONT_DISPLAY)
 	title.add_theme_color_override("font_color", title_color)
-	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_font_size_override("font_size", FONT_HEADING)
 	vbox.add_child(title)
 
 	var desc := Label.new()
@@ -451,27 +460,25 @@ static func create_overlay_scaffold(
 
 	var left_deco := Label.new()
 	left_deco.text = icon_text
-	left_deco.add_theme_font_size_override("font_size", 16)
+	left_deco.add_theme_font_size_override("font_size", FONT_BODY)
 	left_deco.add_theme_color_override("font_color", icon_color)
 	title_row.add_child(left_deco)
 
 	var title := Label.new()
 	title.text = title_text
-	title.add_theme_font_override("font", FONT_DISPLAY)
-	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", title_color)
+	apply_screen_title(title, title_color)
 	title_row.add_child(title)
 
 	var right_deco := Label.new()
 	right_deco.text = icon_text
-	right_deco.add_theme_font_size_override("font_size", 16)
+	right_deco.add_theme_font_size_override("font_size", FONT_BODY)
 	right_deco.add_theme_color_override("font_color", icon_color)
 	title_row.add_child(right_deco)
 
 	var subtitle := Label.new()
 	subtitle.text = subtitle_text
 	var sub_settings := LabelSettings.new()
-	sub_settings.font_size = SUBTITLE_FONT_SIZE
+	sub_settings.font_size = FONT_LABEL
 	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
 	sub_settings.shadow_size = 3
 	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)

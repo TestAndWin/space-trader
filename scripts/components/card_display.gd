@@ -68,7 +68,7 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 	style.content_margin_bottom = 0.0
 
 	# Apply rarity glow
-	var rarity := int(card_data.rarity if card_data.rarity != null else 0)
+	var rarity := int(card_data.rarity)
 	if rarity == 1: # UNCOMMON
 		style.border_color = Color(0.62, 0.84, 1.0, 0.95)
 	elif rarity == 2: # RARE
@@ -107,11 +107,12 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 		%PlayButton.disabled = false
 		
 	# Set boarding action tooltip on the entire card
-	tooltip_text = _get_boarding_tooltip(card_data)
+	tooltip_text = _boarding_tooltip()
 
-func _get_boarding_tooltip(card: Resource) -> String:
-	if card.boarding_description != null and card.boarding_description != "":
-		return "Boarding Action:\n" + card.boarding_description
+
+func _boarding_tooltip() -> String:
+	if card_data.boarding_description != "":
+		return "Boarding Action:\n" + card_data.boarding_description
 	return "Boarding Action:\nTrade: Not very effective in boarding."
 
 
@@ -170,7 +171,7 @@ func _style_play_button() -> void:
 	button.add_theme_stylebox_override("pressed", pressed)
 	button.add_theme_stylebox_override("disabled", disabled)
 	button.add_theme_stylebox_override("focus", hover)
-	button.add_theme_font_size_override("font_size", 17)
+	button.add_theme_font_size_override("font_size", UIStyles.FONT_SUBHEADING)
 	button.add_theme_constant_override("outline_size", 0)
 	button.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
 	button.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 1.0))
@@ -182,7 +183,7 @@ const RARITY_NAMES: PackedStringArray = ["Common", "Uncommon", "Rare"]
 
 
 func _rarity_name() -> String:
-	var rarity := int(card_data.rarity if card_data.rarity != null else 0)
+	var rarity := int(card_data.rarity)
 	return RARITY_NAMES[rarity] if rarity < RARITY_NAMES.size() else "Common"
 
 

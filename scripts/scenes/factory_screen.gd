@@ -38,7 +38,7 @@ func _build_ui() -> void:
 	)
 	var main_vbox: VBoxContainer = scaffold["main_vbox"]
 	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
+	_status_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
 	_status_label.add_theme_color_override("font_color", UIStyles.STATUS_WARN)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main_vbox.add_child(_status_label)
@@ -204,15 +204,13 @@ func _build_unlocked_body() -> void:
 			collect_btn.disabled = free_space < int(entry.amount)
 			if collect_btn.disabled:
 				collect_btn.tooltip_text = "Cargo full — sell or store goods first"
-			var idx_collect: int = i
-			collect_btn.pressed.connect(func() -> void: _on_collect_pressed(idx_collect))
+			collect_btn.pressed.connect(_on_collect_pressed.bind(i))
 			fin_row.add_child(collect_btn)
 
 			var sell_price: int = CraftingManager.get_finished_item_sell_price(_planet_name, good)
 			var sell_btn := ActionButton.new()
 			sell_btn.text = "Sell (%d cr)" % (sell_price * int(entry.amount))
-			var idx_sell: int = i
-			sell_btn.pressed.connect(func() -> void: _on_sell_pressed(idx_sell))
+			sell_btn.pressed.connect(_on_sell_pressed.bind(i))
 			fin_row.add_child(sell_btn)
 
 	# Recipes panel
@@ -256,7 +254,7 @@ func _build_recipe_row(recipe: Resource) -> void:
 	build_btn.text = "Build"
 	build_btn.custom_minimum_size = Vector2(90, 0)
 	build_btn.disabled = not CraftingManager.can_start_job(_planet_name, recipe)
-	build_btn.pressed.connect(func() -> void: _on_build_pressed(recipe))
+	build_btn.pressed.connect(_on_build_pressed.bind(recipe))
 	row.add_child(build_btn)
 
 

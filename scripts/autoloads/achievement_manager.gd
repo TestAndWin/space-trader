@@ -5,6 +5,8 @@ extends Node
 
 signal achievement_unlocked(id: String)
 
+const JsonStore = preload("res://scripts/tools/json_store.gd")
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const SAVE_PATH := "user://achievements.json"
 
 # Achievement definitions: id -> { name, description }
@@ -119,7 +121,7 @@ func _show_notification(id: String) -> void:
 
 	var star := Label.new()
 	star.text = "★"
-	star.add_theme_font_size_override("font_size", 28)
+	star.add_theme_font_size_override("font_size", UIStyles.FONT_TITLE)
 	star.add_theme_color_override("font_color", Color(1.0, 0.9, 0.25))
 	hbox.add_child(star)
 
@@ -129,13 +131,13 @@ func _show_notification(id: String) -> void:
 
 	var title := Label.new()
 	title.text = "Achievement Unlocked!"
-	title.add_theme_font_size_override("font_size", 12)
+	title.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
 	title.add_theme_color_override("font_color", Color(0.7, 0.85, 0.6))
 	text_vbox.add_child(title)
 
 	var name_label := Label.new()
 	name_label.text = info["name"]
-	name_label.add_theme_font_size_override("font_size", 18)
+	name_label.add_theme_font_size_override("font_size", UIStyles.FONT_SUBHEADING)
 	name_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.25))
 	text_vbox.add_child(name_label)
 
@@ -169,22 +171,11 @@ func _show_notification(id: String) -> void:
 # ── Persistence ─────────────────────────────────────────────────────────────
 
 func _save() -> void:
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if not file:
-		return
-	var data: Dictionary = { "unlocked": unlocked }
-	file.store_string(JSON.stringify(data))
+	JsonStore.save(SAVE_PATH, { "unlocked": unlocked })
+
 
 
 func _load() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
-		return
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
-	if not file:
-		return
-	var json := JSON.new()
-	if json.parse(file.get_as_text()) != OK:
-		return
-	var data: Variant = json.data
-	if data is Dictionary and data.has("unlocked"):
+	var data: Dictionary = JsonStore.load_dict(SAVE_PATH)
+	if data.has("unlocked"):
 		unlocked = data["unlocked"]

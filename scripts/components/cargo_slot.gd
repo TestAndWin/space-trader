@@ -11,6 +11,9 @@ const PM_BG := Color(0.02, 0.10, 0.22)
 const PM_BORDER := Color(0.0, 0.50, 0.80)
 var ROW_BG: Color = Color(UIStyles.PANEL_BG, 0.75)
 const ROW_BORDER := Color(0.0, 0.40, 0.65, 0.60)
+const GOOD_PRICE_COLOR := UIStyles.POSITIVE
+const BAD_PRICE_COLOR := UIStyles.NEGATIVE
+const NEUTRAL_PRICE_COLOR := Color(0.65, 0.68, 0.7)
 
 var good_name: String = ""
 var price: int = 0
@@ -101,8 +104,7 @@ func _setup_icon() -> void:
 
 
 func _style_buttons() -> void:
-	var action_color := BUY_COLOR if mode == "buy" else SELL_COLOR
-	_style_action_button($ActionButton, action_color)
+	UIStyles.style_accent_button($ActionButton, BUY_COLOR if mode == "buy" else SELL_COLOR, 12)
 	_style_pm_button($MinusButton)
 	_style_pm_button($PlusButton)
 
@@ -112,10 +114,6 @@ func _update_trade_controls() -> void:
 	$ActionButton.visible = show_trade_controls
 	$MinusButton.visible = show_trade_controls
 	$PlusButton.visible = show_trade_controls
-
-
-func _style_action_button(btn: Button, accent: Color) -> void:
-	UIStyles.style_accent_button(btn, accent, 12)
 
 
 func _style_pm_button(btn: Button) -> void:
@@ -174,25 +172,14 @@ func _update_display() -> void:
 			$QuantityLabel.text = "x" + str(quantity)
 			if trade_disabled_suffix != "":
 				$QuantityLabel.text += " " + trade_disabled_suffix
-	$QuantityLabel.add_theme_color_override("font_color", Color(0.65, 0.68, 0.7))
-	# Color price based on profitability
-	if price > 0 and good_data:
-		if mode == "sell":
-			if price > good_data.base_price:
-				$PriceLabel.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3))
-			elif price < good_data.base_price:
-				$PriceLabel.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
-			else:
-				$PriceLabel.add_theme_color_override("font_color", Color(0.65, 0.68, 0.7))
-		elif mode == "buy":
-			if price < good_data.base_price:
-				$PriceLabel.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3))
-			elif price > good_data.base_price:
-				$PriceLabel.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
-			else:
-				$PriceLabel.add_theme_color_override("font_color", Color(0.65, 0.68, 0.7))
-	else:
-		$PriceLabel.add_theme_color_override("font_color", Color(0.65, 0.68, 0.7))
+	$QuantityLabel.add_theme_color_override("font_color", NEUTRAL_PRICE_COLOR)
+	# Color price by profitability: a high price is good news when selling and
+	# bad news when buying, so the two modes are mirror images of each other.
+	var price_color := NEUTRAL_PRICE_COLOR
+	if price > 0 and good_data and price != good_data.base_price:
+		var favourable: bool = (price > good_data.base_price) == (mode == "sell")
+		price_color = GOOD_PRICE_COLOR if favourable else BAD_PRICE_COLOR
+	$PriceLabel.add_theme_color_override("font_color", price_color)
 
 
 func _update_price_indicator(avg_price: int) -> void:
@@ -203,10 +190,10 @@ func _update_price_indicator(avg_price: int) -> void:
 		return
 	var indicator := Label.new()
 	indicator.name = "PriceIndicator"
-	indicator.add_theme_font_size_override("font_size", 12)
+	indicator.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
 	if price <= int(avg_price * 0.8):
 		indicator.text = "▼"
-		indicator.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3))
+		indicator.add_theme_color_override("font_color", UIStyles.POSITIVE)
 	elif price >= int(avg_price * 1.2):
 		indicator.text = "▲"
 		indicator.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))

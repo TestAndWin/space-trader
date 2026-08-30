@@ -1,8 +1,8 @@
 [gd_scene load_steps=6 format=3 uid="uid://cb1card_battle"]
 
 [ext_resource type="Script" path="res://scripts/scenes/card_battle.gd" id="1_cb1"]
-[ext_resource type="PackedScene" path="res://scenes/components/ship_display_3d.tscn" id="2_sd1"]
-[ext_resource type="PackedScene" path="res://scenes/components/enemy_ship_display_3d.tscn" id="4_esd"]
+[ext_resource type="PackedScene" path="res://scenes/components/ship_display.tscn" id="2_sd1"]
+[ext_resource type="PackedScene" path="res://scenes/components/enemy_ship_display.tscn" id="4_esd"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_enemy"]
 bg_color = Color(0.08, 0.02, 0.02, 0.55)

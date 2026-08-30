@@ -8,11 +8,8 @@ signal market_closed
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 const CargoSlotScene = preload("res://scenes/components/cargo_slot.tscn")
-const GoodIcon = preload("res://scripts/components/good_icon.gd")
 
-
-
-const MARKET_FLAVOR = {
+const MARKET_FLAVOR: Dictionary = {
 	0: "Factory surplus and manufactured goods",
 	1: "Fresh produce and organic supplies",
 	2: "Extracted minerals and heavy equipment",
@@ -20,7 +17,7 @@ const MARKET_FLAVOR = {
 	4: "No questions asked. Contraband welcome.",
 }
 
-const MARKET_ICONS = {
+const MARKET_ICONS: Dictionary = {
 	0: "\u25C8",  # ◈
 	1: "\u2618",  # ☘
 	2: "\u26CF",  # ⛏
@@ -33,6 +30,7 @@ var _arrival_gained_cargo: Dictionary = {}
 var _title_label: Label
 var _subtitle_label: Label
 var _icon_labels: Array = []
+var _buy_header_label: Label
 var _credits_label: Label
 var _cargo_label: Label
 var _market_list: VBoxContainer
@@ -59,6 +57,10 @@ func _apply_planet_theme() -> void:
 	_subtitle_label.text = MARKET_FLAVOR.get(_planet_type, "")
 	for icon: Label in _icon_labels:
 		icon.text = MARKET_ICONS.get(_planet_type, "◈")
+	if _buy_header_label:
+		_buy_header_label.add_theme_color_override(
+			"font_color", UIStyles.TYPE_COLORS.get(_planet_type, UIStyles.ACCENT)
+		)
 
 
 func _ready() -> void:
@@ -92,15 +94,15 @@ func _build_ui() -> void:
 
 	# Status
 	_status_detail_label = Label.new()
-	_status_detail_label.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
+	_status_detail_label.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 	_status_detail_label.add_theme_color_override("font_color", UIStyles.STATUS_WARN)
 	_status_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	main_vbox.add_child(_status_detail_label)
 
 	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
-	_status_label.add_theme_color_override("font_color", UIStyles.STATUS_OK)
+	_status_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
+	_status_label.add_theme_color_override("font_color", UIStyles.POSITIVE)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	main_vbox.add_child(_status_label)
@@ -119,64 +121,57 @@ func _build_ui() -> void:
 	content.add_theme_constant_override("separation", 16)
 	main_vbox.add_child(content)
 
-	# Market panel (Buy side)
-	var market_panel := PanelContainer.new()
-	market_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var market_style := StyleBoxFlat.new()
-	market_style.bg_color = Color(0.015, 0.04, 0.10, 0.5)
-	market_style.border_color = UIStyles.ACCENT_DIM
-	market_style.set_border_width_all(1)
-	market_style.set_corner_radius_all(8)
-	market_style.set_content_margin_all(8)
-	market_panel.add_theme_stylebox_override("panel", market_style)
-	content.add_child(market_panel)
+	# Buy side (left) and sell side (right) share the same column frame
+	_market_list = _build_trade_column(
+		content, "\u25C6 BUY GOODS \u25C6", UIStyles.ACCENT, true
+	)
+	_cargo_list = _build_trade_column(content, "\u25C6 SELL CARGO \u25C6", UIStyles.POSITIVE)
 
-	var market_vbox := VBoxContainer.new()
-	market_vbox.add_theme_constant_override("separation", 6)
-	market_panel.add_child(market_vbox)
 
-	var market_header := Label.new()
-	market_header.text = "\u25C6 BUY GOODS \u25C6"
-	UIStyles.apply_section_title(market_header, UIStyles.TYPE_COLORS.get(_planet_type, UIStyles.ACCENT))
-	market_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	market_vbox.add_child(market_header)
+## One trade column: framed panel with a section header over a scrolling list.
+## Returns the list container the rows are added to.
+## `planet_themed` marks the column whose header colour follows the planet
+## type. That colour is only known after setup(), so the label is kept and
+## recoloured in _apply_planet_theme().
+func _build_trade_column(
+	parent: HBoxContainer,
+	header_text: String,
+	header_color: Color,
+	planet_themed: bool = false,
+) -> VBoxContainer:
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.015, 0.04, 0.10, 0.5)
+	style.border_color = UIStyles.ACCENT_DIM
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(8)
+	style.set_content_margin_all(8)
+	panel.add_theme_stylebox_override("panel", style)
+	parent.add_child(panel)
 
-	var market_scroll := ScrollContainer.new()
-	market_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	market_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	market_vbox.add_child(market_scroll)
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 6)
+	panel.add_child(vbox)
 
-	_market_list = VBoxContainer.new()
-	_market_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_market_list.add_theme_constant_override("separation", 4)
-	market_scroll.add_child(_market_list)
+	var header := Label.new()
+	header.text = header_text
+	UIStyles.apply_section_title(header, header_color)
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if planet_themed:
+		_buy_header_label = header
+	vbox.add_child(header)
 
-	# Cargo panel (Sell side)
-	var cargo_panel := PanelContainer.new()
-	cargo_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var cargo_style := market_style.duplicate()
-	cargo_panel.add_theme_stylebox_override("panel", cargo_style)
-	content.add_child(cargo_panel)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vbox.add_child(scroll)
 
-	var cargo_vbox := VBoxContainer.new()
-	cargo_vbox.add_theme_constant_override("separation", 6)
-	cargo_panel.add_child(cargo_vbox)
-
-	var cargo_header := Label.new()
-	cargo_header.text = "\u25C6 SELL CARGO \u25C6"
-	UIStyles.apply_section_title(cargo_header, UIStyles.POSITIVE)
-	cargo_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cargo_vbox.add_child(cargo_header)
-
-	var cargo_scroll := ScrollContainer.new()
-	cargo_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	cargo_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	cargo_vbox.add_child(cargo_scroll)
-
-	_cargo_list = VBoxContainer.new()
-	_cargo_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_cargo_list.add_theme_constant_override("separation", 4)
-	cargo_scroll.add_child(_cargo_list)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 4)
+	scroll.add_child(list)
+	return list
 
 
 func _refresh_all() -> void:
@@ -217,42 +212,44 @@ func _populate_cargo() -> void:
 		# Reduce sellable quantity by goods gained on arrival this visit.
 		var blocked: int = mini(_arrival_gained_cargo.get(good_name, 0), qty)
 		var sellable_qty: int = maxi(qty - blocked, 0)
-		var sell_price: int = EconomyManager.get_sell_price(planet_name, good_name)
-		if sell_price < 0:
-			sell_price = 0
+		var sell_price: int = maxi(EconomyManager.get_sell_price(planet_name, good_name), 0)
 		var avg_sell: int = EconomyManager.get_average_price(good_name)
 		if avg_sell > 0:
 			avg_sell = int(round(avg_sell * EconomyManager.SELL_RATIO))
 		if sellable_qty > 0:
-			var slot := CargoSlotScene.instantiate()
-			_cargo_list.add_child(slot)
-			slot.setup(good_name, sell_price, sellable_qty, "sell", avg_sell, true, "", _get_price_note(good_name, "sell", sell_price))
-			slot.tooltip_text = _build_trade_tooltip(good_name, "sell")
-			slot.action_pressed.connect(_on_sell)
+			_add_cargo_row(good_name, sell_price, sellable_qty, avg_sell, true, "")
 			has_rows = true
 		if blocked > 0:
-			var locked_slot := CargoSlotScene.instantiate()
-			_cargo_list.add_child(locked_slot)
-			locked_slot.setup(
-				good_name,
-				sell_price,
-				blocked,
-				"sell",
-				avg_sell,
-				false,
-				"(arrival)",
-				_get_price_note(good_name, "sell", sell_price)
-			)
-			locked_slot.tooltip_text = _build_trade_tooltip(good_name, "sell")
+			_add_cargo_row(good_name, sell_price, blocked, avg_sell, false, "(arrival)")
 			has_rows = true
 
 	if not has_rows:
 		var empty_lbl := Label.new()
 		empty_lbl.text = "Cargo hold is empty"
-		empty_lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
+		empty_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 		empty_lbl.add_theme_color_override("font_color", Color(0.4, 0.42, 0.45))
 		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_cargo_list.add_child(empty_lbl)
+
+
+## One row in the sell list. Arrival-locked rows are shown but not tradeable.
+func _add_cargo_row(good_name: String, sell_price: int, quantity: int, avg_sell: int,
+		tradeable: bool, disabled_suffix: String) -> void:
+	var slot := CargoSlotScene.instantiate()
+	_cargo_list.add_child(slot)
+	slot.setup(
+		good_name,
+		sell_price,
+		quantity,
+		"sell",
+		avg_sell,
+		tradeable,
+		disabled_suffix,
+		_get_price_note(good_name, "sell", sell_price)
+	)
+	slot.tooltip_text = _build_trade_tooltip(good_name, "sell")
+	if tradeable:
+		slot.action_pressed.connect(_on_sell)
 
 
 func _on_buy(good_name: String, quantity: int) -> void:

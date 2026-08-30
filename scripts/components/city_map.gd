@@ -148,22 +148,17 @@ func setup(planet_type: int, building_states: Dictionary) -> void:
 func _build_buildings() -> void:
 	_buildings = []
 	var pt := _planet_type
-	var has_mission := (pt == 3 or pt == 4)
-	var layout: Array
-	if pt == 3:
+	var layout: Array = LAYOUT_STANDARD
+	if pt == EconomyManager.PT_TECH:
 		layout = LAYOUT_TECH
-	elif has_mission:
+	elif pt == EconomyManager.PT_OUTLAW:
 		layout = LAYOUT_MISSION
-	else:
-		layout = LAYOUT_STANDARD
 
 	for entry: Array in layout:
 		var bid: String = entry[0]
-		var is_done: bool = _building_states.get(bid, false)
-		var interactive := not is_done
-		if bid == BUILDING_CASINO and pt == 2:
-			is_done = true
-			interactive = false
+		# The casino has no mining-planet variant, so it is drawn as closed there.
+		var is_done: bool = _building_states.get(bid, false) \
+			or (bid == BUILDING_CASINO and pt == EconomyManager.PT_MINING)
 		_buildings.append({
 			"id":          bid,
 			"col":         float(entry[1]),
@@ -172,9 +167,8 @@ func _build_buildings() -> void:
 			"d":           float(entry[4]),
 			"h":           float(entry[5]),
 			"label":       get_building_name(bid, pt),
-			"accent":      (BUILDING_ACCENTS as Dictionary).get(bid, Color.WHITE),
-			"bg":          (BUILDING_BGS as Dictionary).get(bid, Color(0.08, 0.10, 0.18)),
-			"interactive": interactive,
+			"accent":      BUILDING_ACCENTS.get(bid, Color.WHITE),
+			"bg":          BUILDING_BGS.get(bid, Color(0.08, 0.10, 0.18)),
 			"done":        is_done,
 		})
 
@@ -283,6 +277,46 @@ func _draw_roads() -> void:
 	draw_line(_iso(cx + 0.5, 0.0, 0.0), _iso(cx + 0.5, gr, 0.0), mark_col, 1.0)
 
 
+# ── Box faces ─────────────────────────────────────────────────────────────────
+# Every box (building, rooftop, launch bay) shows the same three quads. The
+# vertical span is given as z0..z1 so rooftops can sit on top of a building.
+
+func _right_face(c: float, r: float, w: float, d: float, z0: float, z1: float) -> PackedVector2Array:
+	return PackedVector2Array([
+		_iso(c+w, r,   z0), _iso(c+w, r+d, z0),
+		_iso(c+w, r+d, z1), _iso(c+w, r,   z1),
+	])
+
+
+func _front_face(c: float, r: float, w: float, d: float, z0: float, z1: float) -> PackedVector2Array:
+	return PackedVector2Array([
+		_iso(c,   r+d, z0), _iso(c+w, r+d, z0),
+		_iso(c+w, r+d, z1), _iso(c,   r+d, z1),
+	])
+
+
+func _top_face(c: float, r: float, w: float, d: float, z: float) -> PackedVector2Array:
+	return PackedVector2Array([
+		_iso(c,   r,   z), _iso(c+w, r,   z),
+		_iso(c+w, r+d, z), _iso(c,   r+d, z),
+	])
+
+
+## Outline a face, closing the loop back to its first corner.
+func _draw_face_outline(face: PackedVector2Array, color: Color, width: float) -> void:
+	draw_polyline(PackedVector2Array([face[0], face[1], face[2], face[3], face[0]]), color, width)
+
+
+## Top outline plus, while hovered, the animated glow ring.
+func _draw_top_outline(top: PackedVector2Array, accent: Color, hovered: bool, dim: float = 1.0) -> void:
+	var ow: float   = 2.0 if hovered else 1.0
+	var ocol: Color = accent if hovered else Color(accent, 0.55 * dim)
+	_draw_face_outline(top, ocol, ow)
+	if hovered:
+		var pulse := (sin(_time * 4.0) + 1.0) * 0.5
+		_draw_face_outline(top, Color(accent, 0.18 + pulse * 0.18), 4.5)
+
+
 # ── Building drawing ──────────────────────────────────────────────────────────
 
 ## Draw one building as three iso faces: right wall, front wall, top face.
@@ -305,43 +339,22 @@ func _draw_iso_box(b: Dictionary) -> void:
 		col_right = col_right.lightened(0.12)
 
 	# Right face  (col = c+w, row varies)
-	var rf := PackedVector2Array([
-		_iso(c+w, r,   0.0), _iso(c+w, r+d, 0.0),
-		_iso(c+w, r+d, h),   _iso(c+w, r,   h),
-	])
+	var rf := _right_face(c, r, w, d, 0.0, h)
 	draw_colored_polygon(rf, col_right)
-	draw_polyline(PackedVector2Array([rf[0], rf[1], rf[2], rf[3], rf[0]]),
-		Color(accent, 0.25 * dim), 0.7)
+	_draw_face_outline(rf, Color(accent, 0.25 * dim), 0.7)
 
 	# Front face  (row = r+d, facing the viewer)
-	var ff := PackedVector2Array([
-		_iso(c,   r+d, 0.0), _iso(c+w, r+d, 0.0),
-		_iso(c+w, r+d, h),   _iso(c,   r+d, h),
-	])
+	var ff := _front_face(c, r, w, d, 0.0, h)
 	draw_colored_polygon(ff, col_front)
-	draw_polyline(PackedVector2Array([ff[0], ff[1], ff[2], ff[3], ff[0]]),
-		Color(accent, 0.25 * dim), 0.7)
+	_draw_face_outline(ff, Color(accent, 0.25 * dim), 0.7)
 
 	# Window dots on front face (2 rows × 3 cols)
 	_draw_windows_on_face(c, r + d, w, h, accent, dim)
 
 	# Top face
-	var tf := PackedVector2Array([
-		_iso(c,   r,   h), _iso(c+w, r,   h),
-		_iso(c+w, r+d, h), _iso(c,   r+d, h),
-	])
+	var tf := _top_face(c, r, w, d, h)
 	draw_colored_polygon(tf, col_top)
-
-	# Top outline
-	var ow: float  = 2.0 if hovered else 1.0
-	var ocol: Color = accent if hovered else Color(accent, 0.55 * dim)
-	draw_polyline(PackedVector2Array([tf[0], tf[1], tf[2], tf[3], tf[0]]), ocol, ow)
-
-	# Animated glow ring on hover
-	if hovered:
-		var pulse := (sin(_time * 4.0) + 1.0) * 0.5
-		draw_polyline(PackedVector2Array([tf[0], tf[1], tf[2], tf[3], tf[0]]),
-			Color(accent, 0.18 + pulse * 0.18), 4.5)
+	_draw_top_outline(tf, accent, hovered, dim)
 
 	# Desaturate done buildings with a dark overlay
 	if done:
@@ -381,27 +394,11 @@ func _draw_rooftop(b: Dictionary, accent: Color) -> void:
 	var rw := w * 0.35; var rd := d * 0.35; var rh := 0.6
 	var rc := c + (w - rw) * 0.5; var rr := r + (d - rd) * 0.5
 	var base: Color = b["bg"]
-	# Right face
-	draw_colored_polygon(PackedVector2Array([
-		_iso(rc+rw, rr,    h), _iso(rc+rw, rr+rd, h),
-		_iso(rc+rw, rr+rd, h+rh), _iso(rc+rw, rr, h+rh),
-	]), base.lightened(0.1))
-	# Front face (facing viewer = row side at rr+rd)
-	draw_colored_polygon(PackedVector2Array([
-		_iso(rc,    rr+rd, h), _iso(rc+rw, rr+rd, h),
-		_iso(rc+rw, rr+rd, h+rh), _iso(rc, rr+rd, h+rh),
-	]), base.lightened(0.25))
-	# Top face
-	draw_colored_polygon(PackedVector2Array([
-		_iso(rc,    rr,    h+rh), _iso(rc+rw, rr,    h+rh),
-		_iso(rc+rw, rr+rd, h+rh), _iso(rc,    rr+rd, h+rh),
-	]), base.lightened(0.35))
-	# Outline
-	draw_polyline(PackedVector2Array([
-		_iso(rc,    rr,    h+rh), _iso(rc+rw, rr,    h+rh),
-		_iso(rc+rw, rr+rd, h+rh), _iso(rc,    rr+rd, h+rh),
-		_iso(rc,    rr,    h+rh),
-	]), Color(accent, 0.6), 1.0)
+	draw_colored_polygon(_right_face(rc, rr, rw, rd, h, h+rh), base.lightened(0.1))
+	draw_colored_polygon(_front_face(rc, rr, rw, rd, h, h+rh), base.lightened(0.25))
+	var top := _top_face(rc, rr, rw, rd, h+rh)
+	draw_colored_polygon(top, base.lightened(0.35))
+	_draw_face_outline(top, Color(accent, 0.6), 1.0)
 
 
 ## Special drawing for the Launch Bay (flat with landing-pad markings).
@@ -413,24 +410,13 @@ func _draw_launch_bay(b: Dictionary) -> void:
 	var hovered: bool = (b["id"] == _hovered_building)
 
 	# Right wall
-	var rf := PackedVector2Array([
-		_iso(c+w, r,   0.0), _iso(c+w, r+d, 0.0),
-		_iso(c+w, r+d, h),   _iso(c+w, r,   h),
-	])
-	draw_colored_polygon(rf, base.darkened(0.3))
+	draw_colored_polygon(_right_face(c, r, w, d, 0.0, h), base.darkened(0.3))
 
 	# Front wall (facing viewer = row = r+d)
-	var ff := PackedVector2Array([
-		_iso(c,   r+d, 0.0), _iso(c+w, r+d, 0.0),
-		_iso(c+w, r+d, h),   _iso(c,   r+d, h),
-	])
-	draw_colored_polygon(ff, base)
+	draw_colored_polygon(_front_face(c, r, w, d, 0.0, h), base)
 
 	# Top / floor of bay
-	var tf := PackedVector2Array([
-		_iso(c,   r,   h), _iso(c+w, r,   h),
-		_iso(c+w, r+d, h), _iso(c,   r+d, h),
-	])
+	var tf := _top_face(c, r, w, d, h)
 	draw_colored_polygon(tf, base.lightened(0.08))
 
 	# Landing pad: concentric diamond rings centred on top face
@@ -455,13 +441,7 @@ func _draw_launch_bay(b: Dictionary) -> void:
 		draw_circle(_iso(lp.x, lp.y, h), 2.5, Color(1.0, 0.3, 0.1, blink))
 
 	# Top outline
-	var ow: float   = 2.0 if hovered else 1.0
-	var ocol: Color = accent if hovered else Color(accent, 0.55)
-	draw_polyline(PackedVector2Array([tf[0], tf[1], tf[2], tf[3], tf[0]]), ocol, ow)
-	if hovered:
-		var pulse := (sin(_time * 4.0) + 1.0) * 0.5
-		draw_polyline(PackedVector2Array([tf[0], tf[1], tf[2], tf[3], tf[0]]),
-			Color(accent, 0.18 + pulse * 0.18), 4.5)
+	_draw_top_outline(tf, accent, hovered)
 
 
 # ── Labels ────────────────────────────────────────────────────────────────────
@@ -470,8 +450,7 @@ func _draw_all_labels(sorted_buildings: Array) -> void:
 	var font := get_theme_default_font()
 	for b: Dictionary in sorted_buildings:
 		var c: float = b["col"]; var r: float = b["row"]
-		@warning_ignore("unused_variable")
-		var w: float = b["w"];   var d: float = b["d"]; var h: float = b["h"]
+		var w: float = b["w"];   var h: float = b["h"]
 		var accent: Color = b["accent"]
 		var done: bool    = b["done"]
 

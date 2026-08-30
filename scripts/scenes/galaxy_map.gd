@@ -8,7 +8,6 @@ const GALAXY_CENTER_2D := Vector2(640.0, 360.0)
 const GALAXY_WORLD_SCALE: float = 72.0
 const GALAXY_SPREAD: float = 4.20
 const STARFIELD_DEPTH_NEAR: float = -8.0
-const STARFIELD_DEPTH_FAR: float = -42.0
 
 var planets: Array = []
 var selected_planet: Resource = null
@@ -22,7 +21,8 @@ var _player_marker_base_position: Vector3 = Vector3.ZERO
 var _quest_source_planets: Array[String] = []
 var _systems_debug_label: Label = null
 var _selected_direct_line: MeshInstance3D = null
-var fuel_label: Label = null
+var _fuel_label: Label = null
+var _weather_label: Label = null
 
 @onready var map_camera: Camera3D = $GalaxyWorld/MapCamera
 @onready var world_environment: WorldEnvironment = $GalaxyWorld/WorldEnvironment
@@ -92,8 +92,8 @@ func _apply_fonts() -> void:
 	cargo_label.format_string = "Cargo: %d/%d"
 	cargo_label.bind()
 	UIStyles.apply_mono_font(cargo_label)
-	if fuel_label:
-		UIStyles.apply_mono_font(fuel_label)
+	if _fuel_label:
+		UIStyles.apply_mono_font(_fuel_label)
 	UIStyles.apply_mono_font(current_planet_label)
 	UIStyles.apply_mono_font(hull_label)
 	UIStyles.apply_mono_font(shield_label)
@@ -105,7 +105,7 @@ func _apply_fonts() -> void:
 func _style_bottom_bar() -> void:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(UIStyles.PANEL_BG, 0.75)
-	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
+	style.border_color = UIStyles.PANEL_BORDER
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(8)
 	style.shadow_color = Color(0.0, 0.45, 0.9, 0.25)
@@ -133,7 +133,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_systems_debug_label.z_index = 120
 			_systems_debug_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			_systems_debug_label.add_theme_color_override("font_color", Color(0.95, 1.0, 0.9))
-			_systems_debug_label.add_theme_font_size_override("font_size", 13)
+			_systems_debug_label.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
 			_systems_debug_label.position = Vector2(12, 12)
 			$CanvasLayer.add_child(_systems_debug_label)
 			_systems_debug_label.text = _build_systems_debug_text()
@@ -142,19 +142,13 @@ func _unhandled_input(event: InputEvent) -> void:
 func _configure_info_panel() -> void:
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(UIStyles.PANEL_BG, 0.92)
-	panel_style.border_color = Color(0.0, 0.65, 0.95, 0.85)
-	panel_style.border_width_left = 1
-	panel_style.border_width_top = 1
-	panel_style.border_width_right = 1
-	panel_style.border_width_bottom = 1
+	panel_style.border_color = UIStyles.PANEL_BORDER
+	panel_style.set_border_width_all(1)
+	panel_style.set_corner_radius_all(6)
 	panel_style.content_margin_left = 12.0
 	panel_style.content_margin_right = 12.0
 	panel_style.content_margin_top = 10.0
 	panel_style.content_margin_bottom = 10.0
-	panel_style.corner_radius_top_left = 6
-	panel_style.corner_radius_top_right = 6
-	panel_style.corner_radius_bottom_left = 6
-	panel_style.corner_radius_bottom_right = 6
 	panel_style.shadow_color = Color(0.0, 0.45, 0.9, 0.25)
 	panel_style.shadow_size = 6
 	info_panel.add_theme_stylebox_override("panel", panel_style)
@@ -168,27 +162,25 @@ func _fit_info_panel_height() -> void:
 
 
 func _create_fuel_label() -> void:
-	if fuel_label:
+	if _fuel_label:
 		return
-	fuel_label = Label.new()
-	fuel_label.name = "FuelLabel"
-	fuel_label.add_theme_font_size_override("font_size", 13)
-	fuel_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.28, 1.0))
-	fuel_label.text = "Fuel: 0/0"
-	$CanvasLayer/BottomBar/HBoxContainer.add_child(fuel_label)
+	_fuel_label = Label.new()
+	_fuel_label.name = "FuelLabel"
+	_fuel_label.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+	_fuel_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.28, 1.0))
+	_fuel_label.text = "Fuel: 0/0"
+	$CanvasLayer/BottomBar/HBoxContainer.add_child(_fuel_label)
 
-
-var _weather_label: Label = null
 
 func _create_weather_label() -> void:
 	if _weather_label:
 		return
 	_weather_label = Label.new()
 	_weather_label.name = "WeatherLabel"
-	_weather_label.add_theme_font_size_override("font_size", 16)
+	_weather_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.08, 0.1, 0.14, 0.85)
-	style.border_color = Color(0.0, 0.65, 0.95, 0.85)
+	style.border_color = UIStyles.PANEL_BORDER
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(6)
 	style.set_content_margin_all(8)
@@ -350,6 +342,10 @@ func _generate_nebulae() -> void:
 
 func _load_planets() -> void:
 	planets = ResourceRegistry.load_all(ResourceRegistry.PLANETS)
+	if GameManager.crimson_base_unlocked:
+		var crimson_base: Resource = load(ResourceRegistry.CRIMSON_BASE)
+		if crimson_base:
+			planets.append(crimson_base)
 
 
 func _spawn_planets() -> void:
@@ -432,9 +428,9 @@ func _spawn_planets() -> void:
 		node.add_child(area)
 
 		var label := Label3D.new()
-		label.text = planet.planet_name
+		label.text = _display_planet_name(planet.planet_name)
 		label.position = Vector3(0.0, radius * 2.35, 0.0)
-		label.font_size = 54
+		label.font_size = UIStyles.FONT_HERO
 		label.pixel_size = 0.0105
 		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		label.modulate = Color(0.92, 0.97, 1.0, 1.0)
@@ -558,8 +554,7 @@ func _animate_camera() -> void:
 
 
 func _animate_planets(delta: float) -> void:
-	for planet_name_key in _planet_visuals.keys():
-		var planet_name: String = str(planet_name_key)
+	for planet_name: String in _planet_visuals:
 		var visual: Dictionary = _planet_visuals[planet_name]
 		var node: Node3D = visual["node"]
 		var glow: MeshInstance3D = visual["glow"]
@@ -584,6 +579,11 @@ func _animate_player_marker() -> void:
 	_player_marker.position = _player_marker_base_position + Vector3(0.0, sin(_time * 2.6) * 0.08, 0.0)
 
 
+## Crimson Jack's base is renamed once the player has taken it over.
+func _display_planet_name(pname: String) -> String:
+	return GameManager.get_display_planet_name(pname)
+
+
 func _find_planet_by_name(pname: String) -> Resource:
 	for p: Resource in planets:
 		if p.planet_name == pname:
@@ -600,8 +600,7 @@ func _update_planet_states() -> void:
 	# Resolved once per refresh rather than per planet — it scans every market.
 	_quest_source_planets = QuestManager.get_active_quest_source_planets()
 
-	for planet_name_key in _planet_visuals.keys():
-		var planet_name: String = str(planet_name_key)
+	for planet_name: String in _planet_visuals:
 		var visual: Dictionary = _planet_visuals[planet_name]
 		var body_mat: StandardMaterial3D = visual["body_mat"]
 		var glow_mat: StandardMaterial3D = visual["glow_mat"]
@@ -652,7 +651,7 @@ func _update_planet_states() -> void:
 		var is_quest_source: bool = not is_quest_dest and planet_name in _quest_source_planets
 		var is_pirate: bool = PirateLordManager.active_presence_planets.has(planet_name)
 		
-		var prefix = ""
+		var prefix: String = ""
 		if is_quest_dest:
 			prefix += "[!] "
 		elif is_quest_source:
@@ -660,7 +659,7 @@ func _update_planet_states() -> void:
 		if is_pirate:
 			prefix += "[X] "
 			
-		label.text = prefix + planet_name
+		label.text = prefix + _display_planet_name(planet_name)
 
 		if is_quest_dest:
 			label.modulate = Color(1.0, 0.85, 0.2, 1.0) # Gold
@@ -683,9 +682,9 @@ func _update_player_position() -> void:
 
 func _update_ui() -> void:
 	# credits_label and cargo_label keep themselves in sync via GameManager signals.
-	if fuel_label:
-		fuel_label.text = "Fuel: %d/%d" % [GameManager.current_fuel, GameManager.max_fuel]
-	current_planet_label.text = "@ %s" % GameManager.current_planet
+	if _fuel_label:
+		_fuel_label.text = "Fuel: %d/%d" % [GameManager.current_fuel, GameManager.max_fuel]
+	current_planet_label.text = "@ %s" % _display_planet_name(GameManager.current_planet)
 	hull_label.text = "Hull: %d/%d" % [GameManager.current_hull, GameManager.max_hull]
 	shield_label.text = "Shield: %d/%d" % [GameManager.current_shield, GameManager.max_shield]
 	_update_weather_ui()
@@ -716,7 +715,7 @@ func _on_planet_clicked(planet_data: Resource) -> void:
 		travel_button.visible = false
 		land_button.visible = true
 		_on_planet_hovered(planet_data)
-		_update_route_highlights()
+		_update_selected_direct_line()
 		_update_planet_states()
 		return
 
@@ -727,24 +726,25 @@ func _on_planet_clicked(planet_data: Resource) -> void:
 		travel_button.visible = true
 		travel_button.text = _get_travel_button_text(planet_data)
 		travel_button.disabled = not GameManager.can_start_travel(planet_data.planet_name, route)
-		travel_button.tooltip_text = _get_travel_tooltip(planet_data, route)
+		travel_button.tooltip_text = _get_travel_tooltip(planet_data)
 	else:
 		selected_planet = null
 		travel_button.visible = false
-	_update_route_highlights()
+	_update_selected_direct_line()
 	_update_planet_states()
 
 
 func _on_planet_hovered(planet_data: Resource) -> void:
 	info_panel.visible = true
 	var is_current: bool = planet_data.planet_name == GameManager.current_planet
+	var d_name: String = _display_planet_name(planet_data.planet_name)
 	var visited: bool = planet_data.planet_name in GameManager.visited_planets
 	if is_current:
-		planet_name_label.text = planet_data.planet_name + "  [HERE]"
+		planet_name_label.text = d_name + "  [HERE]"
 	elif visited:
-		planet_name_label.text = planet_data.planet_name + "  [VISITED]"
+		planet_name_label.text = d_name + "  [VISITED]"
 	else:
-		planet_name_label.text = planet_data.planet_name + "  [UNVISITED]"
+		planet_name_label.text = d_name + "  [UNVISITED]"
 	var type_text: String = EconomyManager.PLANET_TYPE_NAMES.get(planet_data.planet_type, "Unknown")
 	var faction: String = StandingManager.get_planet_faction(planet_data.planet_name)
 	var rep: int = StandingManager.get_faction_reputation(faction)
@@ -760,7 +760,7 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 	]
 
 	if planet_data.danger_level >= 3:
-		danger_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+		danger_label.add_theme_color_override("font_color", UIStyles.NEGATIVE)
 	elif planet_data.danger_level >= 2:
 		danger_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.3))
 	else:
@@ -770,9 +770,7 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 	planet_type_label.add_theme_color_override("font_color", type_color)
 
 	var available: Array = EconomyManager.get_available_goods(type_text)
-	var hint_lines: Array[String] = []
-	if self.has_method("_build_trade_hints_for_planet"):
-		hint_lines = self.call("_build_trade_hints_for_planet", planet_data.planet_name, available)
+	var hint_lines: Array[String] = _build_trade_hints_for_planet(planet_data.planet_name, available)
 	var warning: String = EventManager.get_travel_warning_text(planet_data.planet_name)
 	
 	var weather: Dictionary = EventManager.get_active_weather()
@@ -835,10 +833,82 @@ func _on_travel_pressed() -> void:
 	if selected_planet == null:
 		return
 	var route: Array[String] = NavigationManager.get_route(GameManager.current_planet, selected_planet.planet_name)
-	if not GameManager.begin_travel(selected_planet.planet_name, route):
+	if not GameManager.can_start_travel(selected_planet.planet_name, route):
 		travel_button.disabled = true
 		travel_button.text = "Need Fuel"
 		_on_planet_hovered(selected_planet)
+		return
+		
+	if selected_planet.planet_name == GameManager.CRIMSON_BASE_NAME and not GameManager.victory_triggered:
+		_show_boss_confirmation_dialog(selected_planet.planet_name, route)
+	else:
+		_execute_travel(selected_planet.planet_name, route)
+
+func _show_boss_confirmation_dialog(planet_name: String, route: Array[String]) -> void:
+	var overlay := ColorRect.new()
+	overlay.color = Color(0, 0, 0, 0.7)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
+	
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+	
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.05, 0.05, 0.08, 0.95)
+	style.border_color = Color(1.0, 0.2, 0.2, 0.8)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.set_content_margin_all(24)
+	panel.add_theme_stylebox_override("panel", style)
+	center.add_child(panel)
+	
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 20)
+	panel.add_child(vbox)
+	
+	var title := Label.new()
+	title.text = "FINAL BOSS"
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
+	title.add_theme_font_size_override("font_size", UIStyles.FONT_HEADING)
+	title.add_theme_color_override("font_color", UIStyles.NEGATIVE)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+	
+	var desc := Label.new()
+	desc.text = "WARNING: You are about to attack Crimson Jack's Hideout.\nThis will be an extremely difficult battle.\nMake sure you are fully repaired and equipped.\n\nAre you ready?"
+	desc.add_theme_font_override("font", UIStyles.FONT_MONO)
+	desc.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+	desc.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(desc)
+	
+	var hbox := HBoxContainer.new()
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 20)
+	vbox.add_child(hbox)
+	
+	var cancel_btn := Button.new()
+	cancel_btn.text = "NOT YET"
+	cancel_btn.custom_minimum_size = Vector2(120, 40)
+	UIStyles.style_secondary_button(cancel_btn)
+	cancel_btn.pressed.connect(func(): overlay.queue_free())
+	hbox.add_child(cancel_btn)
+	
+	var ok_btn := Button.new()
+	ok_btn.text = "ENGAGE"
+	ok_btn.custom_minimum_size = Vector2(120, 40)
+	UIStyles.style_accent_button(ok_btn, Color(0.8, 0.2, 0.2))
+	ok_btn.pressed.connect(func():
+		overlay.queue_free()
+		_execute_travel(planet_name, route)
+	)
+	hbox.add_child(ok_btn)
+
+func _execute_travel(planet_name: String, route: Array[String]) -> void:
+	if not GameManager.begin_travel(planet_name, route):
 		return
 	SaveManager.save_game()
 	GameManager.change_scene("res://scenes/travel_scene.tscn")
@@ -947,16 +1017,17 @@ func _get_travel_button_text(planet_data: Resource) -> String:
 	if GameManager.current_fuel < fuel_cost:
 		return "Need %d Fuel" % fuel_cost
 	var warning: String = EventManager.get_travel_warning_text(planet_data.planet_name)
+	var d_name: String = _display_planet_name(planet_data.planet_name)
 	if warning != "":
-		return "Travel to %s (%d days, Risk)" % [planet_data.planet_name, days]
+		return "Travel to %s (%d days, Risk)" % [d_name, days]
 	var route_danger: int = NavigationManager.get_route_danger(route)
 	var chance: float = GameManager.get_aggregate_encounter_chance(route_danger, planet_data.planet_name, days)
 	if chance >= 0.60:
-		return "Travel to %s (%d days, High Risk)" % [planet_data.planet_name, days]
-	return "Travel to %s (%d days)" % [planet_data.planet_name, days]
+		return "Travel to %s (%d days, High Risk)" % [d_name, days]
+	return "Travel to %s (%d days)" % [d_name, days]
 
 
-func _get_travel_tooltip(planet_data: Resource, _route: Array[String]) -> String:
+func _get_travel_tooltip(planet_data: Resource) -> String:
 	var days: int = maxi(NavigationManager.get_travel_days(GameManager.current_planet, planet_data.planet_name), 1)
 	var fuel_cost: int = NavigationManager.get_fuel_cost(GameManager.current_planet, planet_data.planet_name)
 	var distance: float = NavigationManager.get_distance(GameManager.current_planet, planet_data.planet_name)
@@ -971,10 +1042,6 @@ func _get_travel_tooltip(planet_data: Resource, _route: Array[String]) -> String
 	if warning != "":
 		lines.append(warning)
 	return "\n".join(lines)
-
-
-func _update_route_highlights() -> void:
-	_update_selected_direct_line()
 
 
 func _update_selected_direct_line() -> void:

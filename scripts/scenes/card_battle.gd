@@ -29,6 +29,7 @@ var recycled_this_shuffle: bool = false
 const RAMMING_SPEED_HULL_THRESHOLD := 0.70
 
 @onready var ship_display := %ShipDisplay
+@onready var end_turn_button: Button = $MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/EndTurnButton
 
 var _energy_pips: Control = null
 
@@ -75,11 +76,11 @@ func _style_readability() -> void:
 		label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))
 		label.add_theme_constant_override("outline_size", 6)
 	%AbilityLabel.add_theme_color_override("font_color", Color(0.86, 0.72, 1.0))
-	%AbilityLabel.add_theme_font_size_override("font_size", 15)
+	%AbilityLabel.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 	%AbilityLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	for counter: Label in [%DeckCountLabel, %DiscardCountLabel]:
-		counter.add_theme_font_size_override("font_size", 16)
+		counter.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
 		counter.add_theme_color_override("font_color", Color(0.62, 0.85, 1.0))
 		counter.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
 		counter.add_theme_constant_override("outline_size", 5)
@@ -91,7 +92,7 @@ func _style_readability() -> void:
 func _build_energy_pips() -> void:
 	var energy_label: Label = %EnergyLabel
 	energy_label.text = "Energy"
-	energy_label.add_theme_font_size_override("font_size", 14)
+	energy_label.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
 	energy_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
 	energy_label.add_theme_constant_override("outline_size", 5)
 
@@ -104,10 +105,9 @@ func _build_energy_pips() -> void:
 
 
 func _style_battle_buttons() -> void:
-	var end_btn: Button = $MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/EndTurnButton
-	UIStyles.style_accent_button(end_btn, Color(0.0, 0.40, 0.20), 14)
-	UIStyles.style_secondary_button(%FleeButton, 14)
-	UIStyles.style_accent_button(%BoardButton, Color(0.5, 0.15, 0.1), 14)
+	UIStyles.style_accent_button(end_turn_button, Color(0.0, 0.40, 0.20), UIStyles.FONT_LABEL)
+	UIStyles.style_secondary_button(%FleeButton, UIStyles.FONT_LABEL)
+	UIStyles.style_accent_button(%BoardButton, Color(0.5, 0.15, 0.1), UIStyles.FONT_LABEL)
 
 
 func start_battle(enc: Resource) -> void:
@@ -118,15 +118,16 @@ func start_battle(enc: Resource) -> void:
 	GameManager.boarding_special_loot = ""
 	
 	if enc.encounter_name == "Crimson Jack":
+		match GameManager.difficulty:
+			GameManager.Difficulty.EASY: enemy_health = 100
+			GameManager.Difficulty.NORMAL: enemy_health = 150
+			GameManager.Difficulty.HARD: enemy_health = 200
 		var weaken: int = PirateLordManager.officers_defeated.size() * 15
 		enemy_health = max(1, enemy_health - weaken)
 		enemy_max_health = enemy_health
 		
 	# Shield carries over from overworld (upgrades matter)
-	draw_pile = GameManager.deck.duplicate()
-	draw_pile.shuffle()
-	hand.clear()
-	discard_pile.clear()
+	_reset_deck_piles()
 	battle_active = true
 	skip_enemy_turn = false
 
@@ -160,66 +161,56 @@ func _is_rival_encounter() -> bool:
 	return encounter != null and encounter.is_rival
 
 
+## Crimson Jack and his enforcers refuse every non-combat way out.
+func _is_crimson_foe() -> bool:
+	return encounter.encounter_name in ["Crimson Jack", "Crimson Enforcer"]
+
+
+## The battle reshuffles the whole deck for every hand, so draw/hand/discard
+## always start over from GameManager.deck.
+func _reset_deck_piles() -> void:
+	draw_pile = GameManager.deck.duplicate()
+	draw_pile.shuffle()
+	hand.clear()
+	discard_pile.clear()
+
+
+## Energy a card costs right now — COMBO shaves off one point.
+func _effective_cost(card_data: Resource) -> int:
+	if combo_active:
+		return max(0, card_data.energy_cost - 1)
+	return card_data.energy_cost
+
+
 func _show_trade_offer() -> void:
 	var cost := int(encounter.reward_credits * 0.8)
 
+	# Same chrome as the planet/travel/customs popups so every in-run modal reads
+	# as one family; the overlay itself carries the name and z_index.
 	var overlay := ColorRect.new()
 	overlay.name = "TradeOfferOverlay"
-	overlay.color = Color(0, 0, 0, 0.7)
-	overlay.anchor_right = 1.0
-	overlay.anchor_bottom = 1.0
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.z_index = 100
 	add_child(overlay)
 
-	var panel := PanelContainer.new()
-	panel.name = "TradeOfferPanel"
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(UIStyles.PANEL_BG, 0.95)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = Color(1.0, 0.90, 0.25, 0.85)
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_right = 8
-	style.corner_radius_bottom_left = 8
-	style.content_margin_left = 20.0
-	style.content_margin_top = 16.0
-	style.content_margin_right = 20.0
-	style.content_margin_bottom = 16.0
-	panel.add_theme_stylebox_override("panel", style)
-	panel.anchor_left = 0.25
-	panel.anchor_right = 0.75
-	panel.anchor_top = 0.3
-	panel.anchor_bottom = 0.5
-	overlay.add_child(panel)
-
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 12)
-	panel.add_child(vbox)
-
-	var title := Label.new()
-	title.text = "Trade Offer"
-	title.add_theme_font_size_override("font_size", 22)
-	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
-
-	var desc := Label.new()
+	var scaffold: Dictionary = UIStyles.create_event_modal_scaffold(overlay, 400.0, UIStyles.CAUTION)
+	var vbox: VBoxContainer = scaffold["vbox"]
+	scaffold["title_label"].text = "Trade Offer"
+	var desc: Label = scaffold["description_label"]
 	desc.text = "The enemy offers to end the fight for %d credits." % cost
-	desc.add_theme_font_size_override("font_size", 16)
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	vbox.add_child(desc)
 
 	var btn_row := HBoxContainer.new()
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	btn_row.add_theme_constant_override("separation", 20)
+	btn_row.add_theme_constant_override("separation", 12)
 	vbox.add_child(btn_row)
 
 	var accept_btn := Button.new()
 	accept_btn.text = "Accept (%dcr)" % cost
+	accept_btn.custom_minimum_size = Vector2(160, 36)
+	UIStyles.style_event_button(
+		accept_btn, Color(0.2, 0.4, 0.7), Color(0.25, 0.5, 0.85), Color(0.15, 0.3, 0.55)
+	)
 	accept_btn.pressed.connect(func():
 		overlay.queue_free()
 		if GameManager.credits >= cost:
@@ -236,6 +227,10 @@ func _show_trade_offer() -> void:
 
 	var decline_btn := Button.new()
 	decline_btn.text = "Decline"
+	decline_btn.custom_minimum_size = Vector2(160, 36)
+	UIStyles.style_event_button(
+		decline_btn, Color(0.25, 0.25, 0.28), Color(0.35, 0.35, 0.38), Color(0.18, 0.18, 0.2)
+	)
 	decline_btn.pressed.connect(func():
 		overlay.queue_free()
 		_start_player_turn()
@@ -260,9 +255,7 @@ func _start_player_turn() -> void:
 	combo_active = false
 	recycled_this_shuffle = false
 
-	var end_btn: Button = $MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/EndTurnButton
-	if end_btn:
-		end_btn.disabled = false
+	end_turn_button.disabled = false
 
 	# Crew per-turn regen (Medic / Engineer) — kicks in from turn 2 to avoid free start-of-fight buffs.
 	if turn_count >= 2:
@@ -355,12 +348,9 @@ func _apply_damage_to_enemy(raw_damage: int) -> void:
 
 	enemy_health -= damage
 
-	# Trigger hit animation on enemy ship display
-	if damage > 0 or raw_damage > 0:
-		%EnemyShipDisplay.play_hit()
-
 	# Shot first, impact a moment later - fired together they smear into one noise.
 	if raw_damage > 0:
+		%EnemyShipDisplay.play_hit()
 		AudioManager.play_laser()
 		if enemy_health > 0:
 			_play_delayed_sfx("shield_hit" if damage == 0 and shield_absorb > 0 else "hull_hit", SFX_IMPACT_DELAY)
@@ -375,13 +365,19 @@ func _play_delayed_sfx(sfx_name: String, delay: float) -> void:
 
 
 func _on_card_played(card_data: Resource) -> void:
-	# Calculate effective energy cost (COMBO reduces by 1)
-	var effective_cost: int = card_data.energy_cost
-	if combo_active:
-		effective_cost = max(0, effective_cost - 1)
-
+	var effective_cost: int = _effective_cost(card_data)
 	if not battle_active or effective_cost > current_energy:
 		return
+
+	if _is_crimson_foe():
+		if card_data.special_effect == CardData.SpecialEffect.END_ENCOUNTER:
+			_show_battle_message("This enemy cannot be negotiated with!")
+			AudioManager.play_ui_click()
+			return
+		if card_data.card_name == "Bribe":
+			_show_battle_message("This enemy cannot be bribed!")
+			AudioManager.play_ui_click()
+			return
 
 	current_energy -= effective_cost
 	AudioManager.play_card_play()
@@ -409,12 +405,7 @@ func _on_card_played(card_data: Resource) -> void:
 	_update_ui()
 
 	if enemy_health <= 0:
-		if encounter.encounter_name == "Crimson Jack":
-			_force_boarding()
-		elif not _boarding_attempted:
-			_show_boarding_choice()
-		else:
-			_on_battle_won(false)
+		_handle_enemy_defeated()
 		return
 	if GameManager.current_hull <= 0:
 		_on_battle_lost()
@@ -482,8 +473,8 @@ func _apply_trade_card(card_data: Resource) -> void:
 		EventLog.add_entry("Played %s: +%d cr" % [card_data.card_name, card_data.credits_gain])
 
 
+## Returns true if the caller should return early (battle ended).
 func _apply_special_effect(card_data: Resource) -> bool:
-	## Returns true if the caller should return early (battle ended).
 	match card_data.special_effect:
 		CardData.SpecialEffect.SELF_DAMAGE_5:
 			GameManager.current_hull -= 5
@@ -542,7 +533,7 @@ func _show_battle_message(text: String) -> void:
 
 	var lbl := Label.new()
 	lbl.text = text
-	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.add_theme_font_size_override("font_size", UIStyles.FONT_SUBHEADING)
 	lbl.add_theme_color_override("font_color", Color(1.0, 0.90, 0.25))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	container.add_child(lbl)
@@ -557,10 +548,7 @@ func _show_battle_message(text: String) -> void:
 
 func _has_playable_card() -> bool:
 	for card in hand:
-		var cost: int = card.energy_cost
-		if combo_active:
-			cost = max(0, cost - 1)
-		if cost <= current_energy:
+		if _effective_cost(card) <= current_energy:
 			return true
 	return false
 
@@ -570,9 +558,7 @@ func _on_end_turn_pressed() -> void:
 		return
 		
 	# Disable button immediately to prevent double clicks
-	var end_btn: Button = $MainLayout/PlayerPanel/PlayerVBox/ButtonsBar/EndTurnButton
-	if end_btn:
-		end_btn.disabled = true
+	end_turn_button.disabled = true
 
 	if skip_enemy_turn:
 		skip_enemy_turn = false
@@ -613,10 +599,7 @@ func _on_end_turn_pressed() -> void:
 		adaptation_reduction += 1
 
 	# Reshuffle entire deck at end of turn
-	draw_pile = GameManager.deck.duplicate()
-	draw_pile.shuffle()
-	hand.clear()
-	discard_pile.clear()
+	_reset_deck_piles()
 
 	if GameManager.current_hull <= 0:
 		_on_battle_lost()
@@ -625,50 +608,61 @@ func _on_end_turn_pressed() -> void:
 
 
 func _apply_enemy_on_hit_effects() -> void:
-	# PLUNDER: steal credits on hit
-	if encounter.special_ability == EncounterData.SpecialAbility.PLUNDER:
-		var stolen := mini(20, GameManager.credits)
-		if stolen > 0:
-			GameManager.remove_credits(stolen)
-			_show_battle_message("Enemy stole %d credits!" % stolen)
+	match encounter.special_ability:
+		EncounterData.SpecialAbility.PLUNDER:
+			# Steal credits on hit
+			var stolen := mini(20, GameManager.credits)
+			if stolen > 0:
+				GameManager.remove_credits(stolen)
+				_show_battle_message("Enemy stole %d credits!" % stolen)
 
-	# BOARDING: steal 1 random cargo on hit, may wound crew
-	if encounter.special_ability == EncounterData.SpecialAbility.BOARDING:
-		var lost_msg: String = ""
-		if GameManager.cargo.size() > 0:
-			var idx := randi_range(0, GameManager.cargo.size() - 1)
-			var good_name: String = GameManager.cargo[idx]["good_name"]
-			GameManager.remove_cargo(good_name, 1)
-			lost_msg = "Lost 1x %s" % good_name
-		else:
-			var stolen: int = mini(50, GameManager.credits)
-			GameManager.remove_credits(stolen)
-			lost_msg = "Lost %d cr" % stolen
-			
-		var unwounded: Array = []
-		for c in GameManager.crew:
-			if c not in GameManager.wounded_crew:
-				unwounded.append(c)
-		if unwounded.size() > 0 and randf() < 0.5:
-			var to_wound: String = unwounded[randi() % unwounded.size()]
-			GameManager.wounded_crew[to_wound] = randi_range(4, 7)
-			var res: Resource = load(to_wound)
-			lost_msg += " & %s wounded" % res.crew_name
-			
-		_show_battle_message("Enemy boarded! " + lost_msg)
+		EncounterData.SpecialAbility.BOARDING:
+			# Steal 1 random cargo on hit, may wound crew
+			var lost_msg: String = ""
+			if GameManager.cargo.size() > 0:
+				var idx := randi_range(0, GameManager.cargo.size() - 1)
+				var good_name: String = GameManager.cargo[idx]["good_name"]
+				GameManager.remove_cargo(good_name, 1)
+				lost_msg = "Lost 1x %s" % good_name
+			else:
+				var stolen: int = mini(50, GameManager.credits)
+				GameManager.remove_credits(stolen)
+				lost_msg = "Lost %d cr" % stolen
 
-	# CRIMSON_FURY: Boss gains max damage on hit
-	if encounter.special_ability == EncounterData.SpecialAbility.CRIMSON_FURY:
-		encounter.enemy_attack_range.y += 5
-		_show_battle_message("Crimson Jack's fury grows! (+5 Max Dmg)")
+			var unwounded: Array = []
+			for c in GameManager.crew:
+				if c not in GameManager.wounded_crew:
+					unwounded.append(c)
+			if unwounded.size() > 0 and randf() < 0.5:
+				var to_wound: String = unwounded.pick_random()
+				GameManager.wounded_crew[to_wound] = randi_range(4, 7)
+				var res: Resource = load(to_wound)
+				lost_msg += " & %s wounded" % res.crew_name
 
-func _force_boarding() -> void:
-	battle_active = false
-	var BoardingMinigameScene: PackedScene = load("res://scenes/boarding_minigame.tscn")
-	var minigame: Node = BoardingMinigameScene.instantiate()
+			_show_battle_message("Enemy boarded! " + lost_msg)
+
+		EncounterData.SpecialAbility.CRIMSON_FURY:
+			# Boss gains max damage on hit
+			encounter.enemy_attack_range.y += 5
+			_show_battle_message("Crimson Jack's fury grows! (+5 Max Dmg)")
+
+
+## Enemy hull is down: offer to board unless that door is already closed.
+func _handle_enemy_defeated() -> void:
+	if not _boarding_attempted and encounter.encounter_name != "Crimson Jack":
+		_show_boarding_choice()
+	else:
+		_on_battle_won(false)
+
+
+func _launch_boarding_minigame() -> void:
+	_boarding_attempted = true
+	var minigame_scene: PackedScene = load("res://scenes/boarding_minigame.tscn")
+	var minigame: Node = minigame_scene.instantiate()
 	minigame.starting_alarm = int(maxf(0.0, float(enemy_health)) / float(enemy_max_health) * 100.0)
 	add_child(minigame)
 	minigame.boarding_finished.connect(_on_boarding_finished)
+
 
 func _show_boarding_choice() -> void:
 	battle_active = false
@@ -703,7 +697,7 @@ func _show_boarding_choice() -> void:
 
 	var lbl := Label.new()
 	lbl.text = "Enemy disabled! Do you want to board their ship?"
-	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.add_theme_font_size_override("font_size", UIStyles.FONT_SUBHEADING)
 	lbl.add_theme_color_override("font_color", Color(1.0, 0.90, 0.25))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(lbl)
@@ -718,13 +712,8 @@ func _show_boarding_choice() -> void:
 	board_btn.custom_minimum_size = Vector2(120, 40)
 	UIStyles.style_accent_button(board_btn, Color(0.6, 0.2, 0.2))
 	board_btn.pressed.connect(func():
-		_boarding_attempted = true
 		overlay.queue_free()
-		var BoardingMinigameScene: PackedScene = load("res://scenes/boarding_minigame.tscn")
-		var minigame: Node = BoardingMinigameScene.instantiate()
-		minigame.starting_alarm = int(maxf(0.0, float(enemy_health)) / float(enemy_max_health) * 100.0)
-		add_child(minigame)
-		minigame.boarding_finished.connect(_on_boarding_finished)
+		_launch_boarding_minigame()
 	)
 	btn_row.add_child(board_btn)
 
@@ -790,11 +779,7 @@ func _on_boarding_finished(status: int) -> void:
 		
 		if enemy_health > 0:
 			# Reshuffle and deal new hand per user request
-			for c in hand: discard_pile.append(c)
-			hand.clear()
-			draw_pile = GameManager.deck.duplicate()
-			draw_pile.shuffle()
-			discard_pile.clear()
+			_reset_deck_piles()
 			current_energy = effective_energy_per_turn
 			_draw_cards(GameManager.hand_size)
 			
@@ -803,26 +788,34 @@ func _on_boarding_finished(status: int) -> void:
 			
 		_on_battle_boarding_failed()
 
-func _on_battle_boarding_failed() -> void:
-	battle_active = false
+
+## Score, achievements and heat — the bookkeeping every won battle shares.
+func _register_victory(result: String, log_text: String) -> void:
 	GameManager.total_encounters_won += 1
-	GameManager.battle_result = "boarding_failed"
-	EventLog.add_entry("Won battle vs %s, but boarding failed" % encounter.encounter_name)
+	GameManager.battle_result = result
+	EventLog.add_entry(log_text)
 	AchievementManager.unlock("first_blood")
 	if encounter.encounter_name == "Bounty Hunter":
 		AchievementManager.unlock("bounty_survivor")
 	PirateLordManager.add_heat(3)
-	# Rival handling
+
+
+## Rival/bounty standing updates and the exit to the result screen. A beaten
+## rival never also counts as a bounty target.
+func _leave_won_battle() -> void:
 	if _is_rival_encounter():
 		RivalManager.on_rival_defeated()
-		GameManager.change_scene("res://scenes/battle_result.tscn")
-		return
-	# Bounty system
-	if encounter.encounter_name == "Bounty Hunter":
+	elif encounter.encounter_name == "Bounty Hunter":
 		StandingManager.add_bounty(50, "killed authorized bounty hunter")
 	elif encounter.encounter_name == "System Patrol":
 		StandingManager.add_bounty(50, "defeated patrol")
 	GameManager.change_scene("res://scenes/battle_result.tscn")
+
+
+func _on_battle_boarding_failed() -> void:
+	battle_active = false
+	_register_victory("boarding_failed", "Won battle vs %s, but boarding failed" % encounter.encounter_name)
+	_leave_won_battle()
 
 
 func _on_flee_pressed() -> void:
@@ -847,39 +840,23 @@ func _on_battle_won(was_boarded: bool = false) -> void:
 		AudioManager.play_explosion()
 		await get_tree().create_timer(2.0).timeout
 		
-	var result: String = "boarded" if was_boarded else "won"
-	GameManager.total_encounters_won += 1
-	GameManager.battle_result = result
-	EventLog.add_entry("Won battle vs %s" % encounter.encounter_name)
-	AchievementManager.unlock("first_blood")
-	if encounter.encounter_name == "Bounty Hunter":
-		AchievementManager.unlock("bounty_survivor")
-	PirateLordManager.add_heat(3)
-	# Rival handling
+	_register_victory("boarded" if was_boarded else "won", "Won battle vs %s" % encounter.encounter_name)
+	# A rival defeat skips the pirate-lord messages below.
 	if _is_rival_encounter():
-		RivalManager.on_rival_defeated()
-		GameManager.change_scene("res://scenes/battle_result.tscn")
+		_leave_won_battle()
 		return
 	# Pirate Lord system
 	if encounter.encounter_name == "Crimson Enforcer":
 		PirateLordManager.defeat_officer("Enforcer")
-		PirateLordManager.add_intel(1)
-		GameManager.extra_battle_message = "Defeated Enforcer & Found Pirate Intel!"
+		GameManager.extra_battle_message = "Defeated Enforcer! Crimson Jack's fleet weakened."
 	elif encounter.encounter_name == "Pirate Captain":
-		PirateLordManager.add_intel(1)
-		GameManager.extra_battle_message = "Found Pirate Intel!"
+		GameManager.extra_battle_message = "Found Contraband!"
 		
 	if encounter.encounter_name == "Crimson Jack":
 		PirateLordManager.jack_defeated = true
-		PirateLordManager.emit_boss_defeated()
 		GameManager.extra_battle_message = "Crimson Jack Defeated!"
 
-	# Bounty system: defeating bounty hunters or patrols increases bounty
-	if encounter.encounter_name == "Bounty Hunter":
-		StandingManager.add_bounty(50, "killed authorized bounty hunter")
-	elif encounter.encounter_name == "System Patrol":
-		StandingManager.add_bounty(50, "defeated patrol")
-	GameManager.change_scene("res://scenes/battle_result.tscn")
+	_leave_won_battle()
 
 
 func _on_battle_lost() -> void:
@@ -910,7 +887,11 @@ func _on_battle_lost() -> void:
 	if _is_rival_encounter():
 		RivalManager.on_rival_won()
 	if GameManager.current_hull <= 0:
-		if GameManager.owned_ships.size() > 1:
+		if GameManager.travel_destination == GameManager.CRIMSON_BASE_NAME:
+			GameManager.battle_result = "lost"
+			GameManager.change_scene("res://scenes/battle_result.tscn")
+			return
+		elif GameManager.owned_ships.size() > 1:
 			var old_ship = GameManager.current_ship
 			var new_ship = ""
 			for s in GameManager.owned_ships:
@@ -949,9 +930,8 @@ func _update_enemy_ui() -> void:
 	enemy_style.bg_color = Color(0.9, 0.2, 0.2)
 	%EnemyHealthBar.add_theme_stylebox_override("fill", enemy_style)
 	%EnemyHealthLabel.text = "%d / %d" % [display_health, enemy_max_health]
-
 	if enemy_shield > 0:
-		%EnemyHealthLabel.text = "%d / %d [Shield: %d]" % [display_health, enemy_max_health, enemy_shield]
+		%EnemyHealthLabel.text += " [Shield: %d]" % enemy_shield
 
 	var enemy_hull_pct: float = float(display_health) / float(enemy_max_health) if enemy_max_health > 0 else 0.0
 	var enemy_shield_pct: float = float(enemy_shield) / 10.0 if enemy_shield > 0 else 0.0
@@ -959,11 +939,11 @@ func _update_enemy_ui() -> void:
 
 	%IntentLabel.text = "Enemy will deal %d damage" % enemy_intent_damage
 	if GameManager.current_shield >= enemy_intent_damage:
-		%IntentLabel.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+		%IntentLabel.add_theme_color_override("font_color", UIStyles.POSITIVE)
 	elif GameManager.current_shield > 0:
-		%IntentLabel.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+		%IntentLabel.add_theme_color_override("font_color", UIStyles.CAUTION)
 	else:
-		%IntentLabel.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+		%IntentLabel.add_theme_color_override("font_color", UIStyles.NEGATIVE)
 
 	if encounter.ability_description != "":
 		%AbilityLabel.text = encounter.ability_description
@@ -1004,6 +984,9 @@ func _update_player_ui() -> void:
 		
 	# Board Button
 	var threshold_pct: int = 50 if "Grappling Hook" in GameManager.installed_upgrades else 30
+	if encounter.encounter_name == "Crimson Jack":
+		%BoardButton.visible = false
+		return
 	var threshold_hp: int = ceili(float(enemy_max_health) * float(threshold_pct) / 100.0)
 	%BoardButton.disabled = (enemy_health > threshold_hp) or (enemy_health <= 0) or _boarding_attempted
 	%BoardButton.visible = true
@@ -1017,12 +1000,7 @@ func _update_player_ui() -> void:
 
 func _on_board_pressed() -> void:
 	if not battle_active or _boarding_attempted: return
-	_boarding_attempted = true
-	var BoardingMinigameScene: PackedScene = load("res://scenes/boarding_minigame.tscn")
-	var minigame: Node = BoardingMinigameScene.instantiate()
-	minigame.starting_alarm = int(maxf(0.0, float(enemy_health)) / float(enemy_max_health) * 100.0)
-	add_child(minigame)
-	minigame.boarding_finished.connect(_on_boarding_finished)
+	_launch_boarding_minigame()
 
 
 func _update_deck_info() -> void:
@@ -1037,8 +1015,18 @@ func _update_hand_display() -> void:
 	for card in hand:
 		var card_display := CardDisplayScene.instantiate()
 		%HandContainer.add_child(card_display)
-		var effective_cost: int = card.energy_cost
-		if combo_active:
-			effective_cost = max(0, effective_cost - 1)
-		card_display.setup(card, effective_cost <= current_energy)
+		card_display.setup(card, _effective_cost(card) <= current_energy)
 		card_display.card_played.connect(_on_card_played)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not battle_active:
+		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F8:
+			enemy_health -= 30
+			_show_battle_message("CHEAT (F8): Enemy hull -30 HP")
+			if %EnemyShipDisplay:
+				%EnemyShipDisplay.play_hit()
+			_update_ui()
+			if enemy_health <= 0:
+				_handle_enemy_defeated()

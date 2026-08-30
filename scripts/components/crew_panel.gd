@@ -39,21 +39,17 @@ func _ready() -> void:
 	status_label = Label.new()
 	status_label.text = ""
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status_label.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
-	status_label.add_theme_color_override("font_color", UIStyles.STATUS_OK)
+	status_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
+	status_label.add_theme_color_override("font_color", UIStyles.POSITIVE)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(status_label)
 
-	_load_all_crew_data()
+	_all_crew_data = ResourceRegistry.load_all(ResourceRegistry.CREW)
 
 
 func setup(planet_type: int = 0) -> void:
 	_current_planet_type = planet_type
 	_refresh_crew_ui()
-
-
-func _load_all_crew_data() -> void:
-	_all_crew_data = ResourceRegistry.load_all(ResourceRegistry.CREW)
 
 
 func _refresh_crew_ui() -> void:
@@ -63,10 +59,10 @@ func _refresh_crew_ui() -> void:
 		child.queue_free()
 
 	# Populate crew portrait icons
-	for i in GameManager.crew.size():
-		var path = GameManager.crew[i]
-		var crew_res = load(path)
-		if crew_res == null: continue
+	for path: String in GameManager.crew:
+		var crew_res: Resource = load(path)
+		if crew_res == null:
+			continue
 		var icon := Control.new()
 		icon.set_script(CrewIcon)
 		icon.custom_minimum_size = Vector2(60, 70)
@@ -75,10 +71,11 @@ func _refresh_crew_ui() -> void:
 
 	# Show current crew members
 	for i in GameManager.crew.size():
-		var path = GameManager.crew[i]
-		var is_wounded = path in GameManager.wounded_crew
+		var path: String = GameManager.crew[i]
+		var is_wounded: bool = path in GameManager.wounded_crew
 		var crew_res: Resource = load(path)
-		if crew_res == null: continue
+		if crew_res == null:
+			continue
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 4)
 		_crew_container.add_child(row)
@@ -87,15 +84,15 @@ func _refresh_crew_ui() -> void:
 		var info := Label.new()
 		var text: String = crew_res.crew_name + " (" + str(crew_res.daily_wage) + "cr/day): " + crew_res.description
 		if is_wounded:
-			var days_left = int(GameManager.wounded_crew[path])
+			var days_left: int = int(GameManager.wounded_crew[path])
 			text = "[WOUNDED (" + str(days_left) + " days left)] " + text
 		if secondary_text != "":
 			text += " | " + secondary_text
 		info.text = text
 		info.tooltip_text = crew_res.crew_name
-		info.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
+		info.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
 		if is_wounded:
-			info.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
+			info.add_theme_color_override("font_color", UIStyles.NEGATIVE)
 		else:
 			info.add_theme_color_override("font_color", Color(0.4, 0.85, 0.65))
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -117,7 +114,7 @@ func _refresh_crew_ui() -> void:
 	if GameManager.crew.is_empty():
 		var empty_lbl := Label.new()
 		empty_lbl.text = "No crew hired"
-		empty_lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
+		empty_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 		empty_lbl.add_theme_color_override("font_color", Color(0.4, 0.42, 0.45))
 		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_crew_container.add_child(empty_lbl)
@@ -164,14 +161,14 @@ func _build_hire_card(crew_res: Resource) -> PanelContainer:
 	var name_lbl := Label.new()
 	name_lbl.text = crew_res.crew_name
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
+	name_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
 	name_lbl.add_theme_color_override("font_color", Color(0.75, 0.95, 0.85))
 	header.add_child(name_lbl)
 
 	var cost_lbl := Label.new()
 	cost_lbl.text = "Hire: %d cr | %d cr/day" % [crew_res.recruit_cost, crew_res.daily_wage]
 	UIStyles.apply_mono_font(cost_lbl)
-	cost_lbl.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
+	cost_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
 	cost_lbl.add_theme_color_override("font_color", UIStyles.GOLD)
 	header.add_child(cost_lbl)
 
@@ -182,7 +179,7 @@ func _build_hire_card(crew_res: Resource) -> PanelContainer:
 	var bonus_lbl := Label.new()
 	bonus_lbl.text = "\n".join(bonus_lines)
 	bonus_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	bonus_lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
+	bonus_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 	bonus_lbl.add_theme_color_override("font_color", Color(0.55, 0.8, 0.7))
 	vbox.add_child(bonus_lbl)
 

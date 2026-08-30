@@ -108,17 +108,18 @@ static func collect_required_background_paths(planet_data_dir: String = "res://d
 	if planet_dir:
 		for file_name in planet_dir.get_files():
 			if file_name.get_extension() == "tres":
-				required.append("res://assets/sprites/scenes/bg_%s.png" % file_name.get_basename().to_lower())
+				var basename: String = file_name.get_basename().to_lower()
+				if basename == "crimson_base":
+					continue
+				required.append("res://assets/sprites/scenes/bg_%s.png" % basename)
 	else:
 		push_warning("BackgroundUtils: cannot open planet directory: %s" % planet_data_dir)
 
 	required.sort()
 	var unique_paths: Array[String] = []
-	var last_path := ""
 	for path in required:
-		if path != last_path:
+		if not unique_paths.has(path):
 			unique_paths.append(path)
-			last_path = path
 	return unique_paths
 
 

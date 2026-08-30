@@ -13,10 +13,14 @@ const FUEL_PRICE: int = 50
 const EMERGENCY_FUEL_DEBT: int = 100
 const CAPTURED_SHIP_BASE_PRICE: int = 500
 
+# The pirate lord's base. Its planet_name is compared in several screens, and it
+# is renamed once the player has taken it over — see get_display_planet_name().
+const CRIMSON_BASE_NAME: String = "Crimson Jack's Hideout"
+const CRIMSON_BASE_OWNED_NAME: String = "Your Hideout"
+
 # Ship & Upgrades
 const SHIP_TRANSFER_FEE: int = 250
 const REPAIR_COST_PER_HP: int = 30
-const MAX_STAT_UPGRADES: int = 3
 
 # Finance
 const LOAN_DEFAULT_AMOUNT := 1000
@@ -84,8 +88,6 @@ var wounded_crew: Dictionary = {} # Dictionary mapping path to days_left
 # Ship Upgrades
 var damaged_upgrades: Array = [] # Array of upgrade names (String) that are damaged
 
-# Jack / Intel
-var pirate_intel: int = 0
 # Navigation
 var max_fuel: int = 6
 var current_fuel: int = 6
@@ -128,6 +130,7 @@ var total_trades: int = 0
 var total_encounters_won: int = 0
 var total_travel_days: int = 0
 var current_day: int = 1
+var intro_shown: bool = false
 var total_smuggler_deals: int = 0
 var total_quests_completed: int = 0
 
@@ -139,8 +142,9 @@ var outstanding_debt: int = 0
 var debt_due_in_days: int = 0
 var debt_interest_rate: float = 0.0
 var missed_debt_payments: int = 0
-var _is_resetting: bool = false
 
+# Boss logic
+var crimson_base_unlocked: bool = false
 
 func _ready() -> void:
 	BackgroundUtils.validate_required_backgrounds()
@@ -148,8 +152,7 @@ func _ready() -> void:
 
 
 func reset() -> void:
-	_is_resetting = true
-	var settings: Dictionary = DIFFICULTY_SETTINGS.get(difficulty, DIFFICULTY_SETTINGS[Difficulty.NORMAL])
+	var settings: Dictionary = _get_difficulty_settings()
 	credits = settings["credits"]
 	max_hull = settings["hull"]
 	current_hull = settings["hull"]
@@ -163,7 +166,6 @@ func reset() -> void:
 	crew.clear()
 	wounded_crew.clear()
 	damaged_upgrades.clear()
-	pirate_intel = 0
 	hand_size = 5
 	energy_per_turn = 3
 	max_fuel = 6
@@ -185,6 +187,7 @@ func reset() -> void:
 	total_encounters_won = 0
 	total_travel_days = 0
 	current_day = 1
+	intro_shown = false
 	total_smuggler_deals = 0
 	total_quests_completed = 0
 	StandingManager.reset()
@@ -203,10 +206,12 @@ func reset() -> void:
 	cargo_upgrades_bought = 0
 	ghost_run_available = true
 	victory_triggered = false
+	crimson_base_unlocked = false
 	build_starter_deck()
 	EventLog.clear()
 	EventLog.add_entry("Welcome to Starport Alpha. Your journey begins.")
-	EventLog.add_entry("Goal: %d cr + visit all 7 planets + install 1 crafted T2 upgrade + no open bounty." % get_win_credits())
+	EventLog.add_entry("Goal: Locate and defeat the pirate lord Crimson Jack.")
+	EventLog.add_entry("Prerequisites: %d cr + visit all 7 planets + install 1 T2 upgrade + no open bounty." % get_win_credits())
 	EventLog.add_entry("T2 chain: buy goods -> Factory (Tech planet) -> craft T1 -> craft T2 -> install at any Shipyard.")
 	EventManager.reset_state()
 	QuestManager.current_quest.clear()
@@ -501,15 +506,35 @@ func apply_arrival_fuel_generation() -> void:
 
 
 func _get_fuel_generation_for_upgrade(upgrade_name: String) -> int:
-	for path in ResourceRegistry.UPGRADES:
-		var upgrade: Resource = load(path)
-		if upgrade and upgrade.upgrade_name == upgrade_name:
-			return int(upgrade.fuel_generation_per_arrival)
-	for path in ResourceRegistry.CRAFTED_UPGRADES:
-		var crafted_upgrade: Resource = load(path)
-		if crafted_upgrade and crafted_upgrade.upgrade_name == upgrade_name:
-			return int(crafted_upgrade.fuel_generation_per_arrival)
-	return 0
+	var upgrade: Resource = _get_upgrade_resource(upgrade_name)
+	if upgrade == null:
+		return 0
+	return int(upgrade.fuel_generation_per_arrival)
+
+
+## The planet the player is heading for, or the one they are standing on when
+## no journey is in progress. Encounters and events resolve against it.
+
+## Display name for a planet. The pirate lord's hideout becomes the player's own
+## base after the win, so every screen must show it under the new name; the
+## stored planet_name never changes.
+
+## Ends the current run: deletes the save, clears all state and returns to the
+## main menu. Used by the victory and game-over screens.
+func end_run_to_main_menu() -> void:
+	SaveManager.delete_save()
+	reset()
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+
+func get_display_planet_name(planet_name: String) -> String:
+	if planet_name == CRIMSON_BASE_NAME and victory_triggered:
+		return CRIMSON_BASE_OWNED_NAME
+	return planet_name
+
+
+func get_focus_planet() -> String:
+	return travel_destination if travel_destination != "" else current_planet
 
 
 func complete_travel_arrival(destination: String, generate_fuel: bool = true) -> void:
@@ -600,8 +625,7 @@ func apply_upgrade(upgrade: Resource) -> void:
 # ── Win condition ─────────────────────────────────────────────────────────────
 
 func get_win_credits() -> int:
-	var settings: Dictionary = DIFFICULTY_SETTINGS.get(difficulty, DIFFICULTY_SETTINGS[Difficulty.NORMAL])
-	return settings["win_credits"]
+	return _get_difficulty_settings()["win_credits"]
 
 
 var _crafted_upgrade_names: PackedStringArray = []
@@ -639,7 +663,16 @@ var victory_triggered: bool = false
 ## win condition: planet arrival, market sale, quest delivery, upgrade
 ## install, bounty payoff.
 func try_trigger_victory() -> bool:
-	if victory_triggered or not check_win_condition():
+	if crimson_base_unlocked or not check_win_condition():
+		return false
+	crimson_base_unlocked = true
+	EconomyManager.reload_planets()
+	EventLog.add_entry("CRITICAL: Crimson Jack's hideout coordinates acquired! The final battle awaits.")
+	# We could emit a signal here to show a popup in the UI if needed
+	return true
+
+func try_trigger_actual_victory() -> bool:
+	if victory_triggered or not PirateLordManager.jack_defeated:
 		return false
 	victory_triggered = true
 	change_scene("res://scenes/victory.tscn")
@@ -862,9 +895,9 @@ func owns_ship(path: String) -> bool:
 
 
 func _get_upgrade_resource(upg_name: String) -> Resource:
-	var paths = ResourceRegistry.COMBAT_UPGRADES + ResourceRegistry.CRAFTED_UPGRADES + ResourceRegistry.UPGRADES
+	var paths: Array[String] = ResourceRegistry.COMBAT_UPGRADES + ResourceRegistry.CRAFTED_UPGRADES + ResourceRegistry.UPGRADES
 	for path in paths:
-		var res = load(path)
+		var res: Resource = load(path)
 		if res and res.upgrade_name == upg_name:
 			return res
 	return null
@@ -954,26 +987,22 @@ func switch_ship(new_ship_path: String, keep_old: bool = false) -> void:
 		dropped_any = true
 	if dropped_any:
 		cargo_changed.emit()
-	# Hangar bookkeeping
-	if not keep_old:
-		owned_ships.erase(old_path)
-	if not (new_ship_path in owned_ships):
-		owned_ships.append(new_ship_path)
-	current_ship = new_ship_path
 	# Ghost Run: available only on Smuggler-class ships, resets on every switch
 	ghost_run_available = new_ship.ship_ability == ShipData.ShipAbility.GHOST_RUN
 
 
 # ── Difficulty ──────────────────────────────────────────────────────────────
 
+func _get_difficulty_settings() -> Dictionary:
+	return DIFFICULTY_SETTINGS.get(difficulty, DIFFICULTY_SETTINGS[Difficulty.NORMAL])
+
+
 func get_difficulty_encounter_modifier() -> float:
-	var settings: Dictionary = DIFFICULTY_SETTINGS.get(difficulty, DIFFICULTY_SETTINGS[Difficulty.NORMAL])
-	return settings["encounter_mod"]
+	return _get_difficulty_settings()["encounter_mod"]
 
 
 func get_difficulty_quest_bonus() -> int:
-	var settings: Dictionary = DIFFICULTY_SETTINGS.get(difficulty, DIFFICULTY_SETTINGS[Difficulty.NORMAL])
-	return settings["quest_deadline_bonus"]
+	return _get_difficulty_settings()["quest_deadline_bonus"]
 
 
 func record_market_observation(

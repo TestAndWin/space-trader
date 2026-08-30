@@ -8,13 +8,8 @@ signal quest_closed
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
-const QUEST_ICONS = {
-	0: "✉",  # ✉
-	1: "✉",  # ✉
-	2: "✉",  # ✉
-	3: "✉",  # ✉
-	4: "✉",  # ✉
-}
+## Unlike the other overlays the quest office keeps one icon on every planet type.
+const QUEST_ICON := "✉"
 
 enum Tab { QUESTS, LOAN, BOUNTY }
 
@@ -31,9 +26,7 @@ var _status_label: Label
 var _tab_bar: TabBar
 var _tab_content: MarginContainer
 var _active_tab: int = Tab.QUESTS
-var _quest_display: Control  # QuestDisplay instance
-var _loan_panel: Control
-var _bounty_panel: Control
+var _quest_display: Control  # QuestDisplay instance, re-targeted by setup()
 
 const QuestDisplayScene: PackedScene = preload("res://scenes/components/quest_display.tscn")
 const LoanPanelScene: PackedScene = preload("res://scenes/components/loan_panel.tscn")
@@ -65,7 +58,7 @@ func _build_ui() -> void:
 		self,
 		CityMap.get_building_name(CityMap.BUILDING_QUEST, _planet_type).to_upper(),
 		"Accept contracts, manage loans, and deal with authorities",
-		QUEST_ICONS.get(_planet_type, "✉"),
+		QUEST_ICON,
 		"Back to City",
 		close,
 	)
@@ -73,8 +66,8 @@ func _build_ui() -> void:
 	_title_label = scaffold["title_label"]
 
 	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", 16)
-	_status_label.add_theme_color_override("font_color", Color(0.9, 0.82, 0.55))
+	_status_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
+	_status_label.add_theme_color_override("font_color", UIStyles.STATUS_WARN)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	main_vbox.add_child(_status_label)
@@ -82,8 +75,8 @@ func _build_ui() -> void:
 	_tab_bar = TabBar.new()
 	for tab: int in [Tab.QUESTS, Tab.LOAN, Tab.BOUNTY]:
 		_tab_bar.add_tab(TAB_TITLES[tab])
-	_tab_bar.add_theme_font_size_override("font_size", 16)
-	_tab_bar.tab_changed.connect(_on_tab_changed)
+	_tab_bar.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
+	_tab_bar.tab_changed.connect(_show_tab)
 	main_vbox.add_child(_tab_bar)
 
 	_tab_content = MarginContainer.new()
@@ -94,17 +87,11 @@ func _build_ui() -> void:
 	_show_tab(_active_tab)
 
 
-func _on_tab_changed(tab: int) -> void:
-	_show_tab(tab)
-
-
 func _show_tab(tab: int) -> void:
 	if _tab_content == null:
 		return
 	_active_tab = tab
 	_quest_display = null
-	_loan_panel = null
-	_bounty_panel = null
 	for child in _tab_content.get_children():
 		child.queue_free()
 
@@ -115,33 +102,24 @@ func _show_tab(tab: int) -> void:
 
 	match tab:
 		Tab.QUESTS:
-			_quest_display = QuestDisplayScene.instantiate()
-			_quest_display.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			_quest_display.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
-			_quest_display.custom_minimum_size = Vector2(720, 0)
-			centre.add_child(_quest_display)
+			_quest_display = _add_panel(centre, QuestDisplayScene, 720)
 			_quest_display.setup(_planet_name)
-			_quest_display.quest_changed.connect(_on_action_changed)
+			_quest_display.quest_changed.connect(_refresh_ui)
 		Tab.LOAN:
-			_loan_panel = LoanPanelScene.instantiate()
-			_loan_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			_loan_panel.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
-			_loan_panel.custom_minimum_size = Vector2(480, 0)
-			centre.add_child(_loan_panel)
-			_loan_panel.loan_changed.connect(_on_action_changed)
+			_add_panel(centre, LoanPanelScene, 480).loan_changed.connect(_refresh_ui)
 		Tab.BOUNTY:
-			_bounty_panel = BountyPanelScene.instantiate()
-			_bounty_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			_bounty_panel.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
-			_bounty_panel.custom_minimum_size = Vector2(480, 0)
-			centre.add_child(_bounty_panel)
-			_bounty_panel.bounty_paid.connect(_on_action_changed)
+			_add_panel(centre, BountyPanelScene, 480).bounty_paid.connect(_refresh_ui)
 
 	_refresh_ui()
 
 
-func _on_action_changed() -> void:
-	_refresh_ui()
+func _add_panel(parent: Control, scene: PackedScene, min_width: float) -> Control:
+	var panel: Control = scene.instantiate()
+	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	panel.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_SHRINK_CENTER
+	panel.custom_minimum_size = Vector2(min_width, 0)
+	parent.add_child(panel)
+	return panel
 
 
 func _refresh_ui() -> void:

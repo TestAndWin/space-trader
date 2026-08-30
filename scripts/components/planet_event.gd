@@ -1,140 +1,70 @@
-extends ColorRect
+extends EventChoiceModal
 
 ## Planet arrival event popup — random events triggered when landing on a planet.
 ## Call try_trigger(planet_type) from planet_screen. If it returns true the popup
 ## is visible; otherwise nothing happens.
 
-signal event_resolved
-
-const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const TRIGGER_CHANCE := 0.25
-# All loaded event resources
-var _all_events: Array = []
-# Currently displayed event
-var _current_event: Resource = null
+## The one event with a bespoke flow: cargo is taken up front and choice A may
+## win it back, so its texts carry a {good} placeholder.
+const CARGO_THEFT := "Cargo Theft!"
+
 # Cargo theft tracking
 var _stolen_good: String = ""
 var _stolen_qty: int = 0
-
-var _title_label: Label
-var _description_label: Label
-var _outcome_label: Label
-var _choice_a_button: Button
-var _choice_b_button: Button
 
 
 # ── Public API ───────────────────────────────────────────────────────────────
 
 func try_trigger(planet_type: int) -> bool:
-	_load_events()
+	_load_events(ResourceRegistry.PLANET_EVENTS)
 	if randf() > TRIGGER_CHANCE:
 		return false
 	var matching: Array = []
 	for ev in _all_events:
 		if ev.any_planet_type or ev.planet_type == planet_type:
 			# Cargo theft requires player to have cargo
-			if ev.event_name == "Cargo Theft!" and GameManager.cargo.is_empty():
+			if ev.event_name == CARGO_THEFT and GameManager.cargo.is_empty():
 				continue
 			matching.append(ev)
 	if matching.is_empty():
 		return false
-	_current_event = matching[randi() % matching.size()]
+	_current_event = matching.pick_random()
 	# Cargo theft: steal cargo before showing event
-	if _current_event.event_name == "Cargo Theft!":
+	if _current_event.event_name == CARGO_THEFT:
 		_apply_cargo_theft()
 	_show_event()
 	visible = true
 	return true
 
 
-# ── Data loading ─────────────────────────────────────────────────────────────
+# ── Modal configuration ──────────────────────────────────────────────────────
 
-func _load_events() -> void:
-	if not _all_events.is_empty():
-		return
-	_all_events = ResourceRegistry.load_all(ResourceRegistry.PLANET_EVENTS)
+func _modal_title_color() -> Color:
+	return Color(0.4, 0.7, 1.0)
 
 
-# ── UI construction ──────────────────────────────────────────────────────────
-
-func _ready() -> void:
-	_build_ui()
+func _log_prefix() -> String:
+	return "Planet event"
 
 
-func _build_ui() -> void:
-	var scaffold := UIStyles.create_event_modal_scaffold(self, 400.0, Color(0.4, 0.7, 1.0))
-	var vbox: VBoxContainer = scaffold["vbox"]
-	_title_label = scaffold["title_label"]
-	_description_label = scaffold["description_label"]
-
-	# Outcome label (shown after choice)
-	_outcome_label = Label.new()
-	_outcome_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_outcome_label.add_theme_color_override("font_color", Color(0.7, 0.85, 0.6))
-	_outcome_label.custom_minimum_size = Vector2(360, 0)
-	_outcome_label.visible = false
-	vbox.add_child(_outcome_label)
-
-	# Buttons
-	var hbox := HBoxContainer.new()
-	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	hbox.add_theme_constant_override("separation", 12)
-	vbox.add_child(hbox)
-
-	_choice_a_button = Button.new()
-	_choice_a_button.custom_minimum_size = Vector2(160, 36)
-	UIStyles.style_event_button(_choice_a_button, Color(0.2, 0.4, 0.7), Color(0.25, 0.5, 0.85), Color(0.15, 0.3, 0.55))
-	_choice_a_button.pressed.connect(_on_choice_a)
-	hbox.add_child(_choice_a_button)
-
-	_choice_b_button = Button.new()
-	_choice_b_button.custom_minimum_size = Vector2(160, 36)
-	UIStyles.style_event_button(_choice_b_button, Color(0.25, 0.25, 0.28), Color(0.35, 0.35, 0.38), Color(0.18, 0.18, 0.2))
-	_choice_b_button.pressed.connect(_on_choice_b)
-	hbox.add_child(_choice_b_button)
-
-
-# ── Display ──────────────────────────────────────────────────────────────────
-
-func _show_event() -> void:
-	if _current_event == null:
-		return
-	_title_label.text = _current_event.event_name.to_upper()
-	var desc: String = _current_event.description
-	if _stolen_good != "":
-		desc = desc.replace("{good}", "%d %s" % [_stolen_qty, _stolen_good])
-	_description_label.text = desc
-	_choice_a_button.text = _current_event.choice_a_text
-	_choice_b_button.text = _current_event.choice_b_text
-	_outcome_label.visible = false
-
-	# Check if choice A is available
-	_choice_a_button.disabled = not _can_choose_a()
-	if _choice_a_button.disabled:
-		_choice_a_button.tooltip_text = _get_requirement_text()
-	# Show crew flavor text if applicable
-	var flavor_text: String = GameManager.get_crew_event_flavor_text(_current_event.event_name)
-	if flavor_text != "":
-		_description_label.text = _description_label.text + "\n\n[Crew] " + flavor_text
+func _format_description(text: String) -> String:
+	if _stolen_good == "":
+		return text
+	return text.replace("{good}", _stolen_text())
 
 
 func _can_choose_a() -> bool:
-	var ev := _current_event
-	# Check credit cost (negative credits means player pays)
-	if ev.choice_a_credits < 0 and GameManager.credits < abs(ev.choice_a_credits):
+	if not super():
 		return false
+	var ev := _current_event
 	# Check required cargo
 	if ev.choice_a_requires_good != "" and ev.choice_a_requires_qty > 0:
-		var owned := GameManager.get_cargo_quantity(ev.choice_a_requires_good)
-		if owned < ev.choice_a_requires_qty:
-			return false
-	# Check hull damage won't kill the player
-	if ev.choice_a_hull < 0 and GameManager.current_hull <= abs(ev.choice_a_hull):
-		return false
+		return GameManager.get_cargo_quantity(ev.choice_a_requires_good) >= ev.choice_a_requires_qty
 	return true
 
 
-func _get_requirement_text() -> String:
+func _requirement_text() -> String:
 	var ev := _current_event
 	var parts: Array = []
 	if ev.choice_a_credits < 0 and GameManager.credits < abs(ev.choice_a_credits):
@@ -153,11 +83,15 @@ func _get_requirement_text() -> String:
 func _apply_cargo_theft() -> void:
 	if GameManager.cargo.is_empty():
 		return
-	var item: Dictionary = GameManager.cargo[randi() % GameManager.cargo.size()]
+	var item: Dictionary = GameManager.cargo.pick_random()
 	_stolen_good = item["good_name"]
 	_stolen_qty = clampi(randi_range(1, 3), 1, item["quantity"])
 	GameManager.remove_cargo(_stolen_good, _stolen_qty)
 	EventLog.add_entry("Thieves stole %d %s from your cargo!" % [_stolen_qty, _stolen_good])
+
+
+func _stolen_text() -> String:
+	return "%d %s" % [_stolen_qty, _stolen_good]
 
 
 # ── Choice handlers ──────────────────────────────────────────────────────────
@@ -165,100 +99,23 @@ func _apply_cargo_theft() -> void:
 func _on_choice_a() -> void:
 	var ev := _current_event
 	# Cargo theft: success = recover stolen goods
-	if ev.event_name == "Cargo Theft!" and _stolen_good != "":
-		var raw_a_chance: float = ev.choice_a_success_chance + GameManager.get_event_success_bonus()
-		if raw_a_chance < 1.0 and randf() >= raw_a_chance:
-			_apply_outcome(ev.choice_a_alt_credits, ev.choice_a_alt_hull, "", 0)
-			_show_outcome(ev.choice_a_alt_description.replace("{good}", "%d %s" % [_stolen_qty, _stolen_good]))
-		else:
+	if ev.event_name == CARGO_THEFT and _stolen_good != "":
+		if _roll_succeeds(ev.choice_a_success_chance):
 			_apply_outcome(ev.choice_a_credits, ev.choice_a_hull, _stolen_good, _stolen_qty)
-			_show_outcome(ev.choice_a_description.replace("{good}", "%d %s" % [_stolen_qty, _stolen_good]))
+			_show_outcome(ev.choice_a_description.replace("{good}", _stolen_text()))
+		else:
+			_apply_outcome(ev.choice_a_alt_credits, ev.choice_a_alt_hull)
+			_show_outcome(ev.choice_a_alt_description.replace("{good}", _stolen_text()))
 		return
-	var effective_chance: float = ev.choice_a_success_chance + GameManager.get_event_success_bonus()
-	if effective_chance < 1.0 and randf() >= effective_chance:
-		_resolve_and_show(ev.choice_a_alt_credits, ev.choice_a_alt_hull, ev.choice_a_alt_cargo_good, ev.choice_a_alt_cargo_qty, ev.choice_a_alt_description)
-	else:
+	if _roll_succeeds(ev.choice_a_success_chance):
 		_resolve_and_show(ev.choice_a_credits, ev.choice_a_hull, ev.choice_a_cargo_good, ev.choice_a_cargo_qty, ev.choice_a_description)
+	else:
+		_resolve_and_show(ev.choice_a_alt_credits, ev.choice_a_alt_hull, ev.choice_a_alt_cargo_good, ev.choice_a_alt_cargo_qty, ev.choice_a_alt_description)
 
 
 func _on_choice_b() -> void:
 	var ev := _current_event
-	var effective_chance: float = ev.choice_b_success_chance + GameManager.get_event_success_bonus()
-	if effective_chance < 1.0 and randf() >= effective_chance:
-		_resolve_and_show(ev.choice_b_alt_credits, ev.choice_b_alt_hull, ev.choice_b_alt_cargo_good, ev.choice_b_alt_cargo_qty, ev.choice_b_alt_description)
-	else:
+	if _roll_succeeds(ev.choice_b_success_chance):
 		_resolve_and_show(ev.choice_b_credits, ev.choice_b_hull, ev.choice_b_cargo_good, ev.choice_b_cargo_qty, ev.choice_b_description)
-
-
-func _resolve_and_show(credits_delta: int, hull_delta: int, cargo_good: String, cargo_qty: int, description: String) -> void:
-	var actual_qty: int = _apply_outcome(credits_delta, hull_delta, cargo_good, cargo_qty)
-	_show_outcome(_append_partial_note(description, cargo_good, cargo_qty, actual_qty))
-
-
-func _append_partial_note(base: String, good: String, requested: int, actual: int) -> String:
-	if good == "" or requested <= 0 or actual >= requested:
-		return base
-	if actual == 0:
-		return base + "\n\nCargo hold is full — no %s could be taken." % good
-	return base + "\n\nCargo hold nearly full — only %d of %d %s fit." % [actual, requested, good]
-
-
-func _apply_outcome(credits_delta: int, hull_delta: int, cargo_good: String, cargo_qty: int) -> int:
-	# Credits
-	if credits_delta > 0:
-		GameManager.add_credits(credits_delta)
-	elif credits_delta < 0:
-		GameManager.remove_credits(abs(credits_delta))
-
-	# Hull
-	if hull_delta > 0:
-		GameManager.current_hull = mini(GameManager.current_hull + hull_delta, GameManager.max_hull)
-	elif hull_delta < 0:
-		GameManager.current_hull = maxi(GameManager.current_hull + hull_delta, 1)
-
-	# Positive cargo adds are clamped to free space so the choice is never wasted.
-	var actual_cargo_qty: int = cargo_qty
-	if cargo_good != "" and cargo_qty != 0:
-		if cargo_qty > 0:
-			actual_cargo_qty = mini(cargo_qty, GameManager.get_free_cargo_space())
-			if actual_cargo_qty > 0:
-				GameManager.add_cargo(cargo_good, actual_cargo_qty)
-		else:
-			GameManager.remove_cargo(cargo_good, abs(cargo_qty))
-
-	var parts: Array = []
-	if credits_delta != 0:
-		parts.append("%+d cr" % credits_delta)
-	if hull_delta != 0:
-		parts.append("%+d hull" % hull_delta)
-	if cargo_good != "" and actual_cargo_qty != 0:
-		if actual_cargo_qty > 0:
-			parts.append("+%d %s" % [actual_cargo_qty, cargo_good])
-		else:
-			parts.append("-%d %s" % [abs(actual_cargo_qty), cargo_good])
-	if not parts.is_empty():
-		EventLog.add_entry("Planet event: " + ", ".join(parts))
-
-	return actual_cargo_qty
-
-
-func _show_outcome(text: String) -> void:
-	_outcome_label.text = text
-	_outcome_label.visible = true
-	_choice_a_button.visible = false
-	_choice_b_button.visible = false
-
-	# Replace buttons with a Close button
-	var close_btn := Button.new()
-	close_btn.text = "Continue"
-	close_btn.custom_minimum_size = Vector2(140, 36)
-	UIStyles.style_event_button(close_btn, Color(0.2, 0.4, 0.7), Color(0.25, 0.5, 0.85), Color(0.15, 0.3, 0.55))
-	close_btn.pressed.connect(close)
-	_choice_a_button.get_parent().add_child(close_btn)
-
-
-func close() -> void:
-	event_resolved.emit()
-	queue_free()
-
-
+	else:
+		_resolve_and_show(ev.choice_b_alt_credits, ev.choice_b_alt_hull, ev.choice_b_alt_cargo_good, ev.choice_b_alt_cargo_qty, ev.choice_b_alt_description)

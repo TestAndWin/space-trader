@@ -27,14 +27,14 @@ func _build_ui() -> void:
 	if StandingManager.bounty_amount <= 0:
 		var clear_label := Label.new()
 		clear_label.text = "No active bounties."
-		clear_label.add_theme_font_size_override("font_size", 15)
+		clear_label.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 		clear_label.add_theme_color_override("font_color", Color(0.6, 0.85, 0.6))
 		vbox.add_child(clear_label)
 		return
 
 	var bounty_label := Label.new()
 	bounty_label.text = "Bounty: %d cr (%s)" % [StandingManager.bounty_amount, StandingManager.get_bounty_tier()]
-	bounty_label.add_theme_font_size_override("font_size", 15)
+	bounty_label.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 	bounty_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 	vbox.add_child(bounty_label)
 
@@ -55,6 +55,5 @@ func _make_action_btn(text: String) -> ActionButton:
 func _on_pay_bounty() -> void:
 	if StandingManager.pay_off_bounty():
 		bounty_paid.emit()
-		if GameManager.try_trigger_victory():
-			return
+		GameManager.try_trigger_victory()
 	_build_ui()

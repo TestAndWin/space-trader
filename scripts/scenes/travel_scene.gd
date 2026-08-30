@@ -5,14 +5,13 @@ const TravelEventScene = preload("res://scenes/components/travel_event.tscn")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 var destination_planet: String = ""
-var dot_count: int = 0
-var dot_timer: float = 0.0
+var _dot_count: int = 0
+var _dot_timer: float = 0.0
 var _travel_elapsed: float = 0.0
 var _arrival_triggered: bool = false
 var _warp_exit_triggered: bool = false
 var _warp_exit_elapsed: float = 0.0
 
-var _planet_start_z: float = -290.0
 var _planet_target_z: float = -30.0
 var _travel_duration: float = 4.6
 var _warp_color: Color = Color(0.25, 0.6, 0.85)
@@ -62,6 +61,7 @@ const STARFIELD_Z_NEAR: float = 2.0
 const STARFIELD_Z_FAR: float = -350.0
 const WARP_EXIT_START_PROGRESS: float = 0.84
 const WARP_EXIT_DURATION: float = 0.55
+const PLANET_START_Z: float = -290.0
 const PLANET_TARGET_Z_BASE: float = -44.0
 const PLANET_TARGET_Z_DANGER_STEP: float = 2.0
 const PLANET_END_Y: float = -0.9
@@ -95,9 +95,8 @@ func _ready() -> void:
 	var weather: Dictionary = EventManager.get_active_weather()
 	if not weather.is_empty():
 		if weather.has("tint"):
-			var tint: Color = weather.get("tint", Color.WHITE)
-			_warp_color = _warp_color.lerp(tint, 0.55)
-		
+			_warp_color = _warp_color.lerp(weather["tint"], 0.55)
+
 		if weather.id == "solar_storm":
 			var current_shield: float = float(GameManager.current_shield)
 			var reduction_percent: float = _rng.randf_range(0.3, 0.8)
@@ -165,11 +164,16 @@ func _get_destination_type() -> int:
 	return 3  # Default: Tech (cyan)
 
 
+func _get_destination_danger() -> int:
+	var planet := EconomyManager.get_planet_data(destination_planet)
+	return planet.danger_level if planet else 1
+
+
 func _show_weather_damage_label(text: String) -> void:
 	var dmg_label := Label.new()
 	dmg_label.text = text
 	dmg_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	dmg_label.add_theme_font_size_override("font_size", 24)
+	dmg_label.add_theme_font_size_override("font_size", UIStyles.FONT_HEADING)
 	dmg_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.2))
 	# Position roughly in the center-top
 	dmg_label.position = Vector2(640, 200)
@@ -188,11 +192,11 @@ func _show_weather_damage_label(text: String) -> void:
 
 func _process(delta: float) -> void:
 	_sync_viewport_size()
-	dot_timer += delta
-	if dot_timer >= 0.35:
-		dot_timer = 0.0
-		dot_count = (dot_count + 1) % 4
-		var dots := ".".repeat(dot_count)
+	_dot_timer += delta
+	if _dot_timer >= 0.35:
+		_dot_timer = 0.0
+		_dot_count = (_dot_count + 1) % 4
+		var dots := ".".repeat(_dot_count)
 		travel_label.text = _get_travel_label_prefix() + dots
 	_travel_elapsed += delta
 	var progress := clampf(_travel_elapsed / _travel_duration, 0.0, 1.0)
@@ -252,6 +256,16 @@ func _setup_environment(warp_color: Color) -> void:
 	travel_world.add_child(cockpit_light)
 
 
+## Base material shared by stars and dust: unshaded, additive, camera-facing.
+func _create_additive_billboard_material() -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	return mat
+
+
 func _generate_starfield(warp_color: Color) -> void:
 	for child in starfield_root.get_children():
 		child.queue_free()
@@ -268,12 +282,8 @@ func _generate_starfield(warp_color: Color) -> void:
 		quad.size = Vector2(star_size, star_size * length_mult)
 		star.mesh = quad
 
-		var mat := StandardMaterial3D.new()
-		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		
+		var mat := _create_additive_billboard_material()
+
 		# More diverse and vibrant star colors
 		var brightness: float = _rng.randf_range(0.4, 1.0)
 		var tint: float = _rng.randf_range(0.1, 0.9)
@@ -316,12 +326,8 @@ func _generate_dust(warp_color: Color) -> void:
 		quad.size = Vector2(dust_size, dust_size)
 		dust.mesh = quad
 
-		var mat := StandardMaterial3D.new()
-		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		
+		var mat := _create_additive_billboard_material()
+
 		# Dust should be very faint and nebulous
 		var alpha: float = _rng.randf_range(0.02, 0.15)
 		var color := Color(warp_color.r, warp_color.g, warp_color.b, alpha)
@@ -401,14 +407,11 @@ func _build_destination_planet(dest_type: int, warp_color: Color) -> void:
 		child.queue_free()
 
 	_planet_root = Node3D.new()
-	_planet_root.position = Vector3(0.0, -1.9, _planet_start_z)
+	_planet_root.position = Vector3(0.0, -1.9, PLANET_START_Z)
 	_planet_root.scale = Vector3.ONE * PLANET_START_SCALE
 	planet_container.add_child(_planet_root)
 
-	var planet_data := EconomyManager.get_planet_data(destination_planet)
-	var danger_level: int = 1
-	if planet_data:
-		danger_level = planet_data.danger_level
+	var danger_level: int = _get_destination_danger()
 	_planet_target_z = PLANET_TARGET_Z_BASE - float(danger_level) * PLANET_TARGET_Z_DANGER_STEP
 	_travel_duration = 4.2 + float(maxi(0, danger_level - 1)) * 0.15 + float(maxi(GameManager.travel_days - 1, 0)) * 0.35
 
@@ -598,7 +601,7 @@ func _generate_planet_cloud_texture(noise_seed: int) -> Texture2D:
 func _animate_planet(delta: float, progress: float) -> void:
 	if not _planet_root:
 		return
-	_planet_root.position.z = lerpf(_planet_start_z, _planet_target_z, progress)
+	_planet_root.position.z = lerpf(PLANET_START_Z, _planet_target_z, progress)
 	_planet_root.position.y = lerpf(-1.9, PLANET_END_Y, progress)
 	_planet_root.rotation.y += delta * 0.08
 	_planet_root.rotation.x = sin(_travel_elapsed * 0.35) * 0.04
@@ -725,22 +728,15 @@ func _ease_out_cubic(value: float) -> float:
 	return 1.0 - inv * inv * inv
 
 
+## Arrival: rival encounter, then the normal encounter roll, then a non-combat
+## travel event — the first one that triggers takes over the scene.
 func _on_travel_complete() -> void:
 	set_process(false)
-	_proceed_to_arrival()
 
-
-
-
-
-func _proceed_to_arrival() -> void:
 	# Ghost Run is reset when travel starts,
 	# so it remains a once-per-landing ability rather than 100% encounter immunity.
 
-	var danger_level: int = 1
-	var planet_data := EconomyManager.get_planet_data(destination_planet)
-	if planet_data:
-		danger_level = planet_data.danger_level
+	var danger_level: int = _get_destination_danger()
 	if not GameManager.travel_route.is_empty():
 		danger_level = NavigationManager.get_route_danger(GameManager.travel_route)
 
@@ -774,12 +770,17 @@ func _proceed_to_arrival() -> void:
 
 
 func _complete_arrival() -> void:
-	EventLog.add_entry("Arrived at %s" % destination_planet)
+	EventLog.add_entry("Arrived at %s" % _destination_display_name())
 	GameManager.complete_travel_arrival(destination_planet)
 	GameManager.change_scene("res://scenes/planet_screen.tscn")
+
+
+## Once Crimson Jack is beaten his hideout belongs to the player.
+func _destination_display_name() -> String:
+	return GameManager.get_display_planet_name(destination_planet)
 
 
 func _get_travel_label_prefix() -> String:
 	var days: int = maxi(GameManager.travel_days, 1)
 	var day_text: String = "day" if days == 1 else "days"
-	return "Traveling to %s - %d %s" % [destination_planet, days, day_text]
+	return "Traveling to %s - %d %s" % [_destination_display_name(), days, day_text]

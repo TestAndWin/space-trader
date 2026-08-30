@@ -27,7 +27,7 @@ func _build_ui() -> void:
 	var debt_label := Label.new()
 	debt_label.text = GameManager.get_debt_status_text()
 	debt_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	debt_label.add_theme_font_size_override("font_size", 15)
+	debt_label.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 	debt_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
 	vbox.add_child(debt_label)
 

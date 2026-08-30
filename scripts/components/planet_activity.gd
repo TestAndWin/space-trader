@@ -14,8 +14,37 @@ enum Kind { HACKING, MINING, HARVEST, SMUGGLER_RACE, FACTORY }
 
 const ENTRY_FEE: int = 100
 
+## Presentation text per activity kind. "rules" is the one-line summary shown in
+## the confirmation dialog before paying. FACTORY doubles as the fallback entry.
+const KIND_TEXT: Dictionary = {
+	Kind.HACKING: {
+		"name": "Data Heist",
+		"subtitle": "Slice through corporate ICE layer by layer.",
+		"rules": "Breach 3 ICE layers. Stealth or Brute per layer — failures cost hull, noise risks a bounty on exit. You may abort and keep 40% of the haul.",
+	},
+	Kind.MINING: {
+		"name": "Deep Mining Expedition",
+		"subtitle": "Push the drill deeper. Each layer richer — and riskier.",
+		"rules": "Dig up to 4 layers. Each dig pays more but raises the cave-in risk (15% → 60%). Extract any time to bank your haul safely.",
+	},
+	Kind.HARVEST: {
+		"name": "Harvest Market",
+		"subtitle": "Pick a bulk harvest lot at a local discount.",
+		"rules": "Pick one bulk lot of Food Rations at a discount, or walk away. No risk — you only need the credits and the cargo space.",
+	},
+	Kind.SMUGGLER_RACE: {
+		"name": "Smuggler Race",
+		"subtitle": "Three checkpoints. Push hard or cruise.",
+		"rules": "Three checkpoints. Boost pays 300cr at 35% patrol risk, Cruise pays 110cr at 5%. Patrol hits cost hull and add bounty.",
+	},
+	Kind.FACTORY: {
+		"name": "Forge Strike",
+		"subtitle": "Time the hammer strike on the molten core.",
+		"rules": "Three timed hammer strikes. Stop the marker in the centre for up to 260cr — missing the zones recoils into your hull.",
+	},
+}
+
 var _kind: int = Kind.FACTORY
-var _planet_type: int = 0
 
 # UI nodes (built in _build_ui)
 var _title_label: Label
@@ -28,7 +57,6 @@ var _close_btn: Button
 
 # Shared state
 var _log_lines: Array[String] = []
-var _finished: bool = false
 
 # Hacking state
 var _hack_layer: int = 0
@@ -57,7 +85,12 @@ const FORGE_BAR_HEIGHT: float = 40.0
 var _forge_strike: int = 0
 var _forge_haul: int = 0
 var _forge_hull_loss: int = 0
-var _forge_active: bool = false
+## Only the forge-strike minigame animates, so _process() is switched on with
+## it instead of running (and early-returning) on every frame of every activity.
+var _forge_active: bool = false:
+	set(value):
+		_forge_active = value
+		set_process(value)
 var _forge_marker_pos: float = 0.0   # 0.0 .. 1.0 along the bar
 var _forge_marker_dir: float = 1.0
 var _forge_speed: float = 0.9        # full traversals per second
@@ -70,7 +103,6 @@ var _forge_marker: ColorRect = null
 func try_open(planet_type: int) -> bool:
 	if GameManager.mission_done_this_landing:
 		return false
-	_planet_type = planet_type
 	_kind = kind_for_type(planet_type)
 	var fee: int = entry_fee_for_kind(_kind)
 	if fee > 0:
@@ -80,9 +112,9 @@ func try_open(planet_type: int) -> bool:
 		GameManager.remove_credits(fee)
 	GameManager.mission_done_this_landing = true
 	if fee > 0:
-		EventLog.add_entry("Started %s activity (-%dcr)." % [_activity_name(), fee])
+		EventLog.add_entry("Started %s activity (-%dcr)." % [name_for_kind(_kind), fee])
 	else:
-		EventLog.add_entry("Started %s activity." % _activity_name())
+		EventLog.add_entry("Started %s activity." % name_for_kind(_kind))
 	visible = true
 	_start_activity()
 	return true
@@ -105,44 +137,19 @@ static func kind_for_type(pt: int) -> int:
 
 
 static func name_for_kind(kind: int) -> String:
-	match kind:
-		Kind.HACKING:        return "Data Heist"
-		Kind.MINING:         return "Deep Mining Expedition"
-		Kind.HARVEST:        return "Harvest Market"
-		Kind.SMUGGLER_RACE:  return "Smuggler Race"
-		_:                    return "Forge Strike"
+	return _text_for_kind(kind)["name"]
 
 
 static func subtitle_for_kind(kind: int) -> String:
-	match kind:
-		Kind.HACKING:        return "Slice through corporate ICE layer by layer."
-		Kind.MINING:         return "Push the drill deeper. Each layer richer — and riskier."
-		Kind.HARVEST:        return "Pick a bulk harvest lot at a local discount."
-		Kind.SMUGGLER_RACE:  return "Three checkpoints. Push hard or cruise."
-		_:                    return "Time the hammer strike on the molten core."
+	return _text_for_kind(kind)["subtitle"]
 
 
-## One-line rule summary shown in the confirmation dialog before paying.
 static func rules_for_kind(kind: int) -> String:
-	match kind:
-		Kind.HACKING:
-			return "Breach 3 ICE layers. Stealth or Brute per layer — failures cost hull, noise risks a bounty on exit. You may abort and keep 40% of the haul."
-		Kind.MINING:
-			return "Dig up to 4 layers. Each dig pays more but raises the cave-in risk (15% → 60%). Extract any time to bank your haul safely."
-		Kind.HARVEST:
-			return "Pick one bulk lot of Food Rations at a discount, or walk away. No risk — you only need the credits and the cargo space."
-		Kind.SMUGGLER_RACE:
-			return "Three checkpoints. Boost pays 300cr at 35% patrol risk, Cruise pays 110cr at 5%. Patrol hits cost hull and add bounty."
-		_:
-			return "Three timed hammer strikes. Stop the marker in the centre for up to 260cr — missing the zones recoils into your hull."
+	return _text_for_kind(kind)["rules"]
 
 
-func _activity_name() -> String:
-	return name_for_kind(_kind)
-
-
-func _activity_subtitle() -> String:
-	return subtitle_for_kind(_kind)
+static func _text_for_kind(kind: int) -> Dictionary:
+	return KIND_TEXT.get(kind, KIND_TEXT[Kind.FACTORY])
 
 
 # ── UI construction ──────────────────────────────────────────────────────────
@@ -177,14 +184,14 @@ func _build_ui() -> void:
 	_title_label = Label.new()
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	_title_label.add_theme_font_size_override("font_size", 22)
+	_title_label.add_theme_font_size_override("font_size", UIStyles.FONT_HEADING)
 	_title_label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
 	vbox.add_child(_title_label)
 
 	_subtitle_label = Label.new()
 	_subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_subtitle_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_subtitle_label.add_theme_font_size_override("font_size", 12)
+	_subtitle_label.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
 	_subtitle_label.add_theme_color_override("font_color", Color(0.6, 0.85, 1.0))
 	_subtitle_label.custom_minimum_size = Vector2(420, 0)
 	vbox.add_child(_subtitle_label)
@@ -196,13 +203,13 @@ func _build_ui() -> void:
 	_status_label = Label.new()
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	_status_label.add_theme_font_size_override("font_size", 13)
+	_status_label.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
 	_status_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
 	vbox.add_child(_status_label)
 
 	_description_label = Label.new()
 	_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_description_label.add_theme_font_size_override("font_size", 13)
+	_description_label.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
 	_description_label.add_theme_color_override("font_color", Color(0.85, 0.9, 0.95))
 	_description_label.custom_minimum_size = Vector2(420, 0)
 	vbox.add_child(_description_label)
@@ -224,7 +231,7 @@ func _build_ui() -> void:
 	_log_label = Label.new()
 	_log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_log_label.add_theme_font_override("font", UIStyles.FONT_MONO)
-	_log_label.add_theme_font_size_override("font_size", 11)
+	_log_label.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
 	_log_label.add_theme_color_override("font_color", Color(0.55, 0.75, 0.9))
 	_log_label.custom_minimum_size = Vector2(420, 72)
 	log_frame.add_child(_log_label)
@@ -268,10 +275,9 @@ func _add_choice(label: String, callback: Callable, disabled: bool = false, hint
 
 
 func _finish(summary: String) -> void:
-	_finished = true
 	_clear_buttons()
 	_status_label.text = "Completed"
-	_status_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.55))
+	_status_label.add_theme_color_override("font_color", UIStyles.POSITIVE)
 	_description_label.text = summary
 	_close_btn.visible = true
 	_close_btn.text = "Continue"
@@ -285,8 +291,8 @@ func close() -> void:
 # ── Dispatcher ───────────────────────────────────────────────────────────────
 
 func _start_activity() -> void:
-	_title_label.text = _activity_name().to_upper()
-	_subtitle_label.text = _activity_subtitle()
+	_title_label.text = name_for_kind(_kind).to_upper()
+	_subtitle_label.text = subtitle_for_kind(_kind)
 	match _kind:
 		Kind.HACKING:        _hacking_show()
 		Kind.MINING:         _mining_show()
@@ -307,9 +313,9 @@ func _hacking_show() -> void:
 	if _hack_layer >= HACK_LAYERS:
 		_hacking_extract()
 		return
-	_add_choice("Stealth Slice  (50% — +180cr)", Callable(self, "_hacking_try").bind(0.50, 180, 0))
-	_add_choice("Brute Force    (70% — +240cr, +2 noise)", Callable(self, "_hacking_try").bind(0.70, 240, 2))
-	_add_choice("Abort & Run", Callable(self, "_hacking_abort"))
+	_add_choice("Stealth Slice  (50% — +180cr)", _hacking_try.bind(0.50, 180, 0))
+	_add_choice("Brute Force    (70% — +240cr, +2 noise)", _hacking_try.bind(0.70, 240, 2))
+	_add_choice("Abort & Run", _hacking_abort)
 
 
 func _hacking_try(success_chance: float, reward: int, noise_gain: int) -> void:
@@ -383,15 +389,20 @@ func _mining_show() -> void:
 		_mining_extract(false)
 		return
 	var cavein_pct: int = 15 + _mine_depth * 15
-	_add_choice("Dig Deeper  (+80–220cr, %d%% cave-in)" % cavein_pct, Callable(self, "_mining_dig"))
-	_add_choice("Extract Now (+0cr, safe)", Callable(self, "_mining_extract").bind(false))
+	_add_choice("Dig Deeper  (+80–220cr, %d%% cave-in)" % cavein_pct, _mining_dig)
+	_add_choice("Extract Now (+0cr, safe)", _mining_extract.bind(false))
+
+
+## Cave-in damage grows with the depth currently reached.
+func _cavein_damage() -> int:
+	return 6 + _mine_depth * 3
 
 
 func _mining_dig() -> void:
 	var cavein_chance: float = 0.15 + float(_mine_depth) * 0.15
 	if randf() < cavein_chance:
 		_mine_haul = int(float(_mine_haul) / 2.0)
-		var dmg: int = 6 + _mine_depth * 3
+		var dmg: int = _cavein_damage()
 		GameManager.current_hull = maxi(GameManager.current_hull - dmg, 1)
 		_log("Cave-in at depth %d! Hull -%d, haul halved." % [_mine_depth + 1, dmg])
 		_mining_extract(true)
@@ -407,7 +418,7 @@ func _mining_extract(after_cavein: bool) -> void:
 	GameManager.add_credits(_mine_haul)
 	var summary: String = ""
 	if after_cavein:
-		var dmg: int = 6 + _mine_depth * 3
+		var dmg: int = _cavein_damage()
 		summary = "Barely escaped with %dcr." % _mine_haul
 		EventLog.add_entry("Mining Expedition: cave-in at depth %d, +%dcr salvaged, -%d hull." % [_mine_depth + 1, _mine_haul, dmg])
 	else:
@@ -430,7 +441,7 @@ func _harvest_show() -> void:
 	_status_label.text = "Open air bazaar — bulk discount prices"
 	_description_label.text = "The co-op is auctioning off today's harvest. Pick a lot to haul off-world."
 	_clear_buttons()
-	for lot in HARVEST_LOTS:
+	for lot: Dictionary in HARVEST_LOTS:
 		var can_afford: bool = GameManager.credits >= lot.price
 		var has_space: bool = GameManager.can_add_cargo(lot.good, lot.qty)
 		var disabled: bool = not (can_afford and has_space)
@@ -440,9 +451,8 @@ func _harvest_show() -> void:
 		elif not has_space:
 			hint = "Not enough cargo space"
 		var label: String = "%s  (%d cr)" % [lot.label, lot.price]
-		var captured: Dictionary = lot
-		_add_choice(label, Callable(self, "_harvest_buy").bind(captured), disabled, hint)
-	_add_choice("Walk away", Callable(self, "_harvest_walk"))
+		_add_choice(label, _harvest_buy.bind(lot), disabled, hint)
+	_add_choice("Walk away", _harvest_walk)
 
 
 func _harvest_buy(lot: Dictionary) -> void:
@@ -470,11 +480,12 @@ func _race_show() -> void:
 	if _race_leg >= RACE_LEGS:
 		_race_finish()
 		return
-	_add_choice("Boost  (+300cr, 35% patrol)", Callable(self, "_race_choice").bind(true, 300, 0.35))
-	_add_choice("Cruise (+110cr, 5% patrol)", Callable(self, "_race_choice").bind(false, 110, 0.05))
+	_add_choice("Boost  (+300cr, 35% patrol)", _race_choice.bind(true, 300, 0.35))
+	_add_choice("Cruise (+110cr, 5% patrol)", _race_choice.bind(false, 110, 0.05))
 
 
 func _race_choice(boosted: bool, prize: int, patrol_pct: float) -> void:
+	var tag: String = "Boost" if boosted else "Cruise"
 	_race_prize += prize
 	if randf() < patrol_pct:
 		var dmg: int = 5
@@ -483,11 +494,9 @@ func _race_choice(boosted: bool, prize: int, patrol_pct: float) -> void:
 		_race_heat += 1
 		_race_hull_loss += dmg
 		_race_bounty_gain += 30
-		var tag: String = "Boost" if boosted else "Cruise"
 		_log("%s leg %d: patrol clipped you! -%d hull, +30 bounty." % [tag, _race_leg + 1, dmg])
 	else:
-		var tag2: String = "Boost" if boosted else "Cruise"
-		_log("%s leg %d clean. +%dcr." % [tag2, _race_leg + 1, prize])
+		_log("%s leg %d clean. +%dcr." % [tag, _race_leg + 1, prize])
 	_race_leg += 1
 	_race_show()
 
@@ -526,7 +535,7 @@ func _factory_show() -> void:
 	var btn := Button.new()
 	btn.text = "▼  STRIKE  ▼"
 	btn.custom_minimum_size = Vector2(FORGE_BAR_WIDTH, 40)
-	UIStyles.style_secondary_button(btn, 16)
+	UIStyles.style_action_button(btn)
 	btn.pressed.connect(_forge_on_strike)
 	_button_box.add_child(btn)
 	_forge_marker_pos = 0.0
@@ -601,8 +610,6 @@ func _add_forge_zone(x: float, w: float, zone_color: Color) -> void:
 
 
 func _process(delta: float) -> void:
-	if not _forge_active:
-		return
 	if _forge_marker == null or not is_instance_valid(_forge_marker):
 		return
 	_forge_marker_pos += _forge_marker_dir * _forge_speed * delta

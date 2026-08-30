@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://qnw3fwrb83ie"]
 
 [ext_resource type="Script" uid="uid://e5dwqm2t36ni" path="res://scripts/scenes/planet_screen.gd" id="1_ps1"]
-[ext_resource type="PackedScene" path="res://scenes/components/ship_display_3d.tscn" id="7_sd1"]
+[ext_resource type="PackedScene" path="res://scenes/components/ship_display.tscn" id="7_sd1"]
 [ext_resource type="PackedScene" uid="uid://chhuw5v0ocedj" path="res://scenes/components/quest_widget.tscn" id="10_qw1"]
 
 [node name="PlanetScreen" type="Control" unique_id=189487057]

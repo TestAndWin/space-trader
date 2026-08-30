@@ -17,17 +17,12 @@ func _ready() -> void:
 	var title_label: Label = $CenterContainer/VBoxContainer/GameOverLabel
 	if title_label:
 		UIStyles.apply_display_font(title_label)
-	UIStyles.apply_mono_font(%TradesLabel)
-	UIStyles.apply_mono_font(%TravelDaysLabel)
-	UIStyles.apply_mono_font(%EncountersLabel)
-	UIStyles.apply_mono_font(%CreditsLabel)
-	UIStyles.apply_mono_font(%PlanetsLabel)
-	UIStyles.apply_mono_font(%UpgradesLabel)
+	for stat_label: Label in [%TradesLabel, %TravelDaysLabel, %EncountersLabel,
+			%CreditsLabel, %PlanetsLabel, %UpgradesLabel]:
+		UIStyles.apply_mono_font(stat_label)
 	%MainMenuButton.pressed.connect(_on_main_menu_pressed)
 	UIStyles.style_secondary_button(%MainMenuButton, 18)
 
 
 func _on_main_menu_pressed() -> void:
-	SaveManager.delete_save()
-	GameManager.reset()
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	GameManager.end_run_to_main_menu()

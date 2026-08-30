@@ -61,17 +61,18 @@ Twelve global managers registered in `project.godot` provide centralized game st
 - **EncounterManager** -- Enemy encounter pool with difficulty scaling (+1 per 2 visited planets). Contraband cargo increases encounter chance by 15%.
 - **QuestManager** -- Procedural quest generation with delivery deadlines (3-5 turns) and penalties (40% of reward if missed). One active quest at a time.
 - **SaveManager** -- JSON serialization to `user://savegame.json`. Cards saved by resource path. Also saves/restores quest state (`current_quest`, `available_quests`) and event manager state.
-- **EventLog** -- 50-entry ring buffer of game events.
-- **EventManager** -- Dynamic world events (blockades, harvests, tech booms). 30% trigger chance on departure, 3-5 turn duration. Modifies prices, encounter chance, sell ratio, combat rewards. API: `get_price_modifier()`, `get_encounter_modifier()`, `get_sell_ratio_override()`, `get_reward_modifier()`, `get_event_display_text()`. Shown as news banner on planet screen.
+- **EventLog** -- append-only list of game events, intentionally uncapped: `SaveManager` persists the full history. Rendering is capped instead -- `planet_screen.EVENT_LOG_VISIBLE` (50) bounds both the popup and its Copy button, so a long run cannot spawn thousands of Labels.
+- **EventManager** -- Dynamic world events (blockades, harvests, tech booms). 30% trigger chance on departure, 3-5 turn duration. Modifies prices, encounter chance, sell ratio, combat rewards. API: `get_price_modifiers_for()`, `get_encounter_modifier()`, `get_sell_ratio_override()`, `get_reward_modifier()`, `get_event_display_text()`. Shown as news banner on planet screen.
 - **ResourceRegistry** -- Centralized `.tres` resource path registry. `DirAccess` cannot list files in exported PCK archives, so all resource paths are hardcoded here. Helper: `load_all(paths) -> Array`. Constants: `PLANETS`, `GOODS`, `CARDS`, `ENCOUNTERS`, `UPGRADES`, `COMBAT_UPGRADES`, `CREW`, `SHIPS`, `PLANET_EVENTS`, `TRAVEL_EVENTS`, `RIVALS`.
 - **ScreenFade** -- Global scene transition fade effects.
 - **RivalManager** -- Captain Vex rival questline. 4 phases triggered at flight thresholds (3, 6, 9, 12). Cooldowns between reappearances. API: `on_flight_completed()`, `should_rival_appear(total_flights)`, `get_rival_encounter()`. Data in `data/rivals/captain_vex.tres`.
 - **AchievementManager** -- 12 global achievements, persisted independently of savegames in `user://achievements.json`. API: `unlock(id)`, `is_unlocked(id)`, `get_unlocked_count()`. Emits `achievement_unlocked(id)`.
-- **HintManager** -- One-shot onboarding hints, persisted independently of savegames in `user://hints_seen.json`. 8 hints keyed by `CityMap.BUILDING_*` id; they are the only in-game explanation of Fuel, Loyalty, Reputation, Bounty and the T2 win condition. API: `take_hint(id)`, `has_seen(id)`, `mark_seen(id)`, `reset_all()`.
+- **HintManager** -- One-shot onboarding hints, persisted independently of savegames in `user://hints_seen.json`. 8 hints keyed by `CityMap.BUILDING_*` id; they are the only in-game explanation of Fuel, Loyalty, Reputation, Bounty and the T2 win condition. API: `take_hint(id)`, `has_seen(id)`, `mark_seen(id)`.
 
 ### Static Utilities
 
 - **UIStyles** (`scripts/autoloads/ui_styles.gd`) -- Centralized UI styling utility with static methods. NOT an autoload -- loaded via `preload()`. Provides color constants (`GOLD`, `ACCENT`, `PANEL_BG`, `PANEL_BORDER`, etc.) and button styling methods (`style_accent_button()`, `style_secondary_button()`, etc.).
+- **JsonStore** (`scripts/tools/json_store.gd`) -- `save(path, data)` / `load_dict(path)` for the settings stores that live outside the savegame (`achievement_manager`, `hint_manager`). Loaded via `preload()`. `load_dict()` returns `{}` on any failure, so callers can index it directly.
 - **BackgroundUtils** (`scripts/tools/background_utils.gd`) -- Shared helpers for scene and building backgrounds, loaded via `preload()`. Constants: `SCENE_BACKGROUND_PATHS`, `BUILDING_BACKGROUND_KEYS`. API: `load_texture(path, strict)`, `add_fullscreen_background(parent, image_path, dim_alpha)`. Use this when adding new screens -- do not `preload()` background PNGs ad-hoc.
 
 ### Resource Data Pattern (`scripts/resources/` + `data/`)
@@ -92,13 +93,22 @@ All data lives in `data/{cards,planets,goods,encounters,upgrades,ships,crew,plan
 
 Each game screen is a `.tscn` scene paired with a controller script in `scripts/scenes/`. Reusable UI components live in `scenes/components/` + `scripts/components/`.
 
+### Shared Base Classes (`scripts/components/`)
+
+Three `class_name` base classes hold behaviour that was previously copy-pasted
+between siblings. Extend these instead of rebuilding the pattern:
+
+- **`EventChoiceModal`** (`event_choice_modal.gd`) -- frame for the two-choice event popups: modal chrome, outcome label, Continue button, `_show_event()`, `_apply_outcome()`, `_roll_succeeds(chance)`, `close()`, and the `event_resolved` signal. Subclasses supply `try_trigger()`, the two choice handlers, and the hooks `_modal_title_color()`, `_log_prefix()`, `_format_description()`, `_requirement_text()`, `_can_choose_a()`. Used by `planet_event.gd` and `travel_event.gd`. **Not** used by `customs_scan.gd` -- it has three options, not two.
+- **`ShipSpriteDisplay`** (`ship_sprite_display.gd`) -- shared drawing for both ship displays: hull damage cracks, hit offset/flash, and the 3-step hull colour ramp (`_hull_ramp`, thresholds 0.6 / 0.3). Used by `ship_display_3d.gd` and `enemy_ship_display_3d.gd`; their public APIs (`update_ship()` / `update_enemy()`) are unchanged.
+- **`BoundLabel`** (`bound_label.gd`) -- self-updating label bound to a GameManager signal (`format_string`, `bind()`). Subclasses provide `_connect_source()`, `refresh()` and `_default_format()`. Used by `credits_label.gd` and `cargo_label.gd`.
+
 ### Communication
 
 Signal-based: managers emit signals, UI components subscribe. Scene transitions go through `ScreenFade` autoload.
 
 ## Core Game Systems
 
-**Combat** (`card_battle.gd`): Energy-based card play (3-5 energy/turn), hand size 5, draw from deck with discard shuffle. Enemy intent is telegraphed. Shield carries over from overworld (not reset to 0). Card special effects: scavenge, skip enemy turn, self-damage, bonus energy, etc. Scavenge animation tuned to 1.0s delay, 1.8s tween, 0.4s fade. 3D battle background (`battle_background.gd`) renders animated starfield, ships, laser fire, and shield flashes behind card UI.
+**Combat** (`card_battle.gd`): Energy-based card play (3-5 energy/turn), hand size 5, draw from deck with discard shuffle. Enemy intent is telegraphed. Shield carries over from overworld (not reset to 0). Card special effects: scavenge, skip enemy turn, self-damage, bonus energy, etc. Scavenge animation tuned to 1.0s delay, 1.8s tween, 0.4s fade. The battle screen uses the pre-rendered `bg_battle.png` background plus the 2D ship displays.
 
 **Trading**: Buy goods at one planet, sell at another. Planet types affect which goods are cheap/expensive. Contraband is high-risk/high-reward. Price comparison arrows (green cheap / red expensive / gray average) shown via `avg_price` parameter in `cargo_slot.gd`, powered by `EconomyManager.get_average_price()`.
 
@@ -106,14 +116,11 @@ Signal-based: managers emit signals, UI components subscribe. Scene transitions 
 
 **Ship Dealer** (`ship_dealer.gd`): Full-screen showroom for buying new ships. Shows 3D ship preview with stats comparison. Ships available based on planet type. Data in `data/ships/`. 5 ship types: Scout, Freighter, Warship, Smuggler, Explorer.
 
-**3D Ship Display** (`ship_display_3d.gd/tscn`): 3D ship rendering via SubViewport. Extruded hull meshes from polygon profiles, **textured with the ship PNGs from `assets/sprites/ships/`**, plus shaders for shield bubble and engine glow. API: `update_ship(hull_pct, shield_pct, cargo_used, cargo_max, ship_shape)`. 5 player shapes, camera with idle hover animation. MSAA 2x, transparent background. Used in planet screen, battle screen, ship dealer.
+**Ship Display** (`ship_display.gd/tscn`): **2D** despite the historical `_3d` naming (files renamed 2026-08-30): a `Control` that draws the ship PNG from `assets/sprites/ships/` with `draw_texture_rect()` in `_draw()`, plus damage cracks and a hit flash. No SubViewport, no meshes, no shaders. API: `update_ship(hull_pct, shield_pct, cargo_used, cargo_max, ship_shape)` -- `cargo_used`/`cargo_max` are accepted but ignored. 5 player shapes. Used in planet screen, battle screen, ship dealer. Shared drawing lives in `ShipSpriteDisplay`.
 
-**3D Enemy Ship Display** (`enemy_ship_display_3d.gd/tscn`): Same SubViewport pattern, rotated 180 degrees. Textured with enemy PNGs from `assets/sprites/enemies/`. API: `update_enemy(hull_pct, shield_pct, encounter_name)`. 7 enemy shapes matched by name.
+**Enemy Ship Display** (`enemy_ship_display.gd/tscn`): Same 2D approach, textured with enemy PNGs from `assets/sprites/enemies/`. API: `update_enemy(hull_pct, shield_pct, encounter_name)`. 7 enemy shapes matched by name.
 
-**Shaders** (`shaders/`):
-- `ship_hull.gdshader` -- spatial, diffuse_burley, uniforms: hull_color, metallic, roughness, emissive_strength/color
-- `ship_shield.gdshader` -- Fresnel bubble, blend_add, uniforms: shield_color, shield_strength, hit_flash/color
-- `engine_glow.gdshader` -- billboard pulsing circle, blend_add, uniforms: glow_color, pulse_speed/phase
+The `shaders/` directory was deleted on 2026-08-30 -- its three shaders belonged to the replaced 3D renderer and were referenced by nothing.
 
 **City Map** (`city_map.gd`): Isometric procedural city map drawn via `_draw()`. Each building is a 3D-looking box (top/front/right faces). Building names and appearances vary by planet type. Emits `building_clicked(id)` when an interactive building is clicked. Building IDs: market, shipyard, casino, crew, quest, deck, depart, mission.
 
@@ -186,7 +193,7 @@ Building buttons vary by planet type (different names, icons, colors). Buildings
 
 ## Visual Assets
 
-The game uses a **hybrid art pipeline**: pre-rendered PNG illustrations (consistent Sci-Fi style) for primary backgrounds and ship sprites, with procedural overlays (`_draw()`, shaders, 3D SubViewports) layered on top.
+The game uses a **hybrid art pipeline**: pre-rendered PNG illustrations (consistent Sci-Fi style) for primary backgrounds and ship sprites, with procedural overlays (`_draw()`) layered on top.
 
 **PNG asset locations** (`assets/sprites/`):
 - **Planet backgrounds** (`assets/sprites/scenes/bg_{planet_name}.png`): full-screen background per planet
@@ -216,7 +223,13 @@ Procedural systems (starfields, small planet disc on planet screen, city map, sh
 - Use `@export` only for editor-exposed properties, not for vars set via `setup()` at runtime
 - Access Resource properties directly (`good.is_contraband`), not via `.get("is_contraband")`
 - Shared constants (e.g. planet type names) belong in one autoload, not duplicated across files
+- `GameManager.CRIMSON_BASE_NAME` is the hideout's planet name, `get_display_planet_name()` the single place that renames it to "Your Hideout" after the win -- never compare or rename it inline
+- `UIStyles.POSITIVE` / `CAUTION` / `NEGATIVE` are the status colours (green / amber / red). Identity colours (card type, goods, crew, enemy hulls) are separate and must not be folded into them
+- Pick a random array element with `array.pick_random()`, never `array[randi() % array.size()]`
+- Font sizes come from the nine-step `UIStyles` type scale, chosen **by role**: `FONT_HERO` 52, `FONT_TITLE` 28, `FONT_HEADING` 22, `FONT_SUBHEADING` 18, `FONT_BODY` 16, `FONT_DETAIL` 15, `FONT_LABEL` 13, `FONT_CAPTION` 12, `FONT_MICRO` 10. Never write a raw number in `add_theme_font_size_override()` or `LabelSettings.font_size` -- if no step fits, add one to the scale rather than a one-off at the call site
 - `EconomyManager.PLANET_TYPE_NAMES` is the single source for planet type name mapping
+- `EconomyManager.PT_INDUSTRIAL` / `PT_AGRICULTURAL` / `PT_MINING` / `PT_TECH` / `PT_OUTLAW` are the planet-type ids -- never write the raw numbers 0-4
+- `ResourceRegistry.CRIMSON_BASE` holds the hidden endgame planet's path. It is deliberately **not** in `PLANETS`: that array drives the galaxy map, the economy and the pirate-presence rotation, none of which may contain the hideout before `GameManager.crimson_base_unlocked` is set
 
 ## Communication
 

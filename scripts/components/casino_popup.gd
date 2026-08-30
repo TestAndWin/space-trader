@@ -12,7 +12,8 @@ enum State { SELECT, PLAYING, RESULT }
 enum Game { BLACKJACK, SLOTS }
 
 # Slot symbols and their display icons
-const SYMBOLS: Array = ["Credits", "Cargo", "Card", "Skull", "Star"]
+const STATUS_TEXT_COLOR := Color(0.9, 0.9, 0.85)
+
 const SYMBOL_ICONS: Dictionary = {
 	"Credits": "\u25C9",   # ◉
 	"Cargo": "\u25A3",     # ▣
@@ -116,10 +117,7 @@ func _build_ui() -> void:
 	_apply_planet_theme()
 
 	# Status label
-	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", 18)
-	_status_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.85))
-	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_status_label = _casino_label("", 18, STATUS_TEXT_COLOR)
 	_main_vbox.add_child(_status_label)
 
 	# Content area (fills remaining space)
@@ -147,6 +145,16 @@ func _create_casino_button(
 	return btn
 
 
+## Every casino label is the same shape: centered text with a size and a color.
+func _casino_label(text: String, font_size: int, color: Color) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return label
+
+
 func _refresh_ui() -> void:
 	if not _credits_label:
 		return
@@ -170,16 +178,13 @@ func _build_select_ui() -> void:
 	var has_blackjack: bool = _planet_type != EconomyManager.PT_AGRICULTURAL
 
 	if not has_blackjack:
-		_status_label.text = "Slot Machine — Place your bet!"
+		_set_status("Slot Machine — Place your bet!")
 		_game = Game.SLOTS
 	else:
-		_status_label.text = "Welcome! Choose your table."
+		_set_status("Welcome! Choose your table.")
 
-	var _is_vex_present: bool = false
 	if "pirate_lord_presence" in EventManager.get_active_event_tags():
-		_is_vex_present = true
-		_status_label.text += " (Crimson Jack is playing at the high-roller table...)"
-		_status_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+		_set_status(_status_label.text + " (Crimson Jack is playing at the high-roller table...)", true)
 
 	# Game selection (only if both available)
 	if has_blackjack:
@@ -207,42 +212,29 @@ func _build_select_ui() -> void:
 		game_row.add_child(slots_panel)
 
 	# Bet section
-	var bet_label := Label.new()
 	var game_name: String = "Blackjack" if _game == Game.BLACKJACK else "Slot Machine"
-	bet_label.text = "Place your bet on %s:" % game_name
-	bet_label.add_theme_font_size_override("font_size", 18)
-	bet_label.add_theme_color_override("font_color", GOLD)
-	bet_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_content_area.add_child(bet_label)
+	_content_area.add_child(_casino_label("Place your bet on %s:" % game_name, 18, GOLD))
 
 	var bet_row := HBoxContainer.new()
 	bet_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	bet_row.add_theme_constant_override("separation", 12)
 	_content_area.add_child(bet_row)
 
-	var bets: Array = [25, 50, 100, 200]
-	for amount in bets:
-		var is_disabled: bool = GameManager.credits < amount
-		var accent := Color(0.25, 0.18, 0.0) if GameManager.credits >= amount else Color(0.05, 0.08, 0.12)
-		var btn := _create_casino_button(
+	for amount: int in [25, 50, 100, 200]:
+		var can_afford: bool = GameManager.credits >= amount
+		var accent := Color(0.25, 0.18, 0.0) if can_afford else Color(0.05, 0.08, 0.12)
+		bet_row.add_child(_create_casino_button(
 			"%d cr" % amount,
 			Vector2(100, 48),
 			accent,
 			_on_bet_and_play.bind(amount),
-			is_disabled
-		)
-		bet_row.add_child(btn)
+			not can_afford
+		))
 
 	# Payout info
-	var info := Label.new()
-	if _game == Game.BLACKJACK:
-		info.text = "Win: 2x  |  Blackjack: 2.5x  |  Push: bet returned"
-	else:
-		info.text = "3 match: 3x  |  2 match: 1.5x  |  3\u2605 Jackpot: 10x  |  3\u2620: -2x"
-	info.add_theme_font_size_override("font_size", 12)
-	info.add_theme_color_override("font_color", Color(0.45, 0.55, 0.65))
-	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_content_area.add_child(info)
+	var info_text: String = "Win: 2x  |  Blackjack: 2.5x  |  Push: bet returned" if _game == Game.BLACKJACK \
+		else "3 match: 3x  |  2 match: 1.5x  |  3\u2605 Jackpot: 10x  |  3\u2620: -2x"
+	_content_area.add_child(_casino_label(info_text, 12, Color(0.45, 0.55, 0.65)))
 
 
 func _create_game_table(title_text: String, desc_text: String, selected: bool, on_click: Callable) -> PanelContainer:
@@ -267,19 +259,8 @@ func _create_game_table(title_text: String, desc_text: String, selected: bool, o
 	vbox.add_theme_constant_override("separation", 4)
 	table.add_child(vbox)
 
-	var title_lbl := Label.new()
-	title_lbl.text = title_text
-	title_lbl.add_theme_font_size_override("font_size", 18)
-	title_lbl.add_theme_color_override("font_color", GOLD if selected else GOLD_DIM)
-	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title_lbl)
-
-	var desc := Label.new()
-	desc.text = desc_text
-	desc.add_theme_font_size_override("font_size", 12)
-	desc.add_theme_color_override("font_color", Color(0.5, 0.55, 0.65))
-	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(desc)
+	vbox.add_child(_casino_label(title_text, 18, GOLD if selected else GOLD_DIM))
+	vbox.add_child(_casino_label(desc_text, 12, Color(0.5, 0.55, 0.65)))
 
 	# Make clickable
 	table.gui_input.connect(func(event: InputEvent):
@@ -362,17 +343,11 @@ func _create_card_display(card: Dictionary, face_up: bool) -> PanelContainer:
 	var container := PanelContainer.new()
 	container.custom_minimum_size = Vector2(65, 90)
 	var style := StyleBoxFlat.new()
-	if face_up:
-		style.bg_color = CARD_BG
-	else:
-		style.bg_color = CARD_BACK
+	style.bg_color = CARD_BG if face_up else CARD_BACK
 	style.border_color = Color(0.3, 0.3, 0.3)
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(4)
-	style.content_margin_left = 4
-	style.content_margin_right = 4
-	style.content_margin_top = 4
-	style.content_margin_bottom = 4
+	style.set_content_margin_all(4)
 	style.shadow_color = Color(0.0, 0.0, 0.0, 0.3)
 	style.shadow_size = 3
 	container.add_theme_stylebox_override("panel", style)
@@ -384,33 +359,16 @@ func _create_card_display(card: Dictionary, face_up: bool) -> PanelContainer:
 	if face_up:
 		var is_red: bool = card["suit"] == "Hearts" or card["suit"] == "Diamonds"
 		var card_color: Color = Color(0.8, 0.1, 0.1) if is_red else Color(0.1, 0.1, 0.15)
-
-		var value_lbl := Label.new()
-		value_lbl.text = card["value"]
-		value_lbl.add_theme_font_size_override("font_size", 22)
-		value_lbl.add_theme_color_override("font_color", card_color)
-		value_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		vbox.add_child(value_lbl)
-
-		var suit_lbl := Label.new()
-		suit_lbl.text = SUIT_SYMBOLS.get(card["suit"], "?")
-		suit_lbl.add_theme_font_size_override("font_size", 28)
-		suit_lbl.add_theme_color_override("font_color", card_color)
-		suit_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		vbox.add_child(suit_lbl)
+		vbox.add_child(_casino_label(card["value"], 22, card_color))
+		vbox.add_child(_casino_label(SUIT_SYMBOLS.get(card["suit"], "?"), 28, card_color))
 	else:
-		var back_lbl := Label.new()
-		back_lbl.text = "\u2660\u2665\n\u2666\u2663"
-		back_lbl.add_theme_font_size_override("font_size", 18)
-		back_lbl.add_theme_color_override("font_color", Color(0.4, 0.45, 0.7))
-		back_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		vbox.add_child(back_lbl)
+		vbox.add_child(_casino_label("\u2660\u2665\n\u2666\u2663", 18, Color(0.4, 0.45, 0.7)))
 
 	return container
 
 
 func _build_blackjack_ui() -> void:
-	_status_label.text = "Blackjack — Bet: %d cr" % _bet
+	_set_status("Blackjack — Bet: %d cr" % _bet)
 
 	# Dealer section
 	var dealer_header := Label.new()
@@ -429,15 +387,10 @@ func _build_blackjack_ui() -> void:
 		var card_display := _create_card_display(_dealer_hand[i], face_up)
 		dealer_row.add_child(card_display)
 
-	var dealer_val_lbl := Label.new()
-	if _dealer_revealed:
-		dealer_val_lbl.text = "  = %d" % _bj_hand_value(_dealer_hand)
-		dealer_val_lbl.add_theme_color_override("font_color", Color(0.9, 0.55, 0.55))
-	else:
-		dealer_val_lbl.text = "  = %d + ?" % _bj_card_value(_dealer_hand[0])
-		dealer_val_lbl.add_theme_color_override("font_color", Color(0.5, 0.4, 0.45))
-	dealer_val_lbl.add_theme_font_size_override("font_size", 20)
-	dealer_row.add_child(dealer_val_lbl)
+	var dealer_val_text: String = ("  = %d" % _bj_hand_value(_dealer_hand)) if _dealer_revealed \
+		else ("  = %d + ?" % _bj_card_value(_dealer_hand[0]))
+	var dealer_val_color := Color(0.9, 0.55, 0.55) if _dealer_revealed else Color(0.5, 0.4, 0.45)
+	dealer_row.add_child(_casino_label(dealer_val_text, 20, dealer_val_color))
 
 	# Divider
 	var divider := HSeparator.new()
@@ -461,16 +414,12 @@ func _build_blackjack_ui() -> void:
 		player_row.add_child(card_display)
 
 	var player_val: int = _bj_hand_value(_player_hand)
-	var pval_lbl := Label.new()
-	pval_lbl.text = "  = %d" % player_val
-	pval_lbl.add_theme_font_size_override("font_size", 22)
+	var pval_color := Color(0.5, 0.88, 1.0)
 	if player_val == 21:
-		pval_lbl.add_theme_color_override("font_color", GOLD)
+		pval_color = GOLD
 	elif player_val > 21:
-		pval_lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
-	else:
-		pval_lbl.add_theme_color_override("font_color", Color(0.5, 0.88, 1.0))
-	player_row.add_child(pval_lbl)
+		pval_color = UIStyles.NEGATIVE
+	player_row.add_child(_casino_label("  = %d" % player_val, 22, pval_color))
 
 	# Action buttons
 	var btn_row := HBoxContainer.new()
@@ -581,7 +530,7 @@ func _get_slot_symbol() -> String:
 	var pool: Array = ["Credits", "Credits", "Credits", "Cargo", "Cargo", "Cargo", "Card", "Card", "Skull", "Star"]
 	if GameManager.has_crew_bonus(CrewData.CrewBonus.GAMBLING_EDGE):
 		pool.erase("Skull")
-	return pool[randi() % pool.size()]
+	return pool.pick_random()
 
 
 func _spin_reels() -> void:
@@ -605,7 +554,7 @@ func _reveal_next_reel() -> void:
 
 func _build_slots_ui() -> void:
 	if _state != State.RESULT:
-		_status_label.text = "Slot Machine — Bet: %d cr" % _bet
+		_set_status("Slot Machine — Bet: %d cr" % _bet)
 
 	# Slot machine frame
 	var machine := PanelContainer.new()
@@ -629,12 +578,7 @@ func _build_slots_ui() -> void:
 	machine_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	machine.add_child(machine_vbox)
 
-	var machine_title := Label.new()
-	machine_title.text = "\u2605 LUCKY STARS \u2605"
-	machine_title.add_theme_font_size_override("font_size", 20)
-	machine_title.add_theme_color_override("font_color", GOLD)
-	machine_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	machine_vbox.add_child(machine_title)
+	machine_vbox.add_child(_casino_label("\u2605 LUCKY STARS \u2605", 20, GOLD))
 
 	# Reel display
 	var reel_row := HBoxContainer.new()
@@ -659,38 +603,19 @@ func _build_slots_ui() -> void:
 		reel_panel.add_child(reel_vbox)
 
 		if i < _reels_revealed:
-			var icon_lbl := Label.new()
-			icon_lbl.text = SYMBOL_ICONS.get(_reels[i], "?")
-			icon_lbl.add_theme_font_size_override("font_size", 36)
-			icon_lbl.add_theme_color_override("font_color", SYMBOL_COLORS.get(_reels[i], Color.WHITE))
-			icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			reel_vbox.add_child(icon_lbl)
-
-			var name_lbl := Label.new()
-			name_lbl.text = _reels[i]
-			name_lbl.add_theme_font_size_override("font_size", 11)
-			name_lbl.add_theme_color_override("font_color", Color(0.5, 0.55, 0.65))
-			name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			reel_vbox.add_child(name_lbl)
+			reel_vbox.add_child(_casino_label(
+				SYMBOL_ICONS.get(_reels[i], "?"), 36, SYMBOL_COLORS.get(_reels[i], Color.WHITE)
+			))
+			reel_vbox.add_child(_casino_label(_reels[i], 11, Color(0.5, 0.55, 0.65)))
 		else:
-			var spin_lbl := Label.new()
-			spin_lbl.text = "?"
-			spin_lbl.add_theme_font_size_override("font_size", 36)
-			spin_lbl.add_theme_color_override("font_color", Color(0.3, 0.25, 0.1, 0.7))
-			spin_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			reel_vbox.add_child(spin_lbl)
+			reel_vbox.add_child(_casino_label("?", 36, Color(0.3, 0.25, 0.1, 0.7)))
 
-	var status := Label.new()
-	if _state == State.RESULT:
-		status.text = _result_msg
-	elif _reels_revealed < 3:
-		status.text = "Spinning..."
-	else:
-		status.text = "Results!"
-	status.add_theme_font_size_override("font_size", 16)
-	status.add_theme_color_override("font_color", GOLD_DIM if _reels_revealed < 3 else GOLD)
-	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	machine_vbox.add_child(status)
+	var status_text: String = _result_msg
+	if _state != State.RESULT:
+		status_text = "Spinning..." if _reels_revealed < 3 else "Results!"
+	machine_vbox.add_child(_casino_label(
+		status_text, UIStyles.FONT_BODY, GOLD_DIM if _reels_revealed < 3 else GOLD
+	))
 
 
 func _resolve_slots() -> void:
@@ -714,7 +639,7 @@ func _resolve_slots() -> void:
 			msg = "3x Card! +%d cr + random card!" % winnings
 			var cards: Array = ResourceRegistry.load_all(ResourceRegistry.CARDS)
 			if not cards.is_empty():
-				var random_card: Resource = cards[randi() % cards.size()]
+				var random_card: Resource = cards.pick_random()
 				GameManager.deck.append(random_card)
 				AchievementManager.check_deck(GameManager.deck.size())
 				msg += " Got %s!" % random_card.card_name
@@ -742,9 +667,19 @@ func _show_result(msg: String) -> void:
 	_state = State.RESULT
 	rounds_played += 1
 	_result_msg = msg
-	_status_label.text = msg
+	_set_status(msg)
 	_refresh_ui()
 
+
+
+## Sets the status line. `alert` is the only red state; every other update clears
+## it again — previously the Crimson Jack warning added a colour override that
+## was never removed, so the rest of the session stayed red.
+func _set_status(text: String, alert: bool = false) -> void:
+	_status_label.text = text
+	_status_label.add_theme_color_override(
+		"font_color", UIStyles.NEGATIVE if alert else STATUS_TEXT_COLOR
+	)
 
 func _build_result_ui() -> void:
 
@@ -756,9 +691,9 @@ func _build_result_ui() -> void:
 		if action_btns:
 			action_btns.queue_free()
 		# Restore result message (overwritten by _build_blackjack_ui)
-		_status_label.text = _result_msg
-	elif _game == Game.SLOTS:
-		_status_label.text = "Slot Machine — Bet: %d cr" % _bet
+		_set_status(_result_msg)
+	else:
+		_set_status("Slot Machine — Bet: %d cr" % _bet)
 		_build_slots_ui()
 
 	var btn_row := HBoxContainer.new()

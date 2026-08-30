@@ -12,6 +12,17 @@ const MAX_CHAIN_LENGTH := 3
 const STAGE_REWARD_MULT := 1.25
 const REPUTATION_REWARD_BASE := 2
 const REPUTATION_FAIL_PENALTY := -4
+# Event tags that make a planet a more interesting delivery target for a given
+# good. Used to steer destinations toward planets where the good matters right
+# now; goods not listed here get a plain random reachable destination.
+const GOOD_EVENT_TAGS: Dictionary = {
+	"Food Rations": ["shortage"],
+	"Medicine": ["shortage"],
+	"Spice": ["smuggling_window"],
+	"Stolen Tech": ["smuggling_window", "prototype_theft", "security_crackdown"],
+	"Electronics": ["prototype_theft", "tech_boom", "security_crackdown"],
+}
+
 const QUEST_FLAVORS: Array[String] = [
 	"Priority route",
 	"Sensitive shipment",
@@ -292,17 +303,11 @@ func check_expired_quest() -> bool:
 		var cargo_paid: int = 0
 
 		while remaining > 0:
-			var best_idx: int = -1
-			var best_value: int = 0
-			for i in GameManager.cargo.size():
-				var entry: Dictionary = GameManager.cargo[i]
-				var val: int = _get_good_base_price(entry["good_name"])
-				if val > best_value:
-					best_value = val
-					best_idx = i
+			var best_idx: int = _most_valuable_cargo_index()
 			if best_idx == -1:
 				break
 			var item: Dictionary = GameManager.cargo[best_idx]
+			var best_value: int = _get_good_base_price(item["good_name"])
 			var qty_needed: int = int(ceil(float(remaining) / float(best_value)))
 			var qty_take: int = mini(qty_needed, int(item["quantity"]))
 			var value_taken: int = qty_take * best_value
@@ -327,10 +332,25 @@ func check_expired_quest() -> bool:
 	return false
 
 
+## Index of the cargo entry with the highest base price, or -1 when the hold is
+## empty or nothing in it has a price. Confiscation takes the valuable goods
+## first so the fewest items cover the debt.
+func _most_valuable_cargo_index() -> int:
+	var best_idx: int = -1
+	var best_value: int = 0
+	for i in GameManager.cargo.size():
+		var entry: Dictionary = GameManager.cargo[i]
+		var val: int = _get_good_base_price(entry["good_name"])
+		if val > best_value:
+			best_value = val
+			best_idx = i
+	return best_idx
+
+
 func _get_good_base_price(good_name: String) -> int:
-	for good in EconomyManager.goods:
-		if good.good_name == good_name:
-			return int(good.base_price)
+	var good: Resource = _find_good_by_name(good_name)
+	if good != null:
+		return int(good.base_price)
 	# Crafted goods aren't in EconomyManager.goods; load from CRAFTED_GOODS registry.
 	for path in ResourceRegistry.CRAFTED_GOODS:
 		var res: Resource = load(path)
@@ -424,7 +444,7 @@ func _pick_quest_good(planet_name: String, quality: Dictionary) -> Resource:
 				candidates.append(good)
 	if candidates.is_empty():
 		return null
-	return candidates[randi() % candidates.size()]
+	return candidates.pick_random()
 
 
 func _find_good_by_name(good_name: String) -> Resource:
@@ -448,18 +468,7 @@ func _pick_destination_planet(origin_name: String, candidates: Array, good_name:
 	if reachable_candidates.is_empty():
 		return ""
 
-	var preferred_tags: Array[String] = []
-	match good_name:
-		"Food Rations":
-			preferred_tags = ["shortage"]
-		"Medicine":
-			preferred_tags = ["shortage"]
-		"Spice":
-			preferred_tags = ["smuggling_window"]
-		"Stolen Tech":
-			preferred_tags = ["smuggling_window", "prototype_theft", "security_crackdown"]
-		"Electronics":
-			preferred_tags = ["prototype_theft", "tech_boom", "security_crackdown"]
+	var preferred_tags: Array = GOOD_EVENT_TAGS.get(good_name, [])
 
 	if not preferred_tags.is_empty():
 		var tagged_destinations: Array[String] = []
@@ -471,9 +480,9 @@ func _pick_destination_planet(origin_name: String, candidates: Array, good_name:
 					tagged_destinations.append(candidate_name)
 					break
 		if not tagged_destinations.is_empty():
-			return tagged_destinations[randi() % tagged_destinations.size()]
+			return tagged_destinations.pick_random()
 
-	return str(reachable_candidates[randi() % reachable_candidates.size()])
+	return reachable_candidates.pick_random()
 
 
 func _pick_flavor(destination: String, good_name: String) -> String:
@@ -486,7 +495,7 @@ func _pick_flavor(destination: String, good_name: String) -> String:
 		return "Silent retrieval order"
 	if "bounty_contracts" in tags:
 		return "Pressure-run dispatch"
-	return QUEST_FLAVORS[randi() % QUEST_FLAVORS.size()]
+	return QUEST_FLAVORS.pick_random()
 
 
 func _offer_matches_quality(offer: Dictionary, quality: Dictionary) -> bool:

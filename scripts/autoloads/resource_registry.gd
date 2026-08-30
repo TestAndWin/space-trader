@@ -175,6 +175,13 @@ const CRAFTED_UPGRADES: Array[String] = [
 	"res://data/upgrades/crafted/adaptive_shields.tres",
 ]
 
+# Hidden endgame planet, revealed only once GameManager.crimson_base_unlocked
+# is set. Deliberately NOT part of PLANETS: that array drives the galaxy map,
+# the economy and the pirate-presence rotation, none of which may contain the
+# hideout before it is unlocked.
+const CRIMSON_BASE: String = "res://data/planets/crimson_base.tres"
+
+
 func load_all(paths: Array[String]) -> Array:
 	var results: Array = []
 	for path in paths:

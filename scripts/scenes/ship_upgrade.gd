@@ -34,12 +34,11 @@ const PLANET_UPGRADE_SLOTS := {
 
 var all_upgrades: Array[Resource] = []
 var _planet_type: int = 0
-var _credits_label: Label
 var _status_label: Label
 var _upgrade_list: VBoxContainer
 var _stats_list: VBoxContainer
 var _ship_display: Control
-const ShipDisplayScene: PackedScene = preload("res://scenes/components/ship_display_3d.tscn")
+const ShipDisplayScene: PackedScene = preload("res://scenes/components/ship_display.tscn")
 
 ## When shown as a tab inside the shipyard screen the host already provides the
 ## background, frame and header — drawing our own would stack a second full
@@ -74,102 +73,35 @@ func _load_all_upgrades() -> void:
 
 
 func _build_ui() -> void:
-	if not _embedded:
-		BackgroundUtils.add_building_background(self, "shipyard", 0.4)
-
-	# Semi-transparent main panel
-	var panel := PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	if _embedded:
-		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	else:
-		var style := StyleBoxFlat.new()
-		style.bg_color = UIStyles.PANEL_COLOR
-		style.border_color = UIStyles.BORDER_COLOR
-		style.set_border_width_all(2)
-		style.set_corner_radius_all(16)
-		style.content_margin_left = 28
-		style.content_margin_right = 28
-		style.content_margin_top = 16
-		style.content_margin_bottom = 16
-		panel.add_theme_stylebox_override("panel", style)
-	add_child(panel)
-
-	var main_vbox := VBoxContainer.new()
-	main_vbox.add_theme_constant_override("separation", 10)
-	panel.add_child(main_vbox)
-
-	if _embedded:
-		_build_content(main_vbox)
+		# Sits inside the shipyard screen, which already draws chrome and header,
+		# so this variant builds only the content column.
+		var embedded_panel := PanelContainer.new()
+		embedded_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+		UIStyles.style_overlay_panel(embedded_panel, true)
+		add_child(embedded_panel)
+		var inner := VBoxContainer.new()
+		inner.add_theme_constant_override("separation", 10)
+		embedded_panel.add_child(inner)
+		_build_content(inner)
 		return
 
-	# ── Header ──
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
-	main_vbox.add_child(header)
-
-	# Title section with subtitle
-	var title_vbox := VBoxContainer.new()
-	title_vbox.add_theme_constant_override("separation", 0)
-	header.add_child(title_vbox)
-
-	var title_row := HBoxContainer.new()
-	title_row.add_theme_constant_override("separation", 10)
-	title_vbox.add_child(title_row)
-
-	var left_deco := Label.new()
-	left_deco.text = "\u2726 \u2699 \u2726"
-	left_deco.add_theme_font_size_override("font_size", 16)
-	left_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
-	title_row.add_child(left_deco)
+	BackgroundUtils.add_building_background(self, "shipyard", 0.4)
 
 	var type_str := ""
 	var planet_data: Resource = _find_planet_data()
 	if planet_data:
 		type_str = " \u2014 " + EconomyManager.PLANET_TYPE_NAMES.get(planet_data.planet_type, "Unknown")
-	var title := Label.new()
-	title.text = "SHIP UPGRADES" + type_str
-	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", UIStyles.ACCENT)
-	title_row.add_child(title)
 
-	var right_deco := Label.new()
-	right_deco.text = "\u2726 \u2699 \u2726"
-	right_deco.add_theme_font_size_override("font_size", 16)
-	right_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
-	title_row.add_child(right_deco)
-
-	var subtitle := Label.new()
-	subtitle.text = "Enhance Your Vessel \u2022 Certified Components \u2022 Installation Included"
-	var sub_settings := LabelSettings.new()
-	sub_settings.font_size = 11
-	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
-	sub_settings.shadow_size = 3
-	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
-	sub_settings.shadow_offset = Vector2(1, 1)
-	subtitle.label_settings = sub_settings
-	title_vbox.add_child(subtitle)
-
-	var header_spacer := Control.new()
-	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(header_spacer)
-
-	_credits_label = UIStyles.create_credits_label()
-	header.add_child(_credits_label)
-
-	var close_btn := Button.new()
-	close_btn.text = "Back to Shipyard"
-	close_btn.custom_minimum_size = Vector2(140, 36)
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
-	close_btn.pressed.connect(close)
-	header.add_child(close_btn)
-
-	# Separator
-	var sep := HSeparator.new()
-	sep.add_theme_constant_override("separation", 6)
-	sep.add_theme_color_override("separator", UIStyles.ACCENT_DIM)
-	main_vbox.add_child(sep)
+	var scaffold: Dictionary = UIStyles.create_overlay_scaffold(
+		self,
+		"SHIP UPGRADES" + type_str,
+		"Enhance Your Vessel \u2022 Certified Components \u2022 Installation Included",
+		"\u2726 \u2699 \u2726",
+		"Back to Shipyard",
+		close,
+	)
+	var main_vbox: VBoxContainer = scaffold["main_vbox"]
 
 	_build_content(main_vbox)
 
@@ -179,8 +111,8 @@ func _build_ui() -> void:
 func _build_content(main_vbox: VBoxContainer) -> void:
 	# Status label
 	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
-	_status_label.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
+	_status_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
+	_status_label.add_theme_color_override("font_color", UIStyles.POSITIVE)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main_vbox.add_child(_status_label)
 
@@ -246,7 +178,7 @@ func _build_ship_stats_panel() -> PanelContainer:
 
 	var header := Label.new()
 	header.text = "YOUR SHIP"
-	header.add_theme_font_size_override("font_size", 14)
+	header.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
 	header.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(header)
@@ -261,7 +193,7 @@ func _build_ship_stats_panel() -> PanelContainer:
 		var ship_name_lbl := Label.new()
 		ship_name_lbl.text = ship.ship_name
 		ship_name_lbl.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-		ship_name_lbl.add_theme_font_size_override("font_size", 20)
+		ship_name_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_HEADING)
 		ship_name_lbl.add_theme_color_override("font_color", UIStyles.ACCENT)
 		ship_name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vbox.add_child(ship_name_lbl)
@@ -273,7 +205,7 @@ func _build_ship_stats_panel() -> PanelContainer:
 
 	var stats_header := Label.new()
 	stats_header.text = "STATS"
-	stats_header.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
+	stats_header.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 	stats_header.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	stats_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(stats_header)
@@ -288,10 +220,6 @@ func _build_ship_stats_panel() -> PanelContainer:
 	stats_scroll.add_child(_stats_list)
 
 	return panel
-
-
-func _style_buy_button(btn: Button) -> void:
-	UIStyles.style_buy_button(btn)
 
 
 func _refresh_all() -> void:
@@ -336,7 +264,7 @@ func _populate_available_upgrades() -> void:
 	if not any_shown:
 		var lbl := Label.new()
 		lbl.text = "No upgrades available at this planet."
-		lbl.add_theme_font_size_override("font_size", UIStyles.BODY_FONT_SIZE)
+		lbl.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
 		lbl.add_theme_color_override("font_color", Color(0.4, 0.4, 0.5))
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_upgrade_list.add_child(lbl)
@@ -379,13 +307,13 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 
 	var name_label := Label.new()
 	name_label.text = upgrade.upgrade_name
-	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
 	name_label.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
 	info.add_child(name_label)
 
 	var desc_label := Label.new()
 	desc_label.text = upgrade.description
-	desc_label.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
+	desc_label.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 	desc_label.add_theme_color_override("font_color", Color(0.4, 0.55, 0.7))
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_child(desc_label)
@@ -393,7 +321,7 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 	if upgrade.is_crafted_only():
 		var req_label := Label.new()
 		req_label.text = "Requires: " + _format_required_items(upgrade)
-		req_label.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
+		req_label.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 		req_label.add_theme_color_override("font_color", UIStyles.GOLD if _has_required_crafted_items(upgrade) else Color(0.7, 0.45, 0.25))
 		info.add_child(req_label)
 
@@ -406,7 +334,7 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 	var price_lbl := Label.new()
 	price_lbl.text = "%d cr" % upgrade.cost
 	price_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
-	price_lbl.add_theme_font_size_override("font_size", 15)
+	price_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 	price_lbl.add_theme_color_override("font_color", UIStyles.GOLD if GameManager.credits >= upgrade.cost else Color(0.5, 0.3, 0.3))
 	price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	btn_col.add_child(price_lbl)
@@ -417,7 +345,7 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 	var can_afford: bool = GameManager.credits >= upgrade.cost
 	var has_items: bool = _has_required_crafted_items(upgrade)
 	buy_button.disabled = not can_afford or not has_items
-	_style_buy_button(buy_button)
+	UIStyles.style_buy_button(buy_button)
 	buy_button.pressed.connect(_on_buy_upgrade.bind(upgrade))
 	btn_col.add_child(buy_button)
 
@@ -442,7 +370,7 @@ func _build_upgrade_icon(upgrade: Resource) -> Control:
 
 	var icon_lbl := Label.new()
 	icon_lbl.text = SLOT_ICONS.get(upgrade.slot, "\u2726")
-	icon_lbl.add_theme_font_size_override("font_size", 22)
+	icon_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_HEADING)
 	icon_lbl.add_theme_color_override("font_color", UIStyles.ACCENT)
 	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	icon_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -510,7 +438,7 @@ func _update_stats() -> void:
 
 		var installed_header := Label.new()
 		installed_header.text = "INSTALLED"
-		installed_header.add_theme_font_size_override("font_size", 14)
+		installed_header.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
 		installed_header.add_theme_color_override("font_color", UIStyles.POSITIVE)
 		installed_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_stats_list.add_child(installed_header)
@@ -518,7 +446,7 @@ func _update_stats() -> void:
 		for upgrade_name in GameManager.installed_upgrades:
 			var lbl := Label.new()
 			lbl.text = "\u2713 " + upgrade_name
-			lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
+			lbl.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 			lbl.add_theme_color_override("font_color", Color(0.4, 0.7, 0.5))
 			_stats_list.add_child(lbl)
 
@@ -529,7 +457,7 @@ func _add_stat_row(stat_name: String, stat_value: String) -> void:
 	var name_lbl := Label.new()
 	name_lbl.text = stat_name
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
+	name_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 	name_lbl.add_theme_color_override("font_color", Color(0.45, 0.55, 0.7))
 	row.add_child(name_lbl)
 
@@ -537,7 +465,7 @@ func _add_stat_row(stat_name: String, stat_value: String) -> void:
 	val_lbl.text = stat_value
 	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	val_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
-	val_lbl.add_theme_font_size_override("font_size", UIStyles.DETAIL_FONT_SIZE)
+	val_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 	val_lbl.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
 	row.add_child(val_lbl)
 

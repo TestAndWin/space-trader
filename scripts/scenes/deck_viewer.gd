@@ -77,13 +77,10 @@ var _trading_enabled: bool = false
 var _planet_type: int = 0
 var _shop_cards: Array = []  # Array of { card: Resource, price: int }
 var _shop_grid: GridContainer
-var _shop_section: VBoxContainer
 var _status_label: Label
-var _credits_label: Label
 var _title_label: Label
 var _subtitle_label: Label
 var _card_grid: GridContainer
-var _main_vbox: VBoxContainer
 
 
 func setup(planet_type: int = -1) -> void:
@@ -135,158 +132,81 @@ func _build_ui() -> void:
 	# Background image
 	BackgroundUtils.add_building_background(self, "deck", 0.4)
 
-	# Semi-transparent main panel
-	var panel := PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var style := StyleBoxFlat.new()
-	style.bg_color = UIStyles.PANEL_COLOR
-	style.border_color = UIStyles.BORDER_COLOR
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(16)
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	panel.add_theme_stylebox_override("panel", style)
-	add_child(panel)
-
-	_main_vbox = VBoxContainer.new()
-	_main_vbox.add_theme_constant_override("separation", 4)
-	panel.add_child(_main_vbox)
-
-	# ── Header ──
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
-	_main_vbox.add_child(header)
-
-	# Title section with subtitle
-	var title_vbox := VBoxContainer.new()
-	title_vbox.add_theme_constant_override("separation", 0)
-	header.add_child(title_vbox)
-
-	var title_row := HBoxContainer.new()
-	title_row.add_theme_constant_override("separation", 10)
-	title_vbox.add_child(title_row)
-
-	var left_deco := Label.new()
-	left_deco.text = "\u2726 \u2660 \u2726"
-	left_deco.add_theme_font_size_override("font_size", 16)
-	left_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
-	title_row.add_child(left_deco)
-
-	_title_label = Label.new()
-	_title_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	_title_label.add_theme_font_size_override("font_size", 26)
-	_title_label.add_theme_color_override("font_color", UIStyles.ACCENT)
-	title_row.add_child(_title_label)
-
-	var right_deco := Label.new()
-	right_deco.text = "\u2726 \u2660 \u2726"
-	right_deco.add_theme_font_size_override("font_size", 16)
-	right_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
-	title_row.add_child(right_deco)
-
-	_subtitle_label = Label.new()
-	var subtitle := _subtitle_label
-	if _trading_enabled:
-		subtitle.text = "View & Trade Cards \u2022 Sell Unwanted \u2022 Buy New Strategies"
-	else:
-		subtitle.text = "Review Your Battle Cards \u2022 Plan Your Strategy"
-	var sub_settings := LabelSettings.new()
-	sub_settings.font_size = 11
-	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
-	sub_settings.shadow_size = 3
-	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
-	sub_settings.shadow_offset = Vector2(1, 1)
-	subtitle.label_settings = sub_settings
-	title_vbox.add_child(subtitle)
-
-	var header_spacer := Control.new()
-	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(header_spacer)
-
-	if _trading_enabled:
-		_credits_label = UIStyles.create_credits_label()
-		header.add_child(_credits_label)
-
-	var close_btn := Button.new()
-	close_btn.text = "Back to City"
-	close_btn.custom_minimum_size = Vector2(90, 36)
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
-	close_btn.pressed.connect(close)
-	header.add_child(close_btn)
-
-	# Separator
-	var sep := HSeparator.new()
-	sep.add_theme_constant_override("separation", 2)
-	sep.add_theme_color_override("separator", UIStyles.ACCENT_DIM)
-	_main_vbox.add_child(sep)
+	# Chrome, header and separator come from the shared overlay scaffold so this
+	# screen matches Market/Crew/Quest/Shipyard exactly. Title and subtitle text
+	# are filled in by _populate_deck(), which runs right after _build_ui().
+	var scaffold: Dictionary = UIStyles.create_overlay_scaffold(
+		self, "", "", "\u2726 \u2660 \u2726", "Back to City", close
+	)
+	var main_vbox: VBoxContainer = scaffold["main_vbox"]
+	_title_label = scaffold["title_label"]
+	_subtitle_label = scaffold["subtitle_label"]
 
 	# Status label (trading only)
 	if _trading_enabled:
 		_status_label = Label.new()
-		_status_label.add_theme_font_size_override("font_size", 14)
-		_status_label.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
+		_status_label.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+		_status_label.add_theme_color_override("font_color", UIStyles.POSITIVE)
 		_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_main_vbox.add_child(_status_label)
+		main_vbox.add_child(_status_label)
 
 	# Deck grid in scroll
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_main_vbox.add_child(scroll)
+	main_vbox.add_child(scroll)
 
-	var _deck_margin := MarginContainer.new()
-	_deck_margin.add_theme_constant_override("margin_top", 16)
-	_deck_margin.add_theme_constant_override("margin_bottom", 16)
-	_deck_margin.add_theme_constant_override("margin_left", 8)
-	_deck_margin.add_theme_constant_override("margin_right", 8)
-	_deck_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(_deck_margin)
+	var deck_margin := MarginContainer.new()
+	deck_margin.add_theme_constant_override("margin_top", 16)
+	deck_margin.add_theme_constant_override("margin_bottom", 16)
+	deck_margin.add_theme_constant_override("margin_left", 8)
+	deck_margin.add_theme_constant_override("margin_right", 8)
+	deck_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(deck_margin)
 
 	_card_grid = GridContainer.new()
 	_card_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_card_grid.add_theme_constant_override("h_separation", 8)
 	_card_grid.add_theme_constant_override("v_separation", 8)
 	_card_grid.columns = 8
-	_deck_margin.add_child(_card_grid)
+	deck_margin.add_child(_card_grid)
 
 	# Shop section (below deck, trading only)
 	if _trading_enabled and _shop_cards.size() > 0:
 		var shop_sep := HSeparator.new()
 		shop_sep.add_theme_constant_override("separation", 6)
 		shop_sep.add_theme_color_override("separator", UIStyles.ACCENT_DIM)
-		_main_vbox.add_child(shop_sep)
+		main_vbox.add_child(shop_sep)
 
-		_shop_section = VBoxContainer.new()
-		_shop_section.add_theme_constant_override("separation", 6)
-		_main_vbox.add_child(_shop_section)
+		var shop_section := VBoxContainer.new()
+		shop_section.add_theme_constant_override("separation", 6)
+		main_vbox.add_child(shop_section)
 
 		var shop_label := Label.new()
 		shop_label.text = "\u25C6 FOR SALE \u25C6"
 		UIStyles.apply_section_title(shop_label)
 		shop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_shop_section.add_child(shop_label)
+		shop_section.add_child(shop_label)
 
 		var shop_scroll := ScrollContainer.new()
 		shop_scroll.custom_minimum_size = Vector2(0, 270)
 		shop_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 		shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-		_shop_section.add_child(shop_scroll)
+		shop_section.add_child(shop_scroll)
 
-		var _shop_margin := MarginContainer.new()
-		_shop_margin.add_theme_constant_override("margin_top", 16)
-		_shop_margin.add_theme_constant_override("margin_bottom", 16)
-		_shop_margin.add_theme_constant_override("margin_left", 8)
-		_shop_margin.add_theme_constant_override("margin_right", 8)
-		_shop_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		shop_scroll.add_child(_shop_margin)
+		var shop_margin := MarginContainer.new()
+		shop_margin.add_theme_constant_override("margin_top", 16)
+		shop_margin.add_theme_constant_override("margin_bottom", 16)
+		shop_margin.add_theme_constant_override("margin_left", 8)
+		shop_margin.add_theme_constant_override("margin_right", 8)
+		shop_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		shop_scroll.add_child(shop_margin)
 
 		_shop_grid = GridContainer.new()
 		_shop_grid.columns = 10
 		_shop_grid.add_theme_constant_override("h_separation", 10)
 		_shop_grid.add_theme_constant_override("v_separation", 10)
-		_shop_margin.add_child(_shop_grid)
+		shop_margin.add_child(_shop_grid)
 
 		_populate_shop()
 
@@ -335,37 +255,30 @@ func _populate_deck() -> void:
 		var card: Resource = entry["resource"]
 		var count: int = entry["count"]
 
+		var card_display := CardDisplayScene.instantiate()
+		_card_grid.add_child(card_display)
 		if _trading_enabled:
 			var sell_price: int = _get_sell_price(card)
 			var can_sell: bool = GameManager.deck.size() > MIN_DECK_SIZE
-			var card_display := CardDisplayScene.instantiate()
-			_card_grid.add_child(card_display)
 			card_display.setup(card, can_sell, "Sell (%dcr)" % sell_price, true)
-			card_display.modulate.a = 1.0
 			card_display.card_played.connect(_on_sell_card.bind(sell_price))
-			if count > 1:
-				var count_label := Label.new()
-				count_label.text = "x%d" % count
-				count_label.add_theme_font_size_override("font_size", 16)
-				count_label.add_theme_color_override("font_color", UIStyles.GOLD)
-				count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				var vbox: Node = card_display.get_node("%PlayButton").get_parent()
-				vbox.add_child(count_label)
-				vbox.move_child(count_label, card_display.get_node("%PlayButton").get_index())
 		else:
-			var card_display := CardDisplayScene.instantiate()
-			_card_grid.add_child(card_display)
 			card_display.setup(card, false, "", false)
-			card_display.modulate.a = 1.0
-			if count > 1:
-				var count_label := Label.new()
-				count_label.text = "x%d" % count
-				count_label.add_theme_font_size_override("font_size", 16)
-				count_label.add_theme_color_override("font_color", UIStyles.GOLD)
-				count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				var vbox: Node = card_display.get_node("%PlayButton").get_parent()
-				vbox.add_child(count_label)
-				vbox.move_child(count_label, card_display.get_node("%PlayButton").get_index())
+		if count > 1:
+			_add_count_badge(card_display, count)
+
+
+## Stacks of the same card show "xN" above the card's action button.
+func _add_count_badge(card_display: Node, count: int) -> void:
+	var count_label := Label.new()
+	count_label.text = "x%d" % count
+	count_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
+	count_label.add_theme_color_override("font_color", UIStyles.GOLD)
+	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var play_button: Node = card_display.get_node("%PlayButton")
+	var vbox: Node = play_button.get_parent()
+	vbox.add_child(count_label)
+	vbox.move_child(count_label, play_button.get_index())
 
 
 ## Rough power score of a card, used to place its sell price inside the band

@@ -9,14 +9,12 @@ signal dealer_closed
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
-
-
 var _planet_type: int = 0
 var _ship_list_container: VBoxContainer
 var _credits_label: Label
 var _status_label: Label
 var _current_ship_display: Control
-const ShipDisplayScene: PackedScene = preload("res://scenes/components/ship_display_3d.tscn")
+const ShipDisplayScene: PackedScene = preload("res://scenes/components/ship_display.tscn")
 
 ## When shown as a tab inside the shipyard screen the host already provides the
 ## background, frame and header — drawing our own would stack a second full
@@ -41,98 +39,30 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	if not _embedded:
-		BackgroundUtils.add_building_background(self, "shipyard", 0.4)
-
-	# Semi-transparent main panel
-	var panel := PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	if _embedded:
-		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	else:
-		var style := StyleBoxFlat.new()
-		style.bg_color = UIStyles.PANEL_COLOR
-		style.border_color = UIStyles.BORDER_COLOR
-		style.set_border_width_all(2)
-		style.set_corner_radius_all(16)
-		style.content_margin_left = 28
-		style.content_margin_right = 28
-		style.content_margin_top = 16
-		style.content_margin_bottom = 16
-		panel.add_theme_stylebox_override("panel", style)
-	add_child(panel)
-
-	var main_vbox := VBoxContainer.new()
-	main_vbox.add_theme_constant_override("separation", 10)
-	panel.add_child(main_vbox)
-
-	if _embedded:
-		_build_content(main_vbox)
+		# Sits inside the shipyard screen, which already draws chrome and header,
+		# so this variant builds only the content column.
+		var embedded_panel := PanelContainer.new()
+		embedded_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+		UIStyles.style_overlay_panel(embedded_panel, true)
+		add_child(embedded_panel)
+		var inner := VBoxContainer.new()
+		inner.add_theme_constant_override("separation", 10)
+		embedded_panel.add_child(inner)
+		_build_content(inner)
 		return
 
-	# ── Header ──
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
-	main_vbox.add_child(header)
+	BackgroundUtils.add_building_background(self, "shipyard", 0.4)
 
-	# Title section with subtitle
-	var title_vbox := VBoxContainer.new()
-	title_vbox.add_theme_constant_override("separation", 0)
-	header.add_child(title_vbox)
-
-	var title_row := HBoxContainer.new()
-	title_row.add_theme_constant_override("separation", 10)
-	title_vbox.add_child(title_row)
-
-	var left_deco := Label.new()
-	left_deco.text = "\u2726 \u2605 \u2726"
-	left_deco.add_theme_font_size_override("font_size", 16)
-	left_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
-	title_row.add_child(left_deco)
-
-	var title := Label.new()
-	title.text = "STARSHIP SHOWROOM"
-	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", UIStyles.ACCENT)
-	title_row.add_child(title)
-
-	var right_deco := Label.new()
-	right_deco.text = "\u2726 \u2605 \u2726"
-	right_deco.add_theme_font_size_override("font_size", 16)
-	right_deco.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
-	title_row.add_child(right_deco)
-
-	var subtitle := Label.new()
-	subtitle.text = "Premium Vessels \u2022 Trade-In Available \u2022 Galactic Licensed Dealer"
-	var sub_settings := LabelSettings.new()
-	sub_settings.font_size = 11
-	sub_settings.font_color = Color(0.8, 0.85, 0.9, 1.0)
-	sub_settings.shadow_size = 3
-	sub_settings.shadow_color = Color(0.0, 0.0, 0.0, 0.8)
-	sub_settings.shadow_offset = Vector2(1, 1)
-	subtitle.label_settings = sub_settings
-	title_vbox.add_child(subtitle)
-
-	var header_spacer := Control.new()
-	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(header_spacer)
-
-	_credits_label = UIStyles.create_credits_label()
-	header.add_child(_credits_label)
-
-	var close_btn := Button.new()
-	close_btn.text = "Back to Shipyard"
-	close_btn.custom_minimum_size = Vector2(130, 36)
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
-	close_btn.pressed.connect(close)
-	header.add_child(close_btn)
-
-	# Separator with glow
-	var sep := HSeparator.new()
-	sep.add_theme_constant_override("separation", 6)
-	sep.add_theme_color_override("separator", UIStyles.ACCENT_DIM)
-	main_vbox.add_child(sep)
+	var scaffold: Dictionary = UIStyles.create_overlay_scaffold(
+		self,
+		"STARSHIP SHOWROOM",
+		"Premium Vessels \u2022 Trade-In Available \u2022 Galactic Licensed Dealer",
+		"\u2726 \u2605 \u2726",
+		"Back to Shipyard",
+		close,
+	)
+	var main_vbox: VBoxContainer = scaffold["main_vbox"]
 
 	_build_content(main_vbox)
 
@@ -142,8 +72,8 @@ func _build_ui() -> void:
 func _build_content(main_vbox: VBoxContainer) -> void:
 	# Status label
 	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", 14)
-	_status_label.add_theme_color_override("font_color", Color(0.0, 0.85, 0.45))
+	_status_label.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+	_status_label.add_theme_color_override("font_color", UIStyles.POSITIVE)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main_vbox.add_child(_status_label)
 
@@ -204,7 +134,7 @@ func _build_current_ship_panel() -> PanelContainer:
 
 	var header := Label.new()
 	header.text = "YOUR SHIP"
-	header.add_theme_font_size_override("font_size", 14)
+	header.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
 	header.add_theme_color_override("font_color", UIStyles.ACCENT_DIM)
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(header)
@@ -225,7 +155,7 @@ func _build_current_ship_panel() -> PanelContainer:
 		var name_lbl := Label.new()
 		name_lbl.text = ship.ship_name
 		name_lbl.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-		name_lbl.add_theme_font_size_override("font_size", 20)
+		name_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_HEADING)
 		name_lbl.add_theme_color_override("font_color", UIStyles.ACCENT)
 		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vbox.add_child(name_lbl)
@@ -250,7 +180,7 @@ func _build_current_ship_panel() -> PanelContainer:
 			var trade_lbl := Label.new()
 			trade_lbl.text = "Trade-in value: %d cr" % trade_in
 			trade_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
-			trade_lbl.add_theme_font_size_override("font_size", 12)
+			trade_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
 			trade_lbl.add_theme_color_override("font_color", UIStyles.GOLD)
 			trade_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			vbox.add_child(trade_lbl)
@@ -261,22 +191,17 @@ func _build_current_ship_panel() -> PanelContainer:
 func _add_stat_pair(grid: GridContainer, stat_name: String, stat_value: String) -> void:
 	var name_lbl := Label.new()
 	name_lbl.text = stat_name
-	name_lbl.add_theme_font_size_override("font_size", 12)
+	name_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
 	name_lbl.add_theme_color_override("font_color", Color(0.45, 0.55, 0.7))
 	grid.add_child(name_lbl)
 
 	var val_lbl := Label.new()
 	val_lbl.text = stat_value
 	val_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
-	val_lbl.add_theme_font_size_override("font_size", 12)
+	val_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
 	val_lbl.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
 	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	grid.add_child(val_lbl)
-
-
-func _get_current_ship_name() -> String:
-	var ship: Resource = GameManager.get_ship_data()
-	return ship.ship_name if ship else "Unknown"
 
 
 func _refresh_ui() -> void:
@@ -359,13 +284,13 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 	var name_lbl := Label.new()
 	name_lbl.text = ship.ship_name + ("  \u2605 EQUIPPED" if is_current else "")
 	name_lbl.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
-	name_lbl.add_theme_font_size_override("font_size", 17)
+	name_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_SUBHEADING)
 	name_lbl.add_theme_color_override("font_color", UIStyles.ACCENT if is_current else Color(0.75, 0.88, 1.0))
 	info.add_child(name_lbl)
 
 	var desc_lbl := Label.new()
 	desc_lbl.text = ship.description
-	desc_lbl.add_theme_font_size_override("font_size", 11)
+	desc_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
 	desc_lbl.add_theme_color_override("font_color", Color(0.35, 0.55, 0.75))
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_child(desc_lbl)
@@ -375,9 +300,9 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 	info.add_child(stats)
 
 	# Ship ability description
-	var ability_row := _build_ability_row(ship)
-	if ability_row.get_child_count() > 0:
-		info.add_child(ability_row)
+	var ability_lbl := _build_ability_label(ship)
+	if ability_lbl:
+		info.add_child(ability_lbl)
 
 	# Action button column
 	if not is_current and (ship.cost > 0 or GameManager.owns_ship(ship.resource_path)):
@@ -392,14 +317,14 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 			var price_lbl := Label.new()
 			price_lbl.text = "%d cr" % fee
 			price_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
-			price_lbl.add_theme_font_size_override("font_size", 16)
+			price_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
 			price_lbl.add_theme_color_override("font_color", UIStyles.GOLD if GameManager.credits >= fee else Color(0.5, 0.3, 0.3))
 			price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			btn_col.add_child(price_lbl)
 
 			var fee_note := Label.new()
 			fee_note.text = "(transfer fee)"
-			fee_note.add_theme_font_size_override("font_size", 10)
+			fee_note.add_theme_font_size_override("font_size", UIStyles.FONT_MICRO)
 			fee_note.add_theme_color_override("font_color", Color(0.5, 0.65, 0.45))
 			fee_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			btn_col.add_child(fee_note)
@@ -408,7 +333,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 			switch_btn.text = "SWITCH"
 			switch_btn.custom_minimum_size = Vector2(100, 38)
 			switch_btn.disabled = GameManager.credits < fee
-			_style_buy_button(switch_btn)
+			UIStyles.style_buy_button(switch_btn)
 			switch_btn.pressed.connect(_on_switch_owned.bind(ship))
 			btn_col.add_child(switch_btn)
 		else:
@@ -419,7 +344,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 			var price_lbl := Label.new()
 			price_lbl.text = "%d cr" % ship.cost
 			price_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
-			price_lbl.add_theme_font_size_override("font_size", 16)
+			price_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
 			price_lbl.add_theme_color_override("font_color", UIStyles.GOLD if GameManager.credits >= ship.cost else Color(0.5, 0.3, 0.3))
 			price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			btn_col.add_child(price_lbl)
@@ -428,7 +353,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 			buy_keep_btn.text = "BUY & KEEP OLD"
 			buy_keep_btn.custom_minimum_size = Vector2(140, 32)
 			buy_keep_btn.disabled = GameManager.credits < ship.cost
-			_style_buy_button(buy_keep_btn)
+			UIStyles.style_buy_button(buy_keep_btn)
 			buy_keep_btn.pressed.connect(_on_buy_ship.bind(ship, ship.cost, true))
 			btn_col.add_child(buy_keep_btn)
 
@@ -437,7 +362,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 				buy_trade_btn.text = "BUY & TRADE-IN (%d cr)" % net_cost
 				buy_trade_btn.custom_minimum_size = Vector2(140, 32)
 				buy_trade_btn.disabled = GameManager.credits < net_cost
-				_style_buy_button(buy_trade_btn)
+				UIStyles.style_buy_button(buy_trade_btn)
 				buy_trade_btn.pressed.connect(_on_buy_ship.bind(ship, net_cost, false))
 				btn_col.add_child(buy_trade_btn)
 
@@ -448,19 +373,14 @@ func _build_stat_comparison(ship: Resource, current: Resource) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 
-	var dh: int = ship.base_max_hull - current.base_max_hull
-	var ds: int = ship.base_max_shield - current.base_max_shield
-	var dc: int = ship.base_cargo_capacity - current.base_cargo_capacity
+	_add_stat_chip(row, "Hull", ship.base_max_hull, ship.base_max_hull - current.base_max_hull)
+	_add_stat_chip(row, "Shield", ship.base_max_shield, ship.base_max_shield - current.base_max_shield)
+	_add_stat_chip(row, "Cargo", ship.base_cargo_capacity, ship.base_cargo_capacity - current.base_cargo_capacity)
+	_add_stat_chip(row, "Crew", ship.max_crew, ship.max_crew - current.max_crew)
 	var de: int = ship.base_energy_per_turn - current.base_energy_per_turn
-	var dhnd: int = ship.base_hand_size - current.base_hand_size
-	var dcrew: int = ship.max_crew - current.max_crew
-
-	_add_stat_chip(row, "Hull", ship.base_max_hull, dh)
-	_add_stat_chip(row, "Shield", ship.base_max_shield, ds)
-	_add_stat_chip(row, "Cargo", ship.base_cargo_capacity, dc)
-	_add_stat_chip(row, "Crew", ship.max_crew, dcrew)
 	if de != 0:
 		_add_stat_chip(row, "Energy", ship.base_energy_per_turn, de)
+	var dhnd: int = ship.base_hand_size - current.base_hand_size
 	if dhnd != 0:
 		_add_stat_chip(row, "Hand", ship.base_hand_size, dhnd)
 
@@ -473,31 +393,27 @@ func _build_stat_comparison(ship: Resource, current: Resource) -> HBoxContainer:
 	if ship.quest_reward_bonus > 0:
 		specials.append("+%d%% Quest" % int(ship.quest_reward_bonus * 100))
 
-	if specials.size() > 0:
+	if not specials.is_empty():
 		var spec_lbl := Label.new()
 		spec_lbl.text = " | ".join(specials)
-		spec_lbl.add_theme_font_size_override("font_size", 10)
+		spec_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_MICRO)
 		spec_lbl.add_theme_color_override("font_color", Color(0.8, 0.7, 0.3))
 		row.add_child(spec_lbl)
 
 	return row
 
 
-func _build_ability_row(ship: Resource) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_theme_constant_override("separation", 8)
-	# Ability description
-	var ability_desc: String = ship.ability_description
-	if ability_desc != "":
-		var ability_lbl := Label.new()
-		ability_lbl.text = "⚡ " + ability_desc
-		ability_lbl.add_theme_font_size_override("font_size", 10)
-		ability_lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.6))
-		ability_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		ability_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(ability_lbl)
-	return row
+## Returns the ship's ability line, or null when the ship has no ability.
+func _build_ability_label(ship: Resource) -> Label:
+	if ship.ability_description == "":
+		return null
+	var ability_lbl := Label.new()
+	ability_lbl.text = "⚡ " + ship.ability_description
+	ability_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_MICRO)
+	ability_lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.6))
+	ability_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ability_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return ability_lbl
 
 
 func _add_stat_chip(container: HBoxContainer, stat_name: String, value: int, diff: int) -> void:
@@ -513,14 +429,25 @@ func _add_stat_chip(container: HBoxContainer, stat_name: String, value: int, dif
 		col = UIStyles.NEGATIVE
 
 	chip.text = "%s:%d%s" % [stat_name, value, diff_str]
-	chip.add_theme_font_size_override("font_size", 11)
+	chip.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
 	chip.add_theme_color_override("font_color", col)
 	container.add_child(chip)
 
 
+
+## Guards both ship changes: a smaller hull cannot carry the current crew.
+## Reports the failure on the status label and returns false.
+func _crew_fits(ship: Resource, verb: String) -> bool:
+	if GameManager.crew.size() <= ship.max_crew:
+		return true
+	_status_label.text = "Cannot %s: Crew size (%d) exceeds ship capacity (%d). Fire crew first!" % [
+		verb, GameManager.crew.size(), ship.max_crew
+	]
+	return false
+
+
 func _on_buy_ship(ship: Resource, cost: int, keep_old: bool) -> void:
-	if GameManager.crew.size() > ship.max_crew:
-		_status_label.text = "Cannot buy: Crew size (%d) exceeds ship capacity (%d). Fire crew first!" % [GameManager.crew.size(), ship.max_crew]
+	if not _crew_fits(ship, "buy"):
 		return
 	if not GameManager.remove_credits(cost):
 		_status_label.text = "Not enough credits!"
@@ -541,8 +468,7 @@ func _on_buy_ship(ship: Resource, cost: int, keep_old: bool) -> void:
 
 
 func _on_switch_owned(ship: Resource) -> void:
-	if GameManager.crew.size() > ship.max_crew:
-		_status_label.text = "Cannot switch: Crew size (%d) exceeds ship capacity (%d). Fire crew first!" % [GameManager.crew.size(), ship.max_crew]
+	if not _crew_fits(ship, "switch"):
 		return
 	var fee: int = GameManager.SHIP_TRANSFER_FEE
 	if not GameManager.remove_credits(fee):
@@ -553,10 +479,6 @@ func _on_switch_owned(ship: Resource) -> void:
 	EventLog.add_entry("Switched to %s (transfer fee: %d cr)" % [ship.ship_name, fee])
 	_status_label.text = "Switched to %s!" % ship.ship_name
 	_refresh_ui()
-
-
-func _style_buy_button(btn: Button) -> void:
-	UIStyles.style_buy_button(btn)
 
 
 func close() -> void:

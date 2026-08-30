@@ -3,6 +3,7 @@ extends Node
 const MAX_DIFFICULTY := 3
 
 var encounter_pool: Array = []
+var force_enforcer_encounter: bool = false
 
 
 func _ready() -> void:
@@ -14,13 +15,15 @@ func _load_encounters() -> void:
 
 
 func should_route_encounter_happen(danger_level: int, planet_name: String, days: int) -> bool:
+	if (planet_name == GameManager.CRIMSON_BASE_NAME and not GameManager.victory_triggered) or force_enforcer_encounter:
+		return true
 	var chance: float = GameManager.get_aggregate_encounter_chance(danger_level, planet_name, days)
 	return randf() < chance
 
 
 func estimate_encounter_chance(danger_level: int, planet_name: String = "") -> float:
 	if planet_name == "":
-		planet_name = GameManager.travel_destination if GameManager.travel_destination != "" else GameManager.current_planet
+		planet_name = GameManager.get_focus_planet()
 	var chance: float = 0.3 + (danger_level - 1) * 0.1
 	# Carrying contraband increases encounter chance
 	if is_carrying_contraband():
@@ -28,8 +31,8 @@ func estimate_encounter_chance(danger_level: int, planet_name: String = "") -> f
 	# Ship encounter reduction
 	chance -= GameManager.get_encounter_reduction()
 	# Crew navigator bonus
-	if GameManager.has_crew_bonus(0):  # ENCOUNTER_REDUCTION
-		chance -= GameManager.get_crew_bonus_value(0)
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.ENCOUNTER_REDUCTION):
+		chance -= GameManager.get_crew_bonus_value(CrewData.CrewBonus.ENCOUNTER_REDUCTION)
 	# Galaxy event modifier
 	chance += EventManager.get_encounter_modifier(planet_name)
 	# Local standing and debt pressure affect inspection intensity.
@@ -58,16 +61,24 @@ func _get_difficulty_bonus() -> int:
 
 
 func get_encounter(max_difficulty: int) -> Resource:
-	var focus_planet: String = GameManager.travel_destination if GameManager.travel_destination != "" else GameManager.current_planet
+	var focus_planet: String = GameManager.get_focus_planet()
 	return get_encounter_for_planet(max_difficulty, focus_planet)
 
 
 func get_encounter_for_planet(max_difficulty: int, planet_name: String) -> Resource:
+	if force_enforcer_encounter:
+		force_enforcer_encounter = false
+		for enc in encounter_pool:
+			if enc.encounter_name == "Crimson Enforcer":
+				return enc
+
 	var effective_max: int = mini(max_difficulty + _get_difficulty_bonus(), MAX_DIFFICULTY)
 	var weighted: Array[Dictionary] = []
 	var total_weight: float = 0.0
 	for enc in encounter_pool:
 		var is_special: bool = enc.encounter_name in ["Crimson Jack", "Crimson Enforcer"]
+		if is_special and GameManager.victory_triggered:
+			continue
 		if enc.difficulty > effective_max and not is_special:
 			continue
 		var weight: float = _get_encounter_weight(enc, planet_name)
@@ -162,9 +173,8 @@ func _get_encounter_weight(enc: Resource, planet_name: String) -> float:
 					weight += 1.5
 		"Crimson Jack":
 			weight = 0.0
-			if not PirateLordManager.jack_defeated and PirateLordManager.heat >= 100 and PirateLordManager.active_intel >= 5:
-				if PirateLordManager.active_presence_planets.has(planet_name):
-					weight = 100.0 # Force encounter
+			if planet_name == GameManager.CRIMSON_BASE_NAME:
+				weight = 1000.0 # Force encounter at hideout
 
 	if PirateLordManager.active_presence_planets.has(planet_name):
 		if enc_name in ["Pirate Raider", "Pirate Captain"]:

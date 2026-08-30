@@ -12,6 +12,12 @@ const FINE_MAX := 200
 const HIDE_BASE_CHANCE := 0.30
 const BRIBE_BASE_CHANCE := 0.70
 
+const OPTION_BUTTON_SIZE := Vector2(380, 36)
+# [normal, hover, pressed] per option row.
+const FINE_COLORS: Array[Color] = [Color(0.7, 0.25, 0.1), Color(0.85, 0.35, 0.15), Color(0.55, 0.18, 0.08)]
+const HIDE_COLORS: Array[Color] = [Color(0.4, 0.2, 0.6), Color(0.5, 0.3, 0.7), Color(0.3, 0.15, 0.45)]
+const BRIBE_COLORS: Array[Color] = [Color(0.6, 0.5, 0.1), Color(0.75, 0.6, 0.15), Color(0.45, 0.35, 0.08)]
+
 var _contraband_items: Array = []  # [{ good_name, quantity }]
 var _fine_amount: int = 0
 var _hide_chance: float = 0.0
@@ -72,7 +78,7 @@ func _build_ui() -> void:
 	var context := Label.new()
 	context.text = _build_context_text()
 	context.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	context.add_theme_font_size_override("font_size", 12)
+	context.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
 	context.add_theme_color_override("font_color", Color(0.95, 0.78, 0.48))
 	context.custom_minimum_size = Vector2(380, 0)
 	vbox.add_child(context)
@@ -92,35 +98,35 @@ func _build_ui() -> void:
 	_options_container.add_theme_constant_override("separation", 8)
 	vbox.add_child(_options_container)
 
-	var fine_btn := Button.new()
-	fine_btn.text = "Pay Fine (%d cr)" % _fine_amount
-	fine_btn.custom_minimum_size = Vector2(380, 36)
-	UIStyles.style_event_button(fine_btn, Color(0.7, 0.25, 0.1), Color(0.85, 0.35, 0.15), Color(0.55, 0.18, 0.08))
-	fine_btn.pressed.connect(_on_pay_fine)
-	if GameManager.credits < _fine_amount:
-		fine_btn.disabled = true
-	_options_container.add_child(fine_btn)
+	_add_option("Pay Fine (%d cr)" % _fine_amount, FINE_COLORS, _on_pay_fine,
+		GameManager.credits >= _fine_amount)
 
-	var hide_btn := Button.new()
-	hide_btn.text = "Hide Contraband (%d%% chance)" % int(round(_hide_chance * 100.0))
-	hide_btn.custom_minimum_size = Vector2(380, 36)
-	UIStyles.style_event_button(hide_btn, Color(0.4, 0.2, 0.6), Color(0.5, 0.3, 0.7), Color(0.3, 0.15, 0.45))
-	hide_btn.pressed.connect(_on_try_hide)
-	_options_container.add_child(hide_btn)
+	_add_option("Hide Contraband (%d%% chance)" % int(round(_hide_chance * 100.0)),
+		HIDE_COLORS, _on_try_hide)
 
-	var bribe_btn := Button.new()
 	var smuggler_note: String = " — Smuggler edge" if GameManager.get_customs_bribe_bonus() > 0.0 else ""
-	bribe_btn.text = "Bribe Official (%d cr, %d%% success%s)" % [_bribe_cost, int(round(_bribe_success_chance * 100.0)), smuggler_note]
-	bribe_btn.custom_minimum_size = Vector2(380, 36)
-	UIStyles.style_event_button(bribe_btn, Color(0.6, 0.5, 0.1), Color(0.75, 0.6, 0.15), Color(0.45, 0.35, 0.08))
-	bribe_btn.pressed.connect(_on_bribe)
-	if GameManager.credits < _bribe_cost:
-		bribe_btn.disabled = true
-	_options_container.add_child(bribe_btn)
+	_add_option("Bribe Official (%d cr, %d%% success%s)" % [
+			_bribe_cost, int(round(_bribe_success_chance * 100.0)), smuggler_note
+		], BRIBE_COLORS, _on_bribe, GameManager.credits >= _bribe_cost)
+
+
+## One full-width option row. `colors` is [normal, hover, pressed].
+func _add_option(text: String, colors: Array[Color], callback: Callable, affordable: bool = true) -> void:
+	var btn := Button.new()
+	btn.text = text
+	btn.custom_minimum_size = OPTION_BUTTON_SIZE
+	UIStyles.style_event_button(btn, colors[0], colors[1], colors[2])
+	btn.pressed.connect(callback)
+	btn.disabled = not affordable
+	_options_container.add_child(btn)
+
+
+func _current_faction() -> String:
+	return StandingManager.get_planet_faction(GameManager.current_planet)
 
 
 func _build_context_text() -> String:
-	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
+	var faction: String = _current_faction()
 	return "%s | Rep %s | Loyalty %s | Bounty %s" % [
 		faction,
 		StandingManager.get_reputation_tier(faction),
@@ -155,7 +161,7 @@ func _on_pay_fine() -> void:
 	GameManager.remove_credits(_fine_amount)
 	_confiscate_contraband()
 
-	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
+	var faction: String = _current_faction()
 	var rep_tier: String = StandingManager.get_reputation_tier(faction)
 	var loyalty: int = StandingManager.get_trade_loyalty(GameManager.current_planet)
 	var lenient: bool = rep_tier in ["Trusted", "Allied"] and loyalty >= 30 and StandingManager.get_bounty_tier() in ["None", "Watched"]
@@ -182,7 +188,7 @@ func _on_try_hide() -> void:
 	GameManager.remove_credits(mini(penalty, GameManager.credits))
 	_confiscate_contraband()
 	StandingManager.add_bounty(125, "resisted customs inspection")
-	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
+	var faction: String = _current_faction()
 	StandingManager.add_faction_reputation(faction, -2, "failed customs deception")
 	StandingManager.add_trade_loyalty(GameManager.current_planet, -4)
 	EventLog.add_entry("Failed to hide contraband! Fined %d cr." % penalty)
@@ -198,7 +204,7 @@ func _on_bribe() -> void:
 
 	_confiscate_contraband()
 	StandingManager.add_bounty(150, "attempted bribery")
-	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
+	var faction: String = _current_faction()
 	StandingManager.add_faction_reputation(faction, -3, "attempted bribery")
 	StandingManager.add_trade_loyalty(GameManager.current_planet, -5)
 	EventLog.add_entry("Bribe failed! Contraband confiscated and bounty increased.")

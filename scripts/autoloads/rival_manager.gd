@@ -3,7 +3,6 @@ extends Node
 ## RivalManager — handles the recurring Captain Vex rival questline.
 ## 4 phases triggered at travel-day thresholds (4, 11, 18, 25 days).
 
-const RIVAL_PATH := "res://data/rivals/captain_vex.tres"
 const PHASE_THRESHOLDS := [10, 30, 50, 75]
 const PHASE_COOLDOWNS  := [6, 6, 6, 0]   # Travel days before rival can reappear after defeat
 const LOSS_COOLDOWN    := 3              # Travel days before rival returns after beating player
@@ -17,7 +16,8 @@ var _rivalry_active: bool = true        # false once phase 4 is fully defeated
 
 
 func _ready() -> void:
-	_rival_data = load(RIVAL_PATH)
+	# Path comes from ResourceRegistry so exported PCK builds resolve it.
+	_rival_data = load(ResourceRegistry.RIVALS[0])
 
 
 func reset() -> void:
@@ -43,9 +43,6 @@ func should_rival_appear(total_travel_days: int) -> bool:
 			_current_phase = i
 			return true
 	return false
-
-
-
 
 
 func get_rival_encounter() -> EncounterData:

@@ -23,14 +23,15 @@ func save_game() -> void:
 		"travel_days": GameManager.travel_days,
 		"travel_distance": GameManager.travel_distance,
 		"travel_route": GameManager.travel_route.duplicate(),
-		"visited_planets": GameManager.visited_planets.duplicate(),
-		"current_day": GameManager.current_day,
-		"total_trades": GameManager.total_trades,
-		"total_encounters_won": GameManager.total_encounters_won,
 		"total_travel_days": GameManager.total_travel_days,
+		"current_day": GameManager.current_day,
+		"intro_shown": GameManager.intro_shown,
+		"total_encounters_won": GameManager.total_encounters_won,
 		"standing": StandingManager.save_state(),
 		"current_ship": GameManager.current_ship,
 		"owned_ships": GameManager.owned_ships.duplicate(),
+		"visited_planets": GameManager.visited_planets.duplicate(),
+		"total_trades": GameManager.total_trades,
 		"installed_upgrades": GameManager.installed_upgrades.duplicate(),
 		"ship_upgrades_store": GameManager.ship_upgrades_store.duplicate(true),
 		"removed_cards": GameManager.removed_cards.duplicate(),
@@ -40,9 +41,8 @@ func save_game() -> void:
 		"crew": GameManager.crew.duplicate(),
 		"wounded_crew": GameManager.wounded_crew.duplicate(),
 		"damaged_upgrades": GameManager.damaged_upgrades.duplicate(),
-		"pirate_intel": GameManager.pirate_intel,
 		"deck_cards": _serialize_deck(),
-		"event_log": EventLog.get_entries() if has_node("/root/EventLog") else [],
+		"event_log": EventLog.get_entries(),
 		"event_manager": EventManager.save_data(),
 		"quest_current": QuestManager.current_quest.duplicate() if QuestManager.current_quest.size() > 0 else {},
 		"quest_available": QuestManager.available_quests.duplicate(true),
@@ -56,6 +56,8 @@ func save_game() -> void:
 		"total_smuggler_deals": GameManager.total_smuggler_deals,
 		"total_quests_completed": GameManager.total_quests_completed,
 		"ghost_run_available": GameManager.ghost_run_available,
+		"victory_triggered": GameManager.victory_triggered,
+		"crimson_base_unlocked": GameManager.crimson_base_unlocked,
 		"rival_data": RivalManager.save_data(),
 		"crafting": CraftingManager.save_state(),
 		"pirate_lord_data": PirateLordManager.save_state(),
@@ -80,7 +82,9 @@ func load_game() -> bool:
 	if error != OK:
 		return false
 	var data: Dictionary = json.data
-	GameManager.victory_triggered = false
+	var pl_data: Dictionary = data.get("pirate_lord_data", {})
+	var fallback_victory: bool = pl_data.get("jack_defeated", false)
+	GameManager.victory_triggered = data.get("victory_triggered", fallback_victory)
 	GameManager.player_name = data.get("player_name", "Pilot")
 	GameManager.credits = int(data.get("credits", 1000))
 	GameManager.max_hull = int(data.get("max_hull", 30))
@@ -105,6 +109,7 @@ func load_game() -> bool:
 		GameManager.travel_route.append(str(entry))
 	GameManager.visited_planets = data.get("visited_planets", [])
 	GameManager.current_day = int(data.get("current_day", 1))
+	GameManager.intro_shown = bool(data.get("intro_shown", false))
 	GameManager.total_trades = int(data.get("total_trades", 0))
 	GameManager.total_encounters_won = int(data.get("total_encounters_won", 0))
 	GameManager.total_travel_days = int(data.get("total_travel_days", 0))
@@ -125,22 +130,11 @@ func load_game() -> bool:
 	GameManager.cargo_upgrades_bought = int(data.get("cargo_upgrades_bought", 0))
 	GameManager.crew = data.get("crew", [])
 	
-	var wc = data.get("wounded_crew")
-	if typeof(wc) == TYPE_ARRAY:
-		# Migrate old array format to dictionary
-		var new_wc = {}
-		for path in wc:
-			new_wc[path] = randi_range(4, 7)
-		GameManager.wounded_crew = new_wc
-	else:
-		GameManager.wounded_crew = data.get("wounded_crew", {})
+	GameManager.wounded_crew = data.get("wounded_crew", {})
 	GameManager.damaged_upgrades = data.get("damaged_upgrades", [])
-	GameManager.pirate_intel = int(data.get("pirate_intel", 0))
 	_deserialize_deck(data.get("deck_cards", []))
 	# Restore event log
-	if has_node("/root/EventLog"):
-		var entries: Array = data.get("event_log", [])
-		EventLog.set_entries(entries)
+	EventLog.set_entries(data.get("event_log", []))
 	# Restore event manager
 	EventManager.load_data(data.get("event_manager", {}))
 	# Restore quest state
@@ -156,17 +150,12 @@ func load_game() -> bool:
 	GameManager.total_smuggler_deals = int(data.get("total_smuggler_deals", 0))
 	GameManager.total_quests_completed = int(data.get("total_quests_completed", 0))
 	GameManager.ghost_run_available = bool(data.get("ghost_run_available", true))
+	GameManager.crimson_base_unlocked = bool(data.get("crimson_base_unlocked", false))
+	if GameManager.crimson_base_unlocked:
+		EconomyManager.reload_planets()
 	RivalManager.load_data(data.get("rival_data", {}))
-	if data.has("crafting"):
-		CraftingManager.load_state(data["crafting"])
-	else:
-		CraftingManager.load_state({})
-		
-	if data.has("pirate_lord_data"):
-		PirateLordManager.load_state(data.get("pirate_lord_data", {}))
-	else:
-		PirateLordManager.reset()
-		
+	CraftingManager.load_state(data.get("crafting", {}))
+	PirateLordManager.load_state(pl_data)
 	return true
 
 

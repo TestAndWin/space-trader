@@ -8,12 +8,13 @@ signal crew_closed
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
+const DEFAULT_CREW_ICON := "✦"
 const CREW_ICONS = {
-	0: "\u2726",  # ✦
-	1: "\u2698",  # ⚘
-	2: "\u2692",  # ⚒
-	3: "\u2699",  # ⚙
-	4: "\u2694",  # ⚔
+	0: "✦",
+	1: "⚘",
+	2: "⚒",
+	3: "⚙",
+	4: "⚔",
 }
 
 var _planet_type: int = 0
@@ -38,7 +39,7 @@ func _apply_planet_theme() -> void:
 		return
 	_title_label.text = CityMap.get_building_name(CityMap.BUILDING_CREW, _planet_type).to_upper()
 	for icon: Label in _icon_labels:
-		icon.text = CREW_ICONS.get(_planet_type, "✦")
+		icon.text = CREW_ICONS.get(_planet_type, DEFAULT_CREW_ICON)
 
 
 func _ready() -> void:
@@ -55,7 +56,7 @@ func _build_ui() -> void:
 		self,
 		"",
 		"Recruit specialists to aid your journey",
-		CREW_ICONS.get(_planet_type, "\u2726"),
+		DEFAULT_CREW_ICON,  # planet-specific icon is applied by _apply_planet_theme()
 		"Back to City",
 		close,
 	)
