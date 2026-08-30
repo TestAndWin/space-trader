@@ -79,6 +79,8 @@ func _ready() -> void:
 	_add_galaxy_background()
 	_style_bottom_bar()
 	_apply_fonts()
+	
+	HintManager.show_hint_popup("galaxy_map", $CanvasLayer)
 
 
 func _apply_fonts() -> void:
@@ -893,7 +895,7 @@ func _show_boss_confirmation_dialog(planet_name: String, route: Array[String]) -
 	var cancel_btn := Button.new()
 	cancel_btn.text = "NOT YET"
 	cancel_btn.custom_minimum_size = Vector2(120, 40)
-	UIStyles.style_secondary_button(cancel_btn)
+	UIStyles.style_accent_button(cancel_btn, Color(0.5, 0.15, 0.1))
 	cancel_btn.pressed.connect(func(): overlay.queue_free())
 	hbox.add_child(cancel_btn)
 	

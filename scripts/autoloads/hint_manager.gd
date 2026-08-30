@@ -8,6 +8,7 @@ extends Node
 ## Reputation, Bounty and the T2 win condition, which are never introduced in
 ## the normal flow.
 
+const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const JsonStore = preload("res://scripts/tools/json_store.gd")
 const SAVE_PATH := "user://hints_seen.json"
 
@@ -43,7 +44,19 @@ const HINTS: Dictionary = {
 	},
 	"factory": {
 		"title": "Fabrication",
-		"text": "Craft components here over several days, then install the finished T2 upgrade at the shipyard. You need a T2 upgrade to survive locating Crimson Jack's Hideout, along with 10k credits, 0 bounty, and all planets visited.",
+		"text": "Craft components here over several days, then install the finished T2 upgrade at the shipyard.",
+	},
+	"galaxy_map": {
+		"title": "Galaxy Map",
+		"text": "Plan your route. The danger level affects what you might encounter in deep space. Your Fuel determines how far you can travel. Click on a planet to see details, then click Travel to depart.",
+	},
+	"battle": {
+		"title": "Combat",
+		"text": "Play cards to attack or defend. You start with limited energy each turn. Any shield you have carries over from the overworld, so prepare before you fly.",
+	},
+	"planet_hub": {
+		"title": "Planet Hub",
+		"text": "Click on the buildings to access various facilities. The top left shows the current planet and faction. The status bar displays space news, your credits, and your main goal. The bottom left tracks your ship's hull, shields, fuel, and cargo.",
 	},
 }
 
@@ -72,6 +85,80 @@ func take_hint(hint_id: String) -> Dictionary:
 		return {}
 	return HINTS[hint_id]
 
+
+func show_hint_popup(hint_id: String, parent_node: Node, on_ack: Callable = Callable()) -> void:
+	var hint: Dictionary = take_hint(hint_id)
+	if hint.is_empty():
+		return
+	var popup_name := "HintPopup_" + hint_id
+	if parent_node.has_node(popup_name):
+		return
+		
+	var overlay := ColorRect.new()
+	overlay.name = popup_name
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0, 0, 0, 0.7)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	# High Z-index so it appears above other UI elements in the current scene
+	overlay.z_index = 100
+	parent_node.add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(UIStyles.PANEL_BG, 0.96)
+	style.border_color = UIStyles.PANEL_BORDER
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(14)
+	style.content_margin_left = 24
+	style.content_margin_right = 24
+	style.content_margin_top = 24
+	style.content_margin_bottom = 24
+	panel.add_theme_stylebox_override("panel", style)
+	panel.custom_minimum_size = Vector2(470, 0)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = str(hint.get("title", "")).to_upper()
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
+	title.add_theme_font_size_override("font_size", UIStyles.FONT_HEADING)
+	title.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
+	vbox.add_child(title)
+
+	var body := Label.new()
+	body.text = str(hint.get("text", ""))
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.custom_minimum_size = Vector2(420, 0)
+	body.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+	body.add_theme_color_override("font_color", Color(0.88, 0.93, 0.97))
+	vbox.add_child(body)
+
+	var note := Label.new()
+	note.text = str(hint.get("note", "This hint is only shown once."))
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
+	note.add_theme_color_override("font_color", Color(0.5, 0.62, 0.72))
+	vbox.add_child(note)
+
+	var btn := Button.new()
+	btn.text = "Continue"
+	UIStyles.style_accent_button(btn, Color(0.0, 0.85, 0.45), UIStyles.FONT_BODY)
+
+	btn.pressed.connect(func() -> void:
+		overlay.queue_free()
+		mark_seen(hint_id)
+		if on_ack.is_valid():
+			on_ack.call()
+	)
+	vbox.add_child(btn)
 
 # ── Persistence ─────────────────────────────────────────────────────────────
 

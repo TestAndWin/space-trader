@@ -11,7 +11,6 @@ const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 
 var _planet_type: int = 0
 var _ship_list_container: VBoxContainer
-var _credits_label: Label
 var _status_label: Label
 var _current_ship_display: Control
 const ShipDisplayScene: PackedScene = preload("res://scenes/components/ship_display.tscn")

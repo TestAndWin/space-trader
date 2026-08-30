@@ -195,6 +195,12 @@ func _ready() -> void:
 		if GameManager.current_day == 1 and not GameManager.intro_shown:
 			GameManager.intro_shown = true
 			call_deferred("_show_intro_overlay")
+		else:
+			call_deferred("_show_planet_hub_hint")
+
+func _show_planet_hub_hint() -> void:
+	if is_inside_tree():
+		HintManager.show_hint_popup("planet_hub", self)
 
 func _show_intro_overlay() -> void:
 	var diff_text := "Normal Difficulty: 10000 cr required"
@@ -206,8 +212,11 @@ func _show_intro_overlay() -> void:
 		"WELCOME TO STARPORT ALPHA",
 		"Your goal is to locate and defeat the infamous pirate lord Crimson Jack.\n\nTo find his hidden base, you must meet the following prerequisites:\n• Amass wealth (" + diff_text + ")\n• Visit all 7 planets\n• Install a T2 upgrade (crafted via Fabrication)\n• Have no open bounty\n\nGood luck, captain.",
 		"",
-		"Start Adventure"
+		"Start Adventure",
+		func() -> void:
+			call_deferred("_show_planet_hub_hint")
 	)
+
 
 var _debug_label: Label = null
 var _systems_debug_label: Label = null
@@ -384,9 +393,8 @@ func _load_background_image() -> void:
 
 func _on_building_clicked(building_id: String) -> void:
 	# First visit to a building explains it once; afterwards it opens directly.
-	var hint: Dictionary = HintManager.take_hint(building_id)
-	if not hint.is_empty():
-		_show_hint_popup(building_id, hint, func() -> void: _open_building(building_id))
+	if not HintManager.take_hint(building_id).is_empty():
+		HintManager.show_hint_popup(building_id, self, func() -> void: _open_building(building_id))
 		return
 	_open_building(building_id)
 
@@ -523,18 +531,6 @@ func _start_planet_activity(planet_type: int) -> void:
 	)
 
 
-## One-shot onboarding card, shown the first time a building is opened.
-## Acknowledging it marks the hint as seen and then opens the building.
-func _show_hint_popup(hint_id: String, hint: Dictionary, on_ack: Callable) -> void:
-	_show_hint_card(
-		str(hint.get("title", "")).to_upper(),
-		str(hint.get("text", "")),
-		"Shown once — you can reopen this place freely afterwards.",
-		"Got it",
-		func() -> void:
-			HintManager.mark_seen(hint_id)
-			on_ack.call()
-	)
 
 
 ## Modal onboarding card: title, wrapped body, optional footnote and one
@@ -652,7 +648,7 @@ func _show_mission_confirm(
 	var btn_back := Button.new()
 	btn_back.text = "Back"
 	btn_back.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
-	UIStyles.style_secondary_button(btn_back)
+	UIStyles.style_accent_button(btn_back, Color(0.5, 0.15, 0.1))
 	btn_back.pressed.connect(func() -> void: overlay.queue_free())
 	vbox.add_child(btn_back)
 
@@ -1170,7 +1166,7 @@ func _update_ui() -> void:
 		]
 		goal_label.add_theme_color_override("font_color", Color(1.0, 0.45, 0.3))
 	else:
-		goal_label.text = "Day %d | LOCATE HIDEOUT: %d/%d cr | %d/%d planets | %s" % [GameManager.current_day, GameManager.credits, win_credits, planets_visited, GameManager.WIN_PLANETS, t2_marker]
+		goal_label.text = "Day %d | %d/%d cr | %d/%d planets | %s" % [GameManager.current_day, GameManager.credits, win_credits, planets_visited, GameManager.WIN_PLANETS, t2_marker]
 		var credit_progress: float = clampf(float(GameManager.credits) / float(win_credits), 0.0, 1.0)
 		var planet_progress: float = clampf(float(planets_visited) / float(GameManager.WIN_PLANETS), 0.0, 1.0)
 		var t2_progress: float = 1.0 if t2_installed else 0.0
@@ -1270,7 +1266,7 @@ func _show_goal_popup() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	UIStyles.style_secondary_button(close_btn, 15)
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), 15)
 	close_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(close_btn)
 

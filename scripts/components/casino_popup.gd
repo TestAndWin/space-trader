@@ -146,11 +146,11 @@ func _create_casino_button(
 
 
 ## Every casino label is the same shape: centered text with a size and a color.
-func _casino_label(text: String, font_size: int, color: Color) -> Label:
+func _casino_label(text: String, font_size: int, text_color: Color) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_color", text_color)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	return label
 

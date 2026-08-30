@@ -67,7 +67,7 @@ func _ready() -> void:
 	if encounter:
 		start_battle(encounter)
 
-
+	HintManager.show_hint_popup("battle", self)
 ## The enemy ability line and the deck counters sit directly on the battle
 ## artwork. Outline them and lift the counter size so they stop disappearing
 ## into the background.
