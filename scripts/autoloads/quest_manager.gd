@@ -38,6 +38,12 @@ func _ready() -> void:
 	generate_quests()
 
 
+func reset() -> void:
+	current_quest.clear()
+	next_chain_id = 1
+	generate_quests()
+
+
 func generate_quests() -> void:
 	available_quests.clear()
 	for planet in EconomyManager.planets:

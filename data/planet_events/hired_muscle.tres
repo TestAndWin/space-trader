@@ -5,11 +5,11 @@
 [resource]
 script = ExtResource("1_pe1")
 event_name = "Mercenary Offer"
-description = "A mercenary offers protection services."
+description = "A mercenary crew offers a quick armour patch job on the docks. They work on your hull, not on your ship's roster."
 planet_type = 4
-choice_a_text = "Hire (-100 cr)"
+choice_a_text = "Patch hull (-100 cr)"
 choice_b_text = "Decline"
-choice_a_description = "The mercenary reinforces your ship's defenses before departing."
+choice_a_description = "They weld fresh plating over the worst of the damage (+5 hull) and are gone before you can ask their names."
 choice_b_description = "You pass on the offer."
 choice_a_credits = -100
 choice_a_hull = 5

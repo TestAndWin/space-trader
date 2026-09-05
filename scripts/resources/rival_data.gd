@@ -12,3 +12,12 @@ extends Resource
 @export var phase_descriptions: Array[String] = []
 @export var reward_credits_base: int = 150
 @export var reward_credits_per_phase: int = 75
+
+@export_group("Shield")
+## Vex refits between appearances, so each phase brings a heavier deflector —
+## the recurring fight is where the player feels their ion answer improving.
+@export var base_shield: int = 0
+@export var shield_per_phase: int = 0
+@export var shield_regen: int = 0
+@export var shield_regen_per_phase: int = 0
+@export var shield_regen_delay: int = 0

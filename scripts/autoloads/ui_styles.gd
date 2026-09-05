@@ -133,11 +133,20 @@ static func style_accent_button(btn: Button, accent: Color, font_size: int = 14)
 	var pressed := normal.duplicate()
 	pressed.bg_color = accent.darkened(0.2)
 
+	# Without this the disabled state falls back to the engine default, which is
+	# near-invisible on the dark panels -- a blocked button then reads as dead
+	# text instead of as a button the player can unblock.
+	var disabled := normal.duplicate()
+	disabled.bg_color = accent.darkened(0.55)
+	disabled.border_color = accent.darkened(0.3)
+
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("disabled", disabled)
 	btn.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9))
 	btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 0.95))
+	btn.add_theme_color_override("font_disabled_color", Color(0.62, 0.62, 0.6))
 
 
 # ── Buy button ───────────────────────────────────────────────────────────────

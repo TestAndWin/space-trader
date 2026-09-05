@@ -93,6 +93,10 @@ All data lives in `data/{cards,planets,goods,encounters,upgrades,ships,crew,plan
 
 Each game screen is a `.tscn` scene paired with a controller script in `scripts/scenes/`. Reusable UI components live in `scenes/components/` + `scripts/components/`.
 
+The planet hub delegates arrival events to `planet_arrival.gd`, overlay ordering to `hub_overlay_stack.gd`, and developer tools to `hub_debug.gd`. Register new hub overlays with the stack; do not add a separate node-name list for Escape handling. Card stack counts belong to `CardDisplay.set_count()`, not to consumers manipulating the card's internal nodes.
+
+`EconomyManager` owns the complete effective buy price (including the Freighter discount) and exposes sell-cap information through `uncapped_price` / `was_capped`. Do not recompute either price in UI code. Its `reset()` and `save_state()` / `load_state()` cover both prices and saturation.
+
 ### Shared Base Classes (`scripts/components/`)
 
 Three `class_name` base classes hold behaviour that was previously copy-pasted
@@ -190,10 +194,10 @@ Building buttons vary by planet type (different names, icons, colors). Buildings
 
 ## Game Flow: Departure -> Arrival
 
-1. **Depart** (`planet_screen.gd`) -> `QuestManager.tick()` (deadline -1), `EventManager.tick()`, `EconomyManager.tick_economy()`
-2. **Galaxy Map** -> player picks destination -> `travel_scene.tscn`
-3. **Travel** -> possible encounter -> `card_battle.tscn` -> battle credits awarded -> `battle_result.tscn`
-4. **Arrival** (`planet_screen._ready()`) -> `QuestManager.check_expired_quest()` (penalty/game over) -> UI setup
+1. **Depart** (`planet_screen.gd`) opens the galaxy map. Picking a destination calls `GameManager.begin_travel()`, consumes fuel, advances daily systems, sets `travel_in_progress`, and saves the departure checkpoint.
+2. **Travel** -> possible encounter -> `card_battle.tscn` -> `battle_result.tscn`. Continue resumes unfinished travel through `GameManager.get_resume_scene()` without repeating departure costs; individual combat turns are not saved.
+3. **Arrival**: `GameManager.complete_travel_arrival()` clears the travel flag and applies arrival bonuses exactly once. Never grant these bonuses when constructing UI.
+4. **Planet hub** checks expired quests after battle rewards. `planet_arrival.gd` runs arrival events sequentially and saves completion. Arrival flags, mission status, casino rounds and arrival-cargo restrictions persist for the landing. See `docs/review-fixes.md` for legacy-save behavior and manual checks.
 
 ## Visual Assets
 

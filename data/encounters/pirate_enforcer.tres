@@ -6,10 +6,13 @@
 script = ExtResource("1_pe1")
 encounter_name = "Crimson Enforcer"
 description = "A heavily armed enforcer of Crimson Jack's fleet."
-enemy_health = 60
+enemy_health = 50
 enemy_attack_range = Vector2i(10, 16)
 reward_credits = 400
 can_flee = false
 difficulty = 4
 special_ability = 1
 ability_description = "Steals cargo on hit"
+enemy_max_shield = 18
+shield_regen = 4
+shield_regen_delay = 1

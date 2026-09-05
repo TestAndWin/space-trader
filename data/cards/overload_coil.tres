@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_ocl"]
+
+[resource]
+script = ExtResource("1_ocl")
+card_name = "Overload Coil"
+card_type = 2
+rarity = 1
+energy_cost = 1
+attack_value = 0
+defense_value = 0
+heal_value = 0
+draw_cards = 1
+credits_gain = 0
+description = "Draw 1. Your next attack ignores enemy shields."
+special_effect = 6
+damage_type = 0
+boarding_description = "Utility: Hack Terminal/Door/Vault (+12 Alarm)"
+boarding_alarm_vs_guards = -1
+boarding_alarm_vs_doors = 12
+boarding_alarm_vs_terminals = 12
+boarding_alarm_vs_vaults = 12
+boarding_alarm_vs_hostage = -1

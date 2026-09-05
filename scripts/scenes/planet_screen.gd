@@ -3,10 +3,15 @@ extends Control
 ## Planet Hub — visual scene with clickable buildings that open sub-screens.
 ## Market, Cargo, Crew, and Shipyard are now separate fullscreen overlays.
 
+const PlanetArrival = preload("res://scripts/components/planet_arrival.gd")
+const HubOverlayStack = preload("res://scripts/components/hub_overlay_stack.gd")
+const HubDebug = preload("res://scripts/components/hub_debug.gd")
+
+var _arrival: Control
+var _overlays: RefCounted = HubOverlayStack.new()
+var _debug: Node
+
 const DeckViewerScene = preload("res://scenes/deck_viewer.tscn")
-const SmugglerEventScene = preload("res://scenes/components/smuggler_event.tscn")
-const PlanetEventScene = preload("res://scenes/components/planet_event.tscn")
-const PirateIncursionScene = preload("res://scenes/components/pirate_incursion_event.tscn")
 const CasinoPopupScene: PackedScene = preload("res://scenes/components/casino_popup.tscn")
 const MarketScreenScene: PackedScene = preload("res://scenes/components/market_screen.tscn")
 const CrewScreenScene: PackedScene = preload("res://scenes/components/crew_screen.tscn")
@@ -17,7 +22,6 @@ const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 const GoodIcon = preload("res://scripts/components/good_icon.gd")
 const CrewIcon = preload("res://scripts/components/crew_icon.gd")
-const CustomsScanScene = preload("res://scenes/components/customs_scan.tscn")
 const PlanetActivityScene = preload("res://scenes/components/planet_activity.tscn")
 # Scripts (not scenes) — used for their static mission metadata in the
 # pre-mission confirmation dialog.
@@ -33,34 +37,10 @@ const HOLO_SHADOW := Color(0.0, 0.45, 0.9, 0.25)
 const CARGO_ICON_SLOT_WIDTH: float = 20.0
 const CARGO_FALLBACK_ROW_WIDTH: float = 120.0
 
-## Overlays ESC can close, closed topmost-first. The shipyard no longer stacks
-## sub-screens — Upgrades and Ships are tabs inside ShipyardScreen, so ESC
-## closes the shipyard as a whole.
-## How many of the most recent EventLog entries the popup renders and copies.
+## Bounds both the rendered log and the Copy button.
 const EVENT_LOG_VISIBLE: int = 50
 
-const OVERLAY_NODE_NAMES: Array[String] = [
-	"DeckViewer",
-	"FactoryScreen",
-	"QuestScreen",
-	"CrewScreen",
-	"MarketScreen",
-	"CasinoPopup",
-	"ShipyardScreen",
-	"EventLogPopup",
-	"DepartOverlay",
-	"SmugglerEvent",
-	"PlanetEvent",
-	"PlanetActivity",
-	"MissionConfirm",
-	"HintPopup",
-]
-
 var current_planet_data: Resource = null
-var _arrival_gained_cargo: Dictionary = {}  # good_name -> qty gained on arrival and blocked from market sell
-var _mission_done: bool = false
-var _casino_done: bool = false
-var _casino_rounds: int = 0
 var _news_full_text: String = ""
 var _hotspot_pulse_tween: Tween = null
 
@@ -93,6 +73,15 @@ var _hotspot_pulse_tween: Tween = null
 
 
 func _ready() -> void:
+	_debug = HubDebug.new()
+	add_child(_debug)
+	_debug.state_changed.connect(_update_ui)
+	_debug.toast_requested.connect(_show_toast)
+	_arrival = PlanetArrival.new()
+	_arrival.state_changed.connect(_update_ui)
+	_arrival.finished.connect(_on_arrival_finished)
+	# Hints are created by HintManager; register them when attached to this hub.
+	child_entered_tree.connect(_on_child_entered)
 	AudioManager.play_bgm("res://assets/audio/bgm/planet.ogg")
 	GameManager.cargo_changed.connect(_update_cargo_display)
 	StandingManager.reputation_changed.connect(_on_standing_changed)
@@ -100,23 +89,14 @@ func _ready() -> void:
 	StandingManager.bounty_changed.connect(_on_standing_changed)
 	tree_exiting.connect(_disconnect_standing_signals)
 	current_planet_data = EconomyManager.get_planet_data(GameManager.current_planet)
-	var is_fresh_arrival: bool = not GameManager.arrival_events_done
 	# Check quest penalty after battle credits have been awarded
 	if QuestManager.check_expired_quest():
+		_arrival.free()
 		get_tree().change_scene_to_file("res://scenes/game_over.tscn")
 		return
 	# Battle/quest credits and the 7th planet visit complete the win condition
 	# away from the market, so re-check on every arrival.
 	GameManager.try_trigger_victory()
-	# Only real arrivals should trigger "on planet visit" effects.
-	if is_fresh_arrival:
-		AudioManager.play_arrive_sfx()
-	if is_fresh_arrival and GameManager.has_crew_bonus(CrewData.CrewBonus.HULL_REGEN):
-		var regen: int = int(GameManager.get_crew_bonus_value(CrewData.CrewBonus.HULL_REGEN))
-		GameManager.current_hull = min(GameManager.current_hull + regen, GameManager.max_hull)
-	# Adaptive Shields (crafted upgrade): +3 shield regen per arrival.
-	if is_fresh_arrival and "Adaptive Shields" in GameManager.installed_upgrades:
-		GameManager.current_shield = min(GameManager.current_shield + 3, GameManager.max_shield)
 	_update_header()
 	_update_news_banner()
 
@@ -139,75 +119,27 @@ func _ready() -> void:
 	# Background image
 	if current_planet_data:
 		_load_background_image()
-	# Mark mission as done if already played this landing
-	if GameManager.mission_done_this_landing:
-		_mission_done = true
-	# Arrival events only on first visit (not when returning from sub-screens)
-	if is_fresh_arrival:
-		GameManager.arrival_events_done = true
-		# Smuggler event
-		var smuggler := SmugglerEventScene.instantiate()
-		add_child(smuggler)
-		var smuggler_active: bool = smuggler.try_spawn()
-		if not smuggler_active:
-			smuggler.queue_free()
-		else:
-			# Snapshot cargo before the deal to detect smuggler purchases
-			var cargo_before := _snapshot_cargo()
-			smuggler.deal_closed.connect(func():
-				_track_arrival_cargo_gains(cargo_before)
-				_update_ui()
-			)
-		# Pirate incursion event (takes precedence if active presence)
-		var incursion_handled: bool = false
-		if current_planet_data and PirateLordManager.active_presence_planets.has(current_planet_data.planet_name):
-			var pirate_event := PirateIncursionScene.instantiate()
-			add_child(pirate_event)
-			if pirate_event.try_trigger(current_planet_data.planet_name):
-				incursion_handled = true
-				pirate_event.event_resolved.connect(func():
-					_update_ui()
-				)
-			else:
-				pirate_event.queue_free()
-
-		# Planet arrival event (only if no smuggler event and no pirate incursion)
-		if not smuggler_active and not incursion_handled and current_planet_data:
-			var cargo_before_event := _snapshot_cargo()
-			var planet_event := PlanetEventScene.instantiate()
-			add_child(planet_event)
-			if not planet_event.try_trigger(current_planet_data.planet_type):
-				planet_event.queue_free()
-			else:
-				planet_event.event_resolved.connect(func():
-					_track_arrival_cargo_gains(cargo_before_event)
-					_update_ui()
-				)
-		# Customs scan (after other events, on non-Outlaw planets with contraband)
-		var customs := CustomsScanScene.instantiate()
-		add_child(customs)
-		if not customs.try_scan():
-			customs.queue_free()
-		else:
-			customs.scan_closed.connect(_update_ui)
+	add_child(_arrival)
+	if not GameManager.arrival_events_done:
+		_arrival.run(current_planet_data)
 
 
-		if GameManager.current_day == 1 and not GameManager.intro_shown:
-			GameManager.intro_shown = true
-			call_deferred("_show_intro_overlay")
-		else:
-			call_deferred("_show_planet_hub_hint")
+func _on_arrival_finished() -> void:
+	_update_ui()
+	if GameManager.current_day == 1 and not GameManager.intro_shown:
+		GameManager.intro_shown = true
+		SaveManager.save_game()
+		call_deferred("_show_intro_overlay")
+	else:
+		call_deferred("_show_planet_hub_hint")
+
 
 func _show_planet_hub_hint() -> void:
 	if is_inside_tree():
 		HintManager.show_hint_popup("planet_hub", self)
 
 func _show_intro_overlay() -> void:
-	var diff_text := "Normal Difficulty: 10000 cr required"
-	if GameManager.difficulty == GameManager.Difficulty.EASY:
-		diff_text = "Easy Difficulty: 8000 cr required"
-	elif GameManager.difficulty == GameManager.Difficulty.HARD:
-		diff_text = "Hard Difficulty: 12000 cr required"
+	var diff_text: String = "%d cr required" % GameManager.get_win_credits()
 	_show_hint_card(
 		"WELCOME TO STARPORT ALPHA",
 		"Your goal is to locate and defeat the infamous pirate lord Crimson Jack.\n\nTo find his hidden base, you must meet the following prerequisites:\n• Amass wealth (" + diff_text + ")\n• Visit all 7 planets\n• Install a T2 upgrade (crafted via Fabrication)\n• Have no open bounty\n\nGood luck, captain.",
@@ -218,8 +150,6 @@ func _show_intro_overlay() -> void:
 	)
 
 
-var _debug_label: Label = null
-var _systems_debug_label: Label = null
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey):
@@ -228,70 +158,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not key_event.pressed or key_event.echo:
 		return
 
-	if key_event.keycode == KEY_F5:
-		GameManager.add_credits(5000)
-		_show_toast("CHEAT (F5): +5000 Credits", Color(0.2, 1.0, 0.2))
-		_update_ui()
-		get_viewport().set_input_as_handled()
+	if _arrival.running:
 		return
-
-	if key_event.keycode == KEY_F6:
-		GameManager.add_credits(10000)
-		for p in ["Starport Alpha", "Forge World", "Green Reach", "Dust Haven", "Iron Belt", "Nova Station", "Nexus Prime"]:
-			if p not in GameManager.visited_planets:
-				GameManager.visited_planets.append(p)
-		if "Adaptive Shields" not in GameManager.installed_upgrades:
-			var shield_res: Resource = load("res://data/upgrades/crafted/adaptive_shields.tres")
-			if shield_res:
-				GameManager.apply_upgrade(shield_res)
-		StandingManager.bounty_amount = 0
-		StandingManager.bounty_changed.emit(0, "None")
-		_show_toast("CHEAT (F6): Boss Prerequisites Unlocked!", Color(1, 0.5, 0))
-		GameManager.try_trigger_victory()
-		_update_ui()
-		get_viewport().set_input_as_handled()
-		return
-		
-	if key_event.keycode == KEY_F7:
-		PirateLordManager.heat = 100
-		EncounterManager.force_enforcer_encounter = true
-		if GameManager.current_planet not in PirateLordManager.active_presence_planets:
-			PirateLordManager.active_presence_planets.append(GameManager.current_planet)
-		_show_toast("CHEAT (F7): Pirate Heat maxed & Enforcer guaranteed on next flight!", Color(1, 0.5, 0))
-		_update_ui()
-		get_viewport().set_input_as_handled()
-		return
-
-	if key_event.keycode == KEY_F9:
-		if _debug_label:
-			_debug_label.queue_free()
-			_debug_label = null
-		else:
-			_debug_label = Label.new()
-			_debug_label.z_index = 100
-			_debug_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_debug_label.add_theme_color_override("font_color", Color.YELLOW)
-			_debug_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
-			_debug_label.position = Vector2(10, 700)
-			add_child(_debug_label)
-		get_viewport().set_input_as_handled()
-		return
-
-	if key_event.keycode == KEY_F10:
-		if _systems_debug_label:
-			_systems_debug_label.queue_free()
-			_systems_debug_label = null
-		else:
-			_systems_debug_label = Label.new()
-			_systems_debug_label.z_index = 110
-			_systems_debug_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_systems_debug_label.add_theme_color_override("font_color", Color(0.9, 1.0, 0.85))
-			_systems_debug_label.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
-			_systems_debug_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
-			_systems_debug_label.add_theme_constant_override("outline_size", 6)
-			_systems_debug_label.position = Vector2(12, 10)
-			add_child(_systems_debug_label)
-			_systems_debug_label.text = _build_systems_debug_text()
+	if _debug.handle_key(key_event):
 		get_viewport().set_input_as_handled()
 		return
 
@@ -323,60 +192,26 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _has_overlay_open() -> bool:
-	return _get_top_overlay() != null
-
-
-func _get_top_overlay() -> Node:
-	for path in OVERLAY_NODE_NAMES:
-		var node := get_node_or_null(NodePath(path))
-		if node:
-			return node
-	return null
+	return _arrival.running or _overlays.has_open_overlay()
 
 
 func _close_top_overlay() -> bool:
-	var overlay := _get_top_overlay()
-	if overlay == null:
+	if _arrival.running:
 		return false
-	_close_overlay_node(overlay)
+	if not _overlays.close_top():
+		return false
 	_update_ui()
 	return true
 
 
-func _close_overlay_node(node: Node) -> void:
-	if not is_instance_valid(node):
-		return
-	if node.has_method("close"):
-		node.call("close")
-	else:
-		node.queue_free()
-
-func _process(_delta: float) -> void:
-	if _debug_label:
-		var pos: Vector2 = get_viewport().get_mouse_position()
-		_debug_label.text = "X: %d  Y: %d" % [int(pos.x), int(pos.y)]
-	if _systems_debug_label:
-		_systems_debug_label.text = _build_systems_debug_text()
+func _on_child_entered(node: Node) -> void:
+	if str(node.name).begins_with("HintPopup_"):
+		_overlays.register(node)
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		_refresh_info_bar_text_layout()
-
-
-func _snapshot_cargo() -> Dictionary:
-	var snapshot: Dictionary = {}
-	for item in GameManager.cargo:
-		snapshot[item["good_name"]] = item["quantity"]
-	return snapshot
-
-
-func _track_arrival_cargo_gains(cargo_before: Dictionary) -> void:
-	for item in GameManager.cargo:
-		var gname: String = item["good_name"]
-		var old_qty: int = cargo_before.get(gname, 0)
-		if item["quantity"] > old_qty:
-			_arrival_gained_cargo[gname] = _arrival_gained_cargo.get(gname, 0) + (item["quantity"] - old_qty)
 
 
 func _load_background_image() -> void:
@@ -392,6 +227,8 @@ func _load_background_image() -> void:
 
 
 func _on_building_clicked(building_id: String) -> void:
+	if _has_overlay_open():
+		return
 	# First visit to a building explains it once; afterwards it opens directly.
 	if not HintManager.take_hint(building_id).is_empty():
 		HintManager.show_hint_popup(building_id, self, func() -> void: _open_building(building_id))
@@ -401,11 +238,11 @@ func _on_building_clicked(building_id: String) -> void:
 
 ## Planet type of the current planet; Industrial (0) when planet data is missing.
 func _current_planet_type() -> int:
-	return current_planet_data.planet_type if current_planet_data else 0
+	return current_planet_data.planet_type if current_planet_data else EconomyManager.PT_INDUSTRIAL
 
 
 ## Opens one of the fullscreen building overlays: refuses a second instance,
-## names the node so ESC can find it, and refreshes the hub when it closes.
+## registers it with the overlay stack, and refreshes the hub when it closes.
 ## The overlays build their UI in _ready(), so the caller applies setup() to the
 ## returned node — after it is in the tree.
 func _open_screen_overlay(node_name: String, scene: PackedScene, close_signal: StringName) -> Node:
@@ -414,6 +251,7 @@ func _open_screen_overlay(node_name: String, scene: PackedScene, close_signal: S
 	var overlay: Node = scene.instantiate()
 	overlay.name = node_name
 	add_child(overlay)
+	_overlays.register(overlay)
 	overlay.connect(close_signal, _update_ui)
 	return overlay
 
@@ -436,7 +274,7 @@ func _open_building(building_id: String) -> void:
 func _on_market_pressed() -> void:
 	var market := _open_screen_overlay("MarketScreen", MarketScreenScene, "market_closed")
 	if market:
-		market.setup(_current_planet_type(), _arrival_gained_cargo)
+		market.setup(_current_planet_type(), GameManager.arrival_gained_cargo)
 
 
 func _on_shipyard_pressed() -> void:
@@ -446,18 +284,17 @@ func _on_shipyard_pressed() -> void:
 
 
 func _on_casino_pressed() -> void:
-	if _casino_done:
+	if GameManager.casino_rounds_this_landing >= 5:
 		AudioManager.play_ui_denied()
 		_show_toast("Casino limit reached for this landing!", Color(1.0, 0.75, 0.3))
 		return
 	var popup := _open_screen_overlay("CasinoPopup", CasinoPopupScene, "casino_closed")
 	if popup == null:
 		return
-	popup.setup(_current_planet_type(), 5 - _casino_rounds)
+	popup.setup(_current_planet_type(), 5 - GameManager.casino_rounds_this_landing)
 	popup.casino_closed.connect(func():
-		_casino_rounds += popup.rounds_played
-		if _casino_rounds >= 5:
-			_casino_done = true
+		GameManager.casino_rounds_this_landing += popup.rounds_played
+		if GameManager.casino_rounds_this_landing >= 5:
 			_rebuild_hub_buildings()
 	)
 
@@ -475,7 +312,7 @@ func _on_quest_pressed() -> void:
 
 
 func _on_mission_pressed() -> void:
-	if _mission_done:
+	if GameManager.mission_done_this_landing:
 		AudioManager.play_ui_denied()
 		_show_toast("Mission already completed for this landing!", Color(1.0, 0.75, 0.3))
 		return
@@ -520,12 +357,13 @@ func _start_planet_activity(planet_type: int) -> void:
 	var activity := PlanetActivityScene.instantiate()
 	activity.name = "PlanetActivity"
 	add_child(activity)
+	_overlays.register(activity)
 	if not activity.try_open(planet_type):
 		activity.queue_free()
 		_update_ui()
 		return
 	activity.activity_closed.connect(func() -> void:
-		_mission_done = true
+		GameManager.mission_done_this_landing = true
 		_rebuild_hub_buildings()
 		_update_ui()
 	)
@@ -836,6 +674,7 @@ func _create_modal_overlay(overlay_name: String, min_width: float, alpha: float 
 	overlay.color = Color(0, 0, 0, alpha)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(overlay)
+	_overlays.register(overlay)
 
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -976,6 +815,8 @@ func _style_cargo_bar() -> void:
 
 
 func _on_event_log_pressed() -> void:
+	if _arrival.running:
+		return
 	if has_node("EventLogPopup"):
 		return
 	var overlay := ColorRect.new()
@@ -984,6 +825,7 @@ func _on_event_log_pressed() -> void:
 	overlay.color = Color(0, 0, 0, 0.85)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(overlay)
+	_overlays.register(overlay)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1076,6 +918,7 @@ func _on_factory_pressed() -> void:
 	factory.name = "FactoryScreen"
 	factory.setup(GameManager.current_planet)
 	add_child(factory)
+	_overlays.register(factory)
 	factory.tree_exited.connect(_update_ui)
 
 
@@ -1224,6 +1067,8 @@ func _on_goal_label_input(event: InputEvent) -> void:
 ## Same content as the goal tooltip, but reachable by tap — hover tooltips do
 ## not exist on touch devices, and the one-shot hints may already be dismissed.
 func _show_goal_popup() -> void:
+	if _arrival.running:
+		return
 	if get_node_or_null("GoalPopup"):
 		return
 	var overlay := ColorRect.new()
@@ -1235,6 +1080,7 @@ func _show_goal_popup() -> void:
 			overlay.queue_free()
 	)
 	add_child(overlay)
+	_overlays.register(overlay)
 
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1418,67 +1264,6 @@ func _get_local_status_notes() -> Array[String]:
 	return notes
 
 
-func _build_systems_debug_text() -> String:
-	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
-	var rep: int = StandingManager.get_faction_reputation(faction)
-	var rep_tier: String = StandingManager.get_reputation_tier(faction)
-	var loyalty: int = StandingManager.get_trade_loyalty(GameManager.current_planet)
-	var loyalty_tier: String = StandingManager.get_loyalty_tier(GameManager.current_planet)
-	var bounty_tier: String = StandingManager.get_bounty_tier()
-	var buy_mod: float = StandingManager.get_market_buy_modifier(GameManager.current_planet)
-	var sell_mod: float = StandingManager.get_market_sell_modifier(GameManager.current_planet)
-	var customs_scan_mod: float = StandingManager.get_customs_scan_modifier(GameManager.current_planet)
-	var customs_fine_mod: float = StandingManager.get_customs_fine_modifier(GameManager.current_planet)
-	var customs_hide_mod: float = StandingManager.get_customs_hide_modifier(GameManager.current_planet)
-	var quest_reward_mod: float = StandingManager.get_quest_reward_modifier(faction)
-	var quest_deadline_mod: int = StandingManager.get_quest_deadline_modifier(faction)
-	var service_fee_mod: float = StandingManager.get_planet_service_fee_modifier(GameManager.current_planet)
-	var chance: float = EncounterManager.estimate_encounter_chance(
-		current_planet_data.danger_level if current_planet_data else 1,
-		GameManager.current_planet
-	)
-
-	var rep_parts: Array[String] = []
-	for f in StandingManager.faction_reputation.keys():
-		rep_parts.append("%s:%d" % [str(f), int(StandingManager.faction_reputation[f])])
-	rep_parts.sort()
-
-	var quest_text := "none"
-	if QuestManager.has_active_quest():
-		var q: Dictionary = QuestManager.current_quest
-		quest_text = "%s %d/%d | %d days" % [
-			q.get("issuer_faction", "Independent"),
-			q.get("stage", 1),
-			q.get("chain_length", 1),
-			q.get("days_left", 0)
-		]
-
-	return "DEBUG [F10]\nPlanet: %s\nLocal Faction: %s (%+d, %s)\nLoyalty: %d (%s)\nBounty: %d cr (%s)\nBuy/Sell Mod: %.2f / %.2f\nCustoms: Scan %+.0f%% | Fine x%.2f | Hide %+.0f%%\nQuest Terms: Reward %+.0f%% | Deadline %+d\nService Fee: x%.2f\nEncounter Chance: %.0f%%\nDebt: %s | Risk +%.0f%%\nQuest: %s\nTracked Goods: %d\nAll Reps: %s" % [
-		GameManager.current_planet,
-		faction,
-		rep,
-		rep_tier,
-		loyalty,
-		loyalty_tier,
-		StandingManager.bounty_amount,
-		bounty_tier,
-		buy_mod,
-		sell_mod,
-		customs_scan_mod * 100.0,
-		customs_fine_mod,
-		customs_hide_mod * 100.0,
-		quest_reward_mod * 100.0,
-		quest_deadline_mod,
-		service_fee_mod,
-		chance * 100.0,
-		GameManager.get_debt_status_text(),
-		GameManager.get_debt_risk_modifier() * 100.0,
-		quest_text,
-		GameManager.trade_route_memory.size(),
-		", ".join(rep_parts)
-	]
-
-
 ## Bar, capacity readout and icon row are one unit — bound to
 ## GameManager.cargo_changed so a sale from any overlay updates the hub.
 func _update_cargo_display() -> void:
@@ -1548,6 +1333,8 @@ func _update_crew_items() -> void:
 # ── Bottom Bar ───────────────────────────────────────────────────────────────
 
 func _on_depart_pressed() -> void:
+	if _has_overlay_open():
+		return
 	if has_node("DepartOverlay"):
 		return
 	var modal := _create_modal_overlay("DepartOverlay", 340, 0.75)
@@ -1595,6 +1382,7 @@ func _on_view_deck_pressed() -> void:
 	var pt: int = current_planet_data.planet_type if current_planet_data else -1
 	viewer.setup(pt)
 	add_child(viewer)
+	_overlays.register(viewer)
 	viewer.tree_exited.connect(_update_ui)
 
 
@@ -1636,6 +1424,8 @@ func _create_small_header_button(text: String, callback: Callable) -> Button:
 
 
 func _on_menu_pressed() -> void:
+	if _has_overlay_open():
+		return
 	SaveManager.save_game()
 	GameManager.change_scene("res://scenes/main_menu.tscn")
 

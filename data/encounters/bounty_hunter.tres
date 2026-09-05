@@ -6,10 +6,13 @@
 script = ExtResource("1_bh3")
 encounter_name = "Bounty Hunter"
 description = "An elite bounty hunter tracks you down"
-enemy_health = 55
+enemy_health = 48
 enemy_attack_range = Vector2i(9, 15)
 reward_credits = 400
 can_flee = true
 difficulty = 3
 special_ability = 6
 ability_description = "Attack increases by +2 each turn"
+enemy_max_shield = 10
+shield_regen = 3
+shield_regen_delay = 0

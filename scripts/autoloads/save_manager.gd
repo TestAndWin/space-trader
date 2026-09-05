@@ -23,6 +23,11 @@ func save_game() -> void:
 		"travel_days": GameManager.travel_days,
 		"travel_distance": GameManager.travel_distance,
 		"travel_route": GameManager.travel_route.duplicate(),
+		"travel_in_progress": GameManager.travel_in_progress,
+		"arrival_events_done": GameManager.arrival_events_done,
+		"arrival_gained_cargo": GameManager.arrival_gained_cargo.duplicate(),
+		"mission_done_this_landing": GameManager.mission_done_this_landing,
+		"casino_rounds_this_landing": GameManager.casino_rounds_this_landing,
 		"total_travel_days": GameManager.total_travel_days,
 		"current_day": GameManager.current_day,
 		"intro_shown": GameManager.intro_shown,
@@ -40,11 +45,10 @@ func save_game() -> void:
 		"cargo_upgrades_bought": GameManager.cargo_upgrades_bought,
 		"crew": GameManager.crew.duplicate(),
 		"wounded_crew": GameManager.wounded_crew.duplicate(),
-		"damaged_upgrades": GameManager.damaged_upgrades.duplicate(),
 		"deck_cards": _serialize_deck(),
 		"event_log": EventLog.get_entries(),
 		"event_manager": EventManager.save_data(),
-		"market_saturation": EconomyManager.save_saturation(),
+		"economy": EconomyManager.save_state(),
 		"quest_current": QuestManager.current_quest.duplicate() if QuestManager.current_quest.size() > 0 else {},
 		"quest_available": QuestManager.available_quests.duplicate(true),
 		"quest_next_chain_id": QuestManager.next_chain_id,
@@ -80,7 +84,7 @@ func load_game() -> bool:
 	file.close()
 	var json := JSON.new()
 	var error := json.parse(json_string)
-	if error != OK:
+	if error != OK or not json.data is Dictionary:
 		return false
 	var data: Dictionary = json.data
 	var pl_data: Dictionary = data.get("pirate_lord_data", {})
@@ -102,6 +106,22 @@ func load_game() -> bool:
 	GameManager.current_planet = data.get("current_planet", "Starport Alpha")
 	GameManager.travel_destination = data.get("travel_destination", "")
 	GameManager.travel_origin = data.get("travel_origin", "")
+	# Older saves kept the last destination even after arrival. Only a different
+	# destination represents an unfinished departure checkpoint.
+	var legacy_travel: bool = GameManager.travel_destination != "" and GameManager.travel_destination != GameManager.current_planet
+	GameManager.travel_in_progress = bool(data.get("travel_in_progress", legacy_travel))
+	GameManager.arrival_events_done = bool(data.get("arrival_events_done", not GameManager.travel_in_progress))
+	GameManager.arrival_gained_cargo = data.get("arrival_gained_cargo", {}).duplicate()
+	GameManager.mission_done_this_landing = bool(data.get("mission_done_this_landing", not GameManager.travel_in_progress))
+	GameManager.casino_rounds_this_landing = int(data.get("casino_rounds_this_landing", 0))
+	GameManager.mission_return_planet = ""
+	GameManager.current_encounter = null
+	GameManager.battle_result = ""
+	GameManager.extra_battle_message = ""
+	GameManager.last_cargo_lost_text = ""
+	GameManager.boarding_special_loot = ""
+	GameManager.blockaded_planet = ""
+	EncounterManager.reset()
 	GameManager.travel_days = int(data.get("travel_days", 1))
 	GameManager.travel_distance = float(data.get("travel_distance", 0.0))
 	var saved_route: Array = data.get("travel_route", [])
@@ -135,13 +155,11 @@ func load_game() -> bool:
 	GameManager.recompute_max_fuel()
 	
 	GameManager.wounded_crew = data.get("wounded_crew", {})
-	GameManager.damaged_upgrades = data.get("damaged_upgrades", [])
 	_deserialize_deck(data.get("deck_cards", []))
 	# Restore event log
 	EventLog.set_entries(data.get("event_log", []))
 	# Restore event manager
 	EventManager.load_data(data.get("event_manager", {}))
-	EconomyManager.load_saturation(data.get("market_saturation", {}))
 	# Restore quest state
 	QuestManager.current_quest = data.get("quest_current", {})
 	QuestManager.available_quests = data.get("quest_available", {})
@@ -156,8 +174,7 @@ func load_game() -> bool:
 	GameManager.total_quests_completed = int(data.get("total_quests_completed", 0))
 	GameManager.ghost_run_available = bool(data.get("ghost_run_available", true))
 	GameManager.crimson_base_unlocked = bool(data.get("crimson_base_unlocked", false))
-	if GameManager.crimson_base_unlocked:
-		EconomyManager.reload_planets()
+	EconomyManager.load_state(data.get("economy", {"saturation": data.get("market_saturation", {})}))
 	RivalManager.load_data(data.get("rival_data", {}))
 	CraftingManager.load_state(data.get("crafting", {}))
 	PirateLordManager.load_state(pl_data)

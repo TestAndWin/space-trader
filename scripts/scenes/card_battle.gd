@@ -20,6 +20,9 @@ var enemy_health: int = 0
 var enemy_max_health: int = 0
 var enemy_intent_damage: int = 0
 var battle_active: bool = false
+enum TurnPhase { PLAYER, ENEMY, PAUSED }
+var _turn_phase: TurnPhase = TurnPhase.PAUSED
+var _turn_serial: int = 0
 var skip_enemy_turn: bool = false
 var attacks_played_this_turn: int = 0
 var _boarding_attempted: bool = false
@@ -36,9 +39,36 @@ var _energy_pips: Control = null
 # Special ability state
 var turn_count: int = 0
 var enemy_shield: int = 0
+var enemy_max_shield: int = 0
 var adaptation_reduction: int = 0
 var focus_fire_bonus: int = 0
 var effective_energy_per_turn: int = 0
+
+## Player turns the enemy emitter stays offline after a shield break.
+var shield_regen_pause: int = 0
+## Set by Overload Coil (SpecialEffect.PIERCE_NEXT): the next attack ignores
+## the enemy shield regardless of its printed damage type.
+var pierce_next_attack: bool = false
+
+## How much of an attack's value reaches the enemy shield, per CardData.DamageType.
+## KINETIC shots scatter off a deflector, ION pulses are built to collapse it,
+## and PIERCING rounds pass straight through without touching it at all.
+const SHIELD_DAMAGE_MULT := {
+	CardData.DamageType.KINETIC: 0.5,
+	CardData.DamageType.ION: 2.0,
+	CardData.DamageType.PIERCING: 0.0,
+}
+
+## How much reaches the bare hull once no shield stands. ION weapons trade hull
+## damage away for their shield performance.
+const HULL_DAMAGE_MULT := {
+	CardData.DamageType.KINETIC: 1.0,
+	CardData.DamageType.ION: 0.5,
+	CardData.DamageType.PIERCING: 1.0,
+}
+
+## Turns between SHIELD_BOOST emergency recharges.
+const SHIELD_BOOST_INTERVAL := 3
 
 
 func _ready() -> void:
@@ -46,6 +76,7 @@ func _ready() -> void:
 	_style_battle_buttons()
 	UIStyles.apply_display_font(%EnemyNameLabel)
 	UIStyles.apply_mono_font(%EnemyHealthLabel)
+	UIStyles.apply_mono_font(%EnemyShieldLabel)
 	UIStyles.apply_mono_font(%EnergyLabel)
 	UIStyles.apply_mono_font(%IntentLabel)
 	UIStyles.apply_mono_font(%HullLabel)
@@ -72,7 +103,7 @@ func _ready() -> void:
 ## artwork. Outline them and lift the counter size so they stop disappearing
 ## into the background.
 func _style_readability() -> void:
-	for label: Label in [%AbilityLabel, %IntentLabel, %EnemyNameLabel, %EnemyHealthLabel]:
+	for label: Label in [%AbilityLabel, %IntentLabel, %EnemyNameLabel, %EnemyHealthLabel, %EnemyShieldLabel]:
 		label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))
 		label.add_theme_constant_override("outline_size", 6)
 	%AbilityLabel.add_theme_color_override("font_color", Color(0.86, 0.72, 1.0))
@@ -111,6 +142,8 @@ func _style_battle_buttons() -> void:
 
 
 func start_battle(enc: Resource) -> void:
+	_turn_phase = TurnPhase.PAUSED
+	_turn_serial += 1
 	AudioManager.play_bgm("res://assets/audio/bgm/battle.ogg")
 	encounter = enc
 	enemy_health = enc.enemy_health
@@ -133,7 +166,10 @@ func start_battle(enc: Resource) -> void:
 
 	# Reset special ability state
 	turn_count = 0
-	enemy_shield = 0
+	enemy_max_shield = enc.enemy_max_shield
+	enemy_shield = enemy_max_shield
+	shield_regen_pause = 0
+	pierce_next_attack = false
 	adaptation_reduction = 0
 	focus_fire_bonus = 0
 	effective_energy_per_turn = GameManager.energy_per_turn
@@ -249,6 +285,8 @@ func _on_battle_won_no_reward() -> void:
 
 
 func _start_player_turn() -> void:
+	_turn_phase = TurnPhase.PLAYER
+	_turn_serial += 1
 	turn_count += 1
 	current_energy = effective_energy_per_turn
 	attacks_played_this_turn = 0
@@ -268,10 +306,7 @@ func _start_player_turn() -> void:
 			GameManager.current_shield = mini(GameManager.max_shield, GameManager.current_shield + shield_regen)
 			_show_battle_message("Engineer reroutes power +%d shield" % shield_regen)
 
-	# SHIELD_BOOST: enemy gains shield every 2nd turn
-	if encounter.special_ability == EncounterData.SpecialAbility.SHIELD_BOOST and turn_count % 2 == 0:
-		enemy_shield += 3
-		_show_battle_message("Enemy shield reinforced! (+3)")
+	_regenerate_enemy_shield()
 
 	# FOCUS_FIRE: attack bonus increases from turn 2 onward
 	if encounter.special_ability == EncounterData.SpecialAbility.FOCUS_FIRE and turn_count >= 2:
@@ -327,9 +362,40 @@ func _hand_has_keyword(keyword: int) -> bool:
 	return false
 
 
-func _apply_damage_to_enemy(raw_damage: int) -> void:
+## Restores the enemy deflector at the top of a player turn. A broken emitter
+## first has to sit out its delay, which is the window the player plays around.
+func _regenerate_enemy_shield() -> void:
+	if enemy_max_shield <= 0:
+		return
+
+	# SHIELD_BOOST is an emergency recharge on top of the normal trickle: it
+	# slams the deflector back to full, so a stalled player loses their window.
+	var boosts: bool = encounter.special_ability == EncounterData.SpecialAbility.SHIELD_BOOST
+	if boosts and turn_count % SHIELD_BOOST_INTERVAL == 0 and enemy_shield < enemy_max_shield:
+		enemy_shield = enemy_max_shield
+		shield_regen_pause = 0
+		_show_battle_message("Emergency recharge! Shield back to %d" % enemy_max_shield)
+		return
+
+	if shield_regen_pause > 0:
+		shield_regen_pause -= 1
+		if shield_regen_pause == 0 and enemy_shield <= 0:
+			_show_battle_message("Enemy emitter is coming back online...")
+		return
+
+	if encounter.shield_regen <= 0 or enemy_shield >= enemy_max_shield:
+		return
+
+	var before: int = enemy_shield
+	enemy_shield = mini(enemy_max_shield, enemy_shield + encounter.shield_regen)
+	_show_battle_message("Enemy shield recharges +%d" % (enemy_shield - before))
+
+
+## Applies one attack. Shield and hull are separate targets, not one pool:
+## damage that breaks the shield does NOT spill onto the hull in the same hit.
+## That is what makes the damage types a timing decision instead of arithmetic.
+func _apply_damage_to_enemy(raw_damage: int, damage_type: int = CardData.DamageType.KINETIC, bounces: bool = false, pierce: bool = false) -> void:
 	var damage := raw_damage
-	var shield_absorb: int = 0
 
 	# ADAPTATION: reduce damage taken each turn
 	if encounter.special_ability == EncounterData.SpecialAbility.ADAPTATION:
@@ -338,22 +404,36 @@ func _apply_damage_to_enemy(raw_damage: int) -> void:
 		if damage < raw_damage:
 			_show_battle_message("Adapted! Damage reduced to %d" % damage)
 
-	# SHIELD_BOOST: enemy shield absorbs damage first
-	if enemy_shield > 0:
-		shield_absorb = mini(damage, enemy_shield)
-		enemy_shield -= shield_absorb
-		damage -= shield_absorb
-		if shield_absorb > 0:
-			_show_battle_message("Enemy shield absorbed %d damage" % shield_absorb)
+	# "Ignores the shield" is a separate question from "how hard does it hit",
+	# so a piercing charge on an ION card still deals ION hull damage.
+	var piercing: bool = damage_type == CardData.DamageType.PIERCING or pierce
+	var hull_damage: int = 0
+	var shield_damage: int = 0
 
-	enemy_health -= damage
+	if piercing:
+		hull_damage = int(round(damage * float(HULL_DAMAGE_MULT[damage_type])))
+	elif enemy_shield > 0:
+		if bounces:
+			_show_battle_message("Bounced off the enemy shield! No damage")
+		else:
+			shield_damage = mini(enemy_shield, int(round(damage * float(SHIELD_DAMAGE_MULT[damage_type]))))
+			enemy_shield -= shield_damage
+			if shield_damage > 0:
+				_show_battle_message("Enemy shield -%d (%d left)" % [shield_damage, enemy_shield])
+			if enemy_shield <= 0:
+				shield_regen_pause = encounter.shield_regen_delay
+				_show_battle_message("Enemy shield is down!")
+	else:
+		hull_damage = int(round(damage * float(HULL_DAMAGE_MULT[damage_type])))
+
+	enemy_health -= hull_damage
 
 	# Shot first, impact a moment later - fired together they smear into one noise.
 	if raw_damage > 0:
 		%EnemyShipDisplay.play_hit()
 		AudioManager.play_laser()
 		if enemy_health > 0:
-			_play_delayed_sfx("shield_hit" if damage == 0 and shield_absorb > 0 else "hull_hit", SFX_IMPACT_DELAY)
+			_play_delayed_sfx("shield_hit" if hull_damage == 0 else "hull_hit", SFX_IMPACT_DELAY)
 
 
 ## Schedules a sound without blocking the caller. The battle flow is
@@ -366,7 +446,7 @@ func _play_delayed_sfx(sfx_name: String, delay: float) -> void:
 
 func _on_card_played(card_data: Resource) -> void:
 	var effective_cost: int = _effective_cost(card_data)
-	if not battle_active or effective_cost > current_energy:
+	if not _can_act() or card_data not in hand or effective_cost > current_energy:
 		return
 
 	if _is_crimson_foe():
@@ -412,9 +492,10 @@ func _on_card_played(card_data: Resource) -> void:
 		return
 
 	# Auto end turn when no energy left for any remaining card
-	if current_energy <= 0 or not _has_playable_card():
+	if not _has_playable_card():
+		var scheduled_turn: int = _turn_serial
 		await get_tree().create_timer(0.8).timeout
-		if battle_active:
+		if _can_act() and scheduled_turn == _turn_serial and not _has_playable_card():
 			_on_end_turn_pressed()
 
 
@@ -445,7 +526,21 @@ func _apply_attack_card(card_data: Resource) -> void:
 	# Targeting Computer (crafted upgrade): +20% damage
 	if "Targeting Computer" in GameManager.installed_upgrades:
 		damage = int(round(damage * 1.2))
-	_apply_damage_to_enemy(damage)
+
+	# Overload Coil charges exactly one attack, so spend it here rather than
+	# inside the damage helper — SHIELD_ECHO also routes through that helper.
+	var pierce: bool = pierce_next_attack
+	if pierce:
+		pierce_next_attack = false
+		if card_data.damage_type != CardData.DamageType.PIERCING:
+			_show_battle_message("Overload Coil! Shot punches through the shield")
+
+	_apply_damage_to_enemy(
+		damage,
+		card_data.damage_type,
+		card_data.keywords.has(CardData.CardKeyword.BOUNCES),
+		pierce
+	)
 	attacks_played_this_turn += 1
 
 
@@ -489,6 +584,9 @@ func _apply_special_effect(card_data: Resource) -> bool:
 			return true
 		CardData.SpecialEffect.SCAVENGE:
 			_resolve_scavenge()
+		CardData.SpecialEffect.PIERCE_NEXT:
+			pierce_next_attack = true
+			_show_battle_message("Coil charged — your next attack ignores shields")
 	return false
 
 
@@ -553,12 +651,17 @@ func _has_playable_card() -> bool:
 	return false
 
 
+func _can_act() -> bool:
+	return battle_active and _turn_phase == TurnPhase.PLAYER
+
+
 func _on_end_turn_pressed() -> void:
-	if not battle_active:
+	if not _can_act():
 		return
-		
-	# Disable button immediately to prevent double clicks
+	_turn_phase = TurnPhase.ENEMY
+	_turn_serial += 1
 	end_turn_button.disabled = true
+	_update_ui()
 
 	if skip_enemy_turn:
 		skip_enemy_turn = false
@@ -574,6 +677,8 @@ func _on_end_turn_pressed() -> void:
 		if damage > 0:
 			%EnemyShipDisplay.play_attack()
 			await get_tree().create_timer(0.15).timeout
+			if not battle_active or _turn_phase != TurnPhase.ENEMY:
+				return
 			
 		var shield_absorb: int = mini(damage, GameManager.current_shield)
 		GameManager.current_shield -= shield_absorb
@@ -656,6 +761,9 @@ func _handle_enemy_defeated() -> void:
 
 
 func _launch_boarding_minigame() -> void:
+	_turn_phase = TurnPhase.PAUSED
+	_turn_serial += 1
+	_update_ui()
 	_boarding_attempted = true
 	var minigame_scene: PackedScene = load("res://scenes/boarding_minigame.tscn")
 	var minigame: Node = minigame_scene.instantiate()
@@ -744,6 +852,8 @@ func _on_boarding_finished(status: int) -> void:
 			
 		# Intact Capture Bonus
 		if enemy_health > 0:
+			_turn_phase = TurnPhase.PLAYER
+			_turn_serial += 1
 			var hp_pct: float = float(enemy_health) / float(enemy_max_health)
 			# Scale reward by hull integrity (50% value if nearly destroyed, 100% if fully intact)
 			var hull_mult: float = lerp(0.5, 1.0, hp_pct)
@@ -778,6 +888,13 @@ func _on_boarding_finished(status: int) -> void:
 			return
 		
 		if enemy_health > 0:
+			# The minigame paused the turn machine on launch. Combat resumes with a
+			# fresh hand, so hand the turn back to the player here -- leaving it
+			# PAUSED locks every card and button for the rest of the fight.
+			battle_active = true
+			_turn_phase = TurnPhase.PLAYER
+			_turn_serial += 1
+
 			# Reshuffle and deal new hand per user request
 			_reset_deck_piles()
 			current_energy = effective_energy_per_turn
@@ -819,9 +936,10 @@ func _on_battle_boarding_failed() -> void:
 
 
 func _on_flee_pressed() -> void:
-	if not encounter.can_flee:
+	if not _can_act() or not encounter.can_flee:
 		return
 	if randf() < FLEE_CHANCE:
+		battle_active = false
 		GameManager.remove_credits(FLEE_COST)
 		GameManager.battle_result = "fled"
 		EventLog.add_entry("Fled from %s" % encounter.encounter_name)
@@ -930,11 +1048,10 @@ func _update_enemy_ui() -> void:
 	enemy_style.bg_color = Color(0.9, 0.2, 0.2)
 	%EnemyHealthBar.add_theme_stylebox_override("fill", enemy_style)
 	%EnemyHealthLabel.text = "%d / %d" % [display_health, enemy_max_health]
-	if enemy_shield > 0:
-		%EnemyHealthLabel.text += " [Shield: %d]" % enemy_shield
+	_update_enemy_shield_ui()
 
 	var enemy_hull_pct: float = float(display_health) / float(enemy_max_health) if enemy_max_health > 0 else 0.0
-	var enemy_shield_pct: float = float(enemy_shield) / 10.0 if enemy_shield > 0 else 0.0
+	var enemy_shield_pct: float = float(enemy_shield) / float(enemy_max_shield) if enemy_max_shield > 0 else 0.0
 	%EnemyShipDisplay.update_enemy(enemy_hull_pct, enemy_shield_pct, encounter.encounter_name)
 
 	%IntentLabel.text = "Enemy will deal %d damage" % enemy_intent_damage
@@ -950,6 +1067,33 @@ func _update_enemy_ui() -> void:
 		%AbilityLabel.visible = true
 	else:
 		%AbilityLabel.visible = false
+
+
+## The shield row only exists for shielded enemies, and it has to state the
+## recharge out loud — the whole point of the mechanic is that the player can
+## see the window closing and decide whether to burst now or wait.
+func _update_enemy_shield_ui() -> void:
+	if enemy_max_shield <= 0:
+		%EnemyShieldRow.visible = false
+		return
+
+	%EnemyShieldRow.visible = true
+	%EnemyShieldBar.max_value = enemy_max_shield
+	%EnemyShieldBar.value = enemy_shield
+	var shield_style := StyleBoxFlat.new()
+	shield_style.bg_color = Color(0.25, 0.7, 1.0) if enemy_shield > 0 else Color(0.3, 0.35, 0.45)
+	%EnemyShieldBar.add_theme_stylebox_override("fill", shield_style)
+
+	var text: String = "Shield: %d / %d" % [enemy_shield, enemy_max_shield]
+	if shield_regen_pause > 0:
+		text += "  (offline %d)" % shield_regen_pause
+	elif encounter.shield_regen > 0:
+		text += "  (+%d/turn)" % encounter.shield_regen
+	%EnemyShieldLabel.text = text
+	%EnemyShieldLabel.add_theme_color_override(
+		"font_color",
+		Color(0.45, 0.85, 1.0) if enemy_shield > 0 else UIStyles.POSITIVE
+	)
 
 
 func _update_player_ui() -> void:
@@ -974,7 +1118,8 @@ func _update_player_ui() -> void:
 	ship_display.update_ship(hull_pct, shield_pct, GameManager.get_cargo_used(), GameManager.cargo_capacity, shape)
 
 	# Flee button
-	%FleeButton.disabled = not encounter.can_flee
+	end_turn_button.disabled = not _can_act()
+	%FleeButton.disabled = not _can_act() or not encounter.can_flee
 	if not encounter.can_flee:
 		%FleeButton.tooltip_text = "Cannot flee from this enemy!"
 		%FleeButton.text = "Flee (blocked)"
@@ -988,18 +1133,35 @@ func _update_player_ui() -> void:
 		%BoardButton.visible = false
 		return
 	var threshold_hp: int = ceili(float(enemy_max_health) * float(threshold_pct) / 100.0)
-	%BoardButton.disabled = (enemy_health > threshold_hp) or (enemy_health <= 0) or _boarding_attempted
+	# A boarding pod cannot cross a live deflector, so the shield gates the
+	# button just like the hull threshold does.
+	%BoardButton.disabled = (
+		not _can_act()
+		or enemy_health > threshold_hp
+		or enemy_health <= 0
+		or _boarding_attempted
+		or enemy_shield > 0
+	)
 	%BoardButton.visible = true
+	# A disabled button reads as dead text unless it says why it is dead, and the
+	# two blockers ask for opposite plays: burn the shield, or stop hitting the
+	# hull. Put that on the label like the Flee button does, not only in a tooltip.
 	if %BoardButton.disabled:
 		if _boarding_attempted:
+			%BoardButton.text = "Board (spent)"
 			%BoardButton.tooltip_text = "Boarding party already routed!"
+		elif enemy_shield > 0:
+			%BoardButton.text = "Board (shield up)"
+			%BoardButton.tooltip_text = "Break the enemy shield before launching a boarding party."
 		else:
+			%BoardButton.text = "Board (hull > %d)" % threshold_hp
 			%BoardButton.tooltip_text = "Enemy hull must be at or below %d HP to board." % threshold_hp
 	else:
+		%BoardButton.text = "Board Ship"
 		%BoardButton.tooltip_text = "Launch boarding party! Ends the battle if successful."
 
 func _on_board_pressed() -> void:
-	if not battle_active or _boarding_attempted: return
+	if not _can_act() or %BoardButton.disabled: return
 	_launch_boarding_minigame()
 
 
@@ -1010,12 +1172,13 @@ func _update_deck_info() -> void:
 
 func _update_hand_display() -> void:
 	for child in %HandContainer.get_children():
+		%HandContainer.remove_child(child)
 		child.queue_free()
 
 	for card in hand:
 		var card_display := CardDisplayScene.instantiate()
 		%HandContainer.add_child(card_display)
-		card_display.setup(card, _effective_cost(card) <= current_energy)
+		card_display.setup(card, _can_act() and _effective_cost(card) <= current_energy)
 		card_display.card_played.connect(_on_card_played)
 
 func _unhandled_input(event: InputEvent) -> void:

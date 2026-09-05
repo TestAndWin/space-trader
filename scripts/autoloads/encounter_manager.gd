@@ -10,6 +10,10 @@ func _ready() -> void:
 	_load_encounters()
 
 
+func reset() -> void:
+	force_enforcer_encounter = false
+
+
 func _load_encounters() -> void:
 	encounter_pool = ResourceRegistry.load_all(ResourceRegistry.ENCOUNTERS)
 

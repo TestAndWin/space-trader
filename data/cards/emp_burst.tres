@@ -1,22 +1,21 @@
 [gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_cl1"]
+[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_emp"]
 
 [resource]
-script = ExtResource("1_cl1")
-card_name = "Chain Lightning"
+script = ExtResource("1_emp")
+card_name = "EMP Burst"
 card_type = 0
-rarity = 1
-energy_cost = 2
+rarity = 0
+energy_cost = 1
 attack_value = 6
 defense_value = 0
 heal_value = 0
 draw_cards = 0
 credits_gain = 0
-description = "Arcing ion bolt. Next card -1 energy."
-special_effect = ""
+description = "Cheap ion pulse. Strips shields, barely dents hull."
+special_effect = 0
 damage_type = 1
-keywords = [1]
 boarding_description = "Attack: Defeat Guards (+6 Alarm)\nBlow up doors (+27 Alarm)"
 boarding_alarm_vs_guards = 6
 boarding_alarm_vs_doors = 27

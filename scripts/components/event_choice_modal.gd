@@ -45,9 +45,31 @@ func _format_description(text: String) -> String:
 	return text
 
 
-## Tooltip explaining why choice A is unavailable. Empty means no tooltip.
+## Tooltip explaining why choice A is unavailable. Subclasses append their own
+## reasons via super(). Empty means no tooltip.
 func _requirement_text() -> String:
-	return ""
+	var ev := _current_event
+	var parts: Array = []
+	if ev.choice_a_credits < 0 and GameManager.credits < abs(ev.choice_a_credits):
+		parts.append("Need %d credits" % abs(ev.choice_a_credits))
+	if ev.choice_a_hull < 0 and GameManager.current_hull <= abs(ev.choice_a_hull):
+		parts.append("Hull too low")
+	if _is_wasted_repair():
+		parts.append("Hull already full")
+	return ". ".join(parts)
+
+
+## True when choice A is a paid repair and there is nothing left to repair.
+## Hull gains clamp at max_hull, so buying one at full hull spends the credits
+## for no effect at all -- block it rather than let the player pay for nothing.
+func _is_wasted_repair() -> bool:
+	var ev := _current_event
+	return (
+		ev.choice_a_hull > 0
+		and ev.choice_a_credits <= 0
+		and ev.choice_a_cargo_qty <= 0
+		and GameManager.current_hull >= GameManager.max_hull
+	)
 
 
 ## Subclasses resolve their own choices — the outcome fields differ per event type.
@@ -144,6 +166,8 @@ func _can_choose_a() -> bool:
 	# Hull damage must not kill the player
 	if ev.choice_a_hull < 0 and GameManager.current_hull <= abs(ev.choice_a_hull):
 		return false
+	if _is_wasted_repair():
+		return false
 	return true
 
 
@@ -180,11 +204,18 @@ func _apply_outcome(
 	elif credits_delta < 0:
 		GameManager.remove_credits(abs(credits_delta))
 
-	# Hull
+	# Hull. Repairs clamp at max_hull, so track what actually landed -- reporting
+	# the printed value would tell a player at full hull they gained 5 HP they
+	# never got, which is exactly how a paid choice reads as "nothing happened".
+	var actual_hull_delta: int = hull_delta
 	if hull_delta > 0:
-		GameManager.current_hull = mini(GameManager.current_hull + hull_delta, GameManager.max_hull)
+		var before: int = GameManager.current_hull
+		GameManager.current_hull = mini(before + hull_delta, GameManager.max_hull)
+		actual_hull_delta = GameManager.current_hull - before
 	elif hull_delta < 0:
-		GameManager.current_hull = maxi(GameManager.current_hull + hull_delta, 1)
+		var before_dmg: int = GameManager.current_hull
+		GameManager.current_hull = maxi(before_dmg + hull_delta, 1)
+		actual_hull_delta = GameManager.current_hull - before_dmg
 
 	# Positive cargo adds are clamped to free space so the choice is never wasted.
 	var actual_cargo_qty: int = cargo_qty
@@ -199,8 +230,8 @@ func _apply_outcome(
 	var parts: Array = []
 	if credits_delta != 0:
 		parts.append("%+d cr" % credits_delta)
-	if hull_delta != 0:
-		parts.append("%+d hull" % hull_delta)
+	if actual_hull_delta != 0:
+		parts.append("%+d hull" % actual_hull_delta)
 	if cargo_good != "" and actual_cargo_qty != 0:
 		if actual_cargo_qty > 0:
 			parts.append("+%d %s" % [actual_cargo_qty, cargo_good])

@@ -93,8 +93,29 @@ const _contraband_non_outlaw_modifiers: Dictionary = {
 
 
 func _ready() -> void:
+	reset()
+
+
+func reset() -> void:
 	_load_data()
+	price_table.clear()
 	_generate_initial_prices()
+	market_saturation.clear()
+
+
+func save_state() -> Dictionary:
+	return {"prices": price_table.duplicate(true), "saturation": market_saturation.duplicate(true)}
+
+
+func load_state(data: Dictionary) -> void:
+	reset()
+	var saved_prices: Dictionary = data.get("prices", {})
+	for planet_name: String in price_table:
+		var local_prices: Dictionary = saved_prices.get(planet_name, {})
+		for good_name: String in price_table[planet_name]:
+			if local_prices.has(good_name):
+				price_table[planet_name][good_name] = maxi(1, int(local_prices[good_name]))
+	market_saturation = data.get("saturation", {}).duplicate(true)
 
 
 # ── Data loading ─────────────────────────────────────────────────────────────
@@ -168,6 +189,8 @@ func get_buy_price_breakdown(planet_name: String, good_name: String) -> Dictiona
 	var rep_modifier: float = StandingManager.get_market_buy_modifier(planet_name)
 	var loyalty_modifier: float = StandingManager.get_loyalty_buy_modifier(planet_name)
 	var service_fee_modifier: float = StandingManager.get_planet_service_fee_modifier(planet_name)
+	var ship: Resource = GameManager.get_ship_data()
+	var ship_modifier: float = 0.92 if ship and ship.ship_ability == ShipData.ShipAbility.BULK_DISCOUNT else 1.0
 	
 	var pirate_modifier: float = 1.0
 	if PirateLordManager.active_presence_planets.has(planet_name):
@@ -180,6 +203,7 @@ func get_buy_price_breakdown(planet_name: String, good_name: String) -> Dictiona
 		1,
 		int(round(float(base_price) * event_modifier * rep_modifier * loyalty_modifier * service_fee_modifier * pirate_modifier))
 	)
+	final_price = maxi(1, int(round(float(final_price) * ship_modifier)))
 	return {
 		"base_price": base_price,
 		"event_modifier": event_modifier,
@@ -187,6 +211,7 @@ func get_buy_price_breakdown(planet_name: String, good_name: String) -> Dictiona
 		"rep_modifier": rep_modifier,
 		"loyalty_modifier": loyalty_modifier,
 		"service_fee_modifier": service_fee_modifier,
+		"ship_modifier": ship_modifier,
 		"pirate_modifier": pirate_modifier,
 		"final_price": final_price,
 	}
@@ -227,6 +252,7 @@ func get_sell_price_breakdown(planet_name: String, good_name: String, extra_unit
 		))
 	)
 	
+	var uncapped_price: int = final_price
 	# Cap the sell price at the buy price if the good is sold here,
 	# so that players cannot infinitely generate money by buying and selling at the same market.
 	var buy_breakdown: Dictionary = get_buy_price_breakdown(planet_name, good_name)
@@ -247,6 +273,8 @@ func get_sell_price_breakdown(planet_name: String, good_name: String, extra_unit
 		"service_fee_modifier": service_fee_modifier,
 		"pirate_modifier": pirate_modifier,
 		"saturation_modifier": saturation_modifier,
+		"uncapped_price": uncapped_price,
+		"was_capped": final_price < uncapped_price,
 		"final_price": final_price,
 	}
 
@@ -352,18 +380,6 @@ func _multiply_event_entries(entries: Array) -> float:
 
 
 # ── Market saturation ────────────────────────────────────────────────────────
-
-func reset_saturation() -> void:
-	market_saturation.clear()
-
-
-func save_saturation() -> Dictionary:
-	return market_saturation.duplicate(true)
-
-
-func load_saturation(data: Dictionary) -> void:
-	market_saturation = data.duplicate(true)
-
 
 ## Units of a good a fresh market buys at the full price, per planet.
 func get_full_price_units(good_name: String) -> float:

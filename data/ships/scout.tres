@@ -17,7 +17,6 @@ max_crew = 3
 encounter_reduction = 0.0
 contraband_bonus = 0.0
 quest_reward_bonus = 0.0
-hull_color_primary = Color(0.3, 0.85, 0.3, 1.0)
 hull_shape = 0
 available_planet_types = []
 ship_ability = 5

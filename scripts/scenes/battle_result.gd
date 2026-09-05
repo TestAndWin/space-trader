@@ -77,13 +77,13 @@ func _ready() -> void:
 			%ResultTitle.text = "Escaped!"
 			%ResultTitle.add_theme_color_override("font_color", UIStyles.CAUTION)
 			%ResultDescription.text = "You fled back to %s. -150 credits.\nCredits remaining: %d cr" % [GameManager.travel_origin, GameManager.credits]
-			GameManager.current_planet = GameManager.travel_origin
+			GameManager.complete_travel_arrival(GameManager.travel_origin, false)
 			_show_continue_only()
 		"lost_backup":
 			%ResultTitle.text = "Ship Destroyed!"
 			%ResultTitle.add_theme_color_override("font_color", UIStyles.NEGATIVE)
 			%ResultDescription.text = "Your ship was destroyed! You managed to escape in a pod and retrieve your backup ship. However, all cargo and crew on board were lost.\n\nYou have returned to %s." % GameManager.travel_origin
-			GameManager.current_planet = GameManager.travel_origin
+			GameManager.complete_travel_arrival(GameManager.travel_origin, false)
 			_show_continue_only()
 		"boarding_failed":
 			%ResultTitle.text = "Boarding Failed!"

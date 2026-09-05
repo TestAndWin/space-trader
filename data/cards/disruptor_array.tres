@@ -1,21 +1,21 @@
 [gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_tp8"]
+[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_dsr"]
 
 [resource]
-script = ExtResource("1_tp8")
-card_name = "Torpedo"
+script = ExtResource("1_dsr")
+card_name = "Disruptor Array"
 card_type = 0
-rarity = 1
-energy_cost = 2
-attack_value = 19
+rarity = 2
+energy_cost = 3
+attack_value = 14
 defense_value = 0
 heal_value = 0
 draw_cards = 0
 credits_gain = 0
-description = "Huge hull damage - but bounces off any live shield."
-special_effect = ""
-keywords = [4]
+description = "Wide ion spread. Breaks nearly any shield at once."
+special_effect = 0
+damage_type = 1
 boarding_description = "Attack: Defeat Guards (+30 Alarm)\nBlow up doors (+10 Alarm)"
 boarding_alarm_vs_guards = 30
 boarding_alarm_vs_doors = 10

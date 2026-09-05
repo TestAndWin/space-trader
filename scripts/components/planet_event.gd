@@ -67,14 +67,13 @@ func _can_choose_a() -> bool:
 func _requirement_text() -> String:
 	var ev := _current_event
 	var parts: Array = []
-	if ev.choice_a_credits < 0 and GameManager.credits < abs(ev.choice_a_credits):
-		parts.append("Need %d credits" % abs(ev.choice_a_credits))
+	var base: String = super()
+	if base != "":
+		parts.append(base)
 	if ev.choice_a_requires_good != "" and ev.choice_a_requires_qty > 0:
 		var owned := GameManager.get_cargo_quantity(ev.choice_a_requires_good)
 		if owned < ev.choice_a_requires_qty:
 			parts.append("Need %d %s" % [ev.choice_a_requires_qty, ev.choice_a_requires_good])
-	if ev.choice_a_hull < 0 and GameManager.current_hull <= abs(ev.choice_a_hull):
-		parts.append("Hull too low")
 	return ". ".join(parts)
 
 

@@ -6,10 +6,13 @@
 script = ExtResource("1_sa1")
 encounter_name = "Smuggler Ambush"
 description = "A smuggler tries to steal your cargo"
-enemy_health = 32
+enemy_health = 28
 enemy_attack_range = Vector2i(4, 8)
 reward_credits = 200
 can_flee = true
 difficulty = 2
 special_ability = 3
 ability_description = "Forces you to discard 1 card per turn"
+enemy_max_shield = 8
+shield_regen = 2
+shield_regen_delay = 0

@@ -345,13 +345,7 @@ func _on_buy(good_name: String, quantity: int) -> void:
 	var buy_price: int = EconomyManager.get_buy_price(planet_name, good_name)
 	if buy_price < 0:
 		return
-	var unit_price: int = buy_price
-	# BULK_DISCOUNT: -8% buy price with the Freighter. Trades are one unit per
-	# click, so this can no longer be gated on a bulk quantity.
-	var ship: Resource = GameManager.get_ship_data()
-	if ship and ship.ship_ability == ShipData.ShipAbility.BULK_DISCOUNT:
-		unit_price = int(round(float(unit_price) * 0.92))
-	var total_cost: int = unit_price * quantity
+	var total_cost: int = buy_price * quantity
 	if not GameManager.can_add_cargo(good_name, quantity):
 		return
 	if not GameManager.remove_credits(total_cost):
@@ -489,11 +483,12 @@ func _build_trade_tooltip(good_name: String, mode: String) -> String:
 		if not breakdown.is_empty():
 			lines.append("%s buy breakdown" % good_name)
 			lines.append("Base: %d cr" % int(breakdown.get("base_price", 0)))
-			lines.append("Event x%.2f | Reputation x%.2f | Loyalty x%.2f | Service x%.2f" % [
+			lines.append("Event x%.2f | Reputation x%.2f | Loyalty x%.2f | Service x%.2f | Ship x%.2f" % [
 				float(breakdown.get("event_modifier", 1.0)),
 				float(breakdown.get("rep_modifier", 1.0)),
 				float(breakdown.get("loyalty_modifier", 1.0)),
 				float(breakdown.get("service_fee_modifier", 1.0)),
+				float(breakdown.get("ship_modifier", 1.0)),
 			])
 	else:
 		var sell_breakdown: Dictionary = EconomyManager.get_sell_price_breakdown(planet_name, good_name)
@@ -519,27 +514,8 @@ func _build_trade_tooltip(good_name: String, mode: String) -> String:
 			else:
 				lines.append("Absorbs %d more units at full price" % int(round(full_price_units - units)))
 
-			var buy_breakdown: Dictionary = EconomyManager.get_buy_price_breakdown(planet_name, good_name)
-			if not buy_breakdown.is_empty():
-				var buy_price: int = int(buy_breakdown.get("final_price", -1))
-				var final_sell_price: int = int(sell_breakdown.get("final_price", -1))
-				if buy_price > 0 and final_sell_price == buy_price:
-					var uncapped_sell_price: int = max(
-						1,
-						int(round(
-							float(sell_breakdown.get("base_price", 0)) * 
-							float(sell_breakdown.get("event_modifier", 1.0)) * 
-							float(sell_breakdown.get("sell_ratio", EconomyManager.SELL_RATIO)) * 
-							float(sell_breakdown.get("contraband_modifier", 1.0)) * 
-							float(sell_breakdown.get("rep_modifier", 1.0)) * 
-							float(sell_breakdown.get("loyalty_modifier", 1.0)) * 
-							float(sell_breakdown.get("service_fee_modifier", 1.0)) *
-							float(sell_breakdown.get("pirate_modifier", 1.0)) *
-							float(sell_breakdown.get("saturation_modifier", 1.0))
-						))
-					)
-					if uncapped_sell_price > buy_price:
-						lines.append("(Capped at local buy price)")
+			if bool(sell_breakdown.get("was_capped", false)):
+				lines.append("(Capped at local buy price)")
 
 	var best_buy: Dictionary = GameManager.get_best_buy_hint(good_name)
 	if not best_buy.is_empty():

@@ -86,9 +86,6 @@ var energy_per_turn: int = 3
 var crew: Array = []  # Array of resource paths (String)
 var wounded_crew: Dictionary = {} # Dictionary mapping path to days_left
 
-# Ship Upgrades
-var damaged_upgrades: Array = [] # Array of upgrade names (String) that are damaged
-
 # Navigation
 var max_fuel: int = 6
 var current_fuel: int = 6
@@ -98,6 +95,7 @@ var travel_origin: String = ""
 var travel_days: int = 1
 var travel_distance: float = 0.0
 var travel_route: Array[String] = []
+var travel_in_progress: bool = false
 var visited_planets: Array = []
 var blockaded_planet: String = ""
 
@@ -126,6 +124,8 @@ var mission_done_this_landing: bool = false
 
 # Planet arrival flag — prevents duplicate events when returning from sub-screens
 var arrival_events_done: bool = false
+var arrival_gained_cargo: Dictionary = {}
+var casino_rounds_this_landing: int = 0
 
 # Statistics
 var total_trades: int = 0
@@ -167,7 +167,6 @@ func reset() -> void:
 	ship_upgrades_store.clear()
 	crew.clear()
 	wounded_crew.clear()
-	damaged_upgrades.clear()
 	hand_size = 5
 	energy_per_turn = 3
 	max_fuel = get_base_max_fuel_for_ship(STARTER_SHIP)
@@ -178,6 +177,7 @@ func reset() -> void:
 	travel_days = 1
 	travel_distance = 0.0
 	travel_route.clear()
+	travel_in_progress = false
 	visited_planets.clear()
 	visited_planets.append("Starport Alpha")
 	blockaded_planet = ""
@@ -186,6 +186,8 @@ func reset() -> void:
 	mission_return_planet = ""
 	mission_done_this_landing = false
 	arrival_events_done = false
+	arrival_gained_cargo.clear()
+	casino_rounds_this_landing = 0
 	total_trades = 0
 	total_encounters_won = 0
 	total_travel_days = 0
@@ -201,6 +203,7 @@ func reset() -> void:
 	trade_route_memory.clear()
 	current_encounter = null
 	battle_result = ""
+	extra_battle_message = ""
 	last_cargo_lost_text = ""
 	boarding_special_loot = ""
 	removed_cards.clear()
@@ -217,20 +220,22 @@ func reset() -> void:
 	EventLog.add_entry("Prerequisites: %d cr + visit all 7 planets + install 1 T2 upgrade + no open bounty." % get_win_credits())
 	EventLog.add_entry("T2 chain: buy goods -> Factory (Tech planet) -> craft T1 -> craft T2 -> install at any Shipyard.")
 	EventManager.reset_state()
-	EconomyManager.reset_saturation()
-	QuestManager.current_quest.clear()
-	QuestManager.next_chain_id = 1
-	QuestManager.generate_quests()
+	EconomyManager.reset()
 	RivalManager.reset()
 	CraftingManager.reset()
 	PirateLordManager.reset()
+	EncounterManager.reset()
+	QuestManager.reset()
 
 
 func build_starter_deck() -> void:
 	var starter_cards: Dictionary = {
 		"laser_shot": 2,
 		"heavy_blast": 1,
-		"weak_shot": 2,
+		"weak_shot": 1,
+		# Without an ion weapon a shielded enemy is unbeatable, so the starter
+		# deck always carries two.
+		"emp_burst": 2,
 		"shield_up": 1,
 		"flimsy_shield": 1,
 		"evade": 1,
@@ -367,6 +372,8 @@ func get_debt_risk_modifier() -> float:
 # ── Fuel and travel time ─────────────────────────────────────────────────────
 
 func can_start_travel(destination: String, route: Array[String]) -> bool:
+	if travel_in_progress:
+		return false
 	if destination == "" or route.size() < 2:
 		return false
 	if str(route.front()) != current_planet or str(route.back()) != destination:
@@ -380,6 +387,9 @@ func begin_travel(destination: String, route: Array[String]) -> bool:
 		return false
 	arrival_events_done = false
 	mission_done_this_landing = false
+	arrival_gained_cargo.clear()
+	casino_rounds_this_landing = 0
+	travel_in_progress = true
 	reset_ghost_run()
 	blockaded_planet = ""
 	travel_origin = current_planet
@@ -543,12 +553,25 @@ func get_focus_planet() -> String:
 
 
 func complete_travel_arrival(destination: String, generate_fuel: bool = true) -> void:
+	if not travel_in_progress:
+		return
+	travel_in_progress = false
 	current_planet = destination
 	if destination not in visited_planets:
 		visited_planets.append(destination)
 	AchievementManager.check_planets(visited_planets)
 	if generate_fuel:
 		apply_arrival_fuel_generation()
+	# Arrival bonuses belong to the completed journey, never to UI creation.
+	if has_crew_bonus(CrewData.CrewBonus.HULL_REGEN):
+		var regen: int = int(get_crew_bonus_value(CrewData.CrewBonus.HULL_REGEN))
+		current_hull = mini(current_hull + regen, max_hull)
+	if "Adaptive Shields" in installed_upgrades:
+		current_shield = mini(current_shield + 3, max_shield)
+
+
+func get_resume_scene() -> String:
+	return "res://scenes/travel_scene.tscn" if travel_in_progress else "res://scenes/planet_screen.tscn"
 
 
 # ── Cargo ────────────────────────────────────────────────────────────────────

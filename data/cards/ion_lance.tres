@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_ilc"]
+
+[resource]
+script = ExtResource("1_ilc")
+card_name = "Ion Lance"
+card_type = 0
+rarity = 1
+energy_cost = 2
+attack_value = 10
+defense_value = 0
+heal_value = 0
+draw_cards = 0
+credits_gain = 0
+description = "Focused ion beam. Collapses a deflector fast."
+special_effect = 0
+damage_type = 1
+boarding_description = "Attack: Defeat Guards (+18 Alarm)\nBlow up doors (+15 Alarm)"
+boarding_alarm_vs_guards = 18
+boarding_alarm_vs_doors = 15
+boarding_alarm_vs_terminals = -1
+boarding_alarm_vs_vaults = 15
+boarding_alarm_vs_hostage = -1

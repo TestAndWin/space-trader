@@ -91,7 +91,17 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 
-[node name="EnemyHealthBar" type="ProgressBar" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow"]
+[node name="EnemyBars" type="VBoxContainer" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 3
+
+[node name="HullRow" type="HBoxContainer" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow/EnemyBars"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="EnemyHealthBar" type="ProgressBar" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow/EnemyBars/HullRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(250, 22)
 layout_mode = 2
@@ -100,12 +110,35 @@ max_value = 20.0
 value = 20.0
 show_percentage = false
 
-[node name="EnemyHealthLabel" type="Label" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow"]
+[node name="EnemyHealthLabel" type="Label" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow/EnemyBars/HullRow"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.9, 0.5, 0.5, 1)
 text = "20 / 20"
+
+[node name="EnemyShieldRow" type="HBoxContainer" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow/EnemyBars"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="EnemyShieldBar" type="ProgressBar" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow/EnemyBars/EnemyShieldRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(250, 14)
+layout_mode = 2
+mouse_filter = 2
+max_value = 20.0
+value = 0.0
+show_percentage = false
+
+[node name="EnemyShieldLabel" type="Label" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow/EnemyBars/EnemyShieldRow"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.45, 0.85, 1, 1)
+text = "Shield: 0 / 0"
 
 [node name="IntentLabel" type="Label" parent="MainLayout/EnemyPanel/EnemyVBox"]
 unique_name_in_owner = true

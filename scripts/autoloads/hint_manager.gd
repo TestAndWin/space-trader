@@ -52,7 +52,7 @@ const HINTS: Dictionary = {
 	},
 	"battle": {
 		"title": "Combat",
-		"text": "Play cards to attack or defend. Each card costs energy, which replenishes every turn. Any hull damage you take carries over, so make sure to repair your ship at the shipyard before you fly.",
+		"text": "Play cards to attack or defend. Each card costs energy, which replenishes every turn. Many enemies run a shield, and their hull cannot be touched until it is down. The badge on every attack card says how it behaves: ION tears shields apart but barely dents hull, KINETIC is only half-effective against a shield, PIERCING ignores it, and BOUNCES does nothing at all until the shield is gone. Shields recharge every turn, so break through in one burst instead of chipping away. Any hull damage you take carries over — repair at the shipyard before you fly.",
 	},
 	"planet_hub": {
 		"title": "Planet Hub",

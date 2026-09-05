@@ -4,6 +4,7 @@ signal card_played(card_data)
 
 var card_data: Resource = null
 var playable: bool = true
+var _count_label: Label
 var _base_scale := Vector2(1.0, 1.0)
 var _hover_scale := Vector2(1.05, 1.05)
 
@@ -18,10 +19,51 @@ const CARD_TYPE_COLORS = {
 
 const CARD_ART_BASE_PATH = "res://assets/sprites/cards/"
 
+## Badge text, colour and tooltip per CardData.DamageType. Enemy shields only
+## become a decision if the player can read a card's role off the card itself.
+const DAMAGE_TYPE_BADGES = {
+	CardData.DamageType.KINETIC: {
+		"text": "KINETIC",
+		"color": Color(1.0, 0.65, 0.35),
+		"tip": "Kinetic — full damage to a bare hull, only half-effective against a shield.",
+	},
+	CardData.DamageType.ION: {
+		"text": "ION",
+		"color": Color(0.35, 0.8, 1.0),
+		"tip": "Ion — double damage to shields, but only half damage to the hull.",
+	},
+	CardData.DamageType.PIERCING: {
+		"text": "PIERCING",
+		"color": Color(0.8, 0.6, 1.0),
+		"tip": "Piercing — ignores the enemy shield and always hits the hull.",
+	},
+}
+
+const BOUNCE_BADGE = {
+	"text": "BOUNCES",
+	"color": Color(1.0, 0.45, 0.4),
+	"tip": "Bounces — deals nothing at all while the enemy shield still stands.",
+}
+
 
 func _ready() -> void:
 	# Set pivot so scaling expands from the center
 	pivot_offset = custom_minimum_size / 2.0
+
+
+## A deck stack's quantity belongs to the card's own layout.
+func set_count(count: int) -> void:
+	if _count_label == null:
+		_count_label = Label.new()
+		_count_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
+		_count_label.add_theme_color_override("font_color", UIStyles.GOLD)
+		_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var button: Button = %PlayButton
+		var container: Node = button.get_parent()
+		container.add_child(_count_label)
+		container.move_child(_count_label, button.get_index())
+	_count_label.text = "x%d" % count
+	_count_label.visible = count > 1
 
 
 func setup(data: Resource, can_play: bool, button_text: String = "Play", show_button: bool = true, hide_energy: bool = false) -> void:
@@ -50,7 +92,7 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 
 	var type_int := int(card_data.card_type)
 	var type_color: Color = CARD_TYPE_COLORS.get(type_int, Color(0.5, 0.5, 0.5))
-	%TypeIndicator.visible = false
+	_apply_damage_type_badge()
 
 	_load_card_artwork()
 
@@ -110,6 +152,35 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 	tooltip_text = _boarding_tooltip()
 
 
+## Only attack cards carry a damage type, so the badge stays off everything
+## else rather than printing a meaningless "KINETIC" on a repair card.
+func _apply_damage_type_badge() -> void:
+	# The row stays in the layout even when it has nothing to say. Hiding it
+	# would shorten the text panel and uncover more artwork on defense cards
+	# than on attack cards, so the hand would no longer read as one set.
+	%TypeIndicator.visible = true
+	%TypeIndicator.add_theme_font_size_override("font_size", UIStyles.FONT_MICRO)
+	UIStyles.apply_mono_font(%TypeIndicator)
+	_lock_label_height(%TypeIndicator, 1)
+
+	if int(card_data.card_type) != int(CardData.CardType.ATTACK):
+		%TypeIndicator.text = ""
+		%TypeIndicator.tooltip_text = ""
+		%TypeIndicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return
+
+	var badge: Dictionary = DAMAGE_TYPE_BADGES.get(
+		int(card_data.damage_type), DAMAGE_TYPE_BADGES[CardData.DamageType.KINETIC]
+	)
+	if card_data.keywords.has(CardData.CardKeyword.BOUNCES):
+		badge = BOUNCE_BADGE
+
+	%TypeIndicator.text = "[ %s ]" % badge["text"]
+	%TypeIndicator.add_theme_color_override("font_color", badge["color"])
+	%TypeIndicator.tooltip_text = badge["tip"]
+	%TypeIndicator.mouse_filter = Control.MOUSE_FILTER_STOP
+
+
 func _boarding_tooltip() -> String:
 	if card_data.boarding_description != "":
 		return "Boarding Action:\n" + card_data.boarding_description
@@ -123,7 +194,11 @@ func _lock_label_height(label: Label, lines: int) -> void:
 	if font == null:
 		return
 	var font_size: int = label.get_theme_font_size("font_size")
-	label.custom_minimum_size.y = font.get_height(font_size) * float(lines)
+	# The gaps between lines count too. Reserving only lines * font_height left
+	# a label that actually filled all its lines taller than its own minimum,
+	# so the panel still grew with the text it was supposed to be immune to.
+	var line_spacing: int = label.get_theme_constant("line_spacing")
+	label.custom_minimum_size.y = font.get_height(font_size) * float(lines) + float(line_spacing * (lines - 1))
 	label.max_lines_visible = lines
 	label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 
@@ -137,6 +212,13 @@ func _apply_content_layout() -> void:
 	content_vbox.move_child(text_panel, 0)
 	content_vbox.move_child(spacer, 1)
 	content_vbox.move_child(play_button, content_vbox.get_child_count() - 1)
+
+	# Every label inside the panel is locked to a fixed line count, so the panel
+	# has one height for all cards — take exactly that and let the spacer swallow
+	# whatever is left. Expanding here instead would hand short-text cards a
+	# smaller plate and reveal a different slice of artwork on every card.
+	text_panel.size_flags_vertical = Control.SIZE_FILL
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 
 func _style_play_button() -> void:

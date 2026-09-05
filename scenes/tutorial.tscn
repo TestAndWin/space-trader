@@ -157,7 +157,13 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/CombatSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "When you encounter enemies, you fight using cards. Each turn you draw cards and spend energy to play them. Attack cards deal damage, Defense cards raise your shield, Utility cards heal or draw more cards, and Trade cards earn credits. Your shield absorbs damage before your hull takes hits. Once an enemy ship's hull falls below 30% (or 50% with a Grappling Hook), you can attempt to Board the ship. Boarding is a push-your-luck minigame where you can secure extra cargo, credits, or upgrades, but risk injuring your crew if you push too far."
+text = "When you encounter enemies, you fight using cards. Each turn you draw cards and spend energy to play them. Attack cards deal damage, Defense cards raise your shield, Utility cards heal or draw more cards, and Trade cards earn credits. Your shield absorbs damage before your hull takes hits.
+
+Most enemies run a deflector shield of their own, shown as a blue bar under their hull. It is a separate pool, not an absorber: their hull takes nothing at all while the shield stands, and damage that breaks the shield does not spill over in the same hit. Every attack card carries a badge saying how it behaves against one. ION deals double damage to shields but only half to hull — your shield breaker. KINETIC is the ordinary shot: full damage to a bare hull, only half-effective against a shield. PIERCING ignores the shield entirely and always lands on the hull. A card marked BOUNCES, such as the Torpedo, does nothing whatsoever while a shield is up, but hits enormously hard once it is gone. Overload Coil makes your next attack ignore shields regardless of its type.
+
+Shields recharge every turn, and the bar tells you how fast (+4/turn). Some emitters stay offline for a turn or two after breaking, which is your window — so it usually pays to burst a shield down in one turn rather than chip at it, and to hold your Torpedo until the shield is gone. Enemies differ on purpose: the weakest ones carry no shield at all, others recharge so fast that hesitating costs you the fight.
+
+Once an enemy ship's shield is down AND its hull falls below 30% (or 50% with a Grappling Hook), you can attempt to Board the ship. Boarding is a push-your-luck minigame where you can secure extra cargo, credits, or upgrades, but risk injuring your crew if you push too far."
 autowrap_mode = 3
 mouse_filter = 2
 

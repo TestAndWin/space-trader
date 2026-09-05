@@ -1,7 +1,6 @@
 class_name ShipData
 extends Resource
 
-enum ShipRole { BALANCED, COMBAT, EXPLORER, TRADER, STEALTH }
 enum ShipAbility { NONE, RAMMING_SPEED, DEEP_SCAN, BULK_DISCOUNT, GHOST_RUN, ADAPTABLE }
 
 @export var ship_name: String = ""
@@ -17,7 +16,6 @@ enum ShipAbility { NONE, RAMMING_SPEED, DEEP_SCAN, BULK_DISCOUNT, GHOST_RUN, ADA
 @export var encounter_reduction: float = 0.0
 @export var contraband_bonus: float = 0.0
 @export var quest_reward_bonus: float = 0.0
-@export var hull_color_primary: Color = Color(0.3, 0.85, 0.3)
 @export var hull_shape: int = 0
 @export var available_planet_types: Array[int] = []
 

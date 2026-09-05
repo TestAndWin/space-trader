@@ -59,6 +59,11 @@ const CARDS: Array[String] = [
 	"res://data/cards/tactical_link.tres",
 	"res://data/cards/echo_barrier.tres",
 	"res://data/cards/salvage_expert.tres",
+	"res://data/cards/emp_burst.tres",
+	"res://data/cards/ion_lance.tres",
+	"res://data/cards/railgun.tres",
+	"res://data/cards/disruptor_array.tres",
+	"res://data/cards/overload_coil.tres",
 ]
 
 const ENCOUNTERS: Array[String] = [

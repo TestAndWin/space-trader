@@ -33,6 +33,16 @@ const KEYWORD_POWER: Dictionary = {
 	1: 1.5,   # COMBO — next card costs 1 less energy
 	2: 5.0,   # SHIELD_ECHO — bonus damage of half the current shield (base 10)
 	3: 1.0,   # RECYCLING — one extra draw per reshuffle
+	4: -4.0,  # BOUNCES — dead card while an enemy shield still stands
+}
+
+## Power contribution per CardData.DamageType. Piercing is the premium: it never
+## has a bad matchup. Ion is situational — it needs a shield to be worth its
+## halved hull damage, so it barely moves the score.
+const DAMAGE_TYPE_POWER: Dictionary = {
+	0: 0.0,   # KINETIC — the baseline every printed attack value assumes
+	1: 1.0,   # ION
+	2: 3.0,   # PIERCING
 }
 
 ## Energy — not hand size — is the bottleneck: 3 energy per turn against a hand
@@ -54,6 +64,7 @@ const SPECIAL_POWER: Dictionary = {
 	3: 8.0,    # SKIP_ENEMY_TURN
 	4: 10.0,   # END_ENCOUNTER
 	5: 4.0,    # SCAVENGE
+	6: 5.0,    # PIERCE_NEXT
 }
 
 ## Power span mapped onto each rarity band (min power -> band low,
@@ -265,20 +276,7 @@ func _populate_deck() -> void:
 		else:
 			card_display.setup(card, false, "", false)
 		if count > 1:
-			_add_count_badge(card_display, count)
-
-
-## Stacks of the same card show "xN" above the card's action button.
-func _add_count_badge(card_display: Node, count: int) -> void:
-	var count_label := Label.new()
-	count_label.text = "x%d" % count
-	count_label.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
-	count_label.add_theme_color_override("font_color", UIStyles.GOLD)
-	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var play_button: Node = card_display.get_node("%PlayButton")
-	var vbox: Node = play_button.get_parent()
-	vbox.add_child(count_label)
-	vbox.move_child(count_label, play_button.get_index())
+			card_display.set_count(count)
 
 
 ## Rough power score of a card, used to place its sell price inside the band
@@ -290,6 +288,8 @@ func _card_power(card: Resource) -> float:
 	power += float(card.draw_cards) * DRAW_WEIGHT
 	power += float(card.credits_gain) * CREDITS_WEIGHT
 	power += float(SPECIAL_POWER.get(card.special_effect, 0.0))
+	if card.card_type == CardData.CardType.ATTACK:
+		power += float(DAMAGE_TYPE_POWER.get(card.damage_type, 0.0))
 	for keyword: int in card.keywords:
 		power += float(KEYWORD_POWER.get(keyword, 1.0))
 	power += (ENERGY_BASELINE - float(card.energy_cost)) * ENERGY_WEIGHT

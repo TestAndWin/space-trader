@@ -6,10 +6,13 @@
 script = ExtResource("1_sp5")
 encounter_name = "System Patrol"
 description = "Security forces scanning for contraband."
-enemy_health = 40
+enemy_health = 30
 enemy_attack_range = Vector2i(5, 9)
 reward_credits = 50
 can_flee = true
 difficulty = 2
 special_ability = 2
-ability_description = "Gains +3 shield every 2nd turn"
+ability_description = "Emergency recharge: shield back to full every 3rd turn"
+enemy_max_shield = 14
+shield_regen = 4
+shield_regen_delay = 1

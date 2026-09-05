@@ -126,7 +126,7 @@ func _on_continue_pressed() -> void:
 	if not success:
 		push_error("Failed to load save game")
 		return
-	get_tree().change_scene_to_file("res://scenes/planet_screen.tscn")
+	GameManager.change_scene(GameManager.get_resume_scene())
 
 
 func _on_how_to_play_pressed() -> void:

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/card_data.gd" id="1_rgn"]
+
+[resource]
+script = ExtResource("1_rgn")
+card_name = "Railgun"
+card_type = 0
+rarity = 1
+energy_cost = 3
+attack_value = 9
+defense_value = 0
+heal_value = 0
+draw_cards = 0
+credits_gain = 0
+description = "Slug punches through shields into the hull."
+special_effect = 0
+damage_type = 2
+boarding_description = "Attack: Defeat Guards (+15 Alarm)\nBlow up doors (+18 Alarm)"
+boarding_alarm_vs_guards = 15
+boarding_alarm_vs_doors = 18
+boarding_alarm_vs_terminals = -1
+boarding_alarm_vs_vaults = 18
+boarding_alarm_vs_hostage = -1

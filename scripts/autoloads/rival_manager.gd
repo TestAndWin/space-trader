@@ -64,6 +64,9 @@ func get_rival_encounter() -> EncounterData:
 	enc.reward_credits    = reward
 	enc.can_flee          = phase < FINAL_PHASE
 	enc.difficulty        = 2 + phase
+	enc.enemy_max_shield  = _rival_data.base_shield + phase * _rival_data.shield_per_phase
+	enc.shield_regen      = _rival_data.shield_regen + phase * _rival_data.shield_regen_per_phase
+	enc.shield_regen_delay = _rival_data.shield_regen_delay
 	# Typed rival fields — no set_meta() needed
 	enc.is_rival          = true
 	enc.taunt_line        = _rival_data.taunt_lines[phase] if phase < _rival_data.taunt_lines.size() else ""
