@@ -9,6 +9,9 @@ const BackgroundUtils: GDScript = preload("res://scripts/tools/background_utils.
 const MAX_ALARM := 100
 const BAG_CAPACITY := 4
 
+## A Salvager knows how to rig a bigger haul, so they carry one slot more.
+const SALVAGER_BAG_BONUS := 1
+
 ## Chance the Cargo Vault also holds prototype hardware. A Salvager on the crew
 ## raises it by their BOARDING_TECH bonus and additionally strips a crafting
 ## component out of the Security Terminal.
@@ -62,7 +65,7 @@ const BOARDING_BONUS_LABELS := {
 	CrewData.CrewBonus.BOARDING_BREACH: "-15 Brute Force Alarm",
 	CrewData.CrewBonus.BOARDING_INTEL: "Rooms Revealed",
 	CrewData.CrewBonus.BOARDING_MEDIC: "-10 Hull Damage on Fail",
-	CrewData.CrewBonus.BOARDING_TECH: "Tech Salvage",
+	CrewData.CrewBonus.BOARDING_TECH: "Tech Salvage, +1 Bag Slot",
 }
 
 var starting_alarm: int = 0
@@ -97,6 +100,7 @@ func _ready() -> void:
 	_init_rooms()
 	_draw_hand()
 	_build_ui()
+	_update_bag_display()
 	_update_room_view()
 	
 	call_deferred("_show_hint")
@@ -247,7 +251,6 @@ func _build_ui() -> void:
 	top_hbox.add_child(spacer)
 	
 	_ui_bag_label = Label.new()
-	_ui_bag_label.text = "Extraction Bag: 0 / 4 Slots"
 	_ui_bag_label.add_theme_font_size_override("font_size", UIStyles.FONT_HEADING)
 	top_hbox.add_child(_ui_bag_label)
 	
@@ -531,6 +534,14 @@ func _update_room_view() -> void:
 		
 	_refresh_cards()
 
+## Slots available this run. The Salvager's bonus is the only thing that
+## changes it, so it is safe to read whenever the bag is drawn or filled.
+func _bag_capacity() -> int:
+	if GameManager.has_crew_bonus(CrewData.CrewBonus.BOARDING_TECH):
+		return BAG_CAPACITY + SALVAGER_BAG_BONUS
+	return BAG_CAPACITY
+
+
 func _bag_slots_used() -> int:
 	var used: int = 0
 	for b in _current_bag:
@@ -538,7 +549,7 @@ func _bag_slots_used() -> int:
 	return used
 
 func _take_loot(item: Dictionary, loot_idx: int) -> void:
-	if _bag_slots_used() + item.slots > BAG_CAPACITY:
+	if _bag_slots_used() + item.slots > _bag_capacity():
 		_ui_log.text = "Not enough space in extraction bag!"
 		return
 		
@@ -549,7 +560,7 @@ func _take_loot(item: Dictionary, loot_idx: int) -> void:
 	_update_room_view()
 
 func _update_bag_display() -> void:
-	_ui_bag_label.text = "Extraction Bag: %d / %d Slots" % [_bag_slots_used(), BAG_CAPACITY]
+	_ui_bag_label.text = "Extraction Bag: %d / %d Slots" % [_bag_slots_used(), _bag_capacity()]
 
 func _get_room_name(type: int) -> String:
 	return ROOM_INFO.get(type, {}).get("name", "Unknown")
