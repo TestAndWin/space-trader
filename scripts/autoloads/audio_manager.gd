@@ -53,8 +53,21 @@ func play_bgm(path: String) -> void:
 	var stream: AudioStream = _get_stream(path)
 	if stream == null:
 		return
+	_ensure_looping(stream)
 	bgm_player.stream = stream
 	bgm_player.play()
+
+
+## Godot's audio importer leaves `loop` off by default, and re-importing the
+## file resets it. Background tracks are all seamless loops, so force the flag
+## here instead of relying on per-file import settings.
+func _ensure_looping(stream: AudioStream) -> void:
+	if stream is AudioStreamOggVorbis:
+		(stream as AudioStreamOggVorbis).loop = true
+	elif stream is AudioStreamMP3:
+		(stream as AudioStreamMP3).loop = true
+	elif stream is AudioStreamWAV:
+		(stream as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
 
 # --- UI ---
 

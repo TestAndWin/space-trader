@@ -93,6 +93,7 @@ layout_mode = 2
 
 [node name="EnemyBars" type="VBoxContainer" parent="MainLayout/EnemyPanel/EnemyVBox/EnemyHealthRow"]
 layout_mode = 2
+unique_name_in_owner = true
 mouse_filter = 2
 theme_override_constants/separation = 3
 
@@ -179,6 +180,7 @@ layout_mode = 2
 
 [node name="HullColumn" type="HBoxContainer" parent="MainLayout/PlayerPanel/PlayerVBox/StatsRow"]
 layout_mode = 2
+unique_name_in_owner = true
 mouse_filter = 2
 theme_override_constants/separation = 6
 
@@ -200,6 +202,7 @@ show_percentage = false
 
 [node name="ShieldColumn" type="HBoxContainer" parent="MainLayout/PlayerPanel/PlayerVBox/StatsRow"]
 layout_mode = 2
+unique_name_in_owner = true
 mouse_filter = 2
 theme_override_constants/separation = 6
 

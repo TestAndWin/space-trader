@@ -110,14 +110,49 @@ func _style_readability() -> void:
 	%AbilityLabel.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 	%AbilityLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
+	%AbilityLabel.mouse_filter = Control.MOUSE_FILTER_STOP
+	%AbilityLabel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	%AbilityLabel.gui_input.connect(_on_enemy_intel_input)
+
+	%IntentLabel.mouse_filter = Control.MOUSE_FILTER_STOP
+	%IntentLabel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	%IntentLabel.gui_input.connect(_on_enemy_intel_input)
+
+	# Touch / Click on Enemy Ship and bars opens Enemy Intel popup
+	if %EnemyShipDisplay:
+		%EnemyShipDisplay.mouse_filter = Control.MOUSE_FILTER_STOP
+		%EnemyShipDisplay.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		%EnemyShipDisplay.gui_input.connect(_on_enemy_intel_input)
+	if %EnemyBars:
+		%EnemyBars.mouse_filter = Control.MOUSE_FILTER_STOP
+		%EnemyBars.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		%EnemyBars.gui_input.connect(_on_enemy_intel_input)
+
+	# Touch / Click on Player Ship or Hull/Shield opens Player Ship status info
+	if ship_display:
+		ship_display.mouse_filter = Control.MOUSE_FILTER_STOP
+		ship_display.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		ship_display.gui_input.connect(_on_player_status_input)
+	if %HullColumn:
+		%HullColumn.mouse_filter = Control.MOUSE_FILTER_STOP
+		%HullColumn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		%HullColumn.gui_input.connect(_on_player_status_input)
+	if %ShieldColumn:
+		%ShieldColumn.mouse_filter = Control.MOUSE_FILTER_STOP
+		%ShieldColumn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		%ShieldColumn.gui_input.connect(_on_player_status_input)
+
 	for counter: Label in [%DeckCountLabel, %DiscardCountLabel]:
 		counter.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
 		counter.add_theme_color_override("font_color", Color(0.62, 0.85, 1.0))
 		counter.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
 		counter.add_theme_constant_override("outline_size", 5)
 		counter.mouse_filter = Control.MOUSE_FILTER_STOP
+		counter.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	%DeckCountLabel.tooltip_text = "Cards left in your draw pile"
+	%DeckCountLabel.gui_input.connect(_on_deck_counter_input)
 	%DiscardCountLabel.tooltip_text = "Cards in the discard pile — reshuffled when the draw pile runs out"
+	%DiscardCountLabel.gui_input.connect(_on_discard_counter_input)
 
 
 func _build_energy_pips() -> void:
@@ -126,19 +161,27 @@ func _build_energy_pips() -> void:
 	energy_label.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
 	energy_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
 	energy_label.add_theme_constant_override("outline_size", 5)
+	energy_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	energy_label.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	energy_label.gui_input.connect(_on_energy_input)
 
 	_energy_pips = Control.new()
 	_energy_pips.set_script(EnergyPips)
 	_energy_pips.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_energy_pips.mouse_filter = Control.MOUSE_FILTER_STOP
+	_energy_pips.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_energy_pips.gui_input.connect(_on_energy_input)
 	energy_label.get_parent().add_child(_energy_pips)
 	energy_label.get_parent().move_child(_energy_pips, energy_label.get_index() + 1)
 
 
 func _style_battle_buttons() -> void:
 	UIStyles.style_accent_button(end_turn_button, Color(0.0, 0.40, 0.20), UIStyles.FONT_LABEL)
+	end_turn_button.custom_minimum_size = Vector2(130, 44)
 	UIStyles.style_secondary_button(%FleeButton, UIStyles.FONT_LABEL)
+	%FleeButton.custom_minimum_size = Vector2(90, 44)
 	UIStyles.style_accent_button(%BoardButton, Color(0.5, 0.15, 0.1), UIStyles.FONT_LABEL)
+	%BoardButton.custom_minimum_size = Vector2(130, 44)
 
 
 func start_battle(enc: Resource) -> void:
@@ -1193,3 +1236,234 @@ func _unhandled_input(event: InputEvent) -> void:
 			_update_ui()
 			if enemy_health <= 0:
 				_handle_enemy_defeated()
+
+
+func _on_energy_input(event: InputEvent) -> void:
+	var is_c: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_t: bool = event is InputEventScreenTouch and event.pressed
+	if is_c or is_t:
+		_show_battle_message("Energy: %d / %d available this turn" % [current_energy, GameManager.energy_per_turn])
+
+
+func _on_deck_counter_input(event: InputEvent) -> void:
+	var is_c: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_t: bool = event is InputEventScreenTouch and event.pressed
+	if is_c or is_t:
+		AudioManager.play_ui_click()
+		_show_pile_popup("DRAW PILE", draw_pile)
+
+
+func _on_discard_counter_input(event: InputEvent) -> void:
+	var is_c: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_t: bool = event is InputEventScreenTouch and event.pressed
+	if is_c or is_t:
+		AudioManager.play_ui_click()
+		_show_pile_popup("DISCARD PILE", discard_pile)
+
+
+func _on_enemy_intel_input(event: InputEvent) -> void:
+	var is_c: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_t: bool = event is InputEventScreenTouch and event.pressed
+	if is_c or is_t:
+		AudioManager.play_ui_click()
+		_show_enemy_intel_popup()
+
+
+func _on_player_status_input(event: InputEvent) -> void:
+	var is_c: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_t: bool = event is InputEventScreenTouch and event.pressed
+	if is_c or is_t:
+		AudioManager.play_ui_click()
+		var ship: Resource = GameManager.get_ship_data()
+		var sname: String = ship.ship_name if ship else "Your Ship"
+		var traits: String = ""
+		if "Targeting Computer" in GameManager.installed_upgrades:
+			traits += " • +20% Dmg (Targeting Computer)"
+		if "Reinforced Bulkheads" in GameManager.installed_upgrades:
+			traits += " • Bulkheads"
+		_show_battle_message("%s: Hull %d/%d, Shield %d/%d%s" % [
+			sname,
+			GameManager.current_hull, GameManager.max_hull,
+			GameManager.current_shield, GameManager.max_shield,
+			traits
+		])
+
+
+func _show_pile_popup(title_text: String, pile: Array) -> void:
+	if has_node("PilePopup"):
+		return
+	var overlay := ColorRect.new()
+	overlay.name = "PilePopup"
+	overlay.color = Color(0, 0, 0, 0.75)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 150
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.gui_input.connect(func(event: InputEvent) -> void:
+		var is_c: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+		var is_t: bool = event is InputEventScreenTouch and event.pressed
+		if is_c or is_t:
+			overlay.queue_free()
+	)
+	add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(400, 300)
+	UIStyles.style_panel(panel)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "%s (%d Cards)" % [title_text, pile.size()]
+	UIStyles.apply_section_title(title)
+	vbox.add_child(title)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size = Vector2(380, 240)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vbox.add_child(scroll)
+
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 6)
+	scroll.add_child(list)
+
+	if pile.is_empty():
+		var empty_lbl := Label.new()
+		empty_lbl.text = "Pile is currently empty."
+		empty_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+		empty_lbl.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
+		list.add_child(empty_lbl)
+	else:
+		var counts: Dictionary = {}
+		for card in pile:
+			var cname: String = card.card_name if card else "Unknown Card"
+			if counts.has(cname):
+				counts[cname]["count"] += 1
+			else:
+				counts[cname] = { "card": card, "count": 1 }
+
+		for cname in counts:
+			var item: Dictionary = counts[cname]
+			var card: Resource = item["card"]
+			var count: int = item["count"]
+
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 8)
+			list.add_child(row)
+
+			var cost_str: String = "⚡%d" % card.energy_cost if card else ""
+			var cost_lbl := Label.new()
+			cost_lbl.text = cost_str
+			cost_lbl.custom_minimum_size = Vector2(30, 0)
+			cost_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
+			cost_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+			row.add_child(cost_lbl)
+
+			var name_lbl := Label.new()
+			name_lbl.text = cname + (" x%d" % count if count > 1 else "")
+			name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			name_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+			name_lbl.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0))
+			row.add_child(name_lbl)
+
+			if card:
+				var desc_lbl := Label.new()
+				desc_lbl.text = card.description
+				desc_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
+				desc_lbl.add_theme_color_override("font_color", Color(0.5, 0.7, 0.85))
+				desc_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				row.add_child(desc_lbl)
+
+	var close_btn := Button.new()
+	close_btn.text = "Close"
+	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), 14)
+	close_btn.pressed.connect(overlay.queue_free)
+	vbox.add_child(close_btn)
+
+
+func _show_enemy_intel_popup() -> void:
+	if has_node("EnemyIntelPopup"):
+		return
+	var overlay := ColorRect.new()
+	overlay.name = "EnemyIntelPopup"
+	overlay.color = Color(0, 0, 0, 0.70)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 150
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.gui_input.connect(func(event: InputEvent) -> void:
+		var is_c: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+		var is_t: bool = event is InputEventScreenTouch and event.pressed
+		if is_c or is_t:
+			overlay.queue_free()
+	)
+	add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(400, 0)
+	UIStyles.style_panel(panel)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	panel.add_child(vbox)
+
+	var enc_name: String = encounter.encounter_name if encounter else "Enemy Ship"
+	var title := Label.new()
+	title.text = "ENEMY INTEL: %s" % enc_name.to_upper()
+	UIStyles.apply_section_title(title)
+	vbox.add_child(title)
+
+	var status_lbl := Label.new()
+	status_lbl.text = "Hull: %d/%d  |  Shield: %d" % [enemy_health, enemy_max_health, enemy_shield]
+	status_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+	status_lbl.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0))
+	vbox.add_child(status_lbl)
+
+	var intent_title := Label.new()
+	intent_title.text = "Current Telegraph:"
+	intent_title.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
+	intent_title.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
+	vbox.add_child(intent_title)
+
+	var intent_lbl := Label.new()
+	intent_lbl.text = %IntentLabel.text
+	intent_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	intent_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
+	intent_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	vbox.add_child(intent_lbl)
+
+	if encounter and encounter.special_ability != "":
+		var ability_title := Label.new()
+		ability_title.text = "Special Ability / Trait:"
+		ability_title.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
+		ability_title.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
+		vbox.add_child(ability_title)
+
+		var ability_lbl := Label.new()
+		ability_lbl.text = encounter.special_ability
+		ability_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		ability_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+		ability_lbl.add_theme_color_override("font_color", Color(0.85, 0.75, 1.0))
+		vbox.add_child(ability_lbl)
+
+	var close_btn := Button.new()
+	close_btn.text = "Close"
+	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), 14)
+	close_btn.pressed.connect(overlay.queue_free)
+	vbox.add_child(close_btn)

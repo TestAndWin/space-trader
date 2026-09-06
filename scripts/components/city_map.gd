@@ -365,7 +365,10 @@ func _draw_iso_box(b: Dictionary) -> void:
 
 	# Decorative rooftop element: small box on top for tall buildings
 	if h >= 3.0 and not done:
-		_draw_rooftop(b, accent)
+		if b["id"] == "factory":
+			_draw_factory_roof(b, accent)
+		else:
+			_draw_rooftop(b, accent)
 
 
 ## r_front is the row-coordinate of the front face (= building row + depth).
@@ -399,6 +402,21 @@ func _draw_rooftop(b: Dictionary, accent: Color) -> void:
 	var top := _top_face(rc, rr, rw, rd, h+rh)
 	draw_colored_polygon(top, base.lightened(0.35))
 	_draw_face_outline(top, Color(accent, 0.6), 1.0)
+
+
+func _draw_factory_roof(b: Dictionary, accent: Color) -> void:
+	var c: float = b["col"]; var r: float = b["row"]
+	var w: float = b["w"];   var d: float = b["d"]; var h: float = b["h"]
+	var base: Color = b["bg"]
+	for frac: float in [0.3, 0.7]:
+		var sc := c + w * frac
+		var sr := r + d * 0.5
+		var sw := 0.6; var sd := 0.6; var sh := 0.7
+		draw_colored_polygon(_right_face(sc - sw*0.5, sr - sd*0.5, sw, sd, h, h + sh), base.darkened(0.1))
+		draw_colored_polygon(_front_face(sc - sw*0.5, sr - sd*0.5, sw, sd, h, h + sh), base.lightened(0.2))
+		var top := _top_face(sc - sw*0.5, sr - sd*0.5, sw, sd, h + sh)
+		draw_colored_polygon(top, accent)
+		_draw_face_outline(top, Color(accent.lightened(0.2), 0.9), 1.0)
 
 
 ## Special drawing for the Launch Bay (flat with landing-pad markings).
@@ -458,9 +476,12 @@ func _draw_all_labels(sorted_buildings: Array) -> void:
 		var label_pos := _iso(c + w * 0.5, r, h + 0.25)
 		var fs := 9
 		var text: String = b["label"]
+		var is_factory: bool = b["id"] == "factory"
+		if is_factory:
+			text = "⚙ " + text
 		var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		var alpha := 0.45 if done else 1.0
-		var tcol  := Color(accent, alpha)
+		var tcol  := Color(1.0, 0.85, 0.35, alpha) if is_factory else Color(accent, alpha)
 
 		# Small dark backdrop
 		draw_rect(Rect2(label_pos.x - tw * 0.5 - 2.0, label_pos.y - float(fs) - 1.0,
@@ -478,6 +499,10 @@ func _gui_input(event: InputEvent) -> void:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
 			_handle_click(mb.position)
+	elif event is InputEventScreenTouch:
+		var st := event as InputEventScreenTouch
+		if st.pressed:
+			_handle_click(st.position)
 
 
 ## Returns the building whose floor footprint contains iso_pos, or null.

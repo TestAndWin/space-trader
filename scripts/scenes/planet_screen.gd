@@ -18,6 +18,7 @@ const CrewScreenScene: PackedScene = preload("res://scenes/components/crew_scree
 const ShipyardScreenScene: PackedScene = preload("res://scenes/components/shipyard_screen.tscn")
 const QuestScreenScene: PackedScene = preload("res://scenes/components/quest_screen.tscn")
 const FactoryScreenScene: PackedScene = preload("res://scenes/factory_screen.tscn")
+const ShipStatusOverlayScene: PackedScene = preload("res://scenes/components/ship_status_overlay.tscn")
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
 const GoodIcon = preload("res://scripts/components/good_icon.gd")
@@ -556,7 +557,7 @@ func _create_image_hotspots() -> void:
 		# Pulsing dot indicator
 		var dot := ColorRect.new()
 		dot.size = Vector2(8, 8)
-		dot.color = Color(1.0, 0.95, 0.15, 0.9)
+		dot.color = Color(1.0, 0.85, 0.25, 0.95) if bid == CityMap.BUILDING_FACTORY else Color(1.0, 0.95, 0.15, 0.9)
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		dot.position = Vector2(rect.position.x + rect.size.x * 0.5 - 4, rect.position.y + rect.size.y * 0.5 - 4)
 		container.add_child(dot)
@@ -565,7 +566,7 @@ func _create_image_hotspots() -> void:
 		# Glow ring around dot
 		var glow := ColorRect.new()
 		glow.size = Vector2(16, 16)
-		glow.color = Color(1.0, 0.25, 0.85, 0.35)
+		glow.color = Color(0.2, 0.85, 1.0, 0.5) if bid == CityMap.BUILDING_FACTORY else Color(1.0, 0.25, 0.85, 0.35)
 		glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		glow.position = Vector2(rect.position.x + rect.size.x * 0.5 - 8, rect.position.y + rect.size.y * 0.5 - 8)
 		container.add_child(glow)
@@ -580,7 +581,9 @@ func _create_image_hotspots() -> void:
 ## and grow sideways so long names stay centred and readable.
 func _create_hotspot_label(building_id: String, rect: Rect2) -> Label:
 	var label := Label.new()
-	label.text = CityMap.get_building_name(building_id, _current_planet_type())
+	var bname: String = CityMap.get_building_name(building_id, _current_planet_type())
+	label.text = bname
+	label.visible = false
 	label.anchor_left = rect.position.x / 1280.0
 	label.anchor_right = (rect.position.x + rect.size.x) / 1280.0
 	label.anchor_top = rect.position.y / 720.0
@@ -592,7 +595,6 @@ func _create_hotspot_label(building_id: String, rect: Rect2) -> Label:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.visible = false
 	label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	label.add_theme_font_size_override("font_size", UIStyles.FONT_DETAIL)
 	label.add_theme_color_override("font_color", Color(0.85, 0.97, 1.0))
@@ -733,11 +735,14 @@ func _style_info_bar() -> void:
 	_apply_header_label_style(planet_name_label, UIStyles.FONT_TITLE, Color(0.82, 0.97, 1.0), UIStyles.FONT_DISPLAY)
 	_apply_header_label_style(news_banner, 12, Color(0.92, 0.96, 1.0))
 	news_banner.mouse_filter = Control.MOUSE_FILTER_STOP
+	news_banner.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	news_banner.gui_input.connect(_on_news_banner_input)
 	_apply_header_label_style(goal_label, 13, Color(1.0, 0.94, 0.62), UIStyles.FONT_MONO)
 	# Tooltips only fire on Controls that accept mouse input.
 	goal_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	goal_label.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	# Tooltip target for the reputation/loyalty readout written in _update_header().
-	planet_name_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	planet_name_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	# Tooltips never fire on touch (iPad), so a tap opens the same text as a popup.
 	goal_label.gui_input.connect(_on_goal_label_input)
 	_wrap_planet_title_in_panel()
@@ -757,7 +762,11 @@ func _wrap_planet_title_in_panel() -> void:
 	backdrop.name = "PlanetTitlePanel"
 	backdrop.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	backdrop.add_theme_stylebox_override("panel", _make_holo_panel_style(0.62, HOLO_BORDER, 8, 10))
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	backdrop.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	backdrop.gui_input.connect(_on_planet_title_input)
 	parent.remove_child(planet_name_label)
+	planet_name_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	backdrop.add_child(planet_name_label)
 	row.add_child(backdrop)
 	parent.add_child(row)
@@ -785,6 +794,25 @@ var _hull_bar_fill: StyleBoxFlat
 
 func _style_ship_panel() -> void:
 	ship_status_panel.add_theme_stylebox_override("panel", _make_holo_panel_style())
+	ship_status_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	ship_status_panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	ship_status_panel.gui_input.connect(_on_ship_panel_input)
+	$ShipStatusPanel/ShipStatusBox.mouse_filter = Control.MOUSE_FILTER_PASS
+	$ShipStatusPanel/ShipStatusBox/ShipColumn.mouse_filter = Control.MOUSE_FILTER_PASS
+	$ShipStatusPanel/ShipStatusBox/ShipStats.mouse_filter = Control.MOUSE_FILTER_PASS
+	$ShipStatusPanel/ShipStatusBox/ShipStats/CargoRow.mouse_filter = Control.MOUSE_FILTER_PASS
+	ship_display.mouse_filter = Control.MOUSE_FILTER_PASS
+	hull_label.mouse_filter = Control.MOUSE_FILTER_PASS
+	shield_label.mouse_filter = Control.MOUSE_FILTER_PASS
+	fuel_label.mouse_filter = Control.MOUSE_FILTER_PASS
+	capacity_label.mouse_filter = Control.MOUSE_FILTER_PASS
+	hull_bar.mouse_filter = Control.MOUSE_FILTER_PASS
+	shield_bar.mouse_filter = Control.MOUSE_FILTER_PASS
+	fuel_bar.mouse_filter = Control.MOUSE_FILTER_PASS
+	cargo_bar.mouse_filter = Control.MOUSE_FILTER_PASS
+	cargo_items_row.mouse_filter = Control.MOUSE_FILTER_PASS
+	crew_items_row.mouse_filter = Control.MOUSE_FILTER_PASS
+
 	UIStyles.apply_mono_font(hull_label)
 	UIStyles.apply_mono_font(shield_label)
 	UIStyles.apply_mono_font(fuel_label)
@@ -1060,8 +1088,196 @@ func _build_goal_tooltip(t2_installed: bool, planets_visited: int, win_credits: 
 
 
 func _on_goal_label_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_touch: bool = event is InputEventScreenTouch and event.pressed
+	if is_click or is_touch:
+		AudioManager.play_ui_click()
 		_show_goal_popup()
+
+
+func _on_planet_title_input(event: InputEvent) -> void:
+	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_touch: bool = event is InputEventScreenTouch and event.pressed
+	if is_click or is_touch:
+		AudioManager.play_ui_click()
+		_show_standing_popup()
+
+
+func _on_news_banner_input(event: InputEvent) -> void:
+	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_touch: bool = event is InputEventScreenTouch and event.pressed
+	if is_click or is_touch:
+		AudioManager.play_ui_click()
+		_show_news_popup()
+
+
+func _on_ship_panel_input(event: InputEvent) -> void:
+	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_touch: bool = event is InputEventScreenTouch and event.pressed
+	if is_click or is_touch:
+		AudioManager.play_ui_click()
+		_show_ship_status_overlay()
+
+
+func _show_ship_status_overlay() -> void:
+	if _has_overlay_open():
+		return
+	if has_node("ShipStatusOverlay"):
+		return
+	var overlay: Node = ShipStatusOverlayScene.instantiate()
+	overlay.name = "ShipStatusOverlay"
+	add_child(overlay)
+	_overlays.register(overlay)
+	overlay.connect("closed", _update_ui)
+	overlay.connect("view_deck_requested", _on_view_deck_pressed)
+
+
+func _show_standing_popup() -> void:
+	if _arrival.running:
+		return
+	if get_node_or_null("StandingPopup"):
+		return
+	var overlay := ColorRect.new()
+	overlay.name = "StandingPopup"
+	overlay.color = Color(0, 0, 0, 0.65)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			overlay.queue_free()
+	)
+	add_child(overlay)
+	_overlays.register(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(460, 0)
+	UIStyles.style_panel(panel)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "PLANET & FACTION STANDING"
+	UIStyles.apply_section_title(title)
+	vbox.add_child(title)
+
+	var display_name: String = GameManager.get_display_planet_name(GameManager.current_planet)
+	var faction: String = StandingManager.get_planet_faction(GameManager.current_planet)
+	var rep: int = StandingManager.get_faction_reputation(faction)
+	var rep_tier: String = StandingManager.get_reputation_tier(faction)
+	var loyalty: int = StandingManager.get_trade_loyalty(GameManager.current_planet)
+	var loyalty_tier: String = StandingManager.get_loyalty_tier(GameManager.current_planet)
+	var pt_name: String = EconomyManager.PLANET_TYPE_NAMES.get(_current_planet_type(), "Unknown")
+
+	var info_lines: Array[String] = [
+		"PLANET: %s (%s Economy)" % [display_name, pt_name],
+		"FACTION: %s" % faction,
+		"• Reputation: %+d (%s)" % [rep, rep_tier],
+		"  Market buy/sell modifier: x%.2f / x%.2f" % [
+			StandingManager.get_market_buy_modifier(GameManager.current_planet),
+			StandingManager.get_market_sell_modifier(GameManager.current_planet)
+		],
+		"",
+		"TRADE LOYALTY: %d (%s)" % [loyalty, loyalty_tier],
+		"• Loyalty grows through local trade and unlocks commercial benefits.",
+		"",
+		"LEGAL STATUS & PATROL RISK:",
+		"• Bounty: %d cr (%s)" % [StandingManager.bounty_amount, StandingManager.get_bounty_tier()],
+		"• Pirate Fleet Heat: %d" % PirateLordManager.heat,
+	]
+	if StandingManager.bounty_amount > 0:
+		info_lines.append("  Active bounty increases authority encounter chance and adds dock fees.")
+	else:
+		info_lines.append("  You are in good standing with local authorities.")
+
+	var body := Label.new()
+	body.text = "\n".join(info_lines)
+	body.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(body)
+
+	var close_btn := Button.new()
+	close_btn.text = "Close"
+	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), 15)
+	close_btn.pressed.connect(overlay.queue_free)
+	vbox.add_child(close_btn)
+
+
+func _show_news_popup() -> void:
+	if _arrival.running:
+		return
+	if get_node_or_null("NewsPopup"):
+		return
+	var overlay := ColorRect.new()
+	overlay.name = "NewsPopup"
+	overlay.color = Color(0, 0, 0, 0.65)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			overlay.queue_free()
+	)
+	add_child(overlay)
+	_overlays.register(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(480, 0)
+	UIStyles.style_panel(panel)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "SECTOR NEWS & BROADCASTS"
+	UIStyles.apply_section_title(title)
+	vbox.add_child(title)
+
+	var lines: Array[String] = []
+	var event_text: String = EventManager.get_event_display_text()
+	if event_text != "":
+		lines.append("GALACTIC BULLETIN:")
+		lines.append(event_text)
+		lines.append("")
+
+	var weather: Dictionary = EventManager.get_active_weather()
+	if not weather.is_empty():
+		lines.append("SPACE WEATHER: %s (%d days remaining)" % [weather.get("title", ""), EventManager.weather_days_remaining])
+		lines.append(weather.get("description", ""))
+		lines.append("")
+
+	var status_notes: Array[String] = _get_local_status_notes()
+	if not status_notes.is_empty():
+		lines.append("LOCAL CONDITIONS:")
+		for note in status_notes:
+			lines.append("• " + note)
+	elif event_text == "" and weather.is_empty():
+		lines.append("No active crisis or weather interference reported in this sector.")
+
+	var body := Label.new()
+	body.text = "\n".join(lines)
+	body.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(body)
+
+	var close_btn := Button.new()
+	close_btn.text = "Close"
+	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), 15)
+	close_btn.pressed.connect(overlay.queue_free)
+	vbox.add_child(close_btn)
 
 
 ## Same content as the goal tooltip, but reachable by tap — hover tooltips do
@@ -1306,6 +1522,7 @@ func _update_cargo_items() -> void:
 		icon.set_script(GoodIcon)
 		icon.setup(good_name)
 		icon.tooltip_text = "%s x%d" % [good_name, qty]
+		icon.mouse_filter = Control.MOUSE_FILTER_PASS
 		cargo_items_row.add_child(icon)
 
 	if hidden_count > 0:
@@ -1315,6 +1532,7 @@ func _update_cargo_items() -> void:
 		more_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.35))
 		more_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		more_label.tooltip_text = "%d more cargo types" % hidden_count
+		more_label.mouse_filter = Control.MOUSE_FILTER_PASS
 		cargo_items_row.add_child(more_label)
 
 func _update_crew_items() -> void:
@@ -1326,6 +1544,7 @@ func _update_crew_items() -> void:
 		icon.set_script(CrewIcon)
 		icon.custom_minimum_size = Vector2(22, 22)
 		icon.tooltip_text = crew_res.crew_name + " - " + crew_res.description
+		icon.mouse_filter = Control.MOUSE_FILTER_PASS
 		crew_items_row.add_child(icon)
 		icon.setup(crew_res.bonus_type)
 

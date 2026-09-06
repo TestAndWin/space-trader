@@ -49,6 +49,16 @@ const BOUNCE_BADGE = {
 func _ready() -> void:
 	# Set pivot so scaling expands from the center
 	pivot_offset = custom_minimum_size / 2.0
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+
+
+func _gui_input(event: InputEvent) -> void:
+	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_touch: bool = event is InputEventScreenTouch and event.pressed
+	if is_click or is_touch:
+		AudioManager.play_ui_click()
+		_show_card_detail_popup()
 
 
 ## A deck stack's quantity belongs to the card's own layout.
@@ -76,12 +86,12 @@ func setup(data: Resource, can_play: bool, button_text: String = "Play", show_bu
 	UIStyles.apply_display_font(%CardNameLabel)
 	# The name wraps to two lines and may still be trimmed on very long names.
 	%CardNameLabel.tooltip_text = "%s — %s" % [card_data.card_name, _rarity_name()]
-	%CardNameLabel.mouse_filter = Control.MOUSE_FILTER_STOP
+	%CardNameLabel.mouse_filter = Control.MOUSE_FILTER_PASS
 	# A drawn bolt carries the unit, so the number stays a bare number.
 	%EnergyCostLabel.text = str(card_data.energy_cost)
 	UIStyles.apply_mono_font(%EnergyCostLabel)
 	%CostBadge.tooltip_text = "Energy cost to play this card"
-	%CostBadge.mouse_filter = Control.MOUSE_FILTER_STOP
+	%CostBadge.mouse_filter = Control.MOUSE_FILTER_PASS
 	%CostBadge.visible = not hide_energy
 	%DescriptionLabel.text = card_data.description
 	# Reserve a fixed line count so every card's play button and cost badge land
@@ -178,7 +188,7 @@ func _apply_damage_type_badge() -> void:
 	%TypeIndicator.text = "[ %s ]" % badge["text"]
 	%TypeIndicator.add_theme_color_override("font_color", badge["color"])
 	%TypeIndicator.tooltip_text = badge["tip"]
-	%TypeIndicator.mouse_filter = Control.MOUSE_FILTER_STOP
+	%TypeIndicator.mouse_filter = Control.MOUSE_FILTER_PASS
 
 
 func _boarding_tooltip() -> String:
@@ -224,6 +234,7 @@ func _apply_content_layout() -> void:
 func _style_play_button() -> void:
 	var button := %PlayButton
 	button.flat = false
+	button.custom_minimum_size = Vector2(0, 44)
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = Color(0.04, 0.05, 0.12, 0.88)
 	normal.border_color = Color(1.0, 1.0, 1.0, 0.05)
@@ -329,3 +340,173 @@ func _on_mouse_exited() -> void:
 func _on_play_button_pressed() -> void:
 	if playable and card_data:
 		card_played.emit(card_data)
+
+
+func _show_card_detail_popup() -> void:
+	if card_data == null:
+		return
+	var canvas: Node = _find_canvas_parent()
+	if canvas == null:
+		return
+	if canvas.has_node("CardDetailPopup"):
+		return
+
+	var overlay := ColorRect.new()
+	overlay.name = "CardDetailPopup"
+	overlay.color = Color(0, 0, 0, 0.78)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 250
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.gui_input.connect(func(event: InputEvent) -> void:
+		var is_c: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+		var is_t: bool = event is InputEventScreenTouch and event.pressed
+		if is_c or is_t:
+			overlay.queue_free()
+	)
+	canvas.add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(340, 0)
+	var type_int: int = int(card_data.card_type)
+	var type_color: Color = CARD_TYPE_COLORS.get(type_int, Color(0.5, 0.5, 0.5))
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.04, 0.05, 0.10, 0.96)
+	style.border_color = type_color
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(10)
+	style.shadow_color = Color(type_color.r, type_color.g, type_color.b, 0.3)
+	style.shadow_size = 8
+	style.content_margin_left = 20
+	style.content_margin_right = 20
+	style.content_margin_top = 16
+	style.content_margin_bottom = 16
+	panel.add_theme_stylebox_override("panel", style)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	panel.add_child(vbox)
+
+	# Title & Cost Header
+	var header_row := HBoxContainer.new()
+	header_row.add_theme_constant_override("separation", 8)
+	vbox.add_child(header_row)
+
+	var name_lbl := Label.new()
+	name_lbl.text = card_data.card_name
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_lbl.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
+	name_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_SUBHEADING)
+	name_lbl.add_theme_color_override("font_color", type_color)
+	header_row.add_child(name_lbl)
+
+	var cost_lbl := Label.new()
+	cost_lbl.text = "⚡ %d Energy" % card_data.energy_cost
+	cost_lbl.add_theme_font_override("font", UIStyles.FONT_MONO)
+	cost_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
+	cost_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	header_row.add_child(cost_lbl)
+
+	# Rarity & Type Subtitle
+	var rarity_lbl := Label.new()
+	rarity_lbl.text = "%s • %s Card" % [_rarity_name(), _type_name(card_data.card_type)]
+	rarity_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
+	rarity_lbl.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
+	vbox.add_child(rarity_lbl)
+
+	# Artwork preview
+	var art_tex: Texture2D = _load_artwork_for_id(card_data.resource_path.get_file().get_basename())
+	if art_tex == null:
+		art_tex = _load_artwork_for_id(card_data.card_name.to_lower().replace(" ", "_"))
+	if art_tex:
+		var art_rect := TextureRect.new()
+		art_rect.texture = art_tex
+		art_rect.custom_minimum_size = Vector2(300, 160)
+		art_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		vbox.add_child(art_rect)
+
+	# Description
+	var desc_lbl := Label.new()
+	desc_lbl.text = card_data.description
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_lbl.custom_minimum_size = Vector2(300, 0)
+	desc_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+	desc_lbl.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0))
+	vbox.add_child(desc_lbl)
+
+	# Damage Type details (if attack card)
+	if int(card_data.card_type) == int(CardData.CardType.ATTACK):
+		var badge: Dictionary = DAMAGE_TYPE_BADGES.get(
+			int(card_data.damage_type), DAMAGE_TYPE_BADGES[CardData.DamageType.KINETIC]
+		)
+		if card_data.keywords.has(CardData.CardKeyword.BOUNCES):
+			badge = BOUNCE_BADGE
+		var damage_info := Label.new()
+		damage_info.text = "Damage Type: " + badge["tip"]
+		damage_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		damage_info.custom_minimum_size = Vector2(300, 0)
+		damage_info.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
+		damage_info.add_theme_color_override("font_color", badge["color"])
+		vbox.add_child(damage_info)
+
+	# Boarding action detail
+	var boarding_text: String = _boarding_tooltip()
+	var boarding_lbl := Label.new()
+	boarding_lbl.text = boarding_text
+	boarding_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	boarding_lbl.custom_minimum_size = Vector2(300, 0)
+	boarding_lbl.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
+	boarding_lbl.add_theme_color_override("font_color", Color(0.55, 0.75, 0.9))
+	vbox.add_child(boarding_lbl)
+
+	# Action Buttons row
+	var btn_row := HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 12)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(btn_row)
+
+	if %PlayButton.visible:
+		var play_btn := Button.new()
+		play_btn.text = %PlayButton.text
+		play_btn.custom_minimum_size = Vector2(140, 44)
+		play_btn.disabled = not playable
+		UIStyles.style_accent_button(play_btn, Color(0.0, 0.45, 0.25) if playable else Color(0.2, 0.2, 0.2))
+		play_btn.pressed.connect(func() -> void:
+			overlay.queue_free()
+			_on_play_button_pressed()
+		)
+		btn_row.add_child(play_btn)
+
+	var close_btn := Button.new()
+	close_btn.text = "Close"
+	close_btn.custom_minimum_size = Vector2(110, 44)
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), 14)
+	close_btn.pressed.connect(overlay.queue_free)
+	btn_row.add_child(close_btn)
+
+
+func _find_canvas_parent() -> Node:
+	var cur: Node = self
+	while cur:
+		if cur is CanvasLayer:
+			return cur
+		if cur.get_parent() == null:
+			return cur
+		cur = cur.get_parent()
+	return get_tree().root
+
+
+func _type_name(t: int) -> String:
+	match t:
+		0: return "Attack"
+		1: return "Defense"
+		2: return "Utility"
+		3: return "Trade"
+	return "Card"

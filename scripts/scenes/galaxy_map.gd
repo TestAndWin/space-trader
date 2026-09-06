@@ -2,6 +2,8 @@ extends Node3D
 
 const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 const BackgroundUtils = preload("res://scripts/tools/background_utils.gd")
+const ShipStatusOverlayScene: PackedScene = preload("res://scenes/components/ship_status_overlay.tscn")
+const DeckViewerScene: PackedScene = preload("res://scenes/deck_viewer.tscn")
 
 
 const GALAXY_CENTER_2D := Vector2(640.0, 360.0)
@@ -120,6 +122,21 @@ func _style_bottom_bar() -> void:
 	style.shadow_size = 6
 	style.set_content_margin_all(8)
 	$CanvasLayer/BottomBar.add_theme_stylebox_override("panel", style)
+	$CanvasLayer/BottomBar.mouse_filter = Control.MOUSE_FILTER_STOP
+	$CanvasLayer/BottomBar/HBoxContainer.mouse_filter = Control.MOUSE_FILTER_PASS
+
+	var stat_labels: Array[Label] = [credits_label, cargo_label, hull_label, shield_label]
+	if _fuel_label:
+		stat_labels.append(_fuel_label)
+
+	for lbl in stat_labels:
+		lbl.mouse_filter = Control.MOUSE_FILTER_STOP
+		lbl.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		lbl.gui_input.connect(_on_ship_stat_input)
+
+	current_planet_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	current_planet_label.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	current_planet_label.gui_input.connect(_on_current_planet_label_input)
 
 
 func _process(delta: float) -> void:
@@ -162,6 +179,38 @@ func _configure_info_panel() -> void:
 	info_panel.add_theme_stylebox_override("panel", panel_style)
 	info_panel.visible = false
 
+	# Add close button for touch/iPad accessibility
+	var parent := planet_name_label.get_parent()
+	if not parent.has_node("InfoHeaderRow"):
+		var header_row := HBoxContainer.new()
+		header_row.name = "InfoHeaderRow"
+		header_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var idx := planet_name_label.get_index()
+		parent.remove_child(planet_name_label)
+		planet_name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		header_row.add_child(planet_name_label)
+
+		var close_btn := Button.new()
+		close_btn.name = "InfoCloseButton"
+		close_btn.text = "✕"
+		close_btn.custom_minimum_size = Vector2(26, 26)
+		close_btn.focus_mode = Control.FOCUS_NONE
+		close_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		UIStyles.style_accent_button(close_btn, Color(0.4, 0.12, 0.12), 11)
+		close_btn.pressed.connect(_on_info_panel_close_pressed)
+		header_row.add_child(close_btn)
+
+		parent.add_child(header_row)
+		parent.move_child(header_row, idx)
+
+
+func _on_info_panel_close_pressed() -> void:
+	selected_planet = null
+	_hovered_planet_name = ""
+	info_panel.visible = false
+	_update_selected_direct_line()
+	_update_planet_states()
+
 
 func _fit_info_panel_height() -> void:
 	await get_tree().process_frame
@@ -177,6 +226,8 @@ func _create_fuel_label() -> void:
 	_fuel_label.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
 	_fuel_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.28, 1.0))
 	_fuel_label.text = "Fuel: 0/0"
+	# Mouse filter, cursor and gui_input are wired in _style_bottom_bar()
+	# together with the other stat labels.
 	$CanvasLayer/BottomBar/HBoxContainer.add_child(_fuel_label)
 
 
@@ -196,6 +247,8 @@ func _create_weather_label() -> void:
 	_weather_label.position = Vector2(640.0 - 100.0, 16.0)
 	_weather_label.z_index = 100
 	_weather_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	_weather_label.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_weather_label.gui_input.connect(_on_weather_label_input)
 	$CanvasLayer.add_child(_weather_label)
 	UIStyles.apply_display_font(_weather_label)
 	_weather_label.visible = false
@@ -699,7 +752,9 @@ func _update_ui() -> void:
 
 
 func _on_planet_input_event(_camera: Camera3D, event: InputEvent, _event_position: Vector3, _normal: Vector3, _shape_idx: int, planet_data: Resource) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_touch: bool = event is InputEventScreenTouch and event.pressed
+	if is_click or is_touch:
 		AudioManager.play_ui_click()
 		_on_planet_clicked(planet_data)
 
@@ -734,16 +789,19 @@ func _on_planet_clicked(planet_data: Resource) -> void:
 		return
 
 	land_button.visible = false
+	selected_planet = planet_data
 	var route: Array[String] = NavigationManager.get_route(GameManager.current_planet, planet_data.planet_name)
+	travel_button.visible = true
 	if route.size() >= 2:
-		selected_planet = planet_data
-		travel_button.visible = true
 		travel_button.text = _get_travel_button_text(planet_data)
 		travel_button.disabled = not GameManager.can_start_travel(planet_data.planet_name, route)
 		travel_button.tooltip_text = _get_travel_tooltip(planet_data)
 	else:
-		selected_planet = null
-		travel_button.visible = false
+		travel_button.text = "No Direct Route"
+		travel_button.disabled = true
+		travel_button.tooltip_text = "No direct hyperlane path from current planet."
+
+	_on_planet_hovered(planet_data)
 	_update_selected_direct_line()
 	_update_planet_states()
 
@@ -1076,3 +1134,102 @@ func _update_selected_direct_line() -> void:
 		3.4
 	)
 	routes_container.add_child(_selected_direct_line)
+
+
+func _on_ship_stat_input(event: InputEvent) -> void:
+	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_touch: bool = event is InputEventScreenTouch and event.pressed
+	if is_click or is_touch:
+		AudioManager.play_ui_click()
+		_show_ship_status_overlay()
+
+
+func _show_ship_status_overlay() -> void:
+	if $CanvasLayer.has_node("ShipStatusOverlay"):
+		return
+	var overlay: Node = ShipStatusOverlayScene.instantiate()
+	overlay.name = "ShipStatusOverlay"
+	$CanvasLayer.add_child(overlay)
+	overlay.connect("closed", _update_ui)
+	overlay.connect("view_deck_requested", _on_view_deck_from_overlay)
+
+
+func _on_view_deck_from_overlay() -> void:
+	if $CanvasLayer.has_node("DeckViewer"):
+		return
+	var viewer: Node = DeckViewerScene.instantiate()
+	viewer.name = "DeckViewer"
+	viewer.setup(-1)
+	$CanvasLayer.add_child(viewer)
+	viewer.tree_exited.connect(_update_ui)
+
+
+func _on_current_planet_label_input(event: InputEvent) -> void:
+	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_touch: bool = event is InputEventScreenTouch and event.pressed
+	if is_click or is_touch:
+		AudioManager.play_ui_click()
+		var current := _find_planet_by_name(GameManager.current_planet)
+		if current:
+			_on_planet_clicked(current)
+
+
+func _on_weather_label_input(event: InputEvent) -> void:
+	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	var is_touch: bool = event is InputEventScreenTouch and event.pressed
+	if is_click or is_touch:
+		AudioManager.play_ui_click()
+		_show_weather_popup()
+
+
+func _show_weather_popup() -> void:
+	var weather: Dictionary = EventManager.get_active_weather()
+	if weather.is_empty():
+		return
+	if $CanvasLayer.has_node("WeatherPopup"):
+		return
+	var overlay := ColorRect.new()
+	overlay.name = "WeatherPopup"
+	overlay.color = Color(0, 0, 0, 0.65)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			overlay.queue_free()
+	)
+	$CanvasLayer.add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(420, 0)
+	UIStyles.style_panel(panel)
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "SPACE WEATHER REPORT"
+	UIStyles.apply_section_title(title)
+	vbox.add_child(title)
+
+	var body := Label.new()
+	body.text = "%s\nDuration: %d days remaining\n\n%s" % [
+		weather.get("title", ""),
+		EventManager.weather_days_remaining,
+		weather.get("description", "")
+	]
+	body.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(body)
+
+	var close_btn := Button.new()
+	close_btn.text = "Close"
+	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), 15)
+	close_btn.pressed.connect(overlay.queue_free)
+	vbox.add_child(close_btn)
