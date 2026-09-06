@@ -20,9 +20,7 @@ import wave
 import numpy as np
 
 SR = 44100
-LOOP = 32.0          # 4 bars at 60 BPM
 TAIL = 8.0           # rendered past the loop point, then wrapped back in
-
 
 
 
@@ -40,9 +38,10 @@ def parse(path):
     d = open(path, 'rb').read()
     fmt, ntrk, div = struct.unpack('>HHH', d[8:14])
     i, tempo, tracks = 14, 500000, []
+    beats_per_bar, beat_div = 4, 4
     for _ in range(ntrk):
         ln = struct.unpack('>I', d[i + 4:i + 8])[0]
-        end, j, tick, name, running = i + 8 + ln, i + 8, 0, '', None
+        end, j, tick, name, running, prog = i + 8 + ln, i + 8, 0, '', None, 0
         events = []
         while j < end:
             dt, j = read_vlq(d, j)
@@ -56,6 +55,8 @@ def parse(path):
                     name = data.decode('utf-8', 'replace')
                 if mt == 0x51:
                     tempo = int.from_bytes(data, 'big')
+                if mt == 0x58:
+                    beats_per_bar, beat_div = data[0], 2 ** data[1]
                 j = j2 + ln2
                 continue
             if b & 0x80:
@@ -69,11 +70,15 @@ def parse(path):
                     events.append((tick, 1, a, v))
                 elif st == 0x80 or st == 0x90:
                     events.append((tick, 0, a, 0))
+            elif st == 0xC0:
+                prog = d[j]
+                j += 1
             else:
                 j += 1
-        tracks.append((name, events))
+        tracks.append((name, prog, events))
         i = end
-    return div, tempo, tracks
+    bar_ticks = int(div * 4 / beat_div * beats_per_bar)
+    return div, tempo, bar_ticks, tracks
 
 
 def notes_of(events, spt):
@@ -177,6 +182,31 @@ def voice_bell(freq, dur, vel):
     return sig * (vel / 127.0) * 0.85
 
 
+def voice_drone(freq, dur, vel):
+    """Sub bass drone: near-sine with a touch of grit, breathes very slowly."""
+    tail = 4.0
+    t, sig = partials(freq, dur + tail, [(1, 1.0), (2, 0.55), (3, 0.26), (4, 0.10)],
+                      detune=0.0012)
+    n, held = len(sig), int(dur * SR)
+    e = np.zeros(n, dtype=np.float32)
+    e[:held] = env_adsr(held, 1.6, 0.0, 1.0, 0)
+    e[held:] = e[held - 1] * np.exp(-np.arange(n - held) / (tail * 0.35 * SR))
+    breathe = 1.0 + 0.12 * np.sin(2 * np.pi * 0.09 * (np.arange(n) / SR))
+    return sig * e * breathe * (vel / 127.0) * 0.85
+
+
+def voice_lead(freq, dur, vel):
+    """Soft synth lead: hollow (odd harmonics), slow swell, gentle vibrato."""
+    tail = 3.0
+    t, sig = partials(freq, dur + tail, [(1, 1.0), (3, 0.22), (5, 0.09), (2, 0.12)],
+                      detune=0.0018, vibrato=0.035, vib_hz=4.4)
+    n, held = len(sig), int(dur * SR)
+    e = np.zeros(n, dtype=np.float32)
+    e[:held] = env_adsr(held, 0.45, 0.8, 0.8, 0)
+    e[held:] = e[held - 1] * np.exp(-np.arange(n - held) / (tail * 0.3 * SR))
+    return sig * e * (vel / 127.0) * 0.65
+
+
 def voice_shimmer(freq, dur, vel):
     tail = 5.0
     t, sig = partials(freq, dur + tail, [(1, 1.0), (2, 0.5), (3, 0.25), (4.5, 0.12)],
@@ -190,14 +220,43 @@ def voice_shimmer(freq, dur, vel):
     return sig * e * trem * (vel / 127.0) * 0.45
 
 
-# name -> (voice fn, gain, stereo pan -1..1, reverb send)
+# voice -> (fn, gain, stereo pan -1..1, reverb send)
 VOICES = {
-    'Pad (warm)':         (voice_pad,     0.55, 0.00, 0.55),
-    'Bass':               (voice_bass,    0.85, 0.00, 0.20),
-    'Pluck':              (voice_pluck,   0.40, -0.35, 0.60),
-    'Melodie':            (voice_bell,    0.55, 0.25, 0.65),
-    'Shimmer (optional)': (voice_shimmer, 0.35, 0.10, 0.75),
+    'pad':      (voice_pad,     0.55, 0.00, 0.55),
+    'bass':     (voice_bass,    0.85, 0.00, 0.20),
+    'drone':    (voice_drone,   0.34, 0.00, 0.30),
+    'pluck':    (voice_pluck,   0.40, -0.35, 0.60),
+    'bell':     (voice_bell,    0.55, 0.25, 0.65),
+    'lead':     (voice_lead,    0.50, 0.15, 0.55),
+    'shimmer':  (voice_shimmer, 0.35, 0.10, 0.75),
 }
+
+# General MIDI program -> voice. Only the programs actually used by the tracks
+# in assets/audio are listed; anything else falls back to 'pad'.
+PROGRAM_VOICES = {
+    8: 'bell',       # Celesta
+    32: 'bass',      # Acoustic Bass
+    38: 'drone',     # Synth Bass 1
+    46: 'pluck',     # Orchestral Harp
+    82: 'lead',      # Lead 3 (calliope)
+    89: 'pad',       # Pad 2 (warm)
+    94: 'pad',       # Pad 7 (halo)
+    98: 'bell',      # FX 3 (crystal)
+    99: 'shimmer',   # FX 4 (atmosphere)
+}
+
+# Two tracks can share a GM program and still want different treatment (both
+# "Shimmer" and "Quartal Pad" are Pad Halo), so the track name wins when set.
+NAME_VOICES = {
+    'shimmer (optional)': 'shimmer',
+}
+
+
+def voice_for(name, prog):
+    key = NAME_VOICES.get(name.strip().lower())
+    if key is None:
+        key = PROGRAM_VOICES.get(prog, 'pad')
+    return VOICES[key], key
 
 
 def reverb(mono):
@@ -217,18 +276,45 @@ def reverb(mono):
     return out
 
 
+def highpass(stereo, cutoff_hz):
+    """High-pass in the frequency domain, which is circular -- and that is what
+    a loop wants: a recursive filter would ring in at sample 0 and break the
+    seam, while circular filtering treats the signal as the periodic thing it
+    actually is."""
+    n = stereo.shape[1]
+    freqs = np.fft.rfftfreq(n, 1.0 / SR)
+    # 2nd-order-ish response: -12 dB/oct below the cutoff, flat above.
+    with np.errstate(divide='ignore'):
+        ratio = freqs / cutoff_hz
+    resp = (ratio ** 2 / (1.0 + ratio ** 2)).astype(np.float32)
+    out = np.empty_like(stereo)
+    for ch in range(stereo.shape[0]):
+        out[ch] = np.fft.irfft(np.fft.rfft(stereo[ch]) * resp, n)
+    return out
+
+
 def main(midi_path, out_path):
     np.random.seed(7)
-    div, tempo, tracks = parse(midi_path)
+    div, tempo, bar_ticks, tracks = parse(midi_path)
     spt = tempo / 1e6 / div
-    total = int((LOOP + TAIL) * SR)
+
+    # Loop on a bar boundary, not on the last note-off: the tracks end ragged
+    # (release tails), but the loop has to line up musically.
+    last_tick = max((e[0] for _, _, evs in tracks for e in evs), default=0)
+    bars = max(1, math.ceil(last_tick / bar_ticks))
+    loop_sec = bars * bar_ticks * spt
+    print('%.1f BPM, %d bars of %d ticks -> loop %.4fs'
+          % (6e7 / tempo, bars, bar_ticks, loop_sec))
+
+    total = int((loop_sec + TAIL) * SR)
     dry = np.zeros((2, total), dtype=np.float32)
     wet_send = np.zeros(total, dtype=np.float32)
 
-    for name, events in tracks:
-        if name not in VOICES:
+    for name, prog, events in tracks:
+        if not events:
             continue
-        fn, gain, pan, send = VOICES[name]
+        (fn, gain, pan, send), key = voice_for(name, prog)
+        print('  %-22s prog=%-3d -> %s' % (name, prog, key))
         for start, dur, note, vel in notes_of(events, spt):
             sig = fn(hz(note), dur, vel) * gain
             i0 = int(start * SR)
@@ -249,17 +335,27 @@ def main(midi_path, out_path):
     mix[1, off:] += 0.34 * wet[:-off]
 
     # Wrap the tail back onto the start: the loop seam now carries the ring-out.
-    loop_n = int(LOOP * SR)
+    loop_n = int(round(loop_sec * SR))
     out = mix[:, :loop_n].copy()
     tail = mix[:, loop_n:]
     out[:, :tail.shape[1]] += tail
 
-    peak = float(np.max(np.abs(out)))
-    out = out / peak * 0.89
+    out = highpass(out, 32.0)
+
+    # Peak-normalising makes a bass-heavy track quiet and a bright one loud, so
+    # match on RMS (-16 dBFS) and only fall back to the peak if that clips.
+    target_rms = 10 ** (-16.0 / 20.0)
+    gain = target_rms / float(out.std())
+    peak = float(np.max(np.abs(out))) * gain
+    if peak > 0.89:
+        gain *= 0.89 / peak
+    print('normalise: rms %.1f dBFS peak %.3f (gain x%.2f)'
+          % (20 * math.log10(out.std() * gain), min(peak, 0.89), gain))
+    out = out * gain
     # No fade at the seam: the wrapped tail already continues the ring-out, so
     # sample 0 picks up where the last sample left off. A fade would cut it.
-    # The wrapped tail leaves a tiny step at the seam (the tail itself was cut
-    # off at LOOP+TAIL). Ramp that offset out over 30ms instead of fading to
+    # What is left is a tiny step, because the wrapped tail was itself cut off
+    # at loop_sec+TAIL. Ramp that offset out over 30ms instead of fading to
     # silence, which would punch a hole in the ring-out.
     seam = out[:, 0] - out[:, -1]
     print('seam step = %.5f -> smoothed' % float(np.max(np.abs(seam))))
