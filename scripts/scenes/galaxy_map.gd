@@ -196,7 +196,7 @@ func _configure_info_panel() -> void:
 		close_btn.custom_minimum_size = Vector2(26, 26)
 		close_btn.focus_mode = Control.FOCUS_NONE
 		close_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		UIStyles.style_accent_button(close_btn, Color(0.4, 0.12, 0.12), 11)
+		UIStyles.style_accent_button(close_btn, Color(0.4, 0.12, 0.12), UIStyles.FONT_CAPTION)
 		close_btn.pressed.connect(_on_info_panel_close_pressed)
 		header_row.add_child(close_btn)
 
@@ -1230,6 +1230,6 @@ func _show_weather_popup() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), 15)
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_DETAIL)
 	close_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(close_btn)

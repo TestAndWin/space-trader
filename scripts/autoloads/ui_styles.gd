@@ -109,23 +109,33 @@ const TYPE_COLORS := {
 }
 
 
+# ── Shared button metrics ────────────────────────────────────────────────────
+# All button styles derive their padding from the font size, so two buttons with
+# the same font end up exactly the same height no matter which style they use.
+# FONT_BODY (16) yields the historic 16/8 padding.
+
+static func apply_button_padding(sb: StyleBoxFlat, font_size: int) -> void:
+	var size: int = font_size if font_size > 0 else FONT_DETAIL
+	sb.content_margin_left = size
+	sb.content_margin_right = size
+	sb.content_margin_top = roundi(size * 0.5)
+	sb.content_margin_bottom = roundi(size * 0.5)
+
+
 # ── Accent button ────────────────────────────────────────────────────────────
 # Used for: close/action buttons with a colored accent background.
 # Replaces: _style_action_button() in ship_upgrade, ship_dealer, deck_viewer,
 #           _style_casino_button() in casino_popup,
 #           _style_nav_button() in galaxy_map.
 
-static func style_accent_button(btn: Button, accent: Color, font_size: int = 14) -> void:
+static func style_accent_button(btn: Button, accent: Color, font_size: int = ACTION_BTN_FONT_SIZE) -> void:
 	btn.add_theme_font_size_override("font_size", font_size)
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = accent
 	normal.border_color = accent.lightened(0.3)
 	normal.set_border_width_all(2)
 	normal.set_corner_radius_all(6)
-	normal.content_margin_left = 14
-	normal.content_margin_right = 14
-	normal.content_margin_top = 6
-	normal.content_margin_bottom = 6
+	apply_button_padding(normal, font_size)
 
 	var hover := normal.duplicate()
 	hover.bg_color = accent.lightened(0.15)
@@ -160,10 +170,7 @@ static func style_buy_button(btn: Button) -> void:
 	normal.border_color = Color(0.0, 0.6, 0.4, 0.7)
 	normal.set_border_width_all(2)
 	normal.set_corner_radius_all(6)
-	normal.content_margin_left = 14
-	normal.content_margin_right = 14
-	normal.content_margin_top = 6
-	normal.content_margin_bottom = 6
+	apply_button_padding(normal, FONT_LABEL)
 	normal.shadow_color = Color(0.0, 0.5, 0.3, 0.15)
 	normal.shadow_size = 4
 
@@ -202,10 +209,7 @@ static func style_secondary_button(btn: Button, font_size: int = 0) -> void:
 	normal.border_color = Color(0.0, 0.45, 0.75, 0.7)
 	normal.set_border_width_all(2)
 	normal.set_corner_radius_all(6)
-	normal.content_margin_left = 16
-	normal.content_margin_right = 16
-	normal.content_margin_top = 8
-	normal.content_margin_bottom = 8
+	apply_button_padding(normal, font_size)
 
 	var hover := normal.duplicate()
 	hover.bg_color = Color(0.03, 0.10, 0.22, 0.9)
@@ -219,10 +223,7 @@ static func style_secondary_button(btn: Button, font_size: int = 0) -> void:
 	disabled.border_color = Color(0.0, 0.2, 0.35, 0.4)
 	disabled.set_border_width_all(2)
 	disabled.set_corner_radius_all(6)
-	disabled.content_margin_left = 16
-	disabled.content_margin_right = 16
-	disabled.content_margin_top = 8
-	disabled.content_margin_bottom = 8
+	apply_button_padding(disabled, font_size)
 
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
@@ -241,7 +242,10 @@ static func style_secondary_button(btn: Button, font_size: int = 0) -> void:
 
 static func style_action_button(btn: Button) -> void:
 	style_secondary_button(btn, ACTION_BTN_FONT_SIZE)
-	btn.custom_minimum_size.y = ACTION_BTN_MIN_HEIGHT
+	btn.custom_minimum_size.y = maxf(btn.custom_minimum_size.y, ACTION_BTN_MIN_HEIGHT)
+	# Buttons in a tall row (header, HBox next to big labels) would otherwise be
+	# stretched to the row height and stop matching their siblings elsewhere.
+	btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 static func style_continue_button(btn: Button) -> void:
 	btn.custom_minimum_size = Vector2(160, 40)
@@ -509,7 +513,10 @@ static func create_overlay_scaffold(
 
 	var close_btn := Button.new()
 	close_btn.text = close_text
-	close_btn.custom_minimum_size = Vector2(140, 36)
+	close_btn.custom_minimum_size = Vector2(140, ACTION_BTN_MIN_HEIGHT)
+	# The header is as tall as the title block; without this the close button
+	# would fill that height and dwarf every other button on the screen.
+	close_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
 	close_btn.pressed.connect(close_callback)
 	header.add_child(close_btn)

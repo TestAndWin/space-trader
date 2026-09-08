@@ -1397,7 +1397,7 @@ func _show_pile_popup(title_text: String, pile: Array) -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), 14)
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_DETAIL)
 	close_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(close_btn)
 
@@ -1475,6 +1475,6 @@ func _show_enemy_intel_popup() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), 14)
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_DETAIL)
 	close_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(close_btn)

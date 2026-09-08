@@ -21,7 +21,7 @@ func _ready() -> void:
 			%CreditsLabel, %PlanetsLabel, %UpgradesLabel]:
 		UIStyles.apply_mono_font(stat_label)
 	%MainMenuButton.pressed.connect(_on_main_menu_pressed)
-	UIStyles.style_secondary_button(%MainMenuButton, 18)
+	UIStyles.style_secondary_button(%MainMenuButton, UIStyles.FONT_SUBHEADING)
 
 
 func _on_main_menu_pressed() -> void:

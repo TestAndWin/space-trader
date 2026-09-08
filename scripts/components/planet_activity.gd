@@ -265,7 +265,7 @@ func _add_choice(label: String, callback: Callable, disabled: bool = false, hint
 	var btn := Button.new()
 	btn.text = label
 	btn.custom_minimum_size = Vector2(420, 36)
-	UIStyles.style_secondary_button(btn, 13)
+	UIStyles.style_secondary_button(btn, UIStyles.FONT_LABEL)
 	btn.disabled = disabled
 	if hint != "":
 		btn.tooltip_text = hint

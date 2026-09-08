@@ -27,8 +27,8 @@ func _ready() -> void:
 	UIStyles.apply_display_font(%ContinueButton)
 	UIStyles.apply_display_font(%MainMenuButton)
 	
-	UIStyles.style_accent_button(%ContinueButton, Color(0.2, 0.6, 0.2), 18)
-	UIStyles.style_accent_button(%MainMenuButton, Color(0.2, 0.3, 0.5), 18)
+	UIStyles.style_accent_button(%ContinueButton, Color(0.2, 0.6, 0.2), UIStyles.FONT_SUBHEADING)
+	UIStyles.style_accent_button(%MainMenuButton, Color(0.2, 0.3, 0.5), UIStyles.FONT_SUBHEADING)
 
 
 func _on_continue_pressed() -> void:
@@ -67,7 +67,7 @@ func _show_confirmation_dialog() -> void:
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.custom_minimum_size = Vector2(120, 40)
-	UIStyles.style_accent_button(cancel_btn, Color(0.5, 0.15, 0.1), 16)
+	UIStyles.style_accent_button(cancel_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_BODY)
 	cancel_btn.pressed.connect(overlay.queue_free)
 	btn_row.add_child(cancel_btn)
 	

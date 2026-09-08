@@ -487,7 +487,7 @@ func _show_card_detail_popup() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.custom_minimum_size = Vector2(110, 44)
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), 14)
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_DETAIL)
 	close_btn.pressed.connect(overlay.queue_free)
 	btn_row.add_child(close_btn)
 

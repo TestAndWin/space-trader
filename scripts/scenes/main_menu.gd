@@ -50,7 +50,7 @@ func _style_buttons() -> void:
 		$VBoxContainer/QuitButton,
 	]
 	for btn: Button in buttons:
-		UIStyles.style_secondary_button(btn, 18)
+		UIStyles.style_secondary_button(btn, UIStyles.FONT_SUBHEADING)
 
 
 ## Dimmed full-screen modal used by the difficulty and about popups.
@@ -90,7 +90,7 @@ func _show_difficulty_popup() -> void:
 
 		var btn := Button.new()
 		btn.text = diff["name"]
-		UIStyles.style_secondary_button(btn, 20)
+		UIStyles.style_secondary_button(btn, UIStyles.FONT_SUBHEADING)
 		btn.pressed.connect(_on_difficulty_chosen.bind(diff["value"], overlay))
 		btn_vbox.add_child(btn)
 
@@ -109,7 +109,7 @@ func _show_difficulty_popup() -> void:
 
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
-	UIStyles.style_accent_button(cancel_btn, Color(0.5, 0.15, 0.1), 16)
+	UIStyles.style_accent_button(cancel_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_BODY)
 	cancel_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(cancel_btn)
 
@@ -192,7 +192,7 @@ func _on_about_pressed() -> void:
 
 	var close_btn := Button.new()
 	close_btn.text = "Close"
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), 16)
+	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_BODY)
 	close_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(close_btn)
 
