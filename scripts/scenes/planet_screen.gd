@@ -972,12 +972,11 @@ func _update_header() -> void:
 	var loyalty_text: String = _get_loyalty_status_text(GameManager.current_planet)
 	planet_name_label.text = "%s | %s" % [display_name, faction]
 	
-	planet_name_label.tooltip_text = "Reputation: %+d %s\nLoyalty: %d (%s)\nPirate Heat: %d" % [
+	planet_name_label.tooltip_text = "Reputation: %+d %s\nLoyalty: %d (%s)" % [
 		rep,
 		rep_tier,
 		loyalty,
-		loyalty_text,
-		PirateLordManager.heat
+		loyalty_text
 	]
 
 
@@ -1189,7 +1188,6 @@ func _show_standing_popup() -> void:
 		"",
 		"LEGAL STATUS & PATROL RISK:",
 		"• Bounty: %d cr (%s)" % [StandingManager.bounty_amount, StandingManager.get_bounty_tier()],
-		"• Pirate Fleet Heat: %d" % PirateLordManager.heat,
 	]
 	if StandingManager.bounty_amount > 0:
 		info_lines.append("  Active bounty increases authority encounter chance and adds dock fees.")
