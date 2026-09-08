@@ -2,6 +2,9 @@ extends Node
 
 const MAX_DIFFICULTY := 3
 
+## Extra System Patrol weight per danger level above 1, in lawful space only.
+const PATROL_DANGER_WEIGHT := 0.35
+
 var encounter_pool: Array = []
 var force_enforcer_encounter: bool = false
 
@@ -127,6 +130,11 @@ func _get_encounter_weight(enc: Resource, planet_name: String) -> float:
 				weight += 0.6
 		"System Patrol":
 			weight = 0.35 if lawful_space else 0.08
+			# Dangerous lawful systems are patrolled harder. This is the main way a
+			# clean trader ever meets an authority ship, so it scales per danger
+			# level rather than sitting behind a single threshold.
+			if lawful_space and planet != null:
+				weight += PATROL_DANGER_WEIGHT * float(maxi(planet.danger_level - 1, 0))
 			if lawful_space and rep_tier == "Cold":
 				weight += 0.9
 			elif lawful_space and rep_tier == "Hostile":

@@ -28,6 +28,8 @@ const LOAN_DEFAULT_AMOUNT := 1000
 const LOAN_DEFAULT_TERM := 7
 const LOAN_DEFAULT_INTEREST := 0.08
 const LOAN_REPAY_CHUNK := 300
+## Bounty per missed loan payment. StandingManager scales it by credits and day.
+const DEBT_DEFAULT_BOUNTY := 25
 
 # Game Logic
 const WIN_PLANETS: int = 7
@@ -348,6 +350,12 @@ func process_loan_tick() -> void:
 		var faction: String = StandingManager.FACTION_BY_PLANET_TYPE.get(planet_type, "")
 		if faction != "":
 			StandingManager.add_faction_reputation(faction, -1, "debt default")
+
+	# A defaulted loan is a warrant, not just bad reputation. It grows with every
+	# missed payment so a spiralling debt eventually draws bounty hunters.
+	StandingManager.add_bounty(
+		DEBT_DEFAULT_BOUNTY * missed_debt_payments, "defaulted on loan"
+	)
 
 
 func get_debt_status_text() -> String:

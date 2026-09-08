@@ -12,6 +12,8 @@ const MAX_CHAIN_LENGTH := 3
 const STAGE_REWARD_MULT := 1.25
 const REPUTATION_REWARD_BASE := 2
 const REPUTATION_FAIL_PENALTY := -4
+## Bounty per quest stage when a delivery deadline is missed.
+const FAIL_BOUNTY: int = 20
 # Share of contracts asking for a crafted good, once the player owns a
 # Fabrication Plant. Before that, crafted goods never come up at all.
 const CRAFTED_QUEST_CHANCE := 0.20
@@ -303,6 +305,11 @@ func check_expired_quest() -> bool:
 			REPUTATION_FAIL_PENALTY - maxi(stage - 1, 0),
 			"quest failure"
 		)
+	# A broken contract is filed as a breach, so even a lawful trader who never
+	# smuggles can accumulate a bounty. Later quest stages weigh heavier.
+	StandingManager.add_bounty(
+		FAIL_BOUNTY * maxi(int(current_quest.get("stage", 1)), 1), "broke delivery contract"
+	)
 	if GameManager.credits < penalty:
 		# Confiscate cargo (highest-value first) to cover the shortfall.
 		var credits_taken: int = GameManager.credits

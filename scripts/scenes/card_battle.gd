@@ -8,6 +8,13 @@ const EnergyPips = preload("res://scripts/components/energy_pips.gd")
 const FLEE_COST := 150
 const FLEE_CHANCE := 0.5
 
+## Encounters that answer to the law. Destroying one is handled per name in
+## _leave_won_battle(); escaping one is an offence regardless of which it was.
+const AUTHORITY_ENCOUNTERS: Array[String] = ["System Patrol", "Bounty Hunter"]
+## Base bounty for escaping an authority ship. StandingManager scales it by
+## credits and day, so this stays well below the 50 cr for destroying one.
+const FLEE_BOUNTY := 20
+
 ## Gap between a shot and the impact it causes, in seconds.
 const SFX_IMPACT_DELAY := 0.18
 
@@ -986,6 +993,10 @@ func _on_flee_pressed() -> void:
 		GameManager.remove_credits(FLEE_COST)
 		GameManager.battle_result = "fled"
 		EventLog.add_entry("Fled from %s" % encounter.encounter_name)
+		# Running from an authority ship is itself an offence — and for a clean
+		# trader it is often the first bounty they ever pick up.
+		if encounter.encounter_name in AUTHORITY_ENCOUNTERS:
+			StandingManager.add_bounty(FLEE_BOUNTY, "evaded %s" % encounter.encounter_name.to_lower())
 		GameManager.change_scene("res://scenes/battle_result.tscn")
 	else:
 		_show_battle_message("Escape failed!")
