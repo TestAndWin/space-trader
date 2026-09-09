@@ -18,6 +18,10 @@ const FLEE_BOUNTY := 20
 ## Gap between a shot and the impact it causes, in seconds.
 const SFX_IMPACT_DELAY := 0.18
 
+## The battle bar keeps its own, taller buttons -- they are the hot targets
+## during a fight. Everything else about them is the standard button style.
+const BUTTON_BAR_HEIGHT: int = 44
+
 var encounter: Resource = null
 var draw_pile: Array = []
 var hand: Array = []
@@ -183,12 +187,13 @@ func _build_energy_pips() -> void:
 
 
 func _style_battle_buttons() -> void:
-	UIStyles.style_accent_button(end_turn_button, Color(0.0, 0.40, 0.20), UIStyles.FONT_LABEL)
-	end_turn_button.custom_minimum_size = Vector2(130, 44)
-	UIStyles.style_secondary_button(%FleeButton, UIStyles.FONT_LABEL)
-	%FleeButton.custom_minimum_size = Vector2(90, 44)
-	UIStyles.style_accent_button(%BoardButton, Color(0.5, 0.15, 0.1), UIStyles.FONT_LABEL)
-	%BoardButton.custom_minimum_size = Vector2(130, 44)
+	# Same font as every other screen; only the bar height is battle-specific.
+	UIStyles.style_accent_button(end_turn_button, Color(0.0, 0.40, 0.20))
+	end_turn_button.custom_minimum_size = Vector2(130, BUTTON_BAR_HEIGHT)
+	UIStyles.style_secondary_button(%FleeButton, UIStyles.ACTION_BTN_FONT_SIZE)
+	%FleeButton.custom_minimum_size = Vector2(90, BUTTON_BAR_HEIGHT)
+	UIStyles.style_accent_button(%BoardButton, Color(0.5, 0.15, 0.1))
+	%BoardButton.custom_minimum_size = Vector2(130, BUTTON_BAR_HEIGHT)
 
 
 func start_battle(enc: Resource) -> void:

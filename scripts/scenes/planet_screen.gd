@@ -486,7 +486,6 @@ func _show_mission_confirm(
 
 	var btn_back := Button.new()
 	btn_back.text = "Back"
-	btn_back.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
 	UIStyles.style_accent_button(btn_back, Color(0.5, 0.15, 0.1))
 	btn_back.pressed.connect(func() -> void: overlay.queue_free())
 	vbox.add_child(btn_back)
