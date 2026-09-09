@@ -74,8 +74,6 @@ func _ready() -> void:
 		land_button.tooltip_text = ""
 	travel_button.pressed.connect(_on_travel_pressed)
 	land_button.pressed.connect(_on_land_pressed)
-	_style_nav_button(travel_button, Color(0.0, 0.85, 0.45))
-	_style_nav_button(land_button, Color(0.0, 0.65, 0.95))
 
 	# Show info panel with current planet on start
 	var current := _find_planet_by_name(GameManager.current_planet)
@@ -196,7 +194,7 @@ func _configure_info_panel() -> void:
 		close_btn.custom_minimum_size = Vector2(26, 26)
 		close_btn.focus_mode = Control.FOCUS_NONE
 		close_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		UIStyles.style_accent_button(close_btn, Color(0.4, 0.12, 0.12), UIStyles.FONT_CAPTION)
+		close_btn.theme_type_variation = UIStyles.BTN_COMPACT
 		close_btn.pressed.connect(_on_info_panel_close_pressed)
 		header_row.add_child(close_btn)
 
@@ -965,14 +963,14 @@ func _show_boss_confirmation_dialog(planet_name: String, route: Array[String]) -
 	var cancel_btn := Button.new()
 	cancel_btn.text = "NOT YET"
 	cancel_btn.custom_minimum_size = Vector2(120, 40)
-	UIStyles.style_accent_button(cancel_btn, Color(0.5, 0.15, 0.1))
+	cancel_btn.theme_type_variation = UIStyles.BTN_DANGER
 	cancel_btn.pressed.connect(func(): overlay.queue_free())
 	hbox.add_child(cancel_btn)
 	
 	var ok_btn := Button.new()
 	ok_btn.text = "ENGAGE"
 	ok_btn.custom_minimum_size = Vector2(120, 40)
-	UIStyles.style_accent_button(ok_btn, Color(0.8, 0.2, 0.2))
+	ok_btn.theme_type_variation = UIStyles.BTN_DANGER
 	ok_btn.pressed.connect(func():
 		overlay.queue_free()
 		_execute_travel(planet_name, route)
@@ -1025,31 +1023,6 @@ func _build_systems_debug_text() -> String:
 	]
 
 
-func _style_nav_button(btn: Button, accent: Color) -> void:
-	UIStyles.style_accent_button(btn, accent.darkened(0.5))
-	var normal: StyleBoxFlat = btn.get_theme_stylebox("normal").duplicate()
-	normal.bg_color.a = 0.85
-	normal.border_color = accent
-	normal.content_margin_left = 20
-	normal.content_margin_right = 20
-	normal.content_margin_top = 8
-	normal.content_margin_bottom = 8
-	normal.shadow_color = Color(accent.r, accent.g, accent.b, 0.3)
-	normal.shadow_size = 6
-	btn.add_theme_stylebox_override("normal", normal)
-
-	var hover: StyleBoxFlat = normal.duplicate()
-	hover.bg_color = accent.darkened(0.35)
-	hover.bg_color.a = 0.9
-	hover.border_color = accent.lightened(0.1)
-	btn.add_theme_stylebox_override("hover", hover)
-
-	var pressed: StyleBoxFlat = normal.duplicate()
-	pressed.bg_color = accent.darkened(0.6)
-	btn.add_theme_stylebox_override("pressed", pressed)
-
-	btn.add_theme_color_override("font_color", Color(0.05, 0.05, 0.05))
-	btn.add_theme_color_override("font_hover_color", Color(0.0, 0.0, 0.0))
 
 
 func _add_galaxy_background() -> void:
@@ -1230,6 +1203,6 @@ func _show_weather_popup() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_DETAIL)
+	close_btn.theme_type_variation = UIStyles.BTN_DANGER
 	close_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(close_btn)

@@ -99,7 +99,7 @@ func _refresh_crew_ui() -> void:
 		info.mouse_filter = Control.MOUSE_FILTER_STOP
 		row.add_child(info)
 
-		var dismiss_btn := ActionButton.new()
+		var dismiss_btn := Button.new()
 		dismiss_btn.text = "Dismiss"
 		var idx := i
 		var crew_name: String = crew_res.crew_name
@@ -185,7 +185,7 @@ func _build_hire_card(crew_res: Resource) -> PanelContainer:
 
 	var crew_full: bool = GameManager.crew.size() >= GameManager.get_max_crew()
 	var too_poor: bool = GameManager.credits < crew_res.recruit_cost
-	var hire_btn := ActionButton.new()
+	var hire_btn := Button.new()
 	hire_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hire_btn.disabled = crew_full or too_poor
 	if crew_full:

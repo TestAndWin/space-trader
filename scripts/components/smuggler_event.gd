@@ -121,18 +121,14 @@ func _build_ui() -> void:
 	_accept_button = Button.new()
 	_accept_button.text = "Accept"
 	_accept_button.custom_minimum_size = Vector2(120, 36)
-	UIStyles.style_event_button(
-		_accept_button, Color(0.7, 0.25, 0.1), Color(0.85, 0.35, 0.15), Color(0.55, 0.18, 0.08)
-	)
+	_accept_button.theme_type_variation = UIStyles.BTN_DANGER
 	_accept_button.pressed.connect(_on_accept)
 	hbox.add_child(_accept_button)
 
 	_decline_button = Button.new()
 	_decline_button.text = "Decline"
 	_decline_button.custom_minimum_size = Vector2(120, 36)
-	UIStyles.style_event_button(
-		_decline_button, Color(0.25, 0.25, 0.28), Color(0.35, 0.35, 0.38), Color(0.18, 0.18, 0.2)
-	)
+	_decline_button.theme_type_variation = UIStyles.BTN_NEUTRAL
 	_decline_button.pressed.connect(_on_decline)
 	hbox.add_child(_decline_button)
 
@@ -191,7 +187,7 @@ func _show_caught_options() -> void:
 	var fine_btn := Button.new()
 	fine_btn.text = "Pay Fine (%d cr)" % fine
 	fine_btn.custom_minimum_size = Vector2(280, 34)
-	_style_caught_button(fine_btn, Color(0.7, 0.25, 0.1))
+	fine_btn.theme_type_variation = UIStyles.BTN_DANGER
 	fine_btn.pressed.connect(func():
 		GameManager.remove_credits(fine)
 		StandingManager.add_bounty(100, "caught smuggling")
@@ -207,7 +203,7 @@ func _show_caught_options() -> void:
 	var bribe_btn := Button.new()
 	bribe_btn.text = "Bribe Official (%d cr, no new bounty)" % bribe_cost
 	bribe_btn.custom_minimum_size = Vector2(280, 34)
-	_style_caught_button(bribe_btn, Color(0.6, 0.5, 0.1))
+	bribe_btn.theme_type_variation = UIStyles.BTN_CAUTION
 	bribe_btn.pressed.connect(func():
 		if randf() < 0.80:
 			GameManager.remove_credits(bribe_cost)
@@ -227,7 +223,7 @@ func _show_caught_options() -> void:
 	var accept_btn := Button.new()
 	accept_btn.text = "Accept Punishment"
 	accept_btn.custom_minimum_size = Vector2(280, 34)
-	_style_caught_button(accept_btn, Color(0.25, 0.25, 0.28))
+	accept_btn.theme_type_variation = UIStyles.BTN_NEUTRAL
 	accept_btn.pressed.connect(func():
 		GameManager.remove_credits(mini(fine, GameManager.credits))
 		StandingManager.add_bounty(100, "caught smuggling")
@@ -237,18 +233,6 @@ func _show_caught_options() -> void:
 	)
 	caught_vbox.add_child(accept_btn)
 
-
-func _style_caught_button(btn: Button, bg_color: Color) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = bg_color
-	style.set_corner_radius_all(4)
-	style.set_content_margin_all(6)
-	btn.add_theme_stylebox_override("normal", style)
-	var hover := StyleBoxFlat.new()
-	hover.bg_color = bg_color.lightened(0.15)
-	hover.set_corner_radius_all(4)
-	hover.set_content_margin_all(6)
-	btn.add_theme_stylebox_override("hover", hover)
 
 
 func _on_decline() -> void:

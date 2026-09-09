@@ -107,13 +107,15 @@ theme_override_constants/separation = 20
 alignment = 1
 
 [node name="ContinueButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonsRow"]
+theme_type_variation = &"ConfirmButton"
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
+custom_minimum_size = Vector2(200, 0)
 text = "Continue Playing"
 
 [node name="MainMenuButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonsRow"]
+theme_type_variation = &"InfoButton"
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
+custom_minimum_size = Vector2(200, 0)
 text = "End Game (Main Menu)"

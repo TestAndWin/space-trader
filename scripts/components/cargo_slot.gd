@@ -102,7 +102,7 @@ func _setup_icon() -> void:
 
 
 func _style_buttons() -> void:
-	UIStyles.style_accent_button($ActionButton, BUY_COLOR if mode == "buy" else SELL_COLOR, UIStyles.FONT_CAPTION)
+	UIStyles.tint_button($ActionButton, BUY_COLOR if mode == "buy" else SELL_COLOR, UIStyles.BTN_COMPACT)
 
 
 func _update_trade_controls() -> void:

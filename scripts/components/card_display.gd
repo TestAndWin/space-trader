@@ -231,6 +231,9 @@ func _apply_content_layout() -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 
+## The play bar is part of the card face, not a standard button: it sits flush
+## with the card edge and shares its palette, so it stays hand-styled instead of
+## taking a theme role.
 func _style_play_button() -> void:
 	var button := %PlayButton
 	button.flat = false
@@ -477,7 +480,7 @@ func _show_card_detail_popup() -> void:
 		play_btn.text = %PlayButton.text
 		play_btn.custom_minimum_size = Vector2(140, 44)
 		play_btn.disabled = not playable
-		UIStyles.style_accent_button(play_btn, Color(0.0, 0.45, 0.25) if playable else Color(0.2, 0.2, 0.2))
+		play_btn.theme_type_variation = UIStyles.BTN_CONFIRM if playable else UIStyles.BTN_NEUTRAL
 		play_btn.pressed.connect(func() -> void:
 			overlay.queue_free()
 			_on_play_button_pressed()
@@ -487,7 +490,7 @@ func _show_card_detail_popup() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.custom_minimum_size = Vector2(110, 44)
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_DETAIL)
+	close_btn.theme_type_variation = UIStyles.BTN_DANGER
 	close_btn.pressed.connect(overlay.queue_free)
 	btn_row.add_child(close_btn)
 

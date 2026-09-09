@@ -277,15 +277,20 @@ mouse_filter = 2
 size_flags_horizontal = 3
 
 [node name="BoardButton" type="Button" parent="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar"]
+custom_minimum_size = Vector2(130, 44)
+theme_type_variation = &"DangerButton"
 unique_name_in_owner = true
 layout_mode = 2
 text = "Board Ship"
 
 [node name="EndTurnButton" type="Button" parent="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar"]
+custom_minimum_size = Vector2(130, 44)
+theme_type_variation = &"ConfirmButton"
 layout_mode = 2
 text = "End Turn"
 
 [node name="FleeButton" type="Button" parent="MainLayout/PlayerPanel/PlayerVBox/ButtonsBar"]
+custom_minimum_size = Vector2(90, 44)
 unique_name_in_owner = true
 layout_mode = 2
 text = "Flee"

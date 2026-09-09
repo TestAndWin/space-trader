@@ -415,7 +415,7 @@ func _show_hint_card(
 	var btn := Button.new()
 	btn.text = button_text
 	btn.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
-	_style_primary_button(btn, ACCENT_DEPART)
+	btn.theme_type_variation = UIStyles.BTN_PRIMARY
 	btn.pressed.connect(func() -> void:
 		overlay.queue_free()
 		if on_ack.is_valid():
@@ -477,7 +477,7 @@ func _show_mission_confirm(
 		btn_start.text = "Start"
 	btn_start.disabled = not can_afford
 	btn_start.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
-	_style_primary_button(btn_start, ACCENT_DEPART)
+	btn_start.theme_type_variation = UIStyles.BTN_PRIMARY
 	btn_start.pressed.connect(func() -> void:
 		overlay.queue_free()
 		on_confirm.call()
@@ -486,7 +486,7 @@ func _show_mission_confirm(
 
 	var btn_back := Button.new()
 	btn_back.text = "Back"
-	UIStyles.style_accent_button(btn_back, Color(0.5, 0.15, 0.1))
+	btn_back.theme_type_variation = UIStyles.BTN_DANGER
 	btn_back.pressed.connect(func() -> void: overlay.queue_free())
 	vbox.add_child(btn_back)
 
@@ -536,6 +536,7 @@ func _create_image_hotspots() -> void:
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		btn.disabled = false
+		# Invisible hit areas over the city map -- deliberately unthemed.
 		btn.add_theme_stylebox_override("normal",   empty)
 		btn.add_theme_stylebox_override("pressed",  empty)
 		btn.add_theme_stylebox_override("disabled", empty)
@@ -890,7 +891,7 @@ func _on_event_log_pressed() -> void:
 
 	var copy_btn := Button.new()
 	copy_btn.text = "Copy Last 50"
-	UIStyles.style_accent_button(copy_btn, Color(0.1, 0.4, 0.7))
+	copy_btn.theme_type_variation = UIStyles.BTN_INFO
 	copy_btn.pressed.connect(func():
 		var txt: String = ""
 		var ents: Array = EventLog.get_entries()
@@ -904,7 +905,7 @@ func _on_event_log_pressed() -> void:
 
 	var close_btn := Button.new()
 	close_btn.text = "Close"
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
+	close_btn.theme_type_variation = UIStyles.BTN_DANGER
 	close_btn.pressed.connect(func(): overlay.queue_free())
 	header.add_child(close_btn)
 
@@ -1202,7 +1203,7 @@ func _show_standing_popup() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_DETAIL)
+	close_btn.theme_type_variation = UIStyles.BTN_DANGER
 	close_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(close_btn)
 
@@ -1272,7 +1273,7 @@ func _show_news_popup() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_DETAIL)
+	close_btn.theme_type_variation = UIStyles.BTN_DANGER
 	close_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(close_btn)
 
@@ -1325,7 +1326,7 @@ func _show_goal_popup() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_DETAIL)
+	close_btn.theme_type_variation = UIStyles.BTN_DANGER
 	close_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(close_btn)
 
@@ -1573,14 +1574,13 @@ func _on_depart_pressed() -> void:
 	var btn_depart := Button.new()
 	btn_depart.text = "Depart"
 	btn_depart.add_theme_font_size_override("font_size", UIStyles.FONT_BODY)
-	_style_primary_button(btn_depart, ACCENT_DEPART)
+	btn_depart.theme_type_variation = UIStyles.BTN_PRIMARY
 	btn_depart.pressed.connect(func(): overlay.queue_free(); _do_depart())
 	vbox.add_child(btn_depart)
 
 	var btn_stay := Button.new()
 	btn_stay.text = "Stay on Planet"
 	btn_stay.add_theme_font_size_override("font_size", UIStyles.FONT_LABEL)
-	UIStyles.style_secondary_button(btn_stay)
 	btn_stay.pressed.connect(func(): overlay.queue_free())
 	vbox.add_child(btn_stay)
 
@@ -1619,22 +1619,7 @@ func _add_header_buttons() -> void:
 func _create_small_header_button(text: String, callback: Callable) -> Button:
 	var btn := Button.new()
 	btn.text = text
-	btn.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
-	btn.add_theme_color_override("font_color", Color(0.35, 0.6, 0.8))
-	btn.add_theme_color_override("font_hover_color", Color(0.55, 0.78, 0.98))
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.04, 0.08, 0.5)
-	style.border_color = Color(0.0, 0.25, 0.45, 0.4)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(3)
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 2
-	style.content_margin_bottom = 2
-	btn.add_theme_stylebox_override("normal", style)
-	var hover_style := style.duplicate()
-	hover_style.bg_color = Color(0.04, 0.08, 0.14, 0.6)
-	btn.add_theme_stylebox_override("hover", hover_style)
+	btn.theme_type_variation = UIStyles.BTN_COMPACT
 	btn.pressed.connect(callback)
 	return btn
 
@@ -1645,32 +1630,6 @@ func _on_menu_pressed() -> void:
 	SaveManager.save_game()
 	GameManager.change_scene("res://scenes/main_menu.tscn")
 
-
-func _style_primary_button(btn: Button, accent: Color) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = accent
-	normal.border_color = accent.lightened(0.25)
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(4)
-	normal.shadow_color = Color(0.0, 0.85, 0.45, 0.35)
-	normal.shadow_size = 8
-	normal.content_margin_left = 16
-	normal.content_margin_right = 16
-	normal.content_margin_top = 6
-	normal.content_margin_bottom = 6
-
-	var hover := normal.duplicate()
-	hover.bg_color = accent.lightened(0.15)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = accent.darkened(0.2)
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_color_override("font_color", Color(0.0, 0.05, 0.05))
-	btn.add_theme_color_override("font_hover_color", Color(0.0, 0.1, 0.05))
-	btn.add_theme_color_override("font_pressed_color", Color(0.0, 0.05, 0.02))
 
 
 var _active_toast_container: Control = null

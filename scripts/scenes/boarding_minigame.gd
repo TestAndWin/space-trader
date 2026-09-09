@@ -368,14 +368,14 @@ func _build_ui() -> void:
 	_ui_retreat_btn = Button.new()
 	_ui_retreat_btn.text = "Extract & Back to ship"
 	_ui_retreat_btn.custom_minimum_size = Vector2(200, 50)
-	UIStyles.style_accent_button(_ui_retreat_btn, Color(0.3, 0.3, 0.3))
+	_ui_retreat_btn.theme_type_variation = UIStyles.BTN_NEUTRAL
 	_ui_retreat_btn.pressed.connect(_finish_boarding.bind(1))
 	nav_hbox.add_child(_ui_retreat_btn)
 	
 	_ui_advance_btn = Button.new()
 	_ui_advance_btn.text = "Next Room (+10 Alarm)"
 	_ui_advance_btn.custom_minimum_size = Vector2(200, 50)
-	UIStyles.style_accent_button(_ui_advance_btn, Color(0.2, 0.4, 0.8))
+	_ui_advance_btn.theme_type_variation = UIStyles.BTN_INFO
 	_ui_advance_btn.pressed.connect(func():
 		_current_room_idx += 1
 		if _current_room_idx >= _rooms.size():
@@ -501,7 +501,7 @@ func _update_room_view() -> void:
 		else:
 			bf_btn.text = "Brute Force (+%d Alarm)" % bf_alarm
 			
-		UIStyles.style_accent_button(bf_btn, Color(0.6, 0.2, 0.2))
+		bf_btn.theme_type_variation = UIStyles.BTN_DANGER
 		bf_btn.pressed.connect(func():
 			var actual = _add_alarm(bf_alarm)
 			room.cleared = true
@@ -520,7 +520,6 @@ func _update_room_view() -> void:
 				var item: Dictionary = room.loot[i]
 				var l_btn: Button = Button.new()
 				l_btn.text = "Take: " + item.name
-				UIStyles.style_secondary_button(l_btn)
 				l_btn.pressed.connect(func():
 					_take_loot(item, i)
 				)

@@ -21,8 +21,6 @@ func _ready() -> void:
 			%CreditsLabel, %PlanetsLabel, %UpgradesLabel]:
 		UIStyles.apply_mono_font(stat_label)
 	%MainMenuButton.pressed.connect(_on_main_menu_pressed)
-	%MainMenuButton.custom_minimum_size.y = UIStyles.ACTION_BTN_MIN_HEIGHT
-	UIStyles.style_secondary_button(%MainMenuButton, UIStyles.ACTION_BTN_FONT_SIZE)
 
 
 func _on_main_menu_pressed() -> void:

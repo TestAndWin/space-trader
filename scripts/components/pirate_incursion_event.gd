@@ -108,19 +108,10 @@ func _setup_event(event_type: int) -> void:
 func _create_button(text: String) -> Button:
 	var btn := Button.new()
 	btn.text = text
-	btn.custom_minimum_size = Vector2(140, 36)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.7, 0.2, 0.2)
-	style.set_corner_radius_all(4)
-	style.set_content_margin_all(6)
-	btn.add_theme_stylebox_override("normal", style)
-
-	var hover := StyleBoxFlat.new()
-	hover.bg_color = Color(0.85, 0.3, 0.3)
-	hover.set_corner_radius_all(4)
-	hover.set_content_margin_all(6)
-	btn.add_theme_stylebox_override("hover", hover)
+	btn.custom_minimum_size = Vector2(140, 0)
+	btn.theme_type_variation = UIStyles.BTN_DANGER
 	return btn
+
 
 func _close() -> void:
 	event_resolved.emit()

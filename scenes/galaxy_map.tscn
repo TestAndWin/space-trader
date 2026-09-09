@@ -129,12 +129,14 @@ text = ""
 autowrap_mode = 2
 
 [node name="TravelButton" type="Button" parent="CanvasLayer/InfoPanel/VBoxContainer"]
+theme_type_variation = &"PrimaryButton"
 layout_mode = 2
 visible = false
 theme_override_font_sizes/font_size = 16
 text = "Travel"
 
 [node name="LandButton" type="Button" parent="CanvasLayer/InfoPanel/VBoxContainer"]
+theme_type_variation = &"InfoButton"
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Land on Planet"

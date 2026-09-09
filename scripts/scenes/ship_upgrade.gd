@@ -345,7 +345,7 @@ func _add_upgrade_row(upgrade: Resource) -> void:
 	var can_afford: bool = GameManager.credits >= upgrade.cost
 	var has_items: bool = _has_required_crafted_items(upgrade)
 	buy_button.disabled = not can_afford or not has_items
-	UIStyles.style_buy_button(buy_button)
+	buy_button.theme_type_variation = UIStyles.BTN_BUY
 	buy_button.pressed.connect(_on_buy_upgrade.bind(upgrade))
 	btn_col.add_child(buy_button)
 

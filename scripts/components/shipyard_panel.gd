@@ -64,7 +64,7 @@ func _ready() -> void:
 	fuel_bar_label = fuel_container.get_node("BarLabel")
 	bars_vbox.add_child(fuel_container)
 
-	repair_button = ActionButton.new()
+	repair_button = Button.new()
 	repair_button.text = "Repair Hull"
 	repair_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	repair_button.pressed.connect(_on_repair_pressed)
@@ -74,19 +74,19 @@ func _ready() -> void:
 	fuel_row.add_theme_constant_override("separation", 4)
 	vbox.add_child(fuel_row)
 
-	buy_fuel_button = ActionButton.new()
+	buy_fuel_button = Button.new()
 	buy_fuel_button.text = "Buy +1 Fuel"
 	buy_fuel_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	buy_fuel_button.pressed.connect(_on_buy_fuel_pressed)
 	fuel_row.add_child(buy_fuel_button)
 
-	fill_fuel_button = ActionButton.new()
+	fill_fuel_button = Button.new()
 	fill_fuel_button.text = "Fill Tank"
 	fill_fuel_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	fill_fuel_button.pressed.connect(_on_fill_fuel_pressed)
 	fuel_row.add_child(fill_fuel_button)
 
-	emergency_fuel_button = ActionButton.new()
+	emergency_fuel_button = Button.new()
 	emergency_fuel_button.text = "Emergency Fuel"
 	emergency_fuel_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	emergency_fuel_button.pressed.connect(_on_emergency_fuel_pressed)

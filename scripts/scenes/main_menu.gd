@@ -10,7 +10,6 @@ const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 func _ready() -> void:
 	$VBoxContainer/ContinueButton.visible = SaveManager.has_save()
 	$VBoxContainer/QuitButton.visible = OS.get_name() != "iOS"
-	_style_buttons()
 	_apply_title_glow()
 	_apply_text_shadow(subtitle_label)
 	_apply_text_shadow(version_label)
@@ -40,22 +39,6 @@ func _apply_text_shadow(label: Label) -> void:
 	label.label_settings = settings
 
 
-func _style_buttons() -> void:
-	var buttons := [
-		$VBoxContainer/NewGameButton,
-		$VBoxContainer/ContinueButton,
-		$VBoxContainer/HowToPlayButton,
-		$VBoxContainer/AchievementsButton,
-		$VBoxContainer/AboutButton,
-		$VBoxContainer/QuitButton,
-	]
-	for btn: Button in buttons:
-		UIStyles.style_secondary_button(btn, UIStyles.ACTION_BTN_FONT_SIZE)
-
-
-## Dimmed full-screen modal used by the difficulty and about popups.
-## Returns { "overlay": ColorRect, "vbox": VBoxContainer } — free the overlay
-## to close the modal, fill the vbox with the content.
 func _on_new_game_pressed() -> void:
 	_show_difficulty_popup()
 
@@ -90,7 +73,6 @@ func _show_difficulty_popup() -> void:
 
 		var btn := Button.new()
 		btn.text = diff["name"]
-		UIStyles.style_secondary_button(btn, UIStyles.ACTION_BTN_FONT_SIZE)
 		btn.pressed.connect(_on_difficulty_chosen.bind(diff["value"], overlay))
 		btn_vbox.add_child(btn)
 
@@ -109,7 +91,7 @@ func _show_difficulty_popup() -> void:
 
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
-	UIStyles.style_accent_button(cancel_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_BODY)
+	cancel_btn.theme_type_variation = UIStyles.BTN_DANGER
 	cancel_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(cancel_btn)
 
@@ -192,7 +174,7 @@ func _on_about_pressed() -> void:
 
 	var close_btn := Button.new()
 	close_btn.text = "Close"
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_BODY)
+	close_btn.theme_type_variation = UIStyles.BTN_DANGER
 	close_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(close_btn)
 

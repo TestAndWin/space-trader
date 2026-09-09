@@ -239,7 +239,7 @@ func _build_ui() -> void:
 	_close_btn = Button.new()
 	_close_btn.text = "Leave"
 	_close_btn.visible = false
-	UIStyles.style_continue_button(_close_btn)
+	_close_btn.custom_minimum_size = Vector2(160, 0)
 	_close_btn.pressed.connect(close)
 	var close_row := HBoxContainer.new()
 	close_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -265,7 +265,7 @@ func _add_choice(label: String, callback: Callable, disabled: bool = false, hint
 	var btn := Button.new()
 	btn.text = label
 	btn.custom_minimum_size = Vector2(420, 36)
-	UIStyles.style_secondary_button(btn, UIStyles.FONT_LABEL)
+	btn.theme_type_variation = UIStyles.BTN_COMPACT
 	btn.disabled = disabled
 	if hint != "":
 		btn.tooltip_text = hint
@@ -534,7 +534,6 @@ func _factory_show() -> void:
 	var btn := Button.new()
 	btn.text = "▼  STRIKE  ▼"
 	btn.custom_minimum_size = Vector2(FORGE_BAR_WIDTH, 40)
-	UIStyles.style_action_button(btn)
 	btn.pressed.connect(_forge_on_strike)
 	_button_box.add_child(btn)
 	_forge_marker_pos = 0.0
