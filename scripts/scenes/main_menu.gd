@@ -50,7 +50,7 @@ func _style_buttons() -> void:
 		$VBoxContainer/QuitButton,
 	]
 	for btn: Button in buttons:
-		UIStyles.style_secondary_button(btn, UIStyles.FONT_SUBHEADING)
+		UIStyles.style_secondary_button(btn, UIStyles.ACTION_BTN_FONT_SIZE)
 
 
 ## Dimmed full-screen modal used by the difficulty and about popups.
@@ -90,7 +90,7 @@ func _show_difficulty_popup() -> void:
 
 		var btn := Button.new()
 		btn.text = diff["name"]
-		UIStyles.style_secondary_button(btn, UIStyles.FONT_SUBHEADING)
+		UIStyles.style_secondary_button(btn, UIStyles.ACTION_BTN_FONT_SIZE)
 		btn.pressed.connect(_on_difficulty_chosen.bind(diff["value"], overlay))
 		btn_vbox.add_child(btn)
 
