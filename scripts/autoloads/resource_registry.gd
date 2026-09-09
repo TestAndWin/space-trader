@@ -75,7 +75,7 @@ const ENCOUNTERS: Array[String] = [
 	"res://data/encounters/space_anomaly.tres",
 	"res://data/encounters/system_patrol.tres",
 	"res://data/encounters/wandering_trader.tres",
-	"res://data/encounters/pirate_enforcer.tres",
+	"res://data/encounters/crimson_enforcer.tres",
 	"res://data/encounters/crimson_jack.tres",
 ]
 
