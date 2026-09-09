@@ -24,11 +24,12 @@ func _ready() -> void:
 	%ContinueButton.pressed.connect(_on_continue_pressed)
 	%MainMenuButton.pressed.connect(_on_main_menu_pressed)
 	
-	UIStyles.apply_display_font(%ContinueButton)
-	UIStyles.apply_display_font(%MainMenuButton)
-	
-	UIStyles.style_accent_button(%ContinueButton, Color(0.2, 0.6, 0.2), UIStyles.FONT_SUBHEADING)
-	UIStyles.style_accent_button(%MainMenuButton, Color(0.2, 0.3, 0.5), UIStyles.FONT_SUBHEADING)
+	# Font and height stay at the standard button metrics -- the display font is
+	# for the title above, not for buttons. Only the accent colors are custom.
+	for btn: Button in [%ContinueButton, %MainMenuButton]:
+		btn.custom_minimum_size.y = UIStyles.ACTION_BTN_MIN_HEIGHT
+	UIStyles.style_accent_button(%ContinueButton, Color(0.2, 0.6, 0.2))
+	UIStyles.style_accent_button(%MainMenuButton, Color(0.2, 0.3, 0.5))
 
 
 func _on_continue_pressed() -> void:
