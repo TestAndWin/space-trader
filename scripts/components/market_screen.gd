@@ -92,6 +92,8 @@ func _build_ui() -> void:
 	_credits_label = scaffold["credits_label"]
 	_cargo_label = UIStyles.create_cargo_label()
 	header.add_child(_cargo_label)
+	# Both readouts belong together, left of the close button.
+	header.move_child(_cargo_label, _credits_label.get_index())
 	_apply_planet_theme()
 
 	# Status

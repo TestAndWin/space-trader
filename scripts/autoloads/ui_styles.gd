@@ -12,7 +12,7 @@ const CargoLabelScript = preload("res://scripts/components/cargo_label.gd")
 
 
 ## Self-updating cargo readout, bound to GameManager.cargo_changed.
-static func create_cargo_label(format_string: String = "Cargo: %d/%d", font_size: int = 16) -> Label:
+static func create_cargo_label(format_string: String = "Cargo: %d/%d", font_size: int = FONT_BODY) -> Label:
 	var label := Label.new()
 	label.set_script(CargoLabelScript)
 	label.format_string = format_string
