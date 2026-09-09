@@ -6,7 +6,7 @@
 script = ExtResource("1_cj1")
 encounter_name = "Crimson Jack"
 description = "The notorious Pirate Lord Crimson Jack himself."
-enemy_health = 150
+enemy_health = 100
 enemy_attack_range = Vector2i(15, 25)
 reward_credits = 2000
 can_flee = false

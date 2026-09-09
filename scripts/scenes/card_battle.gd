@@ -201,12 +201,7 @@ func start_battle(enc: Resource) -> void:
 	GameManager.boarding_special_loot = ""
 	
 	if enc.encounter_name == "Crimson Jack":
-		match GameManager.difficulty:
-			GameManager.Difficulty.EASY: enemy_health = 100
-			GameManager.Difficulty.NORMAL: enemy_health = 150
-			GameManager.Difficulty.HARD: enemy_health = 200
-		var weaken: int = PirateLordManager.officers_defeated.size() * 10
-		enemy_health = max(1, enemy_health - weaken)
+		enemy_health = PirateLordManager.get_jack_health()
 		enemy_max_health = enemy_health
 		
 	# Shield carries over from overworld (upgrades matter)

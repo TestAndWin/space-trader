@@ -1,5 +1,14 @@
 extends Node
 
+## Every defeated officer thins out Jack's fleet before the final fight.
+const OFFICER_WEAKEN_HP: int = 10
+
+## Jack's health is decided here, not by his .tres: it scales with the
+## difficulty and with the officers the player has already hunted down.
+const JACK_BASE_HEALTH_EASY: int = 70
+const JACK_BASE_HEALTH_NORMAL: int = 100
+const JACK_BASE_HEALTH_HARD: int = 130
+
 
 var heat: int = 0
 var max_heat: int = 100
@@ -12,6 +21,15 @@ func add_heat(amount: int) -> void:
 	
 func defeat_officer(officer_name: String) -> void:
 	officers_defeated.append(officer_name)
+
+## Health for the Crimson Jack encounter, difficulty and officer kills applied.
+func get_jack_health() -> int:
+	var base: int = JACK_BASE_HEALTH_NORMAL
+	match GameManager.difficulty:
+		GameManager.Difficulty.EASY: base = JACK_BASE_HEALTH_EASY
+		GameManager.Difficulty.HARD: base = JACK_BASE_HEALTH_HARD
+	return maxi(1, base - officers_defeated.size() * OFFICER_WEAKEN_HP)
+
 
 func tick() -> void:
 	if GameManager.victory_triggered:
