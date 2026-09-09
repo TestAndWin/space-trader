@@ -12,7 +12,7 @@ const CargoLabelScript = preload("res://scripts/components/cargo_label.gd")
 
 
 ## Self-updating cargo readout, bound to GameManager.cargo_changed.
-static func create_cargo_label(format_string: String = "Cargo: %d/%d", font_size: int = FONT_BODY) -> Label:
+static func create_cargo_label(format_string: String = "Cargo: %d/%d", font_size: int = FONT_READOUT) -> Label:
 	var label := Label.new()
 	label.set_script(CargoLabelScript)
 	label.format_string = format_string
@@ -24,7 +24,7 @@ static func create_cargo_label(format_string: String = "Cargo: %d/%d", font_size
 
 ## The standard gold credit readout. It binds itself to
 ## GameManager.credits_changed, so callers must not assign its text.
-static func create_credits_label(format_string: String = "%d cr", font_size: int = 20) -> Label:
+static func create_credits_label(format_string: String = "%d cr", font_size: int = FONT_READOUT) -> Label:
 	var label := Label.new()
 	label.set_script(CreditsLabelScript)
 	label.format_string = format_string
@@ -56,6 +56,7 @@ static func apply_mono_font(ctrl: Control) -> void:
 const FONT_HERO: int       = 52  # Main menu wordmark, galaxy-map planet labels
 const FONT_TITLE: int      = 28  # Screen titles
 const FONT_HEADING: int    = 22  # Modal titles, panel headings
+const FONT_READOUT: int    = 20  # HUD readouts: credits and cargo in the headers
 const FONT_SUBHEADING: int = 18  # Card titles, sub-panel headings
 const FONT_BODY: int       = 16  # Primary content: descriptions, status labels
 const FONT_DETAIL: int     = 15  # Secondary rows: stats, chain labels, deadlines
