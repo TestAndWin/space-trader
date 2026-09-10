@@ -331,9 +331,8 @@ func _on_reward_skip_pressed() -> void:
 # ── Continue ─────────────────────────────────────────────────────────────────
 
 func _style_buttons() -> void:
-	UIStyles.style_continue_button(%ContinueButton)
-	for btn: Button in [%SkipButton, %AcceptButton, %RewardSkipButton]:
-		UIStyles.style_secondary_button(btn)
+	# Everything else here is the theme's plain Button look.
+	%ContinueButton.custom_minimum_size = Vector2(160, 0)
 
 
 func _on_continue_pressed() -> void:

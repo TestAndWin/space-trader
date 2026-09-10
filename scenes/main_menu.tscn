@@ -69,32 +69,32 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="NewGameButton" type="Button" parent="VBoxContainer" unique_id=1229147932]
-custom_minimum_size = Vector2(220, 36)
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "New Game"
 
 [node name="ContinueButton" type="Button" parent="VBoxContainer" unique_id=1672747392]
-custom_minimum_size = Vector2(220, 36)
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "Continue"
 
 [node name="HowToPlayButton" type="Button" parent="VBoxContainer" unique_id=13561191]
-custom_minimum_size = Vector2(220, 36)
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "How to Play"
 
 [node name="AchievementsButton" type="Button" parent="VBoxContainer" unique_id=439311260]
-custom_minimum_size = Vector2(220, 36)
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "Achievements"
 
 [node name="AboutButton" type="Button" parent="VBoxContainer" unique_id=1009969295]
-custom_minimum_size = Vector2(220, 36)
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "About & Legal"
 
 [node name="QuitButton" type="Button" parent="VBoxContainer" unique_id=1824837872]
-custom_minimum_size = Vector2(220, 36)
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 text = "Quit"
 

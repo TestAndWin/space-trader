@@ -95,11 +95,6 @@ const BORDER_COLOR := Color(0.0, 0.55, 0.85, 0.35)
 # Status / feedback label colors
 const STATUS_WARN := Color(0.9, 0.82, 0.55)     # Amber: informational status (quest, factory, market)
 
-# ── ActionButton constants ───────────────────────────────────────────────────
-# Change these to restyle all ActionButtons project-wide.
-const ACTION_BTN_FONT_SIZE: int = FONT_BODY
-const ACTION_BTN_MIN_HEIGHT: int = 36
-
 # Planet-type accent colors (indexed by planet_type int)
 const TYPE_COLORS := {
 	0: Color(0.4, 0.6, 1.0),    # INDUSTRIAL - blue
@@ -110,147 +105,67 @@ const TYPE_COLORS := {
 }
 
 
-# ── Shared button metrics ────────────────────────────────────────────────────
-# All button styles derive their padding from the font size, so two buttons with
-# the same font end up exactly the same height no matter which style they use.
-# FONT_BODY (16) yields the historic 16/8 padding.
+# ── Buttons ──────────────────────────────────────────────────────────────────
+# Every button look lives in resources/default_theme.tres as a theme type
+# variation, so nothing is styled at runtime: a caller picks a role and the
+# theme supplies font, padding, corners, borders and colors. The plain Button
+# type already carries the standard look, which is why an unstyled button is
+# no longer a broken-looking one.
+#
+#   btn.theme_type_variation = UIStyles.BTN_DANGER
+#
+# In a .tscn set the same value on the node instead. Use tint_button() only
+# where the color carries data rather than a role.
 
-static func apply_button_padding(sb: StyleBoxFlat, font_size: int) -> void:
-	var size: int = font_size if font_size > 0 else FONT_DETAIL
-	sb.content_margin_left = size
-	sb.content_margin_right = size
-	sb.content_margin_top = roundi(size * 0.5)
-	sb.content_margin_bottom = roundi(size * 0.5)
+const BTN_DEFAULT: StringName = &""                    # dark panel button, cyan trim
+const BTN_DANGER: StringName = &"DangerButton"         # close, abort, attack
+const BTN_CONFIRM: StringName = &"ConfirmButton"       # accept, continue playing
+const BTN_INFO: StringName = &"InfoButton"             # neutral navigation, event choices
+const BTN_NEUTRAL: StringName = &"NeutralButton"       # dismiss, decline
+const BTN_CAUTION: StringName = &"CautionButton"       # bribes and other shady options
+const BTN_STEALTH: StringName = &"StealthButton"       # smuggling, hiding contraband
+const BTN_PRIMARY: StringName = &"PrimaryButton"       # the one call to action on a screen
+const BTN_BUY: StringName = &"BuyButton"               # purchase actions in trade screens
+const BTN_COMPACT: StringName = &"CompactButton"       # tight rows, header chips
+
+const _TINT_STATES: Array[String] = ["normal", "hover", "pressed", "disabled"]
 
 
-# ── Accent button ────────────────────────────────────────────────────────────
-# Used for: close/action buttons with a colored accent background.
-# Replaces: _style_action_button() in ship_upgrade, ship_dealer, deck_viewer,
-#           _style_casino_button() in casino_popup,
-#           _style_nav_button() in galaxy_map.
-
-static func style_accent_button(btn: Button, accent: Color, font_size: int = ACTION_BTN_FONT_SIZE) -> void:
-	btn.add_theme_font_size_override("font_size", font_size)
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = accent
-	normal.border_color = accent.lightened(0.3)
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(6)
-	apply_button_padding(normal, font_size)
-
-	var hover := normal.duplicate()
-	hover.bg_color = accent.lightened(0.15)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = accent.darkened(0.2)
-
-	# Without this the disabled state falls back to the engine default, which is
-	# near-invisible on the dark panels -- a blocked button then reads as dead
-	# text instead of as a button the player can unblock.
-	var disabled := normal.duplicate()
-	disabled.bg_color = accent.darkened(0.55)
-	disabled.border_color = accent.darkened(0.3)
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("disabled", disabled)
+## Recolors a button whose color carries information instead of a role -- the
+## planet accent in the casino, buy vs sell in the cargo slots. Geometry and
+## font still come from the theme; only the colors are replaced.
+##
+## The project theme is read directly rather than through get_theme_stylebox():
+## a Control resolves its variation only once it is inside the tree, and most
+## callers style their buttons before adding them.
+static func tint_button(btn: Button, accent: Color, variation: StringName = BTN_DEFAULT) -> void:
+	btn.theme_type_variation = variation
+	var theme: Theme = ThemeDB.get_project_theme()
+	if theme == null:
+		return
+	var type_name: StringName = variation if variation != &"" else &"Button"
+	for state: String in _TINT_STATES:
+		var base: StyleBox = theme.get_stylebox(state, type_name)
+		if not base is StyleBoxFlat:
+			continue
+		var sb: StyleBoxFlat = base.duplicate()
+		match state:
+			"hover":
+				sb.bg_color = accent.lightened(0.15)
+				sb.border_color = accent.lightened(0.3)
+			"pressed":
+				sb.bg_color = accent.darkened(0.2)
+				sb.border_color = accent.lightened(0.3)
+			"disabled":
+				sb.bg_color = accent.darkened(0.55)
+				sb.border_color = accent.darkened(0.3)
+			_:
+				sb.bg_color = accent
+				sb.border_color = accent.lightened(0.3)
+		btn.add_theme_stylebox_override(state, sb)
 	btn.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9))
 	btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 0.95))
 	btn.add_theme_color_override("font_disabled_color", Color(0.62, 0.62, 0.6))
-
-
-# ── Buy button ───────────────────────────────────────────────────────────────
-# Used for: green "BUY" buttons with disabled state.
-# Replaces: _style_buy_button() in ship_upgrade, ship_dealer.
-
-static func style_buy_button(btn: Button) -> void:
-	btn.add_theme_font_size_override("font_size", FONT_LABEL)
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.0, 0.18, 0.10)
-	normal.border_color = Color(0.0, 0.6, 0.4, 0.7)
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(6)
-	apply_button_padding(normal, FONT_LABEL)
-	normal.shadow_color = Color(0.0, 0.5, 0.3, 0.15)
-	normal.shadow_size = 4
-
-	var hover := normal.duplicate()
-	hover.bg_color = Color(0.0, 0.25, 0.15)
-	hover.border_color = Color(0.0, 0.8, 0.5, 0.9)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = Color(0.0, 0.12, 0.06)
-
-	var disabled := normal.duplicate()
-	disabled.bg_color = Color(0.04, 0.06, 0.10, 0.5)
-	disabled.border_color = Color(0.1, 0.15, 0.2, 0.4)
-	disabled.shadow_size = 0
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_color", Color(0.6, 0.95, 0.7))
-	btn.add_theme_color_override("font_hover_color", Color(0.8, 1.0, 0.85))
-	btn.add_theme_color_override("font_disabled_color", Color(0.3, 0.3, 0.35))
-
-
-# ── Secondary button ─────────────────────────────────────────────────────────
-# Used for: dark background buttons with cyan border/font.
-# Replaces: _style_upgrade_button() in crew_panel, shipyard_panel,
-#           _style_secondary_button() in planet_screen,
-#           _style_buttons() in main_menu, battle_result,
-#           _style_main_menu_button() in game_over, victory,
-#           _style_back_button() in tutorial.
-
-static func style_secondary_button(btn: Button, font_size: int = 0) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.02, 0.06, 0.14, 0.85)
-	normal.border_color = Color(0.0, 0.45, 0.75, 0.7)
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(6)
-	apply_button_padding(normal, font_size)
-
-	var hover := normal.duplicate()
-	hover.bg_color = Color(0.03, 0.10, 0.22, 0.9)
-	hover.border_color = Color(0.0, 0.65, 0.95, 0.85)
-
-	var pressed := normal.duplicate()
-	pressed.bg_color = Color(0.01, 0.04, 0.10, 0.9)
-
-	var disabled := StyleBoxFlat.new()
-	disabled.bg_color = Color(0.02, 0.05, 0.10, 0.6)
-	disabled.border_color = Color(0.0, 0.2, 0.35, 0.4)
-	disabled.set_border_width_all(2)
-	disabled.set_corner_radius_all(6)
-	apply_button_padding(disabled, font_size)
-
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
-	btn.add_theme_color_override("font_hover_color", Color(0.85, 0.98, 1.0))
-	btn.add_theme_color_override("font_disabled_color", Color(0.2, 0.35, 0.45))
-	if font_size > 0:
-		btn.add_theme_font_size_override("font_size", font_size)
-
-
-# ── Action button ────────────────────────────────────────────────────────────
-# Unified style for all main-action buttons across overlay screens.
-# Use ActionButton (class_name) — this method is called automatically by it.
-
-static func style_action_button(btn: Button) -> void:
-	style_secondary_button(btn, ACTION_BTN_FONT_SIZE)
-	btn.custom_minimum_size.y = maxf(btn.custom_minimum_size.y, ACTION_BTN_MIN_HEIGHT)
-	# Buttons in a tall row (header, HBox next to big labels) would otherwise be
-	# stretched to the row height and stop matching their siblings elsewhere.
-	btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-
-static func style_continue_button(btn: Button) -> void:
-	btn.custom_minimum_size = Vector2(160, 40)
-	style_secondary_button(btn, FONT_BODY)
 
 
 # ── Panel styling ───────────────────────────────────────────────────
@@ -333,16 +248,6 @@ static func create_confirm_modal(
 	return { "overlay": overlay, "vbox": vbox }
 
 
-# ── Event modal button style ────────────────────────────────────────────────
-# Three-state flat button styling used by event popups (planet/travel/customs).
-
-static func style_event_button(btn: Button, normal_color: Color, hover_color: Color, pressed_color: Color) -> void:
-	for pair in [["normal", normal_color], ["hover", hover_color], ["pressed", pressed_color]]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = pair[1]
-		style.set_corner_radius_all(4)
-		style.set_content_margin_all(6)
-		btn.add_theme_stylebox_override(pair[0], style)
 
 
 ## Standardized event modal dialog frame (used by PlanetEvent, TravelEvent, CustomsScan, SmugglerEvent).
@@ -514,11 +419,11 @@ static func create_overlay_scaffold(
 
 	var close_btn := Button.new()
 	close_btn.text = close_text
-	close_btn.custom_minimum_size = Vector2(140, ACTION_BTN_MIN_HEIGHT)
+	close_btn.custom_minimum_size = Vector2(140, 0)
 	# The header is as tall as the title block; without this the close button
 	# would fill that height and dwarf every other button on the screen.
 	close_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
+	close_btn.theme_type_variation = BTN_DANGER
 	close_btn.pressed.connect(close_callback)
 	header.add_child(close_btn)
 

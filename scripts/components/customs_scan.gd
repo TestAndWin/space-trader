@@ -14,9 +14,11 @@ const BRIBE_BASE_CHANCE := 0.70
 
 const OPTION_BUTTON_SIZE := Vector2(380, 36)
 # [normal, hover, pressed] per option row.
-const FINE_COLORS: Array[Color] = [Color(0.7, 0.25, 0.1), Color(0.85, 0.35, 0.15), Color(0.55, 0.18, 0.08)]
-const HIDE_COLORS: Array[Color] = [Color(0.4, 0.2, 0.6), Color(0.5, 0.3, 0.7), Color(0.3, 0.15, 0.45)]
-const BRIBE_COLORS: Array[Color] = [Color(0.6, 0.5, 0.1), Color(0.75, 0.6, 0.15), Color(0.45, 0.35, 0.08)]
+# The three options must stay tellable apart at a glance: paying is the plain
+# bad outcome, hiding is the smuggler's gamble, bribing the shady middle road.
+const FINE_ROLE: StringName = UIStyles.BTN_DANGER
+const HIDE_ROLE: StringName = UIStyles.BTN_STEALTH
+const BRIBE_ROLE: StringName = UIStyles.BTN_CAUTION
 
 var _contraband_items: Array = []  # [{ good_name, quantity }]
 var _fine_amount: int = 0
@@ -98,24 +100,24 @@ func _build_ui() -> void:
 	_options_container.add_theme_constant_override("separation", 8)
 	vbox.add_child(_options_container)
 
-	_add_option("Pay Fine (%d cr)" % _fine_amount, FINE_COLORS, _on_pay_fine,
+	_add_option("Pay Fine (%d cr)" % _fine_amount, FINE_ROLE, _on_pay_fine,
 		GameManager.credits >= _fine_amount)
 
 	_add_option("Hide Contraband (%d%% chance)" % int(round(_hide_chance * 100.0)),
-		HIDE_COLORS, _on_try_hide)
+		HIDE_ROLE, _on_try_hide)
 
 	var smuggler_note: String = " — Smuggler edge" if GameManager.get_customs_bribe_bonus() > 0.0 else ""
 	_add_option("Bribe Official (%d cr, %d%% success%s)" % [
 			_bribe_cost, int(round(_bribe_success_chance * 100.0)), smuggler_note
-		], BRIBE_COLORS, _on_bribe, GameManager.credits >= _bribe_cost)
+		], BRIBE_ROLE, _on_bribe, GameManager.credits >= _bribe_cost)
 
 
-## One full-width option row. `colors` is [normal, hover, pressed].
-func _add_option(text: String, colors: Array[Color], callback: Callable, affordable: bool = true) -> void:
+## One full-width option row, styled by its theme role.
+func _add_option(text: String, role: StringName, callback: Callable, affordable: bool = true) -> void:
 	var btn := Button.new()
 	btn.text = text
 	btn.custom_minimum_size = OPTION_BUTTON_SIZE
-	UIStyles.style_event_button(btn, colors[0], colors[1], colors[2])
+	btn.theme_type_variation = role
 	btn.pressed.connect(callback)
 	btn.disabled = not affordable
 	_options_container.add_child(btn)
@@ -223,7 +225,7 @@ func _show_result(text: String) -> void:
 
 	var close_btn := Button.new()
 	close_btn.text = "Continue"
-	UIStyles.style_continue_button(close_btn)
+	close_btn.custom_minimum_size = Vector2(160, 0)
 	close_btn.pressed.connect(close)
 	_options_container.get_parent().add_child(close_btn)
 

@@ -55,7 +55,7 @@ func _build_ui() -> void:
 	var back_btn := Button.new()
 	back_btn.text = "Back"
 	back_btn.custom_minimum_size = Vector2(120, 36)
-	UIStyles.style_accent_button(back_btn, Color(0.5, 0.15, 0.1))
+	back_btn.theme_type_variation = UIStyles.BTN_DANGER
 	back_btn.pressed.connect(_on_back)
 	header.add_child(back_btn)
 

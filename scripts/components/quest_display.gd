@@ -172,8 +172,8 @@ func _add_sourcing_hint(vbox: VBoxContainer, good_name: String) -> void:
 	vbox.add_child(label)
 
 
-func _make_action_btn(text: String) -> ActionButton:
-	var btn := ActionButton.new()
+func _make_action_btn(text: String) -> Button:
+	var btn := Button.new()
 	btn.text = text
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	btn.custom_minimum_size = Vector2(320, 0)

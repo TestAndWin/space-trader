@@ -85,7 +85,7 @@ mouse_filter = 2
 [node name="Body" type="Label" parent="VBoxContainer/ScrollContainer/ContentVBox/GoalSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Accumulate the credit goal (8000 / 10000 / 12000 depending on difficulty), visit all 7 planets, install at least one crafted T2 upgrade on your ship, AND have 0 Bounty to win the game. Trade goods, complete quest chains, win battles, craft items at the Factory, and explore the galaxy to reach your goal. Reputation, local trade loyalty, bounty pressure, debt, and active world events all shape how risky or profitable your run becomes. If your hull reaches zero, the game is over."
+text = "Your goal is to hunt down and defeat the pirate lord Crimson Jack. His hideout stays hidden until you meet all four prerequisites: amass the credit goal (8000 / 10000 / 12000 depending on difficulty), visit all 7 planets, install at least one crafted T2 upgrade on your ship, and clear your Bounty to 0. Only then does his secret base appear on the Galaxy Map for the final showdown. Trade goods, complete quest chains, win battles, craft items at the Factory, and explore the galaxy to get there. Reputation, local trade loyalty, bounty pressure, debt, and active world events all shape how risky or profitable your run becomes. If your hull reaches zero, the game is over."
 autowrap_mode = 3
 mouse_filter = 2
 
@@ -470,6 +470,6 @@ mouse_filter = 2
 
 [node name="BackButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
-custom_minimum_size = Vector2(200, 40)
+custom_minimum_size = Vector2(200, 0)
 size_flags_horizontal = 4
 text = "Back"

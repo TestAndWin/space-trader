@@ -332,7 +332,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 			switch_btn.text = "SWITCH"
 			switch_btn.custom_minimum_size = Vector2(100, 38)
 			switch_btn.disabled = GameManager.credits < fee
-			UIStyles.style_buy_button(switch_btn)
+			switch_btn.theme_type_variation = UIStyles.BTN_BUY
 			switch_btn.pressed.connect(_on_switch_owned.bind(ship))
 			btn_col.add_child(switch_btn)
 		else:
@@ -352,7 +352,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 			buy_keep_btn.text = "BUY & KEEP OLD"
 			buy_keep_btn.custom_minimum_size = Vector2(140, 32)
 			buy_keep_btn.disabled = GameManager.credits < ship.cost
-			UIStyles.style_buy_button(buy_keep_btn)
+			buy_keep_btn.theme_type_variation = UIStyles.BTN_BUY
 			buy_keep_btn.pressed.connect(_on_buy_ship.bind(ship, ship.cost, true))
 			btn_col.add_child(buy_keep_btn)
 
@@ -361,7 +361,7 @@ func _create_ship_card(ship: Resource, current_ship: Resource) -> PanelContainer
 				buy_trade_btn.text = "BUY & TRADE-IN (%d cr)" % net_cost
 				buy_trade_btn.custom_minimum_size = Vector2(140, 32)
 				buy_trade_btn.disabled = GameManager.credits < net_cost
-				UIStyles.style_buy_button(buy_trade_btn)
+				buy_trade_btn.theme_type_variation = UIStyles.BTN_BUY
 				buy_trade_btn.pressed.connect(_on_buy_ship.bind(ship, net_cost, false))
 				btn_col.add_child(buy_trade_btn)
 

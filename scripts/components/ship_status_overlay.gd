@@ -89,7 +89,7 @@ func _build_ui() -> void:
 	var deck_btn := Button.new()
 	deck_btn.text = "Combat Deck (%d Cards)" % GameManager.deck.size()
 	deck_btn.custom_minimum_size = Vector2(180, 36)
-	UIStyles.style_accent_button(deck_btn, Color(0.15, 0.45, 0.8))
+	deck_btn.theme_type_variation = UIStyles.BTN_INFO
 	deck_btn.pressed.connect(func() -> void:
 		view_deck_requested.emit()
 		_on_close()
@@ -103,7 +103,7 @@ func _build_ui() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.custom_minimum_size = Vector2(130, 36)
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1))
+	close_btn.theme_type_variation = UIStyles.BTN_DANGER
 	close_btn.pressed.connect(_on_close)
 	bottom_bar.add_child(close_btn)
 

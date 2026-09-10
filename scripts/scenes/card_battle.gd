@@ -18,10 +18,6 @@ const FLEE_BOUNTY := 20
 ## Gap between a shot and the impact it causes, in seconds.
 const SFX_IMPACT_DELAY := 0.18
 
-## The battle bar keeps its own, taller buttons -- they are the hot targets
-## during a fight. Everything else about them is the standard button style.
-const BUTTON_BAR_HEIGHT: int = 44
-
 var encounter: Resource = null
 var draw_pile: Array = []
 var hand: Array = []
@@ -84,7 +80,6 @@ const SHIELD_BOOST_INTERVAL := 3
 
 func _ready() -> void:
 	encounter = GameManager.current_encounter
-	_style_battle_buttons()
 	UIStyles.apply_display_font(%EnemyNameLabel)
 	UIStyles.apply_mono_font(%EnemyHealthLabel)
 	UIStyles.apply_mono_font(%EnemyShieldLabel)
@@ -186,15 +181,6 @@ func _build_energy_pips() -> void:
 	energy_label.get_parent().move_child(_energy_pips, energy_label.get_index() + 1)
 
 
-func _style_battle_buttons() -> void:
-	# Same font as every other screen; only the bar height is battle-specific.
-	UIStyles.style_accent_button(end_turn_button, Color(0.0, 0.40, 0.20))
-	end_turn_button.custom_minimum_size = Vector2(130, BUTTON_BAR_HEIGHT)
-	UIStyles.style_secondary_button(%FleeButton, UIStyles.ACTION_BTN_FONT_SIZE)
-	%FleeButton.custom_minimum_size = Vector2(90, BUTTON_BAR_HEIGHT)
-	UIStyles.style_accent_button(%BoardButton, Color(0.5, 0.15, 0.1))
-	%BoardButton.custom_minimum_size = Vector2(130, BUTTON_BAR_HEIGHT)
-
 
 func start_battle(enc: Resource) -> void:
 	_turn_phase = TurnPhase.PAUSED
@@ -294,9 +280,7 @@ func _show_trade_offer() -> void:
 	var accept_btn := Button.new()
 	accept_btn.text = "Accept (%dcr)" % cost
 	accept_btn.custom_minimum_size = Vector2(160, 36)
-	UIStyles.style_event_button(
-		accept_btn, Color(0.2, 0.4, 0.7), Color(0.25, 0.5, 0.85), Color(0.15, 0.3, 0.55)
-	)
+	accept_btn.theme_type_variation = UIStyles.BTN_INFO
 	accept_btn.pressed.connect(func():
 		overlay.queue_free()
 		if GameManager.credits >= cost:
@@ -314,9 +298,7 @@ func _show_trade_offer() -> void:
 	var decline_btn := Button.new()
 	decline_btn.text = "Decline"
 	decline_btn.custom_minimum_size = Vector2(160, 36)
-	UIStyles.style_event_button(
-		decline_btn, Color(0.25, 0.25, 0.28), Color(0.35, 0.35, 0.38), Color(0.18, 0.18, 0.2)
-	)
+	decline_btn.theme_type_variation = UIStyles.BTN_NEUTRAL
 	decline_btn.pressed.connect(func():
 		overlay.queue_free()
 		_start_player_turn()
@@ -868,7 +850,7 @@ func _show_boarding_choice() -> void:
 	var board_btn := Button.new()
 	board_btn.text = "Board Ship!"
 	board_btn.custom_minimum_size = Vector2(120, 40)
-	UIStyles.style_accent_button(board_btn, Color(0.6, 0.2, 0.2))
+	board_btn.theme_type_variation = UIStyles.BTN_DANGER
 	board_btn.pressed.connect(func():
 		overlay.queue_free()
 		_launch_boarding_minigame()
@@ -878,7 +860,7 @@ func _show_boarding_choice() -> void:
 	var destroy_btn := Button.new()
 	destroy_btn.text = "Destroy & Loot"
 	destroy_btn.custom_minimum_size = Vector2(140, 40)
-	UIStyles.style_accent_button(destroy_btn, Color(0.3, 0.3, 0.3))
+	destroy_btn.theme_type_variation = UIStyles.BTN_NEUTRAL
 	destroy_btn.pressed.connect(func():
 		overlay.queue_free()
 		var scrap: int = randi_range(20, 50)
@@ -1397,7 +1379,7 @@ func _show_pile_popup(title_text: String, pile: Array) -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_DETAIL)
+	close_btn.theme_type_variation = UIStyles.BTN_DANGER
 	close_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(close_btn)
 
@@ -1475,6 +1457,6 @@ func _show_enemy_intel_popup() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	UIStyles.style_accent_button(close_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_DETAIL)
+	close_btn.theme_type_variation = UIStyles.BTN_DANGER
 	close_btn.pressed.connect(overlay.queue_free)
 	vbox.add_child(close_btn)

@@ -154,7 +154,7 @@ func show_hint_popup(hint_id: String, parent_node: Node, on_ack: Callable = Call
 
 	var btn := Button.new()
 	btn.text = "Continue"
-	UIStyles.style_continue_button(btn)
+	btn.custom_minimum_size = Vector2(160, 0)
 
 	btn.pressed.connect(func() -> void:
 		overlay.queue_free()

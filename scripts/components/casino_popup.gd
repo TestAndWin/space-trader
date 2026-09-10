@@ -138,7 +138,7 @@ func _create_casino_button(
 	var btn := Button.new()
 	btn.text = text
 	btn.custom_minimum_size = min_size
-	UIStyles.style_accent_button(btn, accent)
+	UIStyles.tint_button(btn, accent)
 	btn.disabled = disabled
 	if on_pressed.is_valid():
 		btn.pressed.connect(on_pressed)

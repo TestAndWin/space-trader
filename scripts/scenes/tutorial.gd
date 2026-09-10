@@ -4,7 +4,6 @@ const UIStyles = preload("res://scripts/autoloads/ui_styles.gd")
 
 func _ready() -> void:
 	$VBoxContainer/BackButton.pressed.connect(_on_back_pressed)
-	UIStyles.style_secondary_button($VBoxContainer/BackButton)
 	var title_label: Label = $VBoxContainer/TitleLabel
 	if title_label:
 		UIStyles.apply_display_font(title_label)

@@ -24,12 +24,6 @@ func _ready() -> void:
 	%ContinueButton.pressed.connect(_on_continue_pressed)
 	%MainMenuButton.pressed.connect(_on_main_menu_pressed)
 	
-	# Font and height stay at the standard button metrics -- the display font is
-	# for the title above, not for buttons. Only the accent colors are custom.
-	for btn: Button in [%ContinueButton, %MainMenuButton]:
-		btn.custom_minimum_size.y = UIStyles.ACTION_BTN_MIN_HEIGHT
-	UIStyles.style_accent_button(%ContinueButton, Color(0.2, 0.6, 0.2))
-	UIStyles.style_accent_button(%MainMenuButton, Color(0.2, 0.3, 0.5))
 
 
 func _on_continue_pressed() -> void:
@@ -68,14 +62,14 @@ func _show_confirmation_dialog() -> void:
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.custom_minimum_size = Vector2(120, 40)
-	UIStyles.style_accent_button(cancel_btn, Color(0.5, 0.15, 0.1), UIStyles.FONT_BODY)
+	cancel_btn.theme_type_variation = UIStyles.BTN_DANGER
 	cancel_btn.pressed.connect(overlay.queue_free)
 	btn_row.add_child(cancel_btn)
 	
 	var confirm_btn := Button.new()
 	confirm_btn.text = "End Game"
 	confirm_btn.custom_minimum_size = Vector2(120, 40)
-	UIStyles.style_accent_button(confirm_btn, Color(0.6, 0.2, 0.2))
+	confirm_btn.theme_type_variation = UIStyles.BTN_DANGER
 	confirm_btn.pressed.connect(func():
 		GameManager.end_run_to_main_menu()
 	)

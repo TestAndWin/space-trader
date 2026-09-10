@@ -116,23 +116,15 @@ func _build_ui() -> void:
 
 	_choice_a_button = Button.new()
 	_choice_a_button.custom_minimum_size = CHOICE_BUTTON_SIZE
-	_style_primary_button(_choice_a_button)
+	_choice_a_button.theme_type_variation = UIStyles.BTN_INFO
 	_choice_a_button.pressed.connect(_on_choice_a)
 	hbox.add_child(_choice_a_button)
 
 	_choice_b_button = Button.new()
 	_choice_b_button.custom_minimum_size = CHOICE_BUTTON_SIZE
-	UIStyles.style_event_button(
-		_choice_b_button, Color(0.25, 0.25, 0.28), Color(0.35, 0.35, 0.38), Color(0.18, 0.18, 0.2)
-	)
+	_choice_b_button.theme_type_variation = UIStyles.BTN_NEUTRAL
 	_choice_b_button.pressed.connect(_on_choice_b)
 	hbox.add_child(_choice_b_button)
-
-
-static func _style_primary_button(btn: Button) -> void:
-	UIStyles.style_event_button(
-		btn, Color(0.2, 0.4, 0.7), Color(0.25, 0.5, 0.85), Color(0.15, 0.3, 0.55)
-	)
 
 
 # ── Display ──────────────────────────────────────────────────────────────────
@@ -252,7 +244,7 @@ func _show_outcome(text: String) -> void:
 
 	var close_btn := Button.new()
 	close_btn.text = "Continue"
-	UIStyles.style_continue_button(close_btn)
+	close_btn.custom_minimum_size = Vector2(160, 0)
 	close_btn.pressed.connect(close)
 	_choice_a_button.get_parent().add_child(close_btn)
 
