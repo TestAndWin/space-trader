@@ -5,14 +5,23 @@ Target: seamless loops for the game screens, generated instrumental, no vocals.
 
 ## Licensing — read before generating
 
+**Status**: paid Suno subscription active since 2026-09-19. Tracks generated
+**and downloaded** from that date on are licensed for release builds. Keep the
+invoice as proof of the plan that was active at generation time.
+
 - **Free plan**: Suno keeps ownership, you only get a **non-commercial, personal-use**
   licence. Not sufficient for a released build, not even a free one.
 - **Pro / Premier**: you own the outputs and may use them commercially. Rights
   survive cancellation, so one paid month is enough to produce the whole soundtrack.
 - **No retroactive rights**: tracks generated on the free plan stay non-commercial
   even after upgrading. They have to be regenerated while subscribed.
-- Downloads are capped since 2026-09-03. Free accounts only get a small one-time
-  allowance of trial downloads (personal use only).
+- Downloads are capped since 2026-09-03. Free accounts only get 7 lifetime trial
+  downloads (personal use only). Pro: 20 downloads/month, Premier: 60/month,
+  extra downloads can be bought.
+- The commercial licence attaches to a *permitted download* made while
+  subscribed. Audition takes in the browser and only download the keepers.
+- Unlike Eleven Music, Suno's terms (updated 2026-08-10) have no carve-out for
+  games sold on multiple platforms, and require no attribution.
 
 ## Loop length
 
@@ -29,7 +38,7 @@ whole number of bars lands on the target length, then cut on a bar boundary:
 
 ## Planet Screen (Hub)
 
-- Filename: `assets/audio/music_planet_hub.ogg`
+- Filename: `assets/audio/bgm/planet.ogg` (WAV master: `audio_src/bgm/planet.wav`)
 - Title: `Starport Idle`
 - Lyrics field: `[Instrumental]`
 - Settings: Instrumental ON, Custom Mode ON, length 30-60 s, cut to 8 bars
@@ -57,6 +66,42 @@ Reuse the prompt above and swap the mood line
 | Agricultural (Green Reach) | `Gentle, organic, warm — soft flute pad and wooden percussion texture` |
 | Mining (Dust Haven, Iron Belt) | `Low, cavernous, heavy — deep drone and distant hammer echoes` |
 | Outlaw (Nova Station, Crimson Jack's Hideout) | `Shady, tense, smoky — detuned bass, brushed hi-hat, a hint of noir saxophone` |
+
+## Battle Screen
+
+- Filename: `assets/audio/bgm/battle.ogg` (WAV master: `audio_src/bgm/battle.wav`)
+- Title: `Hostile Contact`
+- Lyrics field: `[Instrumental]`
+- Settings: Instrumental ON, Custom Mode ON, cut to 16 bars
+- Loop: 120 BPM, 16 bars (4/4) = exactly 32 s
+- Style Prompt:
+
+```
+Tense sci-fi space combat, driving dark synthwave, 120 BPM, D minor.
+Pulsing sixteenth-note bass sequence, punchy electronic drums with a tight
+snare, gritty detuned saw lead playing a short menacing motif, low brass-like
+synth stabs, metallic percussion hits. Focused and threatening but steady —
+background music for a turn-based card battle, the player needs to think.
+Constant energy from start to end, no quiet intro, no breakdown, no drop,
+no fade-out, no vocals. Seamless loopable ending that flows back into the intro.
+```
+
+The battle is turn-based, so the track must carry tension without the rush of
+an action game. If a take gets too hectic, lower the tempo to 100 BPM
+(16 bars = 38.4 s) and replace `driving` with `brooding`.
+
+`card_battle.gd` already calls `AudioManager.play_bgm("res://assets/audio/bgm/battle.ogg")`.
+Until that file exists, the planet track simply keeps playing during battles.
+
+## Source files
+
+Suno downloads are kept as WAV masters in `audio_src/bgm/`. That folder holds
+a `.gdignore`, so Godot neither imports the WAVs nor ships them in exports.
+Convert a master to the OGG the game loads with:
+
+```bash
+oggenc -q 5 -o assets/audio/bgm/battle.ogg audio_src/bgm/battle.wav
+```
 
 ## Integration notes
 

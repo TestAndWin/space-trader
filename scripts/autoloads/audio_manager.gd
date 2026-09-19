@@ -7,9 +7,9 @@ extends Node
 const SFX_DIR: String = "res://assets/audio/sfx/"
 const SFX_POOL_SIZE: int = 6
 const SILENT_CLICK_GROUP: StringName = &"silent_click"
-## Background music is switched off for now so the sound effects can be judged
-## on their own. Set back to true to bring it back.
-const MUSIC_ENABLED: bool = false
+## Master switch for background music. Set to false to judge the sound
+## effects on their own.
+const MUSIC_ENABLED: bool = true
 ## Fade at the end of the travel sound, so the cut lands on the warp exit.
 const TRAVEL_FADE: float = 0.6
 
