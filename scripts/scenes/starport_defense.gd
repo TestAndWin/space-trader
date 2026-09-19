@@ -106,6 +106,8 @@ func _build_ui() -> void:
 	_canvas = Control.new()
 	_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_canvas.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Taps here steer and shoot; a UI click on every one would drown the game.
+	_canvas.add_to_group(AudioManager.SILENT_CLICK_GROUP)
 	_canvas.draw.connect(_on_canvas_draw)
 	_canvas.gui_input.connect(_on_canvas_input)
 	main_vbox.add_child(_canvas)

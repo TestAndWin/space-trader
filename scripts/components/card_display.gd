@@ -57,7 +57,6 @@ func _gui_input(event: InputEvent) -> void:
 	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_touch: bool = event is InputEventScreenTouch and event.pressed
 	if is_click or is_touch:
-		AudioManager.play_ui_click()
 		_show_card_detail_popup()
 
 

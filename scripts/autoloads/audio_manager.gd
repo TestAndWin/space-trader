@@ -6,14 +6,26 @@ extends Node
 
 const SFX_DIR: String = "res://assets/audio/sfx/"
 const SFX_POOL_SIZE: int = 6
+const SILENT_CLICK_GROUP: StringName = &"silent_click"
+## Background music is switched off for now so the sound effects can be judged
+## on their own. Set back to true to bring it back.
+const MUSIC_ENABLED: bool = false
+## Fade at the end of the travel sound, so the cut lands on the warp exit.
+const TRAVEL_FADE: float = 0.6
 
 var bgm_player: AudioStreamPlayer
 var ui_sfx_player: AudioStreamPlayer
+var travel_player: AudioStreamPlayer
 
 var current_bgm_path: String = ""
 
 var _sfx_pool: Array[AudioStreamPlayer] = []
 var _sfx_index: int = 0
+## Bumped by every sound except the click, so a queued click can tell whether
+## its action already made a sound of its own.
+var _sfx_serial: int = 0
+var _click_pending_release: bool = false
+var _travel_tween: Tween
 var _stream_cache: Dictionary = {}
 
 func _ready() -> void:
@@ -27,26 +39,86 @@ func _ready() -> void:
 	ui_sfx_player.bus = "UI"
 	add_child(ui_sfx_player)
 
+	# Own player rather than the pool: the travel sound runs for seconds and
+	# must not be cut off by the round-robin, nor its fade leak onto a pool slot.
+	travel_player = AudioStreamPlayer.new()
+	travel_player.bus = "SFX"
+	add_child(travel_player)
+
 	for i in SFX_POOL_SIZE:
 		var player := AudioStreamPlayer.new()
 		player.bus = "SFX"
 		add_child(player)
 		_sfx_pool.append(player)
 
-	# Every button in the game clicks, without each screen having to remember to
-	# wire it up. Buttons are built programmatically all over this project and
-	# not all of them go through UIStyles, so hooking them at creation time is
-	# the only way to catch them all.
-	get_tree().node_added.connect(_on_node_added)
+
+## Every left click and tap in the game makes a sound. Handling it here in
+## _input catches buttons, tabs, overlay backdrops, the city map and the 3D
+## galaxy map alike, without each screen having to remember to wire it up.
+## Touch arrives here as emulated mouse presses, so it is not handled twice.
+## A control that takes clicks as gameplay input (the Starport Defense
+## canvas) joins SILENT_CLICK_GROUP to opt out.
+##
+## The click is only a fallback: when the click's own action plays a sound
+## (a purchase chime, a denied buzz), the click is dropped so the two do not
+## stack. Buttons act on release, so their click waits for the release;
+## everything else acts on press and clicks then. Either way the decision is
+## deferred to the end of that frame, after the action has run.
+func _input(event: InputEvent) -> void:
+	var mb := event as InputEventMouseButton
+	if mb != null:
+		if mb.button_index != MOUSE_BUTTON_LEFT:
+			return
+		if mb.pressed:
+			var target: Control = get_viewport().gui_get_hovered_control()
+			if _is_silent(target):
+				return
+			if _acts_on_release(target):
+				_click_pending_release = true
+			else:
+				_queue_click()
+		elif _click_pending_release:
+			_click_pending_release = false
+			_queue_click()
+		return
+	# Buttons activated from the keyboard or a gamepad get the same click.
+	if get_viewport().gui_get_focus_owner() is BaseButton:
+		if event.is_action_pressed("ui_accept"):
+			_click_pending_release = true
+		elif event.is_action_released("ui_accept") and _click_pending_release:
+			_click_pending_release = false
+			_queue_click()
 
 
-func _on_node_added(node: Node) -> void:
-	if node is BaseButton and not (node as BaseButton).pressed.is_connected(play_ui_click):
-		(node as BaseButton).pressed.connect(play_ui_click)
+func _acts_on_release(control: Control) -> bool:
+	var button := control as BaseButton
+	return button != null and button.action_mode == BaseButton.ACTION_MODE_BUTTON_RELEASE
+
+
+func _queue_click() -> void:
+	_play_click_if_quiet.call_deferred(_sfx_serial)
+
+
+## Plays the click unless another sound started since serial was taken.
+func _play_click_if_quiet(serial: int) -> void:
+	if serial == _sfx_serial:
+		play_ui_click()
+
+
+func _is_silent(control: Control) -> bool:
+	var node: Node = control
+	while node != null:
+		if node.is_in_group(SILENT_CLICK_GROUP):
+			return true
+		node = node.get_parent()
+	return false
+
 
 # --- Music ---
 
 func play_bgm(path: String) -> void:
+	if not MUSIC_ENABLED:
+		return
 	if current_bgm_path == path and bgm_player.playing:
 		return
 	current_bgm_path = path
@@ -84,6 +156,8 @@ func _play_ui(sfx_name: String) -> void:
 	var stream: AudioStream = _get_stream(SFX_DIR + sfx_name + ".wav")
 	if stream == null:
 		return
+	if sfx_name != "ui_click":
+		_sfx_serial += 1
 	ui_sfx_player.stream = stream
 	ui_sfx_player.pitch_scale = 1.0
 	ui_sfx_player.play()
@@ -98,8 +172,16 @@ func play_card_draw() -> void:
 
 # --- Combat ---
 
-func play_laser() -> void:
-	play_sfx("laser", 0.08)
+## The player's shot sound, per CardData.DamageType, so the weapon family
+## is audible: kinetic slugs bang, ion bolts crackle, piercing keeps the laser.
+const SHOT_SFX: Dictionary = {
+	CardData.DamageType.KINETIC: "kinetic_shot",
+	CardData.DamageType.ION: "ion_shot",
+	CardData.DamageType.PIERCING: "laser",
+}
+
+func play_shot(damage_type: int) -> void:
+	play_sfx(SHOT_SFX.get(damage_type, "laser"), 0.08)
 
 func play_enemy_laser() -> void:
 	play_sfx("enemy_laser", 0.08, 0.6) # Deeper and more menacing tone
@@ -121,6 +203,15 @@ func play_explosion() -> void:
 func play_purchase() -> void:
 	play_sfx("purchase")
 
+## Buying goods at the market. Kept apart from play_purchase(), which covers
+## repairs, upgrades, crew and ships.
+func play_cargo_buy() -> void:
+	play_sfx("cargo_buy", 0.04)
+
+## Buying fuel at the shipyard (single unit, full tank or emergency fuel).
+func play_fuel_buy() -> void:
+	play_sfx("fuel_buy", 0.04)
+
 func play_sell() -> void:
 	play_sfx("sell")
 
@@ -137,8 +228,23 @@ func play_casino_lose() -> void:
 
 # --- Travel ---
 
-func play_travel_sfx() -> void:
-	play_sfx("travel")
+## Plays the travel drone for exactly `duration` seconds - the length of the
+## warp animation. travel.wav is a long sustained take with no ending of its
+## own; it is faded out so it stops the moment the animation does.
+func play_travel_sfx(duration: float) -> void:
+	var stream: AudioStream = _get_stream(SFX_DIR + "travel.wav")
+	if stream == null:
+		return
+	_sfx_serial += 1
+	if _travel_tween:
+		_travel_tween.kill()
+	travel_player.stream = stream
+	travel_player.volume_db = 0.0
+	travel_player.play()
+	_travel_tween = create_tween()
+	_travel_tween.tween_interval(maxf(duration - TRAVEL_FADE, 0.0))
+	_travel_tween.tween_property(travel_player, "volume_db", -60.0, TRAVEL_FADE)
+	_travel_tween.tween_callback(travel_player.stop)
 
 func play_arrive_sfx() -> void:
 	play_sfx("arrive")
@@ -152,6 +258,7 @@ func play_sfx(sfx_name: String, pitch_variance: float = 0.0, base_pitch: float =
 	var stream: AudioStream = _get_stream(SFX_DIR + sfx_name + ".wav")
 	if stream == null:
 		return
+	_sfx_serial += 1
 	var player: AudioStreamPlayer = _sfx_pool[_sfx_index]
 	_sfx_index = (_sfx_index + 1) % _sfx_pool.size()
 	player.stream = stream

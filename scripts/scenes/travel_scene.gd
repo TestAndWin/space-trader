@@ -82,7 +82,6 @@ const PLANET_TEX_HEIGHT: int = 384
 
 func _ready() -> void:
 	_rng.seed = randi()
-	AudioManager.play_travel_sfx()
 	destination_planet = GameManager.travel_destination if GameManager.travel_destination != "" else "Unknown"
 	travel_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
 	warning_label.add_theme_font_override("font", UIStyles.FONT_DISPLAY)
@@ -114,6 +113,8 @@ func _ready() -> void:
 	_generate_starfield(_warp_color)
 	_generate_dust(_warp_color)
 	_build_destination_planet(dest_type, _warp_color)
+	# _travel_duration is only known once the destination planet is built.
+	AudioManager.play_travel_sfx(_travel_duration)
 	_setup_warp_exit_effects()
 	_sync_viewport_size()
 	travel_camera.look_at(Vector3(0.0, -0.4, -80.0), Vector3.UP)
