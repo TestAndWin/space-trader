@@ -259,8 +259,8 @@ func _build_installed_upgrades(parent: VBoxContainer) -> void:
 		list.add_child(empty_lbl)
 		return
 
-	for upgrade_path in GameManager.installed_upgrades:
-		var up: Resource = load(upgrade_path)
+	for upgrade_name in GameManager.installed_upgrades:
+		var up: Resource = GameManager.get_upgrade_by_name(str(upgrade_name))
 		if not (up is ShipUpgradeData):
 			continue
 		var u: ShipUpgradeData = up as ShipUpgradeData
@@ -303,7 +303,7 @@ func _build_crew_section(parent: VBoxContainer) -> void:
 
 	var crew_resources: Array = GameManager.get_crew_resources()
 	var title := Label.new()
-	title.text = "CREW ROSTER (%d/%d)" % [crew_resources.size(), GameManager.MAX_CREW]
+	title.text = "CREW ROSTER (%d/%d)" % [crew_resources.size(), GameManager.get_max_crew()]
 	UIStyles.apply_section_title(title)
 	vbox.add_child(title)
 
