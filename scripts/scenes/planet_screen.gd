@@ -7,6 +7,8 @@ const PlanetArrival = preload("res://scripts/components/planet_arrival.gd")
 const HubOverlayStack = preload("res://scripts/components/hub_overlay_stack.gd")
 const HubDebug = preload("res://scripts/components/hub_debug.gd")
 const DepthParallax = preload("res://scripts/components/depth_parallax.gd")
+const HubAmbience = preload("res://scripts/components/hub_ambience.gd")
+const HubAmbiencePresets = preload("res://scripts/components/hub_ambience_presets.gd")
 
 var _arrival: Control
 var _overlays: RefCounted = HubOverlayStack.new()
@@ -230,6 +232,7 @@ func _load_background_image() -> void:
 		bg_image.texture = tex
 		bg_image.visible = true
 		_attach_parallax(path.replace(".png", "_depth.png"))
+		_attach_ambience(planet_name)
 		_create_image_hotspots()
 
 
@@ -244,6 +247,19 @@ func _attach_parallax(depth_path: String) -> void:
 	if not _parallax.attach(bg_image, depth):
 		_parallax.queue_free()
 		_parallax = null
+
+
+## Animated lights over the background; they ride on the parallax, so a
+## planet needs a depth map as well as a preset to get them.
+func _attach_ambience(background_key: String) -> void:
+	var effects: Array = HubAmbiencePresets.effects_for(background_key)
+	if not _has_parallax() or effects.is_empty():
+		return
+	var ambience := HubAmbience.new()
+	ambience.name = "HubAmbience"
+	ambience.setup(_parallax, effects)
+	add_child(ambience)
+	move_child(ambience, bg_image.get_index() + 1)
 
 
 func _has_parallax() -> bool:

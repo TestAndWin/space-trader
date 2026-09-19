@@ -171,24 +171,42 @@ func _tilt(delta: float) -> Vector2:
 	return Vector2(diff.x, -diff.y) / TILT_FULL
 
 
-func _place(control: Control, design_point: Vector2) -> void:
-	control.position = _screen_shift(design_point) * control.get_parent_area_size() / DESIGN_SIZE
-
-
-## How far (in design pixels) the background under a point has moved from
-## its unprocessed position — the inverse of the shader's mapping, with the
-## camera at rest (hotspots are hidden while it is zoomed).
-func _screen_shift(design_point: Vector2) -> Vector2:
-	var s0: Vector2 = design_point / DESIGN_SIZE
-	var t0: Vector2 = Vector2(0.5, 0.5) + (s0 - Vector2(0.5, 0.5)) * _cover
-	var depth: float = _sample_depth(t0)
-	var t: Vector2 = t0 - _offset * MAX_OFFSET * (depth - FOCUS_DEPTH)
+## Where a point of the texture (UV 0..1) currently shows on screen, in
+## design pixels: the inverse of the shader's mapping, camera included.
+## Pass `depth` to move a whole shape with the depth of one reference point.
+func texture_to_screen(uv: Vector2, depth: float = -1.0) -> Vector2:
+	if depth < 0.0:
+		depth = sample_depth(uv)
+	var t: Vector2 = uv - _offset * MAX_OFFSET * (depth - FOCUS_DEPTH)
 	var s: Vector2 = Vector2(0.5, 0.5) + (t - Vector2(0.5, 0.5)) / _cover
-	var screen: Vector2 = Vector2(0.5, 0.5) + (s - Vector2(0.5, 0.5)) * EDGE_ZOOM
-	return (screen - s0) * DESIGN_SIZE
+	s = Vector2(0.5, 0.5) + (s - Vector2(0.5, 0.5)) * EDGE_ZOOM
+	var cam_center: Vector2 = _material.get_shader_parameter("cam_center")
+	var cam_zoom: float = _material.get_shader_parameter("cam_zoom")
+	return (Vector2(0.5, 0.5) + (s - cam_center) * cam_zoom) * DESIGN_SIZE
 
 
-func _sample_depth(uv: Vector2) -> float:
+## Design pixels per texture UV along each axis at the current zoom.
+func texture_scale() -> Vector2:
+	var cam_zoom: float = _material.get_shader_parameter("cam_zoom")
+	return DESIGN_SIZE / _cover * EDGE_ZOOM * cam_zoom
+
+
+## Current magnification relative to the plain background (1.0 at rest).
+func view_zoom() -> float:
+	return EDGE_ZOOM * float(_material.get_shader_parameter("cam_zoom"))
+
+
+func design_to_texture(design_point: Vector2) -> Vector2:
+	return Vector2(0.5, 0.5) + (design_point / DESIGN_SIZE - Vector2(0.5, 0.5)) * _cover
+
+
+func _place(control: Control, design_point: Vector2) -> void:
+	var shift: Vector2 = texture_to_screen(design_to_texture(design_point)) - design_point
+	control.position = shift * control.get_parent_area_size() / DESIGN_SIZE
+
+
+## Depth (0 far .. 1 near) of the texture at a UV point.
+func sample_depth(uv: Vector2) -> float:
 	var x: int = clampi(int(uv.x * _depth.get_width()), 0, _depth.get_width() - 1)
 	var y: int = clampi(int(uv.y * _depth.get_height()), 0, _depth.get_height() - 1)
 	return _depth.get_pixel(x, y).r
