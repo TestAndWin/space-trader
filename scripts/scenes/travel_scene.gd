@@ -114,6 +114,7 @@ func _ready() -> void:
 	_generate_dust(_warp_color)
 	_build_destination_planet(dest_type, _warp_color)
 	# _travel_duration is only known once the destination planet is built.
+	AudioManager.stop_bgm()
 	AudioManager.play_travel_sfx(_travel_duration)
 	_setup_warp_exit_effects()
 	_sync_viewport_size()

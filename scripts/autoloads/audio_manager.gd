@@ -12,6 +12,8 @@ const SILENT_CLICK_GROUP: StringName = &"silent_click"
 const MUSIC_ENABLED: bool = true
 ## Fade at the end of the travel sound, so the cut lands on the warp exit.
 const TRAVEL_FADE: float = 0.6
+## Fade-out when the music stops, so leaving the planet does not cut hard.
+const BGM_FADE: float = 0.5
 
 var bgm_player: AudioStreamPlayer
 var ui_sfx_player: AudioStreamPlayer
@@ -26,6 +28,7 @@ var _sfx_index: int = 0
 var _sfx_serial: int = 0
 var _click_pending_release: bool = false
 var _travel_tween: Tween
+var _bgm_tween: Tween
 var _stream_cache: Dictionary = {}
 
 func _ready() -> void:
@@ -125,9 +128,25 @@ func play_bgm(path: String) -> void:
 	var stream: AudioStream = _get_stream(path)
 	if stream == null:
 		return
+	if _bgm_tween:
+		_bgm_tween.kill()
 	_ensure_looping(stream)
+	bgm_player.volume_db = 0.0
 	bgm_player.stream = stream
 	bgm_player.play()
+
+
+## Fades the music out. The next play_bgm() starts its track again, even
+## if it is the one that was stopped.
+func stop_bgm() -> void:
+	if not bgm_player.playing:
+		return
+	current_bgm_path = ""
+	if _bgm_tween:
+		_bgm_tween.kill()
+	_bgm_tween = create_tween()
+	_bgm_tween.tween_property(bgm_player, "volume_db", -60.0, BGM_FADE)
+	_bgm_tween.tween_callback(bgm_player.stop)
 
 
 ## Godot's audio importer leaves `loop` off by default, and re-importing the
