@@ -122,7 +122,9 @@ Signal-based: managers emit signals, UI components subscribe. Scene transitions 
 
 **Enemy Ship Display** (`enemy_ship_display.gd/tscn`): Same 2D approach, textured with enemy PNGs from `assets/sprites/enemies/`. API: `update_enemy(hull_pct, shield_pct, encounter_name)`. 7 enemy shapes matched by name.
 
-The `shaders/` directory was deleted on 2026-08-30 -- its three shaders belonged to the replaced 3D renderer and were referenced by nothing.
+The old `shaders/` directory (3D renderer) was deleted on 2026-08-30. It now holds only `depth_parallax.gdshader`, see Planet Background Parallax.
+
+**Planet Background Parallax** (`depth_parallax.gd` + `shaders/depth_parallax.gdshader`): the hub background is displaced by a per-planet depth map (`assets/sprites/scenes/bg_<planet>_depth.png`, white = near) for a 2.5D look. Drivers: slow idle drift plus mouse position (desktop) or device tilt via `Input.get_gravity()` (touch). Hotspot layers are moved with the pixels under them via `track()`. Tapping a building flies the camera in (`zoom_to()`) before the overlay opens; `HubOverlayStack.emptied` triggers `zoom_out()`. A planet without a depth map keeps the static image. Regenerate maps after changing a background: `tools/generate_depth_maps.py` (Depth Anything V2, needs a venv with torch/transformers).
 
 **City Map** (`city_map.gd`): Isometric procedural city map drawn via `_draw()`. Each building is a 3D-looking box (top/front/right faces). Building names and appearances vary by planet type. Emits `building_clicked(id)` when an interactive building is clicked. Building IDs: market, shipyard, casino, crew, quest, deck, depart, mission.
 

@@ -1,6 +1,10 @@
 extends RefCounted
 
 ## Tracks actual overlay instances in opening order, independent of node names.
+
+## The last open overlay has left the tree.
+signal emptied
+
 var _overlays: Array[Node] = []
 
 
@@ -36,3 +40,5 @@ func _top() -> Node:
 
 func _forget(overlay: Node) -> void:
 	_overlays.erase(overlay)
+	if _top() == null:
+		emptied.emit()

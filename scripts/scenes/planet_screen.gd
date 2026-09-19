@@ -6,10 +6,14 @@ extends Control
 const PlanetArrival = preload("res://scripts/components/planet_arrival.gd")
 const HubOverlayStack = preload("res://scripts/components/hub_overlay_stack.gd")
 const HubDebug = preload("res://scripts/components/hub_debug.gd")
+const DepthParallax = preload("res://scripts/components/depth_parallax.gd")
 
 var _arrival: Control
 var _overlays: RefCounted = HubOverlayStack.new()
 var _debug: Node
+var _parallax: Node
+## True while the camera flies into a building, so a second tap is ignored.
+var _camera_busy: bool = false
 
 const DeckViewerScene = preload("res://scenes/deck_viewer.tscn")
 const CasinoPopupScene: PackedScene = preload("res://scenes/components/casino_popup.tscn")
@@ -83,6 +87,7 @@ func _ready() -> void:
 	_arrival.finished.connect(_on_arrival_finished)
 	# Hints are created by HintManager; register them when attached to this hub.
 	child_entered_tree.connect(_on_child_entered)
+	_overlays.emptied.connect(func() -> void: call_deferred("_return_camera"))
 	AudioManager.play_bgm("res://assets/audio/bgm/planet.ogg")
 	GameManager.cargo_changed.connect(_update_cargo_display)
 	StandingManager.reputation_changed.connect(_on_standing_changed)
@@ -224,17 +229,78 @@ func _load_background_image() -> void:
 	if tex:
 		bg_image.texture = tex
 		bg_image.visible = true
+		_attach_parallax(path.replace(".png", "_depth.png"))
 		_create_image_hotspots()
 
 
+## Makes the background 2.5D when the planet has a depth map; without one it
+## stays a static image and building taps open directly.
+func _attach_parallax(depth_path: String) -> void:
+	var depth := BackgroundUtils.load_texture(depth_path, false)
+	if depth == null:
+		return
+	_parallax = DepthParallax.new()
+	add_child(_parallax)
+	if not _parallax.attach(bg_image, depth):
+		_parallax.queue_free()
+		_parallax = null
+
+
+func _has_parallax() -> bool:
+	return _parallax != null and _parallax.is_attached()
+
+
+## Flies the camera into the building before its screen opens. Returns false
+## when there is nothing to fly to (no depth map, or no hotspot for the id).
+func _fly_to_building(building_id: String) -> bool:
+	if not _has_parallax() or not current_planet_data:
+		return false
+	var hotspot_map: Dictionary = current_planet_data.image_hotspots
+	if not hotspot_map.has(building_id):
+		return false
+	var rect: Rect2 = hotspot_map[building_id]
+	_camera_busy = true
+	_fade_hotspots(0.0)
+	await _parallax.zoom_to(rect.get_center()).finished
+	_camera_busy = false
+	return is_inside_tree()
+
+
+## Pulls the camera back out once no overlay covers the hub any more.
+func _return_camera() -> void:
+	if not is_inside_tree() or not _has_parallax() or _has_overlay_open() or _camera_busy:
+		return
+	_parallax.set_process(true)
+	if _parallax.is_zoomed():
+		_parallax.zoom_out()
+		_fade_hotspots(1.0)
+
+
+func _fade_hotspots(alpha: float) -> void:
+	var hotspots := get_node_or_null("ImageHotspots") as Control
+	if hotspots:
+		create_tween().tween_property(hotspots, "modulate:a", alpha, 0.2)
+
+
 func _on_building_clicked(building_id: String) -> void:
-	if _has_overlay_open():
+	if _has_overlay_open() or _camera_busy:
+		return
+	var flew: bool = await _fly_to_building(building_id)
+	if not is_inside_tree():
 		return
 	# First visit to a building explains it once; afterwards it opens directly.
 	if not HintManager.take_hint(building_id).is_empty():
 		HintManager.show_hint_popup(building_id, self, func() -> void: _open_building(building_id))
+	else:
+		_open_building(building_id)
+	if not flew or building_id == CityMap.BUILDING_DEPART:
 		return
-	_open_building(building_id)
+	if _has_overlay_open():
+		# The overlay hides the hub; stop animating it until the camera returns.
+		_parallax.set_process(false)
+	else:
+		# Refused (limit reached, already done) -- nothing opened.
+		_return_camera()
 
 
 ## Planet type of the current planet; Industrial (0) when planet data is missing.
@@ -497,6 +563,8 @@ func _rebuild_hub_buildings() -> void:
 		_hotspot_pulse_tween = null
 	var hotspot_node := get_node_or_null("ImageHotspots")
 	if hotspot_node:
+		# Detach first so the rebuilt layer can take over the node name.
+		remove_child(hotspot_node)
 		hotspot_node.queue_free()
 		_create_image_hotspots()
 
@@ -508,11 +576,13 @@ func _create_image_hotspots() -> void:
 	if hotspot_map.is_empty():
 		return
 
-	var container := Control.new()
-	container.name = "ImageHotspots"
-	container.set_anchors_preset(Control.PRESET_FULL_RECT)
-	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(container)
+	var root := Control.new()
+	root.name = "ImageHotspots"
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if _has_parallax() and _parallax.is_zoomed():
+		root.modulate.a = 0.0
+	add_child(root)
 
 	# StyleBoxes shared across all hotspot buttons
 	var empty := StyleBoxEmpty.new()
@@ -526,6 +596,14 @@ func _create_image_hotspots() -> void:
 	var glows: Array[ColorRect] = []
 	for bid: String in hotspot_map:
 		var rect: Rect2 = hotspot_map[bid]
+		# One layer per building, so the parallax can move it with the pixels
+		# it sits on.
+		var container := Control.new()
+		container.set_anchors_preset(Control.PRESET_FULL_RECT)
+		container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(container)
+		if _has_parallax():
+			_parallax.track(container, rect.get_center())
 
 		var btn := Button.new()
 		# Rect2 values are in pixels (1280x720); convert to normalized anchors at runtime
@@ -573,7 +651,7 @@ func _create_image_hotspots() -> void:
 		glows.append(glow)
 
 	# Start pulsing animation + initial flash
-	_animate_hotspot_dots(container, dots, glows)
+	_animate_hotspot_dots(root, dots, glows)
 
 
 ## Floating name plate shown while a building hotspot is hovered.
