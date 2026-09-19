@@ -353,7 +353,7 @@ func _on_buy(good_name: String, quantity: int) -> void:
 	if not GameManager.remove_credits(total_cost):
 		return
 	GameManager.add_cargo(good_name, quantity)
-	AudioManager.play_purchase()
+	AudioManager.play_cargo_buy()
 	GameManager.total_trades += 1
 	StandingManager.add_trade_loyalty(planet_name, StandingManager.get_trade_loyalty_gain(quantity, total_cost))
 	GameManager.record_market_observation(planet_name, good_name, buy_price, EconomyManager.get_sell_price(planet_name, good_name))

@@ -1090,7 +1090,6 @@ func _on_goal_label_input(event: InputEvent) -> void:
 	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_touch: bool = event is InputEventScreenTouch and event.pressed
 	if is_click or is_touch:
-		AudioManager.play_ui_click()
 		_show_goal_popup()
 
 
@@ -1098,7 +1097,6 @@ func _on_planet_title_input(event: InputEvent) -> void:
 	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_touch: bool = event is InputEventScreenTouch and event.pressed
 	if is_click or is_touch:
-		AudioManager.play_ui_click()
 		_show_standing_popup()
 
 
@@ -1106,7 +1104,6 @@ func _on_news_banner_input(event: InputEvent) -> void:
 	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_touch: bool = event is InputEventScreenTouch and event.pressed
 	if is_click or is_touch:
-		AudioManager.play_ui_click()
 		_show_news_popup()
 
 
@@ -1114,7 +1111,6 @@ func _on_ship_panel_input(event: InputEvent) -> void:
 	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_touch: bool = event is InputEventScreenTouch and event.pressed
 	if is_click or is_touch:
-		AudioManager.play_ui_click()
 		_show_ship_status_overlay()
 
 

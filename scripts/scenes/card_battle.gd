@@ -463,7 +463,7 @@ func _apply_damage_to_enemy(raw_damage: int, damage_type: int = CardData.DamageT
 	# Shot first, impact a moment later - fired together they smear into one noise.
 	if raw_damage > 0:
 		%EnemyShipDisplay.play_hit()
-		AudioManager.play_laser()
+		AudioManager.play_shot(damage_type)
 		if enemy_health > 0:
 			_play_delayed_sfx("shield_hit" if hull_damage == 0 else "hull_hit", SFX_IMPACT_DELAY)
 
@@ -484,11 +484,11 @@ func _on_card_played(card_data: Resource) -> void:
 	if _is_crimson_foe():
 		if card_data.special_effect == CardData.SpecialEffect.END_ENCOUNTER:
 			_show_battle_message("This enemy cannot be negotiated with!")
-			AudioManager.play_ui_click()
+			AudioManager.play_ui_denied()
 			return
 		if card_data.card_name == "Bribe":
 			_show_battle_message("This enemy cannot be bribed!")
-			AudioManager.play_ui_click()
+			AudioManager.play_ui_denied()
 			return
 
 	current_energy -= effective_cost
@@ -1242,7 +1242,6 @@ func _on_deck_counter_input(event: InputEvent) -> void:
 	var is_c: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_t: bool = event is InputEventScreenTouch and event.pressed
 	if is_c or is_t:
-		AudioManager.play_ui_click()
 		_show_pile_popup("DRAW PILE", draw_pile)
 
 
@@ -1250,7 +1249,6 @@ func _on_discard_counter_input(event: InputEvent) -> void:
 	var is_c: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_t: bool = event is InputEventScreenTouch and event.pressed
 	if is_c or is_t:
-		AudioManager.play_ui_click()
 		_show_pile_popup("DISCARD PILE", discard_pile)
 
 
@@ -1258,7 +1256,6 @@ func _on_enemy_intel_input(event: InputEvent) -> void:
 	var is_c: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_t: bool = event is InputEventScreenTouch and event.pressed
 	if is_c or is_t:
-		AudioManager.play_ui_click()
 		_show_enemy_intel_popup()
 
 
@@ -1266,7 +1263,6 @@ func _on_player_status_input(event: InputEvent) -> void:
 	var is_c: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_t: bool = event is InputEventScreenTouch and event.pressed
 	if is_c or is_t:
-		AudioManager.play_ui_click()
 		var ship: Resource = GameManager.get_ship_data()
 		var sname: String = ship.ship_name if ship else "Your Ship"
 		var traits: String = ""

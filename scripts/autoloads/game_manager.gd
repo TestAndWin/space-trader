@@ -529,7 +529,7 @@ func apply_arrival_fuel_generation() -> void:
 
 
 func _get_fuel_generation_for_upgrade(upgrade_name: String) -> int:
-	var upgrade: Resource = _get_upgrade_resource(upgrade_name)
+	var upgrade: Resource = get_upgrade_by_name(upgrade_name)
 	if upgrade == null:
 		return 0
 	return int(upgrade.fuel_generation_per_arrival)
@@ -919,7 +919,7 @@ func get_base_max_fuel_for_ship(ship_path: String) -> int:
 func recompute_max_fuel() -> void:
 	var total: int = get_base_max_fuel_for_ship(current_ship)
 	for upg_name in installed_upgrades:
-		var upg: Resource = _get_upgrade_resource(upg_name)
+		var upg: Resource = get_upgrade_by_name(upg_name)
 		if upg:
 			total += int(upg.fuel_capacity_bonus)
 	max_fuel = maxi(total, 1)
@@ -951,7 +951,7 @@ func owns_ship(path: String) -> bool:
 	return path in owned_ships
 
 
-func _get_upgrade_resource(upg_name: String) -> Resource:
+func get_upgrade_by_name(upg_name: String) -> Resource:
 	var paths: Array[String] = ResourceRegistry.COMBAT_UPGRADES + ResourceRegistry.CRAFTED_UPGRADES + ResourceRegistry.UPGRADES
 	for path in paths:
 		var res: Resource = load(path)
@@ -990,7 +990,7 @@ func switch_ship(new_ship_path: String, keep_old: bool = false) -> void:
 	
 	save_current_ship_upgrades()
 	for upg_name in installed_upgrades:
-		var upg = _get_upgrade_resource(upg_name)
+		var upg = get_upgrade_by_name(upg_name)
 		if upg and "cards_to_add" in upg:
 			for card in upg.cards_to_add:
 				for i in range(deck.size()):
@@ -1007,7 +1007,7 @@ func switch_ship(new_ship_path: String, keep_old: bool = false) -> void:
 	
 	load_ship_upgrades(new_ship_path)
 	for upg_name in installed_upgrades:
-		var upg = _get_upgrade_resource(upg_name)
+		var upg = get_upgrade_by_name(upg_name)
 		if upg and "cards_to_add" in upg:
 			for card in upg.cards_to_add:
 				deck.append(card)
@@ -1019,7 +1019,7 @@ func switch_ship(new_ship_path: String, keep_old: bool = false) -> void:
 	hand_size = new_ship.base_hand_size
 
 	for upg_name in installed_upgrades:
-		var upg = _get_upgrade_resource(upg_name)
+		var upg = get_upgrade_by_name(upg_name)
 		if upg:
 			max_hull += upg.hull_bonus
 			max_shield += upg.shield_bonus

@@ -246,7 +246,7 @@ func _on_repair_pressed() -> void:
 
 func _on_buy_fuel_pressed() -> void:
 	if GameManager.buy_fuel(1):
-		AudioManager.play_purchase()
+		AudioManager.play_fuel_buy()
 		status_label.text = "Bought 1 fuel"
 	else:
 		status_label.text = "Cannot buy fuel"
@@ -257,7 +257,7 @@ func _on_buy_fuel_pressed() -> void:
 func _on_fill_fuel_pressed() -> void:
 	var missing_fuel: int = GameManager.max_fuel - GameManager.current_fuel
 	if GameManager.buy_fuel(missing_fuel):
-		AudioManager.play_purchase()
+		AudioManager.play_fuel_buy()
 		status_label.text = "Fuel tank filled"
 	else:
 		status_label.text = "Not enough credits for a full tank"
@@ -267,6 +267,7 @@ func _on_fill_fuel_pressed() -> void:
 
 func _on_emergency_fuel_pressed() -> void:
 	if GameManager.take_emergency_fuel():
+		AudioManager.play_fuel_buy()
 		status_label.text = "Emergency fuel loaded"
 	else:
 		status_label.text = "Emergency fuel unavailable"

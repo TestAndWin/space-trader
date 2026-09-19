@@ -265,7 +265,6 @@ func _create_game_table(title_text: String, desc_text: String, selected: bool, o
 	# Make clickable
 	table.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			AudioManager.play_ui_click()
 			on_click.call()
 	)
 	table.mouse_filter = Control.MOUSE_FILTER_STOP

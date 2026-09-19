@@ -753,7 +753,6 @@ func _on_planet_input_event(_camera: Camera3D, event: InputEvent, _event_positio
 	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_touch: bool = event is InputEventScreenTouch and event.pressed
 	if is_click or is_touch:
-		AudioManager.play_ui_click()
 		_on_planet_clicked(planet_data)
 
 
@@ -1113,7 +1112,6 @@ func _on_ship_stat_input(event: InputEvent) -> void:
 	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_touch: bool = event is InputEventScreenTouch and event.pressed
 	if is_click or is_touch:
-		AudioManager.play_ui_click()
 		_show_ship_status_overlay()
 
 
@@ -1141,7 +1139,6 @@ func _on_current_planet_label_input(event: InputEvent) -> void:
 	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_touch: bool = event is InputEventScreenTouch and event.pressed
 	if is_click or is_touch:
-		AudioManager.play_ui_click()
 		var current := _find_planet_by_name(GameManager.current_planet)
 		if current:
 			_on_planet_clicked(current)
@@ -1151,7 +1148,6 @@ func _on_weather_label_input(event: InputEvent) -> void:
 	var is_click: bool = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
 	var is_touch: bool = event is InputEventScreenTouch and event.pressed
 	if is_click or is_touch:
-		AudioManager.play_ui_click()
 		_show_weather_popup()
 
 
