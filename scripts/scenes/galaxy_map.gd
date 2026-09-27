@@ -6,6 +6,9 @@ const ShipStatusOverlayScene: PackedScene = preload("res://scenes/components/shi
 const DeckViewerScene: PackedScene = preload("res://scenes/deck_viewer.tscn")
 
 
+## Already-seen planets read as plain secondary text, like the type line.
+const VISITED_BADGE_COLOR := Color(0.6, 0.6, 0.7)
+
 const GALAXY_CENTER_2D := Vector2(640.0, 360.0)
 const GALAXY_WORLD_SCALE: float = 72.0
 const GALAXY_SPREAD: float = 4.20
@@ -17,6 +20,7 @@ var selected_planet: Resource = null
 var _time: float = 0.0
 var _planet_visuals: Dictionary = {} # { planet_name: { planet, node, body, body_mat, glow, glow_mat, ring, ring_mat, label, base_color, base_position, phase } }
 var _hovered_planet_name: String = ""
+var _status_badge: Label = null
 var _player_marker: Node3D
 var _player_marker_base_position: Vector3 = Vector3.ZERO
 ## Planets stocking the cargo the active quest still needs (marked "[+]").
@@ -187,6 +191,15 @@ func _configure_info_panel() -> void:
 		parent.remove_child(planet_name_label)
 		planet_name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		header_row.add_child(planet_name_label)
+
+		# Visit state rides next to the name as a small badge, so it cannot be
+		# mistaken for part of the planet's name.
+		_status_badge = Label.new()
+		_status_badge.name = "InfoStatusBadge"
+		_status_badge.size_flags_horizontal = Control.SIZE_SHRINK_END
+		_status_badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_status_badge.add_theme_font_size_override("font_size", UIStyles.FONT_CAPTION)
+		header_row.add_child(_status_badge)
 
 		var close_btn := Button.new()
 		close_btn.name = "InfoCloseButton"
@@ -808,12 +821,17 @@ func _on_planet_hovered(planet_data: Resource) -> void:
 	var is_current: bool = planet_data.planet_name == GameManager.current_planet
 	var d_name: String = _display_planet_name(planet_data.planet_name)
 	var visited: bool = planet_data.planet_name in GameManager.visited_planets
-	if is_current:
-		planet_name_label.text = d_name + "  [HERE]"
-	elif visited:
-		planet_name_label.text = d_name + "  [VISITED]"
-	else:
-		planet_name_label.text = d_name + "  [UNVISITED]"
+	planet_name_label.text = d_name
+	if _status_badge:
+		if is_current:
+			_status_badge.text = "YOU ARE HERE"
+			_status_badge.add_theme_color_override("font_color", UIStyles.POSITIVE)
+		elif visited:
+			_status_badge.text = "VISITED"
+			_status_badge.add_theme_color_override("font_color", VISITED_BADGE_COLOR)
+		else:
+			_status_badge.text = "NOT VISITED"
+			_status_badge.add_theme_color_override("font_color", UIStyles.CAUTION)
 	var type_text: String = EconomyManager.PLANET_TYPE_NAMES.get(planet_data.planet_type, "Unknown")
 	var faction: String = StandingManager.get_planet_faction(planet_data.planet_name)
 	var rep: int = StandingManager.get_faction_reputation(faction)
